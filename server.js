@@ -12,6 +12,8 @@ const path = require('path');
 const https = require('https');
 const http = require('http');
 const selector = require('./selector');
+const multer = require('multer');
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 
 const app = express();
 app.use(express.json());
@@ -22,6 +24,14 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
+
+// --- Ruajtja e skedareve (Cloudflare R2) ---
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
+const s3 = process.env.R2_ENDPOINT ? new S3Client({
+  region: 'auto',
+  endpoint: process.env.R2_ENDPOINT,
+  credentials: { accessKeyId: process.env.R2_ACCESS_KEY, secretAccessKey: process.env.R2_SECRET_KEY }
+}) : null;
 
 // --- Krijimi i tabelave ---
 async function initDB() {
@@ -221,6 +231,29 @@ app.post('/api/promovimi', iLoguar, async (req, res) => {
       [req.biznesId, teksti]
     );
     res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- NGARKO SKEDAR (imazh/video/zip) te R2 dhe ruaj si reklame ---
+app.post('/api/ngarko', iLoguar, upload.single('file'), async (req, res) => {
+  if (!s3) return res.status(500).json({ error: "Ruajtja (R2) s'është konfiguruar te serveri." });
+  if (!req.file) return res.status(400).json({ error: "S'ka skedar." });
+  const ext = (req.file.originalname.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const key = 'ads/' + req.biznesId + '_' + Date.now() + '.' + ext;
+  try {
+    await s3.send(new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET,
+      Key: key,
+      Body: req.file.buffer,
+      ContentType: req.file.mimetype
+    }));
+    const base = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '');
+    const url = base + '/' + key;
+    const titulli = (req.body.titulli || '').trim() || null;
+    await pool.query(
+      'INSERT INTO promovimet (biznes_id, titulli, imazh_url, aktiv) VALUES ($1,$2,$3,true)',
+      [req.biznesId, titulli, url]);
+    res.json({ ok: true, url });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
