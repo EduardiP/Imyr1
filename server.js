@@ -11,6 +11,7 @@ const crypto = require('crypto');
 const path = require('path');
 const https = require('https');
 const http = require('http');
+const selector = require('./selector');
 
 const app = express();
 app.use(express.json());
@@ -524,11 +525,9 @@ app.get('/ad', async (req, res) => {
       }
     }
 
-    // Per tani: shfaq tekstin e vet biznesit (per testim).
-    // Me vone: kjo zevendesohet nga selector-i qe zgjedh promovimin e nje biznesi TJETER.
-    const p = await pool.query(
-      'SELECT teksti FROM promovimet WHERE biznes_id=$1 AND aktiv=true ORDER BY id DESC LIMIT 1', [bizId]);
-    res.json({ teksti: p.rows.length ? p.rows[0].teksti : null });
+    // Shperndarja: logjika ndodhet te selector.js (ndryshohet vetem aty).
+    const teksti = await selector.zgjidhReklame(pool, bizId);
+    res.json({ teksti });
   } catch (e) {
     res.json({ teksti: null });
   }
@@ -701,6 +700,7 @@ app.get('/api/admin/biznes/:id', iAdmin, async (req, res) => {
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/test', (req, res) => res.sendFile(path.join(__dirname, 'index-test-saas.html')));
+app.get('/test2', (req, res) => res.sendFile(path.join(__dirname, 'index-test-saas2.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 
 // health check
