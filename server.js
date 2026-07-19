@@ -54,13 +54,16 @@ async function initDB() {
     CREATE TABLE IF NOT EXISTS seancat (
       token TEXT PRIMARY KEY,
       biznes_id INT REFERENCES bizneset(id) ON DELETE CASCADE,
-      // Seanca admin (paneli yt)
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS admin_seancat (
-          token TEXT PRIMARY KEY,
-          created_at TIMESTAMPTZ DEFAULT now()
-        );
-      `);
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
+  `);
+  // Seanca admin (paneli yt)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS admin_seancat (
+      token TEXT PRIMARY KEY,
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
+  `);
 
   // --- Faza 2: kolona shtese per lidhjen/gjurmimin (shtohen vetem nese s'ekzistojne) ---
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS snippet_active BOOLEAN DEFAULT false`);
@@ -616,10 +619,38 @@ app.post('/api/analizo', iLoguar, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// --- ADMIN: autentikimi (paneli yt) ---
+async function iAdmin(req, res, next){
+  const token = req.cookies.imyr_admin;
+  if(!token) return res.status(401).json({ error: "S'je i loguar si admin." });
+  try {
+    const r = await pool.query('SELECT 1 FROM admin_seancat WHERE token=$1', [token]);
+    if(!r.rows.length) return res.status(401).json({ error: 'Seanca e pavlefshme.' });
+    next();
+  } catch(e){ res.status(500).json({ error: e.message }); }
+}
+app.post('/api/admin/hyr', async (req, res) => {
+  const pass = req.body.password || '';
+  const real = process.env.ADMIN_PASSWORD;
+  if(!real) return res.status(500).json({ error: "ADMIN_PASSWORD s'është caktuar te serveri." });
+  if(pass !== real) return res.status(400).json({ error: 'Fjalëkalim i gabuar.' });
+  const token = crypto.randomBytes(24).toString('hex');
+  await pool.query('INSERT INTO admin_seancat (token) VALUES ($1)', [token]);
+  res.cookie('imyr_admin', token, { httpOnly:true, sameSite:'lax', maxAge:7*24*60*60*1000 });
+  res.json({ ok:true });
+});
+app.post('/api/admin/dil', async (req, res) => {
+  const t = req.cookies.imyr_admin;
+  if(t) await pool.query('DELETE FROM admin_seancat WHERE token=$1', [t]).catch(()=>{});
+  res.clearCookie('imyr_admin'); res.json({ ok:true });
+});
+app.get('/api/admin/une', iAdmin, (req, res) => res.json({ ok:true }));
+
 // --- Faqet ---
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/test', (req, res) => res.sendFile(path.join(__dirname, 'index-test-saas.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 
 // health check
 app.get('/health', (req, res) => res.json({ ok: true, koha: new Date().toISOString() }));
