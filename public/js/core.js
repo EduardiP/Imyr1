@@ -14,7 +14,7 @@ const NAV = [
   { k:'analytics', l:'Analytics' }
 ];
 
-function showView(v){ ['hero','wizard','profile'].forEach(x=>$('v-'+x).classList.toggle('on', x===v)); }
+function showView(v){ ['hero','home','wizard','profile'].forEach(x=>$('v-'+x).classList.toggle('on', x===v)); }
 
 async function refreshProg(){
   try { prog = await (await fetch('/api/progres')).json(); }
@@ -26,6 +26,7 @@ function nextIncomplete(){ for(let i=0;i<STEPS.length;i++){ if(!prog[STEPS[i].ke
 function setHeaderLoggedIn(){
   $('hdrLeft').innerHTML='';
   $('hdrRight').innerHTML=
+    '<button class="btn ghost" onclick="goHome()">Home</button>'+
     '<div class="menu"><button class="btn" onclick="toggleMenu(event)">Profili ▾</button>'+
     '<div id="menuBox" class="menuBox hide">'+
       '<button onclick="goProfile()">Profili im</button>'+
@@ -35,6 +36,7 @@ function setHeaderLoggedIn(){
 function toggleMenu(e){ e.stopPropagation(); const m=$('menuBox'); if(m) m.classList.toggle('hide'); }
 document.addEventListener('click', ()=>{ const m=$('menuBox'); if(m) m.classList.add('hide'); });
 function goProfile(){ nav({v:'profile'}); }
+function goHome(){ nav({v:'home'}); }
 
 async function loadMe(){
   let r; try{ r=await fetch('/api/une'); }catch(e){ une=null; return false; }
@@ -44,9 +46,10 @@ async function loadMe(){
 
 // ---------- NAVIGIMI (me shigjetën back të browser-it) ----------
 function applyState(s, replace){
-  if(!s){ s = une ? {v:'profile'} : {v:'hero'}; }
+  if(!s){ s = une ? {v:'home'} : {v:'hero'}; }
   if(s.v==='wizard'){ renderWizard(s.step||0); }
   else if(s.v==='profile' && une){ renderProfile(); showView('profile'); }
+  else if(s.v==='home' && une){ renderHome(); showView('home'); }
   else { showView('hero'); }
   if(replace) history.replaceState(s,'');
 }
