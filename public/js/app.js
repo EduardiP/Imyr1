@@ -1,4 +1,20 @@
-// app.js — PAS HYRJES: dashboard/profili + wizard-i me hapa
+// app.js — PAS HYRJES: home + dashboard/profili + wizard-i me hapa
+
+// ---------- HOME ----------
+function renderHome(){
+  const b=$('homeBody');
+  b.innerHTML=
+    '<div style="text-align:center;padding:24px 0 10px;">'+
+      '<h1 style="color:var(--acc);letter-spacing:.06em;margin:0;">Mirë se erdhe!</h1>'+
+      '<p class="small" style="font-size:15px;" id="homeHi"></p>'+
+    '</div>'+
+    '<div class="card" style="max-width:460px;margin:14px auto;">'+
+      '<h2 class="h">Qendra jote Imyr</h2>'+
+      '<p class="small">Menaxho reklamat, lidhjen dhe statistikat te dashboard-i.</p>'+
+      '<button class="primary" onclick="goProfile()">Shko te dashboard →</button>'+
+    '</div>';
+  $('homeHi').textContent = une.emri;
+}
 
 // ---------- PROFILI / DASHBOARD ----------
 function renderProfile(){
@@ -56,7 +72,7 @@ function renderVStep(){
 
 // ---------- WIZARD ----------
 function startWizard(){ openWizard(une ? nextIncomplete() : 0); }
-function closeWizard(){ if(pollTimer){clearInterval(pollTimer);pollTimer=null;} nav({v: une?'profile':'hero'}); }
+function closeWizard(){ if(pollTimer){clearInterval(pollTimer);pollTimer=null;} nav({v: une?'home':'hero'}); }
 function openWizard(i){ if(i>=STEPS.length) i=STEPS.length-1; nav({v:'wizard', step:i}); }
 function renderWizard(i){
   if(!une) i=0;
