@@ -29,32 +29,62 @@ function renderAdTypes(){
     b.style.cssText='flex:1;min-width:120px;padding:16px 12px;border-radius:10px;cursor:pointer;background:#0e1116;color:var(--txt);'+
       'border:1px solid '+(sel?'#3b82f6':'var(--line)')+';'+(sel?'box-shadow:0 0 0 1px #3b82f6;':'');
     b.innerHTML='<div style="font-weight:600;font-size:15px;">'+t.l+'</div><div style="font-size:12px;color:var(--mut);margin-top:4px;">'+t.d+'</div>';
-    b.onclick=()=>{ window.__adType=t.k; renderAdTypes(); $('adTypeNote').textContent='Ngarkimi i "'+t.l+'" — së shpejti.'; };
+    b.onclick=()=>{ window.__adType=t.k; if(t.k==='image'){ ngarkoImazhUI(); return; } renderAdTypes(); $('adTypeNote').textContent='Ngarkimi i "'+t.l+'" — së shpejti.'; };
     g.appendChild(b);
   });
 }
+function ngarkoImazhUI(){
+  const m=$('mainPanel');
+  m.innerHTML=
+    '<h2 class="h">Ngarko imazhin</h2>'+
+    '<p class="small" style="margin:2px 0 14px;">Zgjidh një imazh nga laptopi (JPG / PNG / GIF).</p>'+
+    '<label>Titulli (opsional)</label><input id="up_title" placeholder="Emri i reklamës">'+
+    '<label style="margin-top:12px;">Imazhi</label><input type="file" id="up_file" accept="image/*">'+
+    '<div id="up_prev" style="margin-top:12px;"></div>'+
+    '<button class="primary" id="up_btn" onclick="ngarkoImazh()">Ngarko →</button>'+
+    '<div class="msg" id="up_msg"></div>';
+  $('up_file').addEventListener('change', function(){
+    const f=this.files[0]; if(!f) return;
+    $('up_prev').innerHTML='<img src="'+URL.createObjectURL(f)+'" style="max-width:220px;border-radius:10px;border:1px solid var(--line);">';
+  });
+}
+async function ngarkoImazh(){
+  const f=$('up_file').files[0];
+  if(!f){ $('up_msg').className='msg err'; $('up_msg').textContent='Zgjidh një imazh.'; return; }
+  $('up_btn').disabled=true; $('up_msg').className='msg'; $('up_msg').innerHTML='<span class="spin"></span> Po ngarkoj…';
+  try{
+    const fd=new FormData(); fd.append('file', f); fd.append('titulli', ($('up_title').value||'').trim());
+    const r=await(await fetch('/api/ngarko',{method:'POST',body:fd})).json();
+    if(r.error){ $('up_msg').className='msg err'; $('up_msg').textContent=r.error; $('up_btn').disabled=false; return; }
+    window.__reklamat=null;
+    nav({v:'profile',nav:'reklamat'});
+  }catch(e){ $('up_msg').className='msg err'; $('up_msg').textContent='Gabim: '+e.message; $('up_btn').disabled=false; }
+}
 
 // ---------- PROFILI / DASHBOARD ----------
-function renderProfile(){
+function renderProfile(s){
+  s = s || {};
+  curNav = s.nav || 'dashboard';
   $('p_emri').textContent = une.emri;
   $('p_email').textContent = une.email;
   $('p_kat').textContent = ''; // kategoria s'i tregohet klientit
   renderNav();
-  renderMain();
+  renderMain(s);
 }
 function renderNav(){
   const el=$('snav'); el.innerHTML='';
   NAV.forEach(n=>{
     const b=document.createElement('button');
     b.textContent=n.l; if(n.k===curNav) b.className='active';
-    b.onclick=()=>{ curNav=n.k; renderNav(); renderMain(); };
+    b.onclick=()=>nav({v:'profile', nav:n.k});
     el.appendChild(b);
   });
 }
-function renderMain(){
+function renderMain(s){
+  s = s || {};
   const m=$('mainPanel');
   if(curNav==='dashboard') return mainDashboard(m);
-  if(curNav==='reklamat')  return mainReklamat(m);
+  if(curNav==='reklamat')  return mainReklamat(m, s);
   if(curNav==='analytics') return mainAnalytics(m);
 }
 function mainDashboard(m){
@@ -63,10 +93,13 @@ function mainDashboard(m){
     '<div class="vstep" id="vstep" style="max-width:460px;"></div>';
   renderVStep();
 }
-function mainReklamat(m){
+function mainReklamat(m, s){
+  s = s || {};
+  if(s.sub==='detail'){ return hapReklame(s.id, m); }
+  if(s.sub==='create'){ return krijoReklame(m); }
   m.innerHTML=
     '<h2 class="h">Creatives</h2>'+
-    '<div style="margin:12px 0 14px;"><button class="btn cta" onclick="krijoReklame()">+ Create</button></div>'+
+    '<div style="margin:12px 0 14px;"><button class="btn cta" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">+ Create</button></div>'+
     '<div id="reklamaList"><p class="small">Po ngarkoj…</p></div>';
   loadReklamat();
 }
@@ -79,7 +112,7 @@ async function loadReklamat(){
     let h='<div class="rektbl"><div class="rekhead"><span>Reklama</span><span>Shikime</span><span>Klikime</span><span>Konvertime</span></div>';
     rows.forEach(r=>{
       const thumb = r.imazh_url ? '<span class="rekthumb"><img src="'+esc(r.imazh_url)+'"></span>' : '<span class="rekthumb">▦</span>';
-      h+='<div class="rekrow" onclick="hapReklame('+r.id+')">'+
+      h+='<div class="rekrow" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'detail\',id:'+r.id+'})">'+
          '<span class="rekname">'+thumb+'<span class="nm">'+esc(r.emri)+'</span></span>'+
          '<span>'+r.shikime+'</span><span>'+r.klikime+'</span><span>'+r.konvertime+'</span></div>';
     });
@@ -87,24 +120,23 @@ async function loadReklamat(){
     el.innerHTML=h;
   }catch(e){ el.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
 }
-function hapReklame(id){
-  const r=(window.__reklamat||[]).find(x=>x.id===id)||{};
-  const m=$('mainPanel');
+async function hapReklame(id, m){
+  m.innerHTML='<p class="small">Po ngarkoj…</p>';
+  let rows=window.__reklamat;
+  if(!rows){ try{ rows=await(await fetch('/api/reklamat')).json(); window.__reklamat=rows; }catch(e){ rows=[]; } }
+  const r=(rows||[]).find(x=>x.id===id)||{};
   m.innerHTML=
-    '<button class="btn ghost" onclick="renderMain()">← Creatives</button>'+
-    '<h2 class="h" style="margin-top:10px;">'+esc(r.emri||'Reklama')+'</h2>'+
+    '<h2 class="h">'+esc(r.emri||'Reklama')+'</h2>'+
     '<div style="display:flex;gap:10px;margin:14px 0;">'+
-      '<div class="stat" style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.shikime||0)+'</div><div class="small">Shikime</div></div>'+
-      '<div class="stat" style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.klikime||0)+'</div><div class="small">Klikime</div></div>'+
-      '<div class="stat" style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.konvertime||0)+'</div><div class="small">Konvertime</div></div>'+
+      '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.shikime||0)+'</div><div class="small">Shikime</div></div>'+
+      '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.klikime||0)+'</div><div class="small">Klikime</div></div>'+
+      '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.konvertime||0)+'</div><div class="small">Konvertime</div></div>'+
     '</div>'+
     '<p class="small">Variantet e krijuara (Image / Video / HTML5) do të shfaqen këtu — për të parë cili performon më mirë në testim.</p>';
 }
-function krijoReklame(){
-  const m=$('mainPanel');
+function krijoReklame(m){
   m.innerHTML=
-    '<button class="btn ghost" onclick="renderMain()">← Creatives</button>'+
-    '<h2 class="h" style="margin-top:10px;">Krijo reklamë</h2>'+
+    '<h2 class="h">Krijo reklamë</h2>'+
     '<p class="small" style="margin:2px 0 16px;">Zgjidh llojin që do të ngarkosh. Ngarkimi vjen së shpejti.</p>'+
     '<div id="adTypeWrap2"></div>';
   adTypeUI($('adTypeWrap2'));
@@ -157,7 +189,6 @@ function renderStepBody(i){
   if(i===0) return stepLlogaria(b);
   if(i===1) return stepPershkrimi(b);
   if(i===2) return stepLidhja(b);
-  if(i===3) return stepReklama(b);
 }
 
 // STEP 0 — Llogaria
@@ -231,24 +262,14 @@ async function vazhdoPershkrim(){
   }catch(e){ $('e_msg').className='msg err'; $('e_msg').textContent='Gabim: '+e.message; $('e_next').disabled=false; }
 }
 
-// STEP 2 — Lidhja (përdor connect.js)
+// STEP 2 — Lidhja (përdor connect.js). Pas lidhjes → Creatives + Create.
 function stepLidhja(b){
   b.innerHTML=
     '<h2 class="h">Lidh Imyr-in te faqja jote</h2>'+
     '<p class="small">Kopjo këtë rresht dhe vendose kudo te faqja jote (p.sh. te footer-i).</p>'+
     '<div id="connectWrap"></div>'+
-    '<button class="primary hide" id="lidhNext" onclick="openWizard(3)">Vazhdo →</button>';
-  window.__onLidhur = ()=>{ renderHStep(); $('lidhNext').classList.remove('hide'); setTimeout(()=>openWizard(3),900); };
+    '<button class="primary hide" id="lidhNext" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">Krijo reklamën →</button>';
+  window.__onLidhur = ()=>{ renderHStep(); $('lidhNext').classList.remove('hide'); setTimeout(()=>nav({v:'profile',nav:'reklamat',sub:'create'}),900); };
   connectUI($('connectWrap'));
   if(prog.lidhja){ $('lidhNext').classList.remove('hide'); }
-}
-
-// STEP 3 — Reklama (zgjedhja e llojit; ngarkimi vjen së shpejti)
-function stepReklama(b){
-  b.innerHTML=
-    '<h2 class="h">Krijo reklamën</h2>'+
-    '<p class="small" style="margin:2px 0 16px;">Zgjidh llojin që do të ngarkosh. Ngarkimi për secilin lloj vjen së shpejti.</p>'+
-    '<div id="adTypeWrap"></div>'+
-    '<button class="primary" onclick="closeWizard()">Përfundo →</button>';
-  adTypeUI($('adTypeWrap'));
 }
