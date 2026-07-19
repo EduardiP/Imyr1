@@ -18,7 +18,7 @@ async function hyr(){
     const r=await(await fetch('/api/hyr',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({email:$('h_email').value.trim(),fjalekalimi:$('h_pass').value})})).json();
     if(r.error){ msg(r.error); $('btnHyr').disabled=false; return; }
-    mbyllModal(); await loadMe(); nav({v:'profile'});
+    mbyllModal(); await loadMe(); nav({v:'home'});
   }catch(e){ msg('Gabim: '+e.message); }
   $('btnHyr').disabled=false;
 }
@@ -28,7 +28,7 @@ async function regjistrohu(){
     const body={emri:$('r_emri').value.trim(),email:$('r_email').value.trim(),fjalekalimi:$('r_pass').value,website:$('r_web').value.trim()};
     const r=await(await fetch('/api/regjistrohu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
     if(r.error){ msg(r.error); $('btnReg').disabled=false; return; }
-    mbyllModal(); await loadMe(); openWizard(nextIncomplete());
+    mbyllModal(); await loadMe(); nav({v:'profile'});
   }catch(e){ msg('Gabim: '+e.message); }
   $('btnReg').disabled=false;
 }
