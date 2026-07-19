@@ -386,7 +386,6 @@ app.get('/imyr.js', (req, res) => {
   res.send(`(function(){
   var s = document.currentScript;
   var key = s ? s.getAttribute('data-key') : null;
-  var fmt = s ? (s.getAttribute('data-format') || 'auto') : 'auto';
   var base = s ? new URL(s.src).origin : '';
   if(!key) return;
   var preview = !!(window.Shopify && window.Shopify.designMode);
@@ -395,18 +394,6 @@ app.get('/imyr.js', (req, res) => {
       navigator.sendBeacon ? navigator.sendBeacon(u) : fetch(u,{mode:'no-cors'}); } catch(e){}
   }
   function esc(t){ var d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
-  function dims(){
-    var phone = window.innerWidth < 600;
-    if(fmt==='rectangle')   return [300,250];
-    if(fmt==='leaderboard') return phone ? [320,100] : [728,90];
-    if(fmt==='skyscraper')  return phone ? [300,260] : [300,600];
-    return null; // auto: mbush kontejnerin
-  }
-  function applySize(el){
-    var d = dims(); el.style.maxWidth='100%'; el.style.overflow='hidden'; el.style.margin='0 auto';
-    if(d){ el.style.width=d[0]+'px'; el.style.height=d[1]+'px'; }
-    else { el.style.width='100%'; el.style.height=''; }
-  }
   function slotEl(){
     var el = document.getElementById('imyr-slot');
     if(!el){ el = document.createElement('div'); el.id='imyr-slot';
@@ -416,16 +403,14 @@ app.get('/imyr.js', (req, res) => {
   }
   function run(){
     var slot = slotEl(); if(!slot) return;
-    applySize(slot);
-    window.addEventListener('resize', function(){ applySize(slot); });
+    // Bosh => zero hapesire. Permbajtja e cakton madhesine (inline-block sipas permbajtjes).
     fetch(base + '/ad?key=' + encodeURIComponent(key) + (preview?'&preview=1':''))
       .then(function(r){ return r.json(); })
       .then(function(d){
         if(d && d.teksti){
-          slot.innerHTML = '<div style="width:100%;height:100%;min-height:44px;box-sizing:border-box;'
-            + 'border:1px solid #e2c68a;background:#fbf6ea;color:#5a4a24;padding:10px 12px;border-radius:10px;'
-            + 'font:14px/1.4 system-ui,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center;">'
-            + esc(d.teksti) + '</div>';
+          slot.innerHTML = '<div style="display:inline-block;max-width:100%;box-sizing:border-box;'
+            + 'border:1px solid #e2c68a;background:#fbf6ea;color:#5a4a24;padding:12px 14px;border-radius:10px;'
+            + 'font:14px/1.5 system-ui,sans-serif;cursor:pointer;">' + esc(d.teksti) + '</div>';
           if(!preview){ try { var v = base + '/track?key=' + encodeURIComponent(key) + '&event=view';
             navigator.sendBeacon ? navigator.sendBeacon(v) : fetch(v); } catch(e){} }
           slot.addEventListener('click', function(){
