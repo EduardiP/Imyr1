@@ -6,7 +6,8 @@
 <title>Imyr · Admin</title>
 <link rel="stylesheet" href="/css/style.css">
 <style>
-  .anav { display:flex; gap:6px; flex:1; margin-left:20px; flex-wrap:wrap; }
+  .anavbar { border-bottom:1px solid var(--line); padding:8px 20px; }
+  .anav { display:flex; gap:6px; flex-wrap:wrap; }
   .anav button { background:none; border:1px solid transparent; color:var(--mut); padding:7px 12px; border-radius:8px; cursor:pointer; font-size:14px; }
   .anav button:hover { color:var(--txt); }
   .anav button.active { background:#0e1116; color:var(--acc); border-color:var(--line); }
@@ -26,7 +27,7 @@
   .stat .l { font-size:12px; color:var(--mut); margin-top:2px; }
   .back { background:none; border:none; color:var(--mut); cursor:pointer; font-size:14px; padding:0 0 12px; }
   @media (max-width:700px){
-    .anav { margin-left:10px; overflow-x:auto; flex-wrap:nowrap; -webkit-overflow-scrolling:touch; }
+    .anav { overflow-x:auto; flex-wrap:nowrap; -webkit-overflow-scrolling:touch; }
     .anav button { flex:0 0 auto; white-space:nowrap; }
     #bizNav { display:flex; overflow-x:auto; gap:8px; -webkit-overflow-scrolling:touch; }
     .subnav { width:auto; white-space:nowrap; flex:0 0 auto; margin-bottom:0; }
@@ -37,9 +38,9 @@
 
 <header class="topbar">
   <div class="logo">IMYR·ADMIN</div>
-  <div class="anav" id="anav"></div>
   <div id="aright"></div>
 </header>
+<div class="anavbar hide" id="anavbar"><div class="anav" id="anav"></div></div>
 
 <!-- LOGIN -->
 <div class="wrap" id="loginBox">
@@ -85,6 +86,7 @@
   function showApp(){
     $('loginBox').classList.add('hide');
     $('app').classList.remove('hide');
+    $('anavbar').classList.remove('hide');
     $('aright').innerHTML='<button class="btn ghost" onclick="dil()">Log out</button>';
     renderNav(); selectSection('bizneset');
   }
