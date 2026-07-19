@@ -9,6 +9,7 @@ body { margin:0; background:var(--bg); color:var(--txt); font:16px/1.6 system-ui
 .btn { padding:8px 14px; border-radius:8px; font-size:14px; cursor:pointer; border:1px solid var(--line); background:transparent; color:var(--txt); }
 .btn.cta { background:var(--acc); color:#1a1205; border-color:var(--acc); font-weight:600; }
 .btn.ghost { color:var(--mut); }
+.topbar .btn { padding:7px 11px; font-size:13px; }
 .btn:disabled { opacity:.5; }
 
 .wrap { max-width:560px; margin:0 auto; padding:40px 20px 80px; }
@@ -84,7 +85,12 @@ h2.h { font-size:20px; margin:0 0 4px; }
 .snav button { display:block; width:100%; text-align:left; background:none; border:none; color:var(--txt); padding:10px; border-radius:8px; cursor:pointer; font-size:14px; margin-bottom:2px; }
 .snav button:hover { background:#0e1116; }
 .snav button.active { background:#0e1116; color:var(--acc); }
-@media (max-width:700px){ .appwrap{ flex-direction:column; } .sidebar{ width:auto; border-right:none; border-bottom:1px solid var(--line); } }
+@media (max-width:700px){
+  .appwrap{ flex-direction:column; }
+  .sidebar{ width:auto; border-right:none; border-bottom:1px solid var(--line); }
+  .snav{ display:flex; overflow-x:auto; gap:8px; -webkit-overflow-scrolling:touch; }
+  .snav button{ width:auto; white-space:nowrap; flex:0 0 auto; margin-bottom:0; }
+}
 
 /* ZGJEDHESI I FORMATIT */
 .fmtgrid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin:6px 0 16px; }
