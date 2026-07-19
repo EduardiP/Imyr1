@@ -64,8 +64,48 @@ function mainDashboard(m){
   renderVStep();
 }
 function mainReklamat(m){
-  m.innerHTML='<h2 class="h">Krijimet e reklamave</h2>'+
-    '<p class="small" style="margin:10px 0 16px;">Zgjidh llojin e reklamës që do të ngarkosh.</p>'+
+  m.innerHTML=
+    '<h2 class="h">Creatives</h2>'+
+    '<div style="margin:12px 0 14px;"><button class="btn cta" onclick="krijoReklame()">+ Create</button></div>'+
+    '<div id="reklamaList"><p class="small">Po ngarkoj…</p></div>';
+  loadReklamat();
+}
+async function loadReklamat(){
+  const el=$('reklamaList'); if(!el) return;
+  try{
+    const rows=await(await fetch('/api/reklamat')).json();
+    window.__reklamat = rows;
+    if(!rows.length){ el.innerHTML='<p class="small">Ende s\'ke krijuar reklama. Kliko “+ Create”.</p>'; return; }
+    let h='<div class="rektbl"><div class="rekhead"><span>Reklama</span><span>Shikime</span><span>Klikime</span><span>Konvertime</span></div>';
+    rows.forEach(r=>{
+      const thumb = r.imazh_url ? '<span class="rekthumb"><img src="'+esc(r.imazh_url)+'"></span>' : '<span class="rekthumb">▦</span>';
+      h+='<div class="rekrow" onclick="hapReklame('+r.id+')">'+
+         '<span class="rekname">'+thumb+'<span class="nm">'+esc(r.emri)+'</span></span>'+
+         '<span>'+r.shikime+'</span><span>'+r.klikime+'</span><span>'+r.konvertime+'</span></div>';
+    });
+    h+='</div>';
+    el.innerHTML=h;
+  }catch(e){ el.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
+}
+function hapReklame(id){
+  const r=(window.__reklamat||[]).find(x=>x.id===id)||{};
+  const m=$('mainPanel');
+  m.innerHTML=
+    '<button class="btn ghost" onclick="renderMain()">← Creatives</button>'+
+    '<h2 class="h" style="margin-top:10px;">'+esc(r.emri||'Reklama')+'</h2>'+
+    '<div style="display:flex;gap:10px;margin:14px 0;">'+
+      '<div class="stat" style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.shikime||0)+'</div><div class="small">Shikime</div></div>'+
+      '<div class="stat" style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.klikime||0)+'</div><div class="small">Klikime</div></div>'+
+      '<div class="stat" style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.konvertime||0)+'</div><div class="small">Konvertime</div></div>'+
+    '</div>'+
+    '<p class="small">Variantet e krijuara (Image / Video / HTML5) do të shfaqen këtu — për të parë cili performon më mirë në testim.</p>';
+}
+function krijoReklame(){
+  const m=$('mainPanel');
+  m.innerHTML=
+    '<button class="btn ghost" onclick="renderMain()">← Creatives</button>'+
+    '<h2 class="h" style="margin-top:10px;">Krijo reklamë</h2>'+
+    '<p class="small" style="margin:2px 0 16px;">Zgjidh llojin që do të ngarkosh. Ngarkimi vjen së shpejti.</p>'+
     '<div id="adTypeWrap2"></div>';
   adTypeUI($('adTypeWrap2'));
 }
