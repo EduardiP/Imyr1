@@ -5,18 +5,36 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Imyr · Admin</title>
 <link rel="stylesheet" href="/css/style.css">
+<style>
+  .anav { display:flex; gap:6px; flex:1; margin-left:20px; flex-wrap:wrap; }
+  .anav button { background:none; border:1px solid transparent; color:var(--mut); padding:7px 12px; border-radius:8px; cursor:pointer; font-size:14px; }
+  .anav button:hover { color:var(--txt); }
+  .anav button.active { background:#0e1116; color:var(--acc); border-color:var(--line); }
+  .bizrow { padding:11px 10px; border-radius:8px; cursor:pointer; border-bottom:1px solid #20262f; }
+  .bizrow:hover { background:#0e1116; }
+  .bizrow.active { background:#0e1116; }
+  .bizrow .bn { font-size:14px; font-weight:500; }
+  .bizrow .be { font-size:12px; color:var(--mut); }
+  .sect { margin-bottom:20px; }
+  .sect h3 { font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--mut); border-bottom:1px solid var(--line); padding-bottom:6px; margin:0 0 8px; }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+  .stat { background:#0e1116; border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .stat .v { font-size:22px; font-weight:700; color:var(--acc); }
+  .stat .l { font-size:12px; color:var(--mut); margin-top:2px; }
+  .back { background:none; border:none; color:var(--mut); cursor:pointer; font-size:14px; padding:0 0 12px; }
+</style>
 </head>
 <body>
 
 <header class="topbar">
-  <div class="side left"></div>
-  <div class="logo">IMYR · ADMIN</div>
-  <div class="side right" id="hr"></div>
+  <div class="logo">IMYR·ADMIN</div>
+  <div class="anav" id="anav"></div>
+  <div id="aright"></div>
 </header>
 
-<div class="wrap">
-  <!-- LOGIN -->
-  <div id="loginBox" class="card" style="max-width:380px;margin:40px auto;">
+<!-- LOGIN -->
+<div class="wrap" id="loginBox">
+  <div class="card" style="max-width:380px;margin:40px auto;">
     <h2 class="h">Admin — Hyr</h2>
     <p class="small" style="margin:2px 0 8px;">Vetëm për administratorin.</p>
     <label>Fjalëkalimi</label>
@@ -24,33 +42,134 @@
     <button class="primary" id="btn" onclick="hyr()">Hyr</button>
     <div class="msg" id="msg"></div>
   </div>
+</div>
 
-  <!-- PANEL (pas hyrjes) -->
-  <div id="panelBox" class="hide">
-    <h2 class="h">Admin Panel</h2>
-    <p class="small" style="margin-top:8px;">Të dhënat (bizneset, lidhjet, reklamat, statistikat) do t'i shtojmë këtu hap pas hapi.</p>
-  </div>
+<!-- APP -->
+<div id="app" class="hide">
+  <div id="content"></div>
 </div>
 
 <script>
   const $ = id => document.getElementById(id);
+  const SECTIONS = [
+    { k:'bizneset', l:'Bizneset' },
+    { k:'b1', l:'Buton 1' }, { k:'b2', l:'Buton 2' },
+    { k:'b3', l:'Buton 3' }, { k:'b4', l:'Buton 4' }
+  ];
+  let curSec = 'bizneset';
+
+  // ---- LOGIN ----
   async function hyr(){
     $('btn').disabled=true; $('msg').textContent='';
     try{
       const r=await(await fetch('/api/admin/hyr',{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({password:$('pass').value})})).json();
       if(r.error){ $('msg').className='msg err'; $('msg').textContent=r.error; $('btn').disabled=false; return; }
-      showPanel();
+      showApp();
     }catch(e){ $('msg').className='msg err'; $('msg').textContent='Gabim: '+e.message; }
     $('btn').disabled=false;
   }
   async function dil(){ await fetch('/api/admin/dil',{method:'POST'}); location.reload(); }
-  function showPanel(){
+
+  function showApp(){
     $('loginBox').classList.add('hide');
-    $('panelBox').classList.remove('hide');
-    $('hr').innerHTML='<button class="btn ghost" onclick="dil()">Log out</button>';
+    $('app').classList.remove('hide');
+    $('aright').innerHTML='<button class="btn ghost" onclick="dil()">Log out</button>';
+    renderNav(); selectSection('bizneset');
   }
-  async function boot(){ try{ const r=await fetch('/api/admin/une'); if(r.ok) showPanel(); }catch(e){} }
+  function renderNav(){
+    const n=$('anav'); n.innerHTML='';
+    SECTIONS.forEach(s=>{
+      const b=document.createElement('button');
+      b.textContent=s.l; if(s.k===curSec) b.className='active';
+      b.onclick=()=>selectSection(s.k);
+      n.appendChild(b);
+    });
+  }
+  function selectSection(k){ curSec=k; renderNav(); renderContent(); }
+
+  function renderContent(){
+    const c=$('content');
+    if(curSec==='bizneset'){ renderBizneset(c); return; }
+    const lbl=(SECTIONS.find(s=>s.k===curSec)||{}).l||'';
+    c.innerHTML='<div class="wrap"><h2 class="h">'+lbl+'</h2><p class="small" style="margin-top:8px;">Së shpejti.</p></div>';
+  }
+
+  // ---- BIZNESET ----
+  function renderBizneset(c){
+    c.innerHTML=
+      '<div class="appwrap">'+
+        '<aside class="sidebar"><div class="sect"><h3>Bizneset</h3><div id="bizRows"><p class="small">Po ngarkoj…</p></div></div></aside>'+
+        '<main class="main" id="bizDetail"><p class="small">Zgjidh një biznes majtas për detajet.</p></main>'+
+      '</div>';
+    loadBizList();
+  }
+  async function loadBizList(){
+    try{
+      const rows=await(await fetch('/api/admin/bizneset')).json();
+      const el=$('bizRows'); el.innerHTML='';
+      if(!rows.length){ el.innerHTML='<p class="small">Ende s\'ka biznese.</p>'; return; }
+      rows.forEach(b=>{
+        const d=document.createElement('div');
+        d.className='bizrow'; d.id='biz-'+b.id;
+        d.innerHTML='<div class="bn">'+esc(b.emri)+'</div><div class="be">'+esc(b.email)+'</div>';
+        d.onclick=()=>loadBizDetail(b.id);
+        el.appendChild(d);
+      });
+    }catch(e){ $('bizRows').innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
+  }
+  async function loadBizDetail(id){
+    document.querySelectorAll('.bizrow').forEach(r=>r.classList.remove('active'));
+    const row=$('biz-'+id); if(row) row.classList.add('active');
+    const m=$('bizDetail'); m.innerHTML='<p class="small">Po ngarkoj…</p>';
+    try{
+      const r=await(await fetch('/api/admin/biznes/'+id)).json();
+      if(r.error){ m.innerHTML='<p class="small">'+r.error+'</p>'; return; }
+      const b=r.biznes, s=r.statistika;
+      m.innerHTML=
+        '<button class="back" onclick="pastroDetajet()">← Bizneset</button>'+
+        '<h2 class="h">'+esc(b.emri)+'</h2>'+
+        '<div class="sect"><h3>Statistika</h3><div class="stats">'+
+          stat(s.reklama_krijuara,'Reklama të krijuara')+
+          stat(s.shfaqje_te_reklamave_te_tij,'Shfaqje të reklamave të tij')+
+          stat(s.shfaqje_ne_webin_e_tij,'Shfaqje në webin e tij')+
+          stat(s.klikime_ne_webin_e_tij,'Klikime në webin e tij')+
+          stat(s.snippet_vende,'Vende ku ka futur snippet')+
+        '</div></div>'+
+        '<div class="sect"><h3>Lidhja</h3>'+
+          row2('Snippet i lidhur', b.snippet_active?'Po':'Jo')+
+          row2('URL-ja e lidhjes', b.origjina||'—')+
+          row2('URL e kapur', b.kandidat_url||'—')+
+          row2('Parë së pari', dt(b.first_seen_at))+
+          row2('Parë së fundi', dt(b.last_seen_at))+
+        '</div>'+
+        '<div class="sect"><h3>Të dhënat e regjistrimit</h3>'+
+          row2('Emri', esc(b.emri))+
+          row2('Email', esc(b.email))+
+          row2('Faqja', b.website||'—')+
+          row2('Plani', b.plani||'—')+
+          row2('Regjistruar', dt(b.created_at))+
+          row2('Çelësi', b.celes||'—')+
+        '</div>'+
+        '<div class="sect"><h3>Analiza (AI)</h3>'+
+          row2('Kategoria kryesore', b.kategoria_kryesore||'—')+
+          row2('Nënkategoritë', b.nenkategorite||'—')+
+          row2('Përshkrimi i dhënë', b.pershkrimi||'—')+
+          row2('Përmbledhja', b.permbledhje||'—')+
+        '</div>';
+    }catch(e){ m.innerHTML='<p class="small">Gabim: '+e.message+'</p>'; }
+  }
+  function pastroDetajet(){
+    document.querySelectorAll('.bizrow').forEach(r=>r.classList.remove('active'));
+    $('bizDetail').innerHTML='<p class="small">Zgjidh një biznes majtas për detajet.</p>';
+  }
+
+  function stat(v,l){ return '<div class="stat"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>'; }
+  function row2(k,v){ return '<div class="row"><span class="k">'+k+'</span><span>'+v+'</span></div>'; }
+  function esc(t){ const d=document.createElement('div'); d.textContent=(t==null?'':t); return d.innerHTML; }
+  function dt(x){ if(!x) return '—'; try{ return new Date(x).toLocaleString('sq'); }catch(e){ return x; } }
+
+  async function boot(){ try{ const r=await fetch('/api/admin/une'); if(r.ok) showApp(); }catch(e){} }
   boot();
 </script>
 </body>
