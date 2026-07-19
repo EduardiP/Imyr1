@@ -24,9 +24,8 @@ function nextIncomplete(){ for(let i=0;i<STEPS.length;i++){ if(!prog[STEPS[i].ke
 
 // ---------- HEADER (i loguar) ----------
 function setHeaderLoggedIn(){
-  $('hdrLeft').innerHTML='';
+  $('hdrLeft').innerHTML='<button class="btn ghost" onclick="goHome()">Home</button>';
   $('hdrRight').innerHTML=
-    '<button class="btn ghost" onclick="goHome()">Home</button>'+
     '<div class="menu"><button class="btn" onclick="toggleMenu(event)">Profili ▾</button>'+
     '<div id="menuBox" class="menuBox hide">'+
       '<button onclick="goProfile()">Profili im</button>'+
