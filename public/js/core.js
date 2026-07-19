@@ -10,7 +10,7 @@ const STEPS = [
 ];
 const NAV = [
   { k:'dashboard', l:'Dashboard' },
-  { k:'reklamat',  l:'Krijimet e reklamave' },
+  { k:'reklamat',  l:'Creatives' },
   { k:'analytics', l:'Analytics' }
 ];
 
