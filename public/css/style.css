@@ -85,3 +85,14 @@ h2.h { font-size:20px; margin:0 0 4px; }
 .snav button:hover { background:#0e1116; }
 .snav button.active { background:#0e1116; color:var(--acc); }
 @media (max-width:700px){ .appwrap{ flex-direction:column; } .sidebar{ width:auto; border-right:none; border-bottom:1px solid var(--line); } }
+
+/* ZGJEDHESI I FORMATIT */
+.fmtgrid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin:6px 0 16px; }
+.fmt { border:1px solid var(--line); border-radius:10px; padding:12px 10px; cursor:pointer; text-align:center; background:#0e1116; }
+.fmt:hover { border-color:var(--mut); }
+.fmt.sel { border-color:#3b82f6; box-shadow:0 0 0 1px #3b82f6; }
+.fmt .prev { height:80px; display:flex; align-items:center; justify-content:center; margin-bottom:8px; }
+.fmt .shape { border:1px solid var(--mut); background:#161b22; border-radius:2px; }
+.fmt.sel .shape { border-color:#3b82f6; background:#12233f; }
+.fmt .lbl { font-size:13px; font-weight:600; }
+.fmt .dim { font-size:11px; color:var(--mut); }
