@@ -10,9 +10,12 @@
   .anav button { background:none; border:1px solid transparent; color:var(--mut); padding:7px 12px; border-radius:8px; cursor:pointer; font-size:14px; }
   .anav button:hover { color:var(--txt); }
   .anav button.active { background:#0e1116; color:var(--acc); border-color:var(--line); }
-  .bizrow { padding:11px 10px; border-radius:8px; cursor:pointer; border-bottom:1px solid #20262f; }
+  .subnav { display:block; width:100%; text-align:left; background:none; border:none; color:var(--txt); padding:10px; border-radius:8px; cursor:pointer; font-size:14px; margin-bottom:2px; }
+  .subnav:hover { background:#0e1116; }
+  .subnav.active { background:#0e1116; color:var(--acc); }
+  .bizrow { display:flex; align-items:center; gap:12px; padding:11px 10px; border-radius:10px; cursor:pointer; border-bottom:1px solid #20262f; }
   .bizrow:hover { background:#0e1116; }
-  .bizrow.active { background:#0e1116; }
+  .circle { width:38px; height:38px; border-radius:50%; background:#1a1205; color:var(--acc); border:1px solid #4a3d1e; display:flex; align-items:center; justify-content:center; font-weight:600; flex:0 0 auto; }
   .bizrow .bn { font-size:14px; font-weight:500; }
   .bizrow .be { font-size:12px; color:var(--mut); }
   .sect { margin-bottom:20px; }
@@ -45,9 +48,7 @@
 </div>
 
 <!-- APP -->
-<div id="app" class="hide">
-  <div id="content"></div>
-</div>
+<div id="app" class="hide"><div id="content"></div></div>
 
 <script>
   const $ = id => document.getElementById(id);
@@ -56,7 +57,11 @@
     { k:'b1', l:'Buton 1' }, { k:'b2', l:'Buton 2' },
     { k:'b3', l:'Buton 3' }, { k:'b4', l:'Buton 4' }
   ];
-  let curSec = 'bizneset';
+  const BIZ_SUB = [
+    { k:'bizneset', l:'Bizneset' },
+    { k:'r2', l:'Rreshti 2' }, { k:'r3', l:'Rreshti 3' }, { k:'r4', l:'Rreshti 4' }
+  ];
+  let curSec = 'bizneset', curBizSub = 'bizneset';
 
   // ---- LOGIN ----
   async function hyr(){
@@ -87,7 +92,6 @@
     });
   }
   function selectSection(k){ curSec=k; renderNav(); renderContent(); }
-
   function renderContent(){
     const c=$('content');
     if(curSec==='bizneset'){ renderBizneset(c); return; }
@@ -95,39 +99,55 @@
     c.innerHTML='<div class="wrap"><h2 class="h">'+lbl+'</h2><p class="small" style="margin-top:8px;">Së shpejti.</p></div>';
   }
 
-  // ---- BIZNESET ----
+  // ---- SEKSIONI BIZNESET: menu majtas + permbajtja djathtas ----
   function renderBizneset(c){
     c.innerHTML=
       '<div class="appwrap">'+
-        '<aside class="sidebar"><div class="sect"><h3>Bizneset</h3><div id="bizRows"><p class="small">Po ngarkoj…</p></div></div></aside>'+
-        '<main class="main" id="bizDetail"><p class="small">Zgjidh një biznes majtas për detajet.</p></main>'+
+        '<aside class="sidebar"><div id="bizNav"></div></aside>'+
+        '<main class="main" id="bizMain"></main>'+
       '</div>';
-    loadBizList();
+    renderBizNav(); renderBizMain();
   }
-  async function loadBizList(){
+  function renderBizNav(){
+    const n=$('bizNav'); n.innerHTML='';
+    BIZ_SUB.forEach(s=>{
+      const b=document.createElement('button');
+      b.className='subnav'+(s.k===curBizSub?' active':'');
+      b.textContent=s.l; b.onclick=()=>{ curBizSub=s.k; renderBizNav(); renderBizMain(); };
+      n.appendChild(b);
+    });
+  }
+  function renderBizMain(){
+    const m=$('bizMain');
+    if(curBizSub==='bizneset'){ loadBizList(m); return; }
+    const lbl=(BIZ_SUB.find(s=>s.k===curBizSub)||{}).l||'';
+    m.innerHTML='<h2 class="h">'+lbl+'</h2><p class="small" style="margin-top:8px;">Së shpejti.</p>';
+  }
+
+  async function loadBizList(m){
+    m.innerHTML='<h2 class="h">Bizneset</h2><div id="bizRows" style="margin-top:12px;"><p class="small">Po ngarkoj…</p></div>';
     try{
       const rows=await(await fetch('/api/admin/bizneset')).json();
       const el=$('bizRows'); el.innerHTML='';
       if(!rows.length){ el.innerHTML='<p class="small">Ende s\'ka biznese.</p>'; return; }
       rows.forEach(b=>{
-        const d=document.createElement('div');
-        d.className='bizrow'; d.id='biz-'+b.id;
-        d.innerHTML='<div class="bn">'+esc(b.emri)+'</div><div class="be">'+esc(b.email)+'</div>';
-        d.onclick=()=>loadBizDetail(b.id);
+        const d=document.createElement('div'); d.className='bizrow';
+        const ini=((b.emri||'?').trim().charAt(0)||'?').toUpperCase();
+        d.innerHTML='<div class="circle">'+esc(ini)+'</div><div><div class="bn">'+esc(b.emri)+'</div><div class="be">'+esc(b.email)+'</div></div>';
+        d.onclick=()=>loadBizDetail(b.id, m);
         el.appendChild(d);
       });
-    }catch(e){ $('bizRows').innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
+    }catch(e){ const el=$('bizRows'); if(el) el.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
   }
-  async function loadBizDetail(id){
-    document.querySelectorAll('.bizrow').forEach(r=>r.classList.remove('active'));
-    const row=$('biz-'+id); if(row) row.classList.add('active');
-    const m=$('bizDetail'); m.innerHTML='<p class="small">Po ngarkoj…</p>';
+
+  async function loadBizDetail(id, m){
+    m.innerHTML='<p class="small">Po ngarkoj…</p>';
     try{
       const r=await(await fetch('/api/admin/biznes/'+id)).json();
-      if(r.error){ m.innerHTML='<p class="small">'+r.error+'</p>'; return; }
+      if(r.error){ m.innerHTML='<button class="back" onclick="renderBizMain()">← Bizneset</button><p class="small">'+r.error+'</p>'; return; }
       const b=r.biznes, s=r.statistika;
       m.innerHTML=
-        '<button class="back" onclick="pastroDetajet()">← Bizneset</button>'+
+        '<button class="back" onclick="renderBizMain()">← Bizneset</button>'+
         '<h2 class="h">'+esc(b.emri)+'</h2>'+
         '<div class="sect"><h3>Statistika</h3><div class="stats">'+
           stat(s.reklama_krijuara,'Reklama të krijuara')+
@@ -157,11 +177,7 @@
           row2('Përshkrimi i dhënë', b.pershkrimi||'—')+
           row2('Përmbledhja', b.permbledhje||'—')+
         '</div>';
-    }catch(e){ m.innerHTML='<p class="small">Gabim: '+e.message+'</p>'; }
-  }
-  function pastroDetajet(){
-    document.querySelectorAll('.bizrow').forEach(r=>r.classList.remove('active'));
-    $('bizDetail').innerHTML='<p class="small">Zgjidh një biznes majtas për detajet.</p>';
+    }catch(e){ m.innerHTML='<button class="back" onclick="renderBizMain()">← Bizneset</button><p class="small">Gabim: '+e.message+'</p>'; }
   }
 
   function stat(v,l){ return '<div class="stat"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>'; }
