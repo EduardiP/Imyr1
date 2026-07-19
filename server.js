@@ -646,6 +646,40 @@ app.post('/api/admin/dil', async (req, res) => {
 });
 app.get('/api/admin/une', iAdmin, (req, res) => res.json({ ok:true }));
 
+// Lista e bizneseve (emer + email)
+app.get('/api/admin/bizneset', iAdmin, async (req, res) => {
+  try {
+    const r = await pool.query('SELECT id, emri, email FROM bizneset ORDER BY created_at DESC');
+    res.json(r.rows);
+  } catch(e){ res.status(500).json({ error: e.message }); }
+});
+
+// Detajet e nje biznesi + statistika
+app.get('/api/admin/biznes/:id', iAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  try {
+    const b = await pool.query(
+      `SELECT id, emri, email, website, kategoria_kryesore, nenkategorite, permbledhje, pershkrimi,
+              plani, celes, created_at, snippet_active, origjina, kandidat_url, first_seen_at, last_seen_at
+       FROM bizneset WHERE id=$1`, [id]);
+    if(!b.rows.length) return res.status(404).json({ error: 'Nuk u gjet.' });
+    const ads    = await pool.query('SELECT COUNT(*)::int n FROM promovimet WHERE biznes_id=$1 AND aktiv=true', [id]);
+    const views  = await pool.query("SELECT COUNT(*)::int n FROM ngjarjet WHERE biznes_id=$1 AND lloji='view'", [id]);
+    const clicks = await pool.query("SELECT COUNT(*)::int n FROM ngjarjet WHERE biznes_id=$1 AND lloji='click'", [id]);
+    const vende  = await pool.query('SELECT COUNT(DISTINCT origjina)::int n FROM ngjarjet WHERE biznes_id=$1 AND origjina IS NOT NULL', [id]);
+    res.json({
+      biznes: b.rows[0],
+      statistika: {
+        reklama_krijuara: ads.rows[0].n,
+        shfaqje_ne_webin_e_tij: views.rows[0].n,
+        klikime_ne_webin_e_tij: clicks.rows[0].n,
+        snippet_vende: vende.rows[0].n,
+        shfaqje_te_reklamave_te_tij: 0   // mbushet kur të ndërtohet algoritmi i shpërndarjes
+      }
+    });
+  } catch(e){ res.status(500).json({ error: e.message }); }
+});
+
 // --- Faqet ---
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
