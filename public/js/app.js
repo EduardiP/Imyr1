@@ -3,17 +3,35 @@
 // ---------- HOME ----------
 function renderHome(){
   const b=$('homeBody');
-  b.innerHTML=
-    '<div style="text-align:center;padding:24px 0 10px;">'+
-      '<h1 style="color:var(--acc);letter-spacing:.06em;margin:0;">Mirë se erdhe!</h1>'+
-      '<p class="small" style="font-size:15px;" id="homeHi"></p>'+
-    '</div>'+
-    '<div class="card" style="max-width:460px;margin:14px auto;">'+
-      '<h2 class="h">Qendra jote Imyr</h2>'+
-      '<p class="small">Menaxho reklamat, lidhjen dhe statistikat te dashboard-i.</p>'+
-      '<button class="primary" onclick="goProfile()">Shko te dashboard →</button>'+
-    '</div>';
+  b.innerHTML='<div style="text-align:center;padding:48px 0;">'+
+    '<h1 style="color:var(--acc);letter-spacing:.06em;margin:0;">Mirë se erdhe!</h1>'+
+    '<p class="small" id="homeHi" style="font-size:15px;"></p></div>';
   $('homeHi').textContent = une.emri;
+}
+
+// ---------- LLOJET E REKLAMES (Image / Video / HTML5) ----------
+const AD_TYPES = [
+  { k:'image', l:'Image', d:'JPG / PNG / GIF' },
+  { k:'video', l:'Video', d:'MP4' },
+  { k:'html5', l:'HTML5', d:'.zip interaktiv' }
+];
+function adTypeUI(el){
+  el.innerHTML='<div class="small" style="margin-bottom:10px;">Zgjidh llojin e reklamës që do të ngarkosh:</div>'+
+    '<div id="adTypeGrid" style="display:flex;gap:10px;flex-wrap:wrap;"></div>'+
+    '<div class="small" id="adTypeNote" style="margin-top:12px;"></div>';
+  renderAdTypes();
+}
+function renderAdTypes(){
+  const g=$('adTypeGrid'); if(!g) return; g.innerHTML='';
+  AD_TYPES.forEach(t=>{
+    const sel=window.__adType===t.k;
+    const b=document.createElement('button');
+    b.style.cssText='flex:1;min-width:120px;padding:16px 12px;border-radius:10px;cursor:pointer;background:#0e1116;color:var(--txt);'+
+      'border:1px solid '+(sel?'#3b82f6':'var(--line)')+';'+(sel?'box-shadow:0 0 0 1px #3b82f6;':'');
+    b.innerHTML='<div style="font-weight:600;font-size:15px;">'+t.l+'</div><div style="font-size:12px;color:var(--mut);margin-top:4px;">'+t.d+'</div>';
+    b.onclick=()=>{ window.__adType=t.k; renderAdTypes(); $('adTypeNote').textContent='Ngarkimi i "'+t.l+'" — së shpejti.'; };
+    g.appendChild(b);
+  });
 }
 
 // ---------- PROFILI / DASHBOARD ----------
@@ -47,11 +65,9 @@ function mainDashboard(m){
 }
 function mainReklamat(m){
   m.innerHTML='<h2 class="h">Krijimet e reklamave</h2>'+
-    '<p class="small" id="rk_txt" style="margin:10px 0 16px;">…</p>'+
-    '<button class="btn cta" onclick="openWizard(3)">Krijo / ndrysho reklamën</button>';
-  fetch('/api/status').then(r=>r.json()).then(st=>{
-    $('rk_txt').textContent = st.teksti ? ('Reklama aktuale: “'+st.teksti+'”') : "Ende s'ke krijuar reklamë.";
-  }).catch(()=>{});
+    '<p class="small" style="margin:10px 0 16px;">Zgjidh llojin e reklamës që do të ngarkosh.</p>'+
+    '<div id="adTypeWrap2"></div>';
+  adTypeUI($('adTypeWrap2'));
 }
 function mainAnalytics(m){
   m.innerHTML='<h2 class="h">Analytics</h2>'+
@@ -187,23 +203,12 @@ function stepLidhja(b){
   if(prog.lidhja){ $('lidhNext').classList.remove('hide'); }
 }
 
-// STEP 3 — Reklama (tekst tani; ngarkim/AI më vonë)
+// STEP 3 — Reklama (zgjedhja e llojit; ngarkimi vjen së shpejti)
 function stepReklama(b){
   b.innerHTML=
     '<h2 class="h">Krijo reklamën</h2>'+
-    '<p class="small">Për tani, një reklamë me tekst. Së shpejti: ngarkim imazhi/videoje dhe gjenerim me AI.</p>'+
-    '<label>Teksti i reklamës që do të shfaqet te të tjerët</label>'+
-    '<textarea id="ad_txt" placeholder="p.sh. Provo mjetin tonë falas për 14 ditë!"></textarea>'+
-    '<button class="primary" id="ad_btn" onclick="ruajReklame()">Ruaj reklamën →</button>'+
-    '<div class="msg" id="ad_msg"></div>';
-}
-async function ruajReklame(){
-  const t=$('ad_txt').value.trim(); if(!t){ $('ad_msg').className='msg err'; $('ad_msg').textContent='Shkruaj tekstin.'; return; }
-  $('ad_btn').disabled=true;
-  try{
-    const r=await(await fetch('/api/promovimi',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({teksti:t})})).json();
-    if(r.error){ $('ad_msg').className='msg err'; $('ad_msg').textContent=r.error; $('ad_btn').disabled=false; return; }
-    $('ad_msg').className='msg ok'; $('ad_msg').textContent='U ruajt ✓';
-    await refreshProg(); renderHStep(); setTimeout(closeWizard,900);
-  }catch(e){ $('ad_msg').className='msg err'; $('ad_msg').textContent='Gabim: '+e.message; $('ad_btn').disabled=false; }
+    '<p class="small" style="margin:2px 0 16px;">Zgjidh llojin që do të ngarkosh. Ngarkimi për secilin lloj vjen së shpejti.</p>'+
+    '<div id="adTypeWrap"></div>'+
+    '<button class="primary" onclick="closeWizard()">Përfundo →</button>';
+  adTypeUI($('adTypeWrap'));
 }
