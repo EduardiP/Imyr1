@@ -14,6 +14,7 @@ const NAV = [
   { k:'analytics', l:'Analytics' }
 ];
 
+function esc(t){ const d=document.createElement('div'); d.textContent=(t==null?'':t); return d.innerHTML; }
 function showView(v){ ['hero','home','wizard','profile'].forEach(x=>$('v-'+x).classList.toggle('on', x===v)); }
 
 async function refreshProg(){
