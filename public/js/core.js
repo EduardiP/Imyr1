@@ -48,7 +48,7 @@ async function loadMe(){
 function applyState(s, replace){
   if(!s){ s = une ? {v:'home'} : {v:'hero'}; }
   if(s.v==='wizard'){ renderWizard(s.step||0); }
-  else if(s.v==='profile' && une){ renderProfile(); showView('profile'); }
+  else if(s.v==='profile' && une){ renderProfile(s); showView('profile'); }
   else if(s.v==='home' && une){ renderHome(); showView('home'); }
   else { showView('hero'); }
   if(replace) history.replaceState(s,'');
