@@ -223,6 +223,23 @@ app.post('/api/promovimi', iLoguar, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// --- LISTA E REKLAMAVE TE BIZNESIT (Creatives) ---
+app.get('/api/reklamat', iLoguar, async (req, res) => {
+  try {
+    const r = await pool.query(
+      'SELECT id, titulli, teksti, imazh_url, created_at FROM promovimet WHERE biznes_id=$1 AND aktiv=true ORDER BY id DESC',
+      [req.biznesId]);
+    const rows = r.rows.map(x => ({
+      id: x.id,
+      emri: x.titulli || (x.teksti ? x.teksti.slice(0, 40) : 'Reklamë'),
+      imazh_url: x.imazh_url || null,
+      // Statistikat reale mbushen kur te ndertohet serving + attribution + konvertimet
+      shikime: 0, klikime: 0, konvertime: 0
+    }));
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // --- STATUSI (a u lidh snippet-i te dyqani) ---
 // Dritarja e "gjalle": nese e kemi pare snippet-in brenda kesaj kohe, quhet aktiv tani.
 const DRITARJA_LIVE_MS = 10 * 60 * 1000; // 10 minuta
