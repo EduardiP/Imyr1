@@ -54,9 +54,13 @@ async function initDB() {
     CREATE TABLE IF NOT EXISTS seancat (
       token TEXT PRIMARY KEY,
       biznes_id INT REFERENCES bizneset(id) ON DELETE CASCADE,
-      created_at TIMESTAMPTZ DEFAULT now()
-    );
-  `);
+      // Seanca admin (paneli yt)
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS admin_seancat (
+          token TEXT PRIMARY KEY,
+          created_at TIMESTAMPTZ DEFAULT now()
+        );
+      `);
 
   // --- Faza 2: kolona shtese per lidhjen/gjurmimin (shtohen vetem nese s'ekzistojne) ---
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS snippet_active BOOLEAN DEFAULT false`);
