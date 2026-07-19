@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Imyr — rrjet promovimi për biznese</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="side left" id="hdrLeft"></div>
+  <div class="logo">IMYR</div>
+  <div class="side right" id="hdrRight">
+    <button class="btn" onclick="hapModal('hyr')">Log in</button>
+    <button class="btn cta" onclick="startWizard()">Try for free</button>
+  </div>
+</header>
+
+<!-- PARA LOGIN: hero -->
+<div class="wrap view on" id="v-hero">
+  <div class="hero">
+    <h1>IMYR</h1>
+    <p>Rrjeti ku bizneset promovojnë njëri-tjetrin</p>
+    <button class="btn cta" onclick="startWizard()">Provo falas</button>
+  </div>
+</div>
+
+<!-- WIZARD (full-screen) -->
+<div class="wrap wide view" id="v-wizard">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+    <button class="btn ghost" onclick="history.back()">← Mbrapa</button>
+    <div class="small" id="wizStepN"></div>
+    <button class="btn ghost" onclick="closeWizard()">Ruaj &amp; dil ✕</button>
+  </div>
+  <div class="hstep" id="hstep"></div>
+  <div id="wizBody"></div>
+</div>
+
+<!-- PAS HYRJES: profili / dashboard -->
+<div class="view" id="v-profile">
+  <div class="appwrap">
+    <aside class="sidebar">
+      <div class="pcard">
+        <div class="pname" id="p_emri"></div>
+        <div class="pmail" id="p_email"></div>
+        <div class="pcat" id="p_kat"></div>
+      </div>
+      <nav class="snav" id="snav"></nav>
+    </aside>
+    <main class="main" id="mainPanel"></main>
+  </div>
+</div>
+
+<!-- LOGIN MODAL (para login) -->
+<div class="backdrop hide" id="modal">
+  <div class="card modal">
+    <button class="x" onclick="mbyllModal()">✕</button>
+    <div class="tabs">
+      <div class="tab active" id="tabHyr" onclick="shfaq('hyr')">Hyr</div>
+      <div class="tab" id="tabReg" onclick="shfaq('reg')">Regjistrohu</div>
+    </div>
+    <div id="formHyr">
+      <label>Email</label><input id="h_email" type="email" placeholder="email@biznesi.com">
+      <label>Fjalëkalimi</label><input id="h_pass" type="password" placeholder="••••••">
+      <button class="primary" id="btnHyr" onclick="hyr()">Hyr</button>
+    </div>
+    <div id="formReg" class="hide">
+      <label>Emri i biznesit</label><input id="r_emri" placeholder="Biznesi im">
+      <label>Email</label><input id="r_email" type="email" placeholder="email@biznesi.com">
+      <label>Fjalëkalimi (min 6)</label><input id="r_pass" type="password" placeholder="••••••">
+      <label>Faqja (website)</label><input id="r_web" placeholder="https://biznesi.com">
+      <button class="primary" id="btnReg" onclick="regjistrohu()">Krijo llogari</button>
+    </div>
+    <div class="msg" id="msg"></div>
+  </div>
+</div>
+
+<!-- Modulet: core (i përbashkët) → connect (snippet) → auth (para login) → app (pas hyrjes) -->
+<script src="/js/core.js"></script>
+<script src="/js/connect.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/app.js"></script>
+<script>boot();</script>
+</body>
+</html>
