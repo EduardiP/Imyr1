@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Imyr · Admin</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="side left"></div>
+  <div class="logo">IMYR · ADMIN</div>
+  <div class="side right" id="hr"></div>
+</header>
+
+<div class="wrap">
+  <!-- LOGIN -->
+  <div id="loginBox" class="card" style="max-width:380px;margin:40px auto;">
+    <h2 class="h">Admin — Hyr</h2>
+    <p class="small" style="margin:2px 0 8px;">Vetëm për administratorin.</p>
+    <label>Fjalëkalimi</label>
+    <input id="pass" type="password" placeholder="••••••">
+    <button class="primary" id="btn" onclick="hyr()">Hyr</button>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <!-- PANEL (pas hyrjes) -->
+  <div id="panelBox" class="hide">
+    <h2 class="h">Admin Panel</h2>
+    <p class="small" style="margin-top:8px;">Të dhënat (bizneset, lidhjet, reklamat, statistikat) do t'i shtojmë këtu hap pas hapi.</p>
+  </div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  async function hyr(){
+    $('btn').disabled=true; $('msg').textContent='';
+    try{
+      const r=await(await fetch('/api/admin/hyr',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({password:$('pass').value})})).json();
+      if(r.error){ $('msg').className='msg err'; $('msg').textContent=r.error; $('btn').disabled=false; return; }
+      showPanel();
+    }catch(e){ $('msg').className='msg err'; $('msg').textContent='Gabim: '+e.message; }
+    $('btn').disabled=false;
+  }
+  async function dil(){ await fetch('/api/admin/dil',{method:'POST'}); location.reload(); }
+  function showPanel(){
+    $('loginBox').classList.add('hide');
+    $('panelBox').classList.remove('hide');
+    $('hr').innerHTML='<button class="btn ghost" onclick="dil()">Log out</button>';
+  }
+  async function boot(){ try{ const r=await fetch('/api/admin/une'); if(r.ok) showPanel(); }catch(e){} }
+  boot();
+</script>
+</body>
+</html>
