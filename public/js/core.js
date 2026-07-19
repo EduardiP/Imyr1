@@ -5,8 +5,7 @@ let pollTimer = null, prog = null, une = null, curStep = 0, curNav = 'dashboard'
 const STEPS = [
   { key:'llogaria',   label:'Llogaria' },
   { key:'pershkrimi', label:'Përshkrimi' },
-  { key:'lidhja',     label:'Lidhja' },
-  { key:'reklama',    label:'Reklama' }
+  { key:'lidhja',     label:'Lidhja' }
 ];
 const NAV = [
   { k:'dashboard', l:'Dashboard' },
