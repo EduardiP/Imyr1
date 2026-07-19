@@ -16,7 +16,7 @@ const AD_TYPES = [
   { k:'html5', l:'HTML5', d:'.zip interaktiv' }
 ];
 function adTypeUI(el){
-  el.innerHTML='<div class="small" style="margin-bottom:10px;">Zgjidh llojin e reklamës që do të ngarkosh:</div>'+
+  el.innerHTML=''+
     '<div id="adTypeGrid" style="display:flex;gap:10px;flex-wrap:wrap;"></div>'+
     '<div class="small" id="adTypeNote" style="margin-top:12px;"></div>';
   renderAdTypes();
