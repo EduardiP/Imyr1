@@ -416,7 +416,7 @@ app.get('/tag.js', (req, res) => {
 });
 
 // --- LIDH (sinjali i tag-ut: shenon lidhjen + URL-en, pa lidhje me slot-in) ---
-app.get('/lidh', async (req, res) => {
+app.all('/lidh', async (req, res) => {
   cors(res);
   const key = req.query.key;
   if (!key) return res.status(204).end();
@@ -573,7 +573,7 @@ app.get('/ad', async (req, res) => {
 });
 
 // --- TRACK (shfaqje/klikime) ---
-app.get('/track', async (req, res) => {
+app.all('/track', async (req, res) => {
   cors(res);
   if (req.query.preview === '1') return res.status(204).end(); // injoro preview-in
   const key = req.query.key;
