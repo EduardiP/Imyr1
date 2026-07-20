@@ -4,145 +4,177 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Imyr — Rrjeti ku SaaS-et shkëmbejnë trafik</title>
-<meta name="description" content="Imyr është rrjeti ku bizneset SaaS promovojnë njëri-tjetrin. Shkëmbe trafik me SaaS plotësuese — pa buxhet reklamash. Një rresht kod dhe fillon.">
-<link rel="stylesheet" href="/css/site.css">
+<meta name="description" content="Imyr është rrjeti ku bizneset SaaS promovojnë njëri-tjetrin. Shkëmbe trafik me SaaS plotësuese — pa buxhet reklamash.">
+<link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 
-<!-- NAV -->
-<div class="nav">
-  <div class="container row">
-    <a class="brand" href="/">IMYR</a>
-    <div class="links">
-      <a class="hidem" href="#si-funksionon">Si funksionon</a>
-      <a class="hidem" href="#perfitimet">Përfitimet</a>
-      <a class="hidem" href="#cmimet">Çmimet</a>
-      <a href="/app?login">Hyr</a>
-      <a class="btn cta" href="/app?provo">Provo falas</a>
+<header class="topbar">
+  <div class="side left" id="hdrLeft"></div>
+  <div class="logo">IMYR</div>
+  <div class="side right" id="hdrRight">
+    <button class="btn" onclick="hapModal('hyr')">Log in</button>
+    <button class="btn cta" onclick="hapModal('reg')">Register</button>
+  </div>
+</header>
+
+<!-- PARA LOGIN: faqja publike (hapet gjithçka NË VEND) -->
+<div class="view on" id="v-hero">
+
+  <section class="shero">
+    <div class="container">
+      <h1>Rrjeti ku SaaS-et <span class="g">shkëmbejnë trafik</span>.</h1>
+      <p class="lead">Promovo biznesin tënd te SaaS të tjera plotësuese — pa buxhet reklamash. Një rresht kod, dhe fillon të marrësh e të japësh ekspozim te audienca e duhur.</p>
+      <div class="actions">
+        <button class="sbtn cta lg" onclick="startWizard()">Provo falas</button>
+        <a class="sbtn lg" href="#si-funksionon">Si funksionon →</a>
+      </div>
+      <div class="trust">Pa kartë krediti · Konfigurim në minuta · Analitika reale</div>
     </div>
+  </section>
+
+  <section class="sec light" id="si-funksionon">
+    <div class="container center">
+      <p class="eyebrow">Si funksionon</p>
+      <h2>Tri hapa, dhe je pjesë e rrjetit</h2>
+      <p class="lead mut">Pa fushata të ndërlikuara, pa buxhet. Vetëm shkëmbim i drejtë ekspozimi mes SaaS-esh.</p>
+      <div class="grid g3">
+        <div class="tile"><div class="n">1</div><h3>Regjistrohu & përshkruaj</h3><p class="mut">Krijon llogarinë dhe përshkruan çfarë ofron. Imyr e kupton biznesin tënd dhe gjen SaaS plotësuese.</p></div>
+        <div class="tile"><div class="n">2</div><h3>Vendos një rresht kod</h3><p class="mut">Kopjon një snippet dhe e vendos te faqja jote. Zë zero hapësirë kur s'ka reklamë.</p></div>
+        <div class="tile"><div class="n">3</div><h3>Shkëmbe & mat</h3><p class="mut">Faqja jote shfaq SaaS të tjera; ata shfaqin ty. Sheh shfaqjet, klikimet dhe konvertimet në kohë reale.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec dark" id="perfitimet">
+    <div class="container">
+      <p class="eyebrow">Përfitimet</p>
+      <h2>Trafik cilësor, pa buxhet reklamash</h2>
+      <div class="grid g4">
+        <div class="tile"><div class="n">↔</div><h3>Shkëmbim, jo shpenzim</h3><p class="mut">Merr ekspozim duke dhënë ekspozim. E monetizon trafikun që tashmë ke, pa nxjerrë para.</p></div>
+        <div class="tile"><div class="n">◎</div><h3>Audiencë e synuar</h3><p class="mut">Çiftim me SaaS plotësuese — audiencë e ngrohtë që kupton produktin tënd.</p></div>
+        <div class="tile"><div class="n">⚡</div><h3>Thjeshtësi totale</h3><p class="mut">Një snippet, pa panele të ndërlikuara. Vendose një herë dhe harroje.</p></div>
+        <div class="tile"><div class="n">📊</div><h3>Analitika reale</h3><p class="mut">Shfaqje, klikime dhe konvertime — që të dish saktë vlerën që merr nga rrjeti.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec light" id="cmimet">
+    <div class="container center">
+      <p class="eyebrow">Çmimet</p>
+      <h2>Fillo falas. Paguaj vetëm kur vlen.</h2>
+      <p class="lead mut">Tre muajt e parë me të gjitha funksionet, falas. Pastaj mban një plan falas, ose kalon te Pro.</p>
+      <div class="plans">
+        <div class="plan">
+          <div class="eyebrow" style="color:var(--light-mut)">Falas</div>
+          <div class="price">€0</div><div class="mut">Përgjithmonë</div>
+          <ul><li>Shkëmbim trafiku në rrjet</li><li>Një reklamë aktive</li><li>Analitika bazike</li><li>Një snippet</li></ul>
+          <button class="sbtn" onclick="startWizard()" style="width:100%;color:var(--light-txt);border-color:var(--light-line);">Fillo falas</button>
+        </div>
+        <div class="plan hi">
+          <span class="tag">3 muaj falas</span>
+          <div class="eyebrow" style="color:var(--acc-d)">Pro</div>
+          <div class="price">€5<span style="font-size:16px;font-weight:500;color:var(--light-mut)">/muaj</span></div>
+          <div class="mut">Pas provës 3-mujore</div>
+          <ul><li>Prioritet në shpërndarje</li><li>Reklama të pakufizuara</li><li>Analitika e plotë + konvertime</li><li>Çiftim i avancuar me AI</li></ul>
+          <button class="sbtn cta" onclick="startWizard()" style="width:100%;">Provo Pro falas</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec dark">
+    <div class="container">
+      <p class="eyebrow center">Pyetje të shpeshta</p>
+      <h2 class="center">Çka duhet të dish</h2>
+      <div class="faq">
+        <div class="qa"><h4>A më kushton gjë?</h4><p>Jo për të filluar. Shkëmbimi i trafikut është falas; paguan vetëm nëse zgjedh Pro — dhe tre muajt e parë Pro janë falas, pa kartë.</p></div>
+        <div class="qa"><h4>A do të shfaqen reklama të rastësishme te faqja ime?</h4><p>Jo. Rrjeti është vetëm SaaS, dhe çiftimi bëhet me biznese plotësuese (jo konkurrentë).</p></div>
+        <div class="qa"><h4>Sa hapësirë zë te faqja ime?</h4><p>Zero kur s'ka reklamë. Kur shfaqet një reklamë, hapësira merr madhësinë e saj dhe përshtatet me faqen.</p></div>
+        <div class="qa"><h4>A është për çdo lloj biznesi?</h4><p>Fokusi fillestar është SaaS-et, sepse kanë qasje te kodi dhe përfitojnë më shumë nga çiftimi plotësues.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec light">
+    <div class="container">
+      <div class="strip">
+        <h2 style="color:#fff;">Gati për të rritur ekspozimin?</h2>
+        <p class="mut" style="color:#cdd4dd;margin-bottom:24px;">Bashkohu me rrjetin dhe fillo të shkëmbesh trafik cilësor sot.</p>
+        <button class="sbtn cta lg" onclick="startWizard()">Provo falas</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site">
+    <div class="container">
+      <div class="fgrid">
+        <div class="fcol" style="max-width:260px;">
+          <div class="brand-s" style="margin-bottom:10px;">IMYR</div>
+          <p class="mut" style="font-size:14px;margin:0;">Rrjeti ku bizneset SaaS promovojnë njëri-tjetrin — pa buxhet reklamash.</p>
+        </div>
+        <div class="fcol"><h5>Produkti</h5><a href="#si-funksionon">Si funksionon</a><a href="#perfitimet">Përfitimet</a><a href="#cmimet">Çmimet</a></div>
+        <div class="fcol"><h5>Kompania</h5><a href="/about">Rreth nesh</a><a href="/contact">Kontakt</a></div>
+        <div class="fcol"><h5>Ligjore</h5><a href="/privacy">Privatësia</a><a href="/terms">Kushtet</a></div>
+      </div>
+      <div class="fbottom"><span>© 2026 Imyr. Të gjitha të drejtat e rezervuara.</span><span>Ndërtuar për themelues SaaS.</span></div>
+    </div>
+  </footer>
+</div>
+
+<!-- PAS HYRJES: home -->
+<div class="wrap view" id="v-home"><div id="homeBody"></div></div>
+
+<!-- WIZARD -->
+<div class="wrap wide view" id="v-wizard">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+    <button class="btn ghost" onclick="history.back()">← Mbrapa</button>
+    <div class="small" id="wizStepN"></div>
+    <button class="btn ghost" onclick="closeWizard()">Ruaj &amp; dil ✕</button>
+  </div>
+  <div class="hstep" id="hstep"></div>
+  <div id="wizBody"></div>
+</div>
+
+<!-- PROFILI / DASHBOARD -->
+<div class="view" id="v-profile">
+  <div class="appwrap">
+    <aside class="sidebar">
+      <div class="pcard"><div class="pname" id="p_emri"></div><div class="pmail" id="p_email"></div><div class="pcat" id="p_kat"></div></div>
+      <nav class="snav" id="snav"></nav>
+    </aside>
+    <main class="main" id="mainPanel"></main>
   </div>
 </div>
 
-<!-- HERO -->
-<section class="hero">
-  <div class="container">
-    <h1>Rrjeti ku SaaS-et <span class="g">shkëmbejnë trafik</span>.</h1>
-    <p class="lead">Promovo biznesin tënd te SaaS të tjera plotësuese — pa buxhet reklamash. Një rresht kod, dhe fillon të marrësh e të japësh ekspozim te audienca e duhur.</p>
-    <div class="actions">
-      <a class="btn cta lg" href="/app?provo">Provo falas</a>
-      <a class="btn lg" href="#si-funksionon">Si funksionon →</a>
+<!-- LOGIN MODAL -->
+<div class="backdrop hide" id="modal">
+  <div class="card modal">
+    <button class="x" onclick="mbyllModal()">✕</button>
+    <div class="tabs">
+      <div class="tab active" id="tabHyr" onclick="shfaq('hyr')">Hyr</div>
+      <div class="tab" id="tabReg" onclick="shfaq('reg')">Regjistrohu</div>
     </div>
-    <div class="trust">Pa kartë krediti · Konfigurim në minuta · Analitika reale</div>
+    <div id="formHyr">
+      <label>Email</label><input id="h_email" type="email" placeholder="email@biznesi.com">
+      <label>Fjalëkalimi</label><input id="h_pass" type="password" placeholder="••••••">
+      <button class="primary" id="btnHyr" onclick="hyr()">Hyr</button>
+    </div>
+    <div id="formReg" class="hide">
+      <label>Emri i biznesit</label><input id="r_emri" placeholder="Biznesi im">
+      <label>Email</label><input id="r_email" type="email" placeholder="email@biznesi.com">
+      <label>Fjalëkalimi (min 6)</label><input id="r_pass" type="password" placeholder="••••••">
+      <label>Faqja (website)</label><input id="r_web" placeholder="https://biznesi.com">
+      <button class="primary" id="btnReg" onclick="regjistrohu()">Krijo llogari</button>
+    </div>
+    <div class="msg" id="msg"></div>
   </div>
-</section>
+</div>
 
-<!-- SI FUNKSIONON (light) -->
-<section class="sec light" id="si-funksionon">
-  <div class="container center">
-    <p class="eyebrow">Si funksionon</p>
-    <h2>Tri hapa, dhe je pjesë e rrjetit</h2>
-    <p class="lead mut">Pa fushata të ndërlikuara, pa buxhet. Vetëm shkëmbim i drejtë ekspozimi mes SaaS-esh.</p>
-    <div class="grid g3">
-      <div class="tile"><div class="n">1</div><h3>Regjistrohu & përshkruaj</h3><p class="mut">Krijon llogarinë dhe përshkruan çfarë ofron. Imyr e kupton biznesin tënd dhe gjen SaaS plotësuese (jo konkurrentë).</p></div>
-      <div class="tile"><div class="n">2</div><h3>Vendos një rresht kod</h3><p class="mut">Kopjon një snippet dhe e vendos te faqja jote. Zë zero hapësirë kur s'ka reklamë, dhe përshtatet vetë.</p></div>
-      <div class="tile"><div class="n">3</div><h3>Shkëmbe & mat</h3><p class="mut">Faqja jote shfaq SaaS të tjera; ata shfaqin ty. Ti sheh shfaqjet, klikimet dhe konvertimet në kohë reale.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- PERFITIMET (dark) -->
-<section class="sec dark" id="perfitimet">
-  <div class="container">
-    <p class="eyebrow">Përfitimet</p>
-    <h2>Trafik cilësor, pa buxhet reklamash</h2>
-    <div class="grid g4">
-      <div class="tile"><div class="n">↔</div><h3>Shkëmbim, jo shpenzim</h3><p class="mut">Merr ekspozim duke dhënë ekspozim. E monetizon trafikun që tashmë ke, pa nxjerrë para.</p></div>
-      <div class="tile"><div class="n">◎</div><h3>Audiencë e synuar</h3><p class="mut">Çiftim me SaaS plotësuese — audiencë e ngrohtë që kupton produktin tënd, jo trafik i rastësishëm.</p></div>
-      <div class="tile"><div class="n">⚡</div><h3>Thjeshtësi totale</h3><p class="mut">Një snippet, pa panele të ndërlikuara. Vendose një herë dhe harroje.</p></div>
-      <div class="tile"><div class="n">📊</div><h3>Analitika reale</h3><p class="mut">Shfaqje, klikime dhe konvertime — që të dish saktë vlerën që merr nga rrjeti.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- CMIMET (light) -->
-<section class="sec light" id="cmimet">
-  <div class="container center">
-    <p class="eyebrow">Çmimet</p>
-    <h2>Fillo falas. Paguaj vetëm kur vlen.</h2>
-    <p class="lead mut">Tre muajt e parë me të gjitha funksionet, falas. Pastaj mban një plan falas, ose kalon te Pro për prioritet e më shumë.</p>
-    <div class="plans">
-      <div class="plan">
-        <div class="eyebrow" style="color:var(--light-mut)">Falas</div>
-        <div class="price">€0</div>
-        <div class="mut">Përgjithmonë</div>
-        <ul>
-          <li>Shkëmbim trafiku në rrjet</li>
-          <li>Një reklamë aktive</li>
-          <li>Analitika bazike</li>
-          <li>Një snippet</li>
-        </ul>
-        <a class="btn" href="/app?provo" style="width:100%;text-align:center;color:var(--light-txt);border-color:var(--light-line);">Fillo falas</a>
-      </div>
-      <div class="plan hi">
-        <span class="tag">3 muaj falas</span>
-        <div class="eyebrow" style="color:var(--acc-d)">Pro</div>
-        <div class="price">€5<span style="font-size:16px;font-weight:500;color:var(--light-mut)">/muaj</span></div>
-        <div class="mut">Pas provës 3-mujore</div>
-        <ul>
-          <li>Prioritet në shpërndarje</li>
-          <li>Reklama të pakufizuara</li>
-          <li>Analitika e plotë + konvertime</li>
-          <li>Çiftim i avancuar me AI</li>
-        </ul>
-        <a class="btn cta" href="/app?provo" style="width:100%;text-align:center;">Provo Pro falas</a>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- FAQ (dark) -->
-<section class="sec dark">
-  <div class="container">
-    <p class="eyebrow center">Pyetje të shpeshta</p>
-    <h2 class="center">Çka duhet të dish</h2>
-    <div class="faq">
-      <div class="qa"><h4>A më kushton gjë?</h4><p>Jo për të filluar. Shkëmbimi i trafikut është falas; paguan vetëm nëse zgjedh Pro për prioritet dhe funksione shtesë — dhe tre muajt e parë Pro janë falas, pa kartë.</p></div>
-      <div class="qa"><h4>A do të shfaqen reklama të rastësishme te faqja ime?</h4><p>Jo. Rrjeti është vetëm SaaS, dhe çiftimi bëhet me biznese plotësuese (jo konkurrentë), që reklamat të jenë të përshtatshme për audiencën tënde.</p></div>
-      <div class="qa"><h4>Sa hapësirë zë te faqja ime?</h4><p>Zero kur s'ka reklamë. Kur shfaqet një reklamë, hapësira merr madhësinë e saj dhe përshtatet me faqen, pa e prishur dizajnin.</p></div>
-      <div class="qa"><h4>A është për çdo lloj biznesi?</h4><p>Fokusi fillestar është SaaS-et, sepse kanë qasje te kodi për të vendosur snippet-in dhe përfitojnë më shumë nga çiftimi plotësues.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- CTA STRIP (light) -->
-<section class="sec light">
-  <div class="container">
-    <div class="strip">
-      <h2 style="color:#fff;">Gati për të rritur ekspozimin?</h2>
-      <p class="mut" style="color:#cdd4dd;margin-bottom:24px;">Bashkohu me rrjetin dhe fillo të shkëmbesh trafik cilësor sot.</p>
-      <a class="btn cta lg" href="/app?provo">Provo falas</a>
-    </div>
-  </div>
-</section>
-
-<!-- FOOTER -->
-<footer>
-  <div class="container">
-    <div class="fgrid">
-      <div class="fcol" style="max-width:260px;">
-        <div class="brand" style="margin-bottom:10px;">IMYR</div>
-        <p class="mut" style="font-size:14px;margin:0;">Rrjeti ku bizneset SaaS promovojnë njëri-tjetrin — pa buxhet reklamash.</p>
-      </div>
-      <div class="fcol"><h5>Produkti</h5><a href="#si-funksionon">Si funksionon</a><a href="#perfitimet">Përfitimet</a><a href="#cmimet">Çmimet</a><a href="/app?provo">Provo falas</a></div>
-      <div class="fcol"><h5>Kompania</h5><a href="/about">Rreth nesh</a><a href="/contact">Kontakt</a></div>
-      <div class="fcol"><h5>Ligjore</h5><a href="/privacy">Privatësia</a><a href="/terms">Kushtet</a></div>
-    </div>
-    <div class="fbottom">
-      <span>© 2026 Imyr. Të gjitha të drejtat e rezervuara.</span>
-      <span>Ndërtuar për themelues SaaS.</span>
-    </div>
-  </div>
-</footer>
-
+<script src="/js/core.js"></script>
+<script src="/js/connect.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/app.js"></script>
+<script>boot();</script>
 </body>
 </html>
