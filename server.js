@@ -100,6 +100,9 @@ async function initDB() {
       origjina TEXT
     );
   `);
+  // Atribuimi: cila reklame u shfaq dhe e kujt eshte (reklamuesi)
+  await pool.query(`ALTER TABLE ngjarjet ADD COLUMN IF NOT EXISTS reklama_id INT`);
+  await pool.query(`ALTER TABLE ngjarjet ADD COLUMN IF NOT EXISTS reklamues_id INT`);
 
   console.log('DB gati.');
 }
@@ -467,6 +470,7 @@ app.get('/imyr.js', (req, res) => {
       .then(function(r){ return r.json(); })
       .then(function(d){
         if(d && (d.imazh_url || d.teksti)){
+          var rid = d.id ? ('&rid=' + encodeURIComponent(d.id)) : '';
           var inner;
           if(d.imazh_url){
             inner = '<img src="' + d.imazh_url + '" style="display:block;max-width:100%;height:auto;border-radius:10px;cursor:pointer;">';
@@ -476,11 +480,11 @@ app.get('/imyr.js', (req, res) => {
               + 'font:14px/1.5 system-ui,sans-serif;cursor:pointer;">' + esc(d.teksti) + '</div>';
           }
           slot.innerHTML = inner;
-          if(!preview){ try { var v = base + '/track?key=' + encodeURIComponent(key) + '&event=view';
+          if(!preview){ try { var v = base + '/track?key=' + encodeURIComponent(key) + '&event=view' + rid;
             navigator.sendBeacon ? navigator.sendBeacon(v) : fetch(v); } catch(e){} }
           slot.addEventListener('click', function(){
             if(preview) return;
-            try { fetch(base + '/track?key=' + encodeURIComponent(key) + '&event=click'); } catch(e){}
+            try { fetch(base + '/track?key=' + encodeURIComponent(key) + '&event=click' + rid); } catch(e){}
           });
         }
       })
@@ -579,12 +583,18 @@ app.all('/track', async (req, res) => {
   if (req.query.preview === '1') return res.status(204).end(); // injoro preview-in
   const key = req.query.key;
   const lloji = req.query.event === 'click' ? 'click' : 'view';
+  const rid = parseInt(req.query.rid, 10) || null;
   try {
     const b = await pool.query('SELECT id FROM bizneset WHERE celes=$1', [key]);
     if (b.rows.length) {
+      let reklamuesId = null;
+      if (rid) {
+        const pr = await pool.query('SELECT biznes_id FROM promovimet WHERE id=$1', [rid]);
+        if (pr.rows.length) reklamuesId = pr.rows[0].biznes_id;
+      }
       await pool.query(
-        'INSERT INTO ngjarjet (biznes_id, lloji, origjina) VALUES ($1,$2,$3)',
-        [b.rows[0].id, lloji, req.headers.origin || req.headers.referer || null]
+        'INSERT INTO ngjarjet (biznes_id, lloji, origjina, reklama_id, reklamues_id) VALUES ($1,$2,$3,$4,$5)',
+        [b.rows[0].id, lloji, req.headers.origin || req.headers.referer || null, rid, reklamuesId]
       );
     }
   } catch (e) {}
