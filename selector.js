@@ -1,19 +1,15 @@
 // selector.js — LOGJIKA E SHPERNDARJES SE REKLAMAVE
-// Ketu vendoset e gjithe logjika: cila reklame shfaqet te nje host i caktuar.
 // Ndryshohet VETEM ky skedar; server.js thjesht e therret.
 
-// bizId = biznesi qe ka snippet-in (hosti, ku do shfaqet reklama).
-// Kthen tekstin e reklames qe do shfaqet, ose null nese s'ka.
-//
-// PLACEHOLDER v1 (pershkohet kur te percaktohet logjika reale):
-//   - nje reklame nga nje biznes TJETER (jo vet hosti), zgjedhur rastesisht.
-//   - me vone: perputhje AI (kategori plotesuese) + performance + oferte + weighted random.
+// bizId = biznesi qe ka snippet-in (hosti). Kthen reklamen qe do shfaqet, ose null.
+// PLACEHOLDER v1: nje reklame nga nje biznes TJETER (tekst OSE imazh), rastesisht.
 async function zgjidhReklame(pool, bizId) {
   const p = await pool.query(
-    `SELECT teksti FROM promovimet
-     WHERE biznes_id <> $1 AND aktiv = true AND teksti IS NOT NULL
+    `SELECT teksti, imazh_url, link FROM promovimet
+     WHERE biznes_id <> $1 AND aktiv = true
+       AND (teksti IS NOT NULL OR imazh_url IS NOT NULL)
      ORDER BY random() LIMIT 1`, [bizId]);
-  return p.rows.length ? p.rows[0].teksti : null;
+  return p.rows.length ? p.rows[0] : null;
 }
 
 module.exports = { zgjidhReklame };
