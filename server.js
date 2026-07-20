@@ -12,6 +12,7 @@ const path = require('path');
 const https = require('https');
 const http = require('http');
 const selector = require('./selector');
+const analytics = require('./analytics');
 const multer = require('multer');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 
@@ -718,20 +719,8 @@ app.get('/api/admin/biznes/:id', iAdmin, async (req, res) => {
               plani, celes, created_at, snippet_active, origjina, kandidat_url, first_seen_at, last_seen_at
        FROM bizneset WHERE id=$1`, [id]);
     if(!b.rows.length) return res.status(404).json({ error: 'Nuk u gjet.' });
-    const ads    = await pool.query('SELECT COUNT(*)::int n FROM promovimet WHERE biznes_id=$1 AND aktiv=true', [id]);
-    const views  = await pool.query("SELECT COUNT(*)::int n FROM ngjarjet WHERE biznes_id=$1 AND lloji='view'", [id]);
-    const clicks = await pool.query("SELECT COUNT(*)::int n FROM ngjarjet WHERE biznes_id=$1 AND lloji='click'", [id]);
-    const vende  = await pool.query('SELECT COUNT(DISTINCT origjina)::int n FROM ngjarjet WHERE biznes_id=$1 AND origjina IS NOT NULL', [id]);
-    res.json({
-      biznes: b.rows[0],
-      statistika: {
-        reklama_krijuara: ads.rows[0].n,
-        shfaqje_ne_webin_e_tij: views.rows[0].n,
-        klikime_ne_webin_e_tij: clicks.rows[0].n,
-        snippet_vende: vende.rows[0].n,
-        shfaqje_te_reklamave_te_tij: 0   // mbushet kur të ndërtohet algoritmi i shpërndarjes
-      }
-    });
+    const statistika = await analytics.statistikaBiznesi(pool, id);
+    res.json({ biznes: b.rows[0], statistika });
   } catch(e){ res.status(500).json({ error: e.message }); }
 });
 
