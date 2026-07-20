@@ -465,10 +465,16 @@ app.get('/imyr.js', (req, res) => {
     fetch(base + '/ad?key=' + encodeURIComponent(key) + (preview?'&preview=1':''))
       .then(function(r){ return r.json(); })
       .then(function(d){
-        if(d && d.teksti){
-          slot.innerHTML = '<div style="display:inline-block;max-width:100%;box-sizing:border-box;'
-            + 'border:1px solid #e2c68a;background:#fbf6ea;color:#5a4a24;padding:12px 14px;border-radius:10px;'
-            + 'font:14px/1.5 system-ui,sans-serif;cursor:pointer;">' + esc(d.teksti) + '</div>';
+        if(d && (d.imazh_url || d.teksti)){
+          var inner;
+          if(d.imazh_url){
+            inner = '<img src="' + d.imazh_url + '" style="display:block;max-width:100%;height:auto;border-radius:10px;cursor:pointer;">';
+          } else {
+            inner = '<div style="display:inline-block;max-width:100%;box-sizing:border-box;'
+              + 'border:1px solid #e2c68a;background:#fbf6ea;color:#5a4a24;padding:12px 14px;border-radius:10px;'
+              + 'font:14px/1.5 system-ui,sans-serif;cursor:pointer;">' + esc(d.teksti) + '</div>';
+          }
+          slot.innerHTML = inner;
           if(!preview){ try { var v = base + '/track?key=' + encodeURIComponent(key) + '&event=view';
             navigator.sendBeacon ? navigator.sendBeacon(v) : fetch(v); } catch(e){} }
           slot.addEventListener('click', function(){
@@ -559,8 +565,8 @@ app.get('/ad', async (req, res) => {
     }
 
     // Shperndarja: logjika ndodhet te selector.js (ndryshohet vetem aty).
-    const teksti = await selector.zgjidhReklame(pool, bizId);
-    res.json({ teksti });
+    const rek = await selector.zgjidhReklame(pool, bizId);
+    res.json(rek || {});
   } catch (e) {
     res.json({ teksti: null });
   }
