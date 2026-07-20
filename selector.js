@@ -3,9 +3,10 @@
 
 // bizId = biznesi qe ka snippet-in (hosti). Kthen reklamen qe do shfaqet, ose null.
 // PLACEHOLDER v1: nje reklame nga nje biznes TJETER (tekst OSE imazh), rastesisht.
+// Kthen edhe id-ne (per atribuim) dhe biznes_id (reklamuesin).
 async function zgjidhReklame(pool, bizId) {
   const p = await pool.query(
-    `SELECT teksti, imazh_url, link FROM promovimet
+    `SELECT id, biznes_id, teksti, imazh_url, link FROM promovimet
      WHERE biznes_id <> $1 AND aktiv = true
        AND (teksti IS NOT NULL OR imazh_url IS NOT NULL)
      ORDER BY random() LIMIT 1`, [bizId]);
