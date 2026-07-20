@@ -58,9 +58,4 @@ window.onpopstate = e => applyState(e.state);
 async function boot(){
   await loadMe();
   applyState(history.state, true);
-  if(!une){
-    const q = location.search || '';
-    if(q.indexOf('login') >= 0) hapModal('hyr');
-    else if(q.indexOf('provo') >= 0 || q.indexOf('wizard') >= 0) startWizard();
-  }
 }
