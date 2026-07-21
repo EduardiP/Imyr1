@@ -165,6 +165,12 @@
       <label>Email</label><input id="r_email" type="email" placeholder="email@biznesi.com">
       <label>Fjalëkalimi (min 6)</label><input id="r_pass" type="password" placeholder="••••••">
       <label>Faqja (website)</label><input id="r_web" placeholder="https://biznesi.com">
+      <label>Kujt i shërben platforma jote?</label>
+      <div class="seg" id="r_tipi">
+        <button type="button" data-v="b2b" onclick="segPick(this)">Bizneseve</button>
+        <button type="button" data-v="b2c" onclick="segPick(this)">Individëve</button>
+        <button type="button" data-v="b2b2c" onclick="segPick(this)">Të dyjave</button>
+      </div>
       <button class="primary" id="btnReg" onclick="regjistrohu()">Krijo llogari</button>
     </div>
     <div class="msg" id="msg"></div>
