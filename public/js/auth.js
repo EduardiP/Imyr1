@@ -25,7 +25,9 @@ async function hyr(){
 async function regjistrohu(){
   $('btnReg').disabled=true;
   try{
-    const body={emri:$('r_emri').value.trim(),email:$('r_email').value.trim(),fjalekalimi:$('r_pass').value,website:$('r_web').value.trim()};
+    const tipi=segVal('r_tipi');
+    if(!tipi){ msg('Zgjidh kujt i shërben platforma.'); $('btnReg').disabled=false; return; }
+    const body={emri:$('r_emri').value.trim(),email:$('r_email').value.trim(),fjalekalimi:$('r_pass').value,website:$('r_web').value.trim(),tipi};
     const r=await(await fetch('/api/regjistrohu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
     if(r.error){ msg(r.error); $('btnReg').disabled=false; return; }
     mbyllModal(); await loadMe(); nav({v:'profile'});
