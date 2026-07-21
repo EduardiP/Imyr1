@@ -89,6 +89,7 @@ async function initDB() {
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS kategoria_kryesore TEXT`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS nenkategorite TEXT`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS permbledhje TEXT`);
+  await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS tipi TEXT`);
 
   // Ngjarjet (shfaqje/klikime) — per gjurmimin
   await pool.query(`
@@ -136,6 +137,7 @@ async function iLoguar(req, res, next) {
 // --- REGJISTRIM ---
 app.post('/api/regjistrohu', async (req, res) => {
   const { emri, email, fjalekalimi, kategoria, website } = req.body;
+  const tipi = ['b2b','b2c','b2b2c'].includes(req.body.tipi) ? req.body.tipi : null;
   if (!emri || !email || !fjalekalimi) {
     return res.status(400).json({ error: 'Emri, email dhe fjalekalimi jane te detyrueshem.' });
   }
@@ -146,9 +148,9 @@ app.post('/api/regjistrohu', async (req, res) => {
     const hash = await bcrypt.hash(fjalekalimi, 10);
     const celes = beCeles();
     const r = await pool.query(
-      `INSERT INTO bizneset (emri, email, fjalekalimi, kategoria, website, celes)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
-      [emri, email.toLowerCase().trim(), hash, kategoria || null, website || null, celes]
+      `INSERT INTO bizneset (emri, email, fjalekalimi, kategoria, website, celes, tipi)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
+      [emri, email.toLowerCase().trim(), hash, kategoria || null, website || null, celes, tipi]
     );
     // krijo seance (login automatik pas regjistrimit)
     const token = crypto.randomBytes(24).toString('hex');
