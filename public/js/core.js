@@ -14,6 +14,14 @@ const NAV = [
 ];
 
 function esc(t){ const d=document.createElement('div'); d.textContent=(t==null?'':t); return d.innerHTML; }
+function segPick(btn){ const box=btn.parentNode; box.querySelectorAll('button').forEach(b=>b.classList.remove('sel')); btn.classList.add('sel'); }
+function segVal(id){ const s=document.querySelector('#'+id+' button.sel'); return s ? s.getAttribute('data-v') : null; }
+function segHTML(id){ return '<label>Kujt i shërben platforma jote?</label>'+
+  '<div class="seg" id="'+id+'">'+
+    '<button type="button" data-v="b2b" onclick="segPick(this)">Bizneseve</button>'+
+    '<button type="button" data-v="b2c" onclick="segPick(this)">Individëve</button>'+
+    '<button type="button" data-v="b2b2c" onclick="segPick(this)">Të dyjave</button>'+
+  '</div>'; }
 function showView(v){ ['hero','home','wizard','profile'].forEach(x=>$('v-'+x).classList.toggle('on', x===v)); }
 
 async function refreshProg(){
