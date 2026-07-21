@@ -16,7 +16,7 @@ const NAV = [
 function esc(t){ const d=document.createElement('div'); d.textContent=(t==null?'':t); return d.innerHTML; }
 function segPick(btn){ const box=btn.parentNode; box.querySelectorAll('button').forEach(b=>b.classList.remove('sel')); btn.classList.add('sel'); }
 function segVal(id){ const s=document.querySelector('#'+id+' button.sel'); return s ? s.getAttribute('data-v') : null; }
-function segHTML(id){ return '<label>Kujt i shërben platforma jote?</label>'+
+function segHTML(id){ return '<label>Kujt nga vizitorët e faqes tënde u shërben platforma?</label>'+
   '<div class="seg" id="'+id+'">'+
     '<button type="button" data-v="b2b" onclick="segPick(this)">Bizneseve</button>'+
     '<button type="button" data-v="b2c" onclick="segPick(this)">Individëve</button>'+
