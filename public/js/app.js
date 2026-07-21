@@ -204,16 +204,19 @@ function stepLlogaria(b){
     '<label>Email</label><input id="a_email" type="email" placeholder="email@biznesi.com">'+
     '<label>Fjalëkalimi (min 6)</label><input id="a_pass" type="password" placeholder="••••••">'+
     '<label>Faqja / linku i SaaS-it</label><input id="a_web" placeholder="https://saasi-im.com">'+
+    segHTML('a_tipi')+
     '<button class="primary" id="a_btn" onclick="wizKrijo()">Vazhdo →</button><div class="msg" id="a_msg"></div>';
 }
 async function wizKrijo(){
   const emri=$('a_emri').value.trim(),email=$('a_email').value.trim(),pass=$('a_pass').value,web=$('a_web').value.trim();
+  const tipi=segVal('a_tipi');
   if(!emri||!email||!pass){ $('a_msg').className='msg err'; $('a_msg').textContent='Plotëso emrin, email-in dhe fjalëkalimin.'; return; }
   if(pass.length<6){ $('a_msg').className='msg err'; $('a_msg').textContent='Fjalëkalimi min 6 shkronja.'; return; }
+  if(!tipi){ $('a_msg').className='msg err'; $('a_msg').textContent='Zgjidh kujt i shërben platforma.'; return; }
   $('a_btn').disabled=true;
   try{
     const r=await(await fetch('/api/regjistrohu',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({emri,email,fjalekalimi:pass,website:web})})).json();
+      body:JSON.stringify({emri,email,fjalekalimi:pass,website:web,tipi})})).json();
     if(r.error){ $('a_msg').className='msg err'; $('a_msg').textContent=r.error; $('a_btn').disabled=false; return; }
     await loadMe();
     await advance();
