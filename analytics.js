@@ -10,13 +10,15 @@ async function statistikaBiznesi(pool, bizId) {
   // Si REKLAMUES (reklamat e tij te shfaqura/klikuara te te tjeret):
   const adViews  = await pool.query("SELECT COUNT(*)::int n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='view'", [bizId]);
   const adClicks = await pool.query("SELECT COUNT(*)::int n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='click'", [bizId]);
+  const adKonv   = await pool.query("SELECT COUNT(*)::int n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='konvertim'", [bizId]);
   return {
     reklama_krijuara: ads.rows[0].n,
     shfaqje_ne_webin_e_tij: views.rows[0].n,
     klikime_ne_webin_e_tij: clicks.rows[0].n,
     snippet_vende: vende.rows[0].n,
     shfaqje_te_reklamave_te_tij: adViews.rows[0].n,
-    klikime_te_reklamave_te_tij: adClicks.rows[0].n
+    klikime_te_reklamave_te_tij: adClicks.rows[0].n,
+    konvertime_te_reklamave_te_tij: adKonv.rows[0].n
   };
 }
 
