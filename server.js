@@ -90,6 +90,7 @@ async function initDB() {
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS nenkategorite TEXT`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS permbledhje TEXT`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS tipi TEXT`);
+  await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS url_konvertimi TEXT`);
 
   // Ngjarjet (shfaqje/klikime) — per gjurmimin
   await pool.query(`
@@ -104,6 +105,9 @@ async function initDB() {
   // Atribuimi: cila reklame u shfaq dhe e kujt eshte (reklamuesi)
   await pool.query(`ALTER TABLE ngjarjet ADD COLUMN IF NOT EXISTS reklama_id INT`);
   await pool.query(`ALTER TABLE ngjarjet ADD COLUMN IF NOT EXISTS reklamues_id INT`);
+  // Gjurmimi i konvertimit: kodi qe lidh klikimin me konvertimin
+  await pool.query(`ALTER TABLE ngjarjet ADD COLUMN IF NOT EXISTS klik_kod TEXT`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_ngjarjet_klik_kod ON ngjarjet (klik_kod)`);
 
   console.log('DB gati.');
 }
@@ -193,7 +197,7 @@ app.post('/api/dil', async (req, res) => {
 app.get('/api/une', iLoguar, async (req, res) => {
   try {
     const r = await pool.query(
-      `SELECT id, emri, email, kategoria, plani, website, celes,
+      `SELECT id, emri, email, kategoria, plani, website, celes, tipi, url_konvertimi,
               kategoria_kryesore, nenkategorite, permbledhje, pershkrimi
        FROM bizneset WHERE id=$1`, [req.biznesId]);
     res.json(r.rows[0]);
@@ -204,16 +208,89 @@ app.get('/api/une', iLoguar, async (req, res) => {
 app.get('/api/progres', iLoguar, async (req, res) => {
   try {
     const b = await pool.query(
-      'SELECT permbledhje, pershkrimi, snippet_active FROM bizneset WHERE id=$1', [req.biznesId]);
+      'SELECT permbledhje, pershkrimi, snippet_active, url_konvertimi FROM bizneset WHERE id=$1', [req.biznesId]);
     const p = await pool.query('SELECT 1 FROM promovimet WHERE biznes_id=$1 AND aktiv=true LIMIT 1', [req.biznesId]);
     const row = b.rows[0] || {};
     res.json({
       llogaria: true,                                   // i loguar => llogaria gati
       pershkrimi: !!(row.permbledhje || row.pershkrimi),// pershkrimi/AI u dha
       lidhja: !!row.snippet_active,                     // snippet-i u lidh
+      konvertimi: !!row.url_konvertimi,                 // url-ja e konvertimit u dha
       reklama: p.rows.length > 0                         // reklama u krijua
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- RUAJ URL-EN E KONVERTIMIT (faqja qe shfaqet VETEM pas konvertimit) ---
+app.post('/api/url-konvertimi', iLoguar, async (req, res) => {
+  let u = (req.body.url || '').trim();
+  if (!u) {
+    await pool.query('UPDATE bizneset SET url_konvertimi=NULL WHERE id=$1', [req.biznesId]);
+    return res.json({ ok: true, url: null });
+  }
+  try { if (/^https?:\/\//i.test(u)) { const p = new URL(u); u = p.pathname + p.search; } } catch (e) {}
+  if (u[0] !== '/') u = '/' + u;
+  if (u === '/') {
+    return res.status(400).json({ error: "Ballina s'mund të jetë faqe konvertimi — çdo vizitor do të numërohej. Jep një adresë që hapet vetëm pas regjistrimit." });
+  }
+  try {
+    await pool.query('UPDATE bizneset SET url_konvertimi=$2 WHERE id=$1', [req.biznesId, u]);
+    res.json({ ok: true, url: u });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- KLIKIMI: sheno klikimin me nje kod, pastaj ridrejto te reklamuesi ---
+app.get('/klik', async (req, res) => {
+  const key = req.query.key;
+  const rid = parseInt(req.query.rid, 10) || null;
+  let dest = null;
+  try {
+    const h = await pool.query('SELECT id FROM bizneset WHERE celes=$1', [key]);
+    if (h.rows.length && rid) {
+      const p = await pool.query(
+        `SELECT p.id, p.biznes_id, COALESCE(p.link, b.website) AS dest
+         FROM promovimet p JOIN bizneset b ON b.id = p.biznes_id
+         WHERE p.id=$1 AND p.aktiv=true`, [rid]);
+      if (p.rows.length) {
+        const kod = crypto.randomBytes(9).toString('hex');
+        await pool.query(
+          `INSERT INTO ngjarjet (biznes_id, lloji, origjina, reklama_id, reklamues_id, klik_kod)
+           VALUES ($1,'click',$2,$3,$4,$5)`,
+          [h.rows[0].id, req.headers.referer || null, p.rows[0].id, p.rows[0].biznes_id, kod]);
+        dest = p.rows[0].dest;
+        if (dest) {
+          if (!/^https?:\/\//i.test(dest)) dest = 'https://' + dest;
+          dest += (dest.indexOf('?') === -1 ? '?' : '&') + 'imyr=' + kod;
+        }
+      }
+    }
+  } catch (e) {}
+  res.redirect(302, dest || '/');
+});
+
+// --- KONVERTIMI: numerohet vetem nese ekziston nje klikim i vlefshem ---
+app.all('/konvertim', async (req, res) => {
+  cors(res);
+  const kod = req.query.kod || (req.body && req.body.kod);
+  if (!kod) return res.status(204).end();
+  try {
+    const k = await pool.query(
+      `SELECT reklama_id, reklamues_id, created_at FROM ngjarjet
+       WHERE klik_kod=$1 AND lloji='click' LIMIT 1`, [kod]);
+    if (!k.rows.length) return res.status(204).end();           // kod i panjohur
+    const kl = k.rows[0];
+    const DITE = 30 * 24 * 3600 * 1000;
+    if (Date.now() - new Date(kl.created_at).getTime() > DITE) return res.status(204).end();
+    const ekz = await pool.query(
+      `SELECT 1 FROM ngjarjet WHERE klik_kod=$1 AND lloji='konvertim' LIMIT 1`, [kod]);
+    if (ekz.rows.length) return res.status(204).end();          // nje konvertim per klikim
+    await pool.query(
+      `INSERT INTO ngjarjet (biznes_id, lloji, origjina, reklama_id, reklamues_id, klik_kod)
+       VALUES ($1,'konvertim',$2,$3,$4,$5)`,
+      [kl.reklamues_id, req.headers.origin || req.headers.referer || null,
+       kl.reklama_id, kl.reklamues_id, kod]);
+  } catch (e) {}
+  res.status(204).end();
 });
 
 // --- RUAJ PERMBLEDHJEN (klienti editon vetem permbledhjen; kategoria mbetet nga AI) ---
@@ -269,12 +346,22 @@ app.get('/api/reklamat', iLoguar, async (req, res) => {
     const r = await pool.query(
       'SELECT id, titulli, teksti, imazh_url, created_at FROM promovimet WHERE biznes_id=$1 AND aktiv=true ORDER BY id DESC',
       [req.biznesId]);
+    const st = await pool.query(
+      `SELECT reklama_id,
+              COUNT(*) FILTER (WHERE lloji='view')::int      AS shikime,
+              COUNT(*) FILTER (WHERE lloji='click')::int     AS klikime,
+              COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
+       FROM ngjarjet WHERE reklamues_id=$1 AND reklama_id IS NOT NULL
+       GROUP BY reklama_id`, [req.biznesId]);
+    const m = {};
+    st.rows.forEach(x => { m[x.reklama_id] = x; });
     const rows = r.rows.map(x => ({
       id: x.id,
       emri: x.titulli || (x.teksti ? x.teksti.slice(0, 40) : 'Reklamë'),
       imazh_url: x.imazh_url || null,
-      // Statistikat reale mbushen kur te ndertohet serving + attribution + konvertimet
-      shikime: 0, klikime: 0, konvertime: 0
+      shikime:    (m[x.id] && m[x.id].shikime)    || 0,
+      klikime:    (m[x.id] && m[x.id].klikime)    || 0,
+      konvertime: (m[x.id] && m[x.id].konvertime) || 0
     }));
     res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -458,6 +545,56 @@ app.get('/imyr.js', (req, res) => {
       navigator.sendBeacon ? navigator.sendBeacon(u) : fetch(u,{mode:'no-cors'}); } catch(e){}
   }
   function esc(t){ var d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+
+  // --- Kodi i klikimit: ruajtje/leximi (cookie i pales se pare + localStorage) ---
+  function ruajKod(kod){
+    try { localStorage.setItem('imyr_klik', kod); } catch(e){}
+    try {
+      var pjeset = location.hostname.split('.');
+      var rrenja = pjeset.length > 1 ? '.' + pjeset.slice(-2).join('.') : location.hostname;
+      document.cookie = 'imyr_klik=' + kod + ';path=/;max-age=2592000;SameSite=Lax';
+      document.cookie = 'imyr_klik=' + kod + ';path=/;max-age=2592000;domain=' + rrenja + ';SameSite=Lax';
+    } catch(e){}
+  }
+  function lexoKod(){
+    try { var v = localStorage.getItem('imyr_klik'); if(v) return v; } catch(e){}
+    var m = document.cookie.match(/(?:^|;\\s*)imyr_klik=([^;]+)/);
+    return m ? m[1] : null;
+  }
+  // Vizitori mberriti nga nje reklame? Ruaje kodin.
+  try {
+    var qp = new URLSearchParams(location.search).get('imyr');
+    if(qp) ruajKod(qp);
+  } catch(e){}
+
+  // --- Konvertimi: kjo faqe eshte faqja e suksesit? ---
+  function kontrolloKonvertim(konvUrl){
+    if(!konvUrl || preview) return;
+    var tani = location.pathname + location.search;
+    var pos = tani.indexOf(konvUrl);
+    if(pos === -1) return;
+    var pas = tani.charAt(pos + konvUrl.length);
+    if(pas !== '' && pas !== '?' && pas !== '#' && pas !== '/' && pas !== '&') return;
+    var kod = lexoKod(); if(!kod) return;              // s'erdhi nga Imyr => s'numerohet
+    try { if(localStorage.getItem('imyr_konv_' + kod)) return; } catch(e){}
+    try {
+      var u = base + '/konvertim?kod=' + encodeURIComponent(kod);
+      navigator.sendBeacon ? navigator.sendBeacon(u) : fetch(u, {mode:'no-cors'});
+      localStorage.setItem('imyr_konv_' + kod, '1');
+    } catch(e){}
+  }
+  // Metoda me kod, per ata qe s'kane faqe suksesi te vecante
+  window.imyr = window.imyr || {};
+  window.imyr.konvertim = function(){
+    var kod = lexoKod(); if(!kod) return;
+    try { if(localStorage.getItem('imyr_konv_' + kod)) return; } catch(e){}
+    try {
+      var u = base + '/konvertim?kod=' + encodeURIComponent(kod);
+      navigator.sendBeacon ? navigator.sendBeacon(u) : fetch(u, {mode:'no-cors'});
+      localStorage.setItem('imyr_konv_' + kod, '1');
+    } catch(e){}
+  };
+
   function slotEl(){
     var el = document.getElementById('imyr-slot');
     if(!el){ el = document.createElement('div'); el.id='imyr-slot';
@@ -471,23 +608,26 @@ app.get('/imyr.js', (req, res) => {
     fetch(base + '/ad?key=' + encodeURIComponent(key) + (preview?'&preview=1':''))
       .then(function(r){ return r.json(); })
       .then(function(d){
-        if(d && (d.imazh_url || d.teksti)){
+        if(!d) return;
+        kontrolloKonvertim(d.konv_url);
+        if(d.imazh_url || d.teksti){
           var rid = d.id ? ('&rid=' + encodeURIComponent(d.id)) : '';
           var inner;
           if(d.imazh_url){
-            inner = '<img src="' + d.imazh_url + '" style="display:block;max-width:100%;height:auto;border-radius:10px;cursor:pointer;">';
+            inner = '<img src="' + d.imazh_url + '" style="display:block;max-width:100%;height:auto;border-radius:10px;">';
           } else {
             inner = '<div style="display:inline-block;max-width:100%;box-sizing:border-box;'
               + 'border:1px solid #e2c68a;background:#fbf6ea;color:#5a4a24;padding:12px 14px;border-radius:10px;'
-              + 'font:14px/1.5 system-ui,sans-serif;cursor:pointer;">' + esc(d.teksti) + '</div>';
+              + 'font:14px/1.5 system-ui,sans-serif;">' + esc(d.teksti) + '</div>';
+          }
+          if(!preview){
+            var href = base + '/klik?key=' + encodeURIComponent(key) + rid;
+            inner = '<a href="' + href + '" target="_blank" rel="noopener"'
+              + ' style="text-decoration:none;display:inline-block;max-width:100%;cursor:pointer;">' + inner + '</a>';
           }
           slot.innerHTML = inner;
           if(!preview){ try { var v = base + '/track?key=' + encodeURIComponent(key) + '&event=view' + rid;
             navigator.sendBeacon ? navigator.sendBeacon(v) : fetch(v); } catch(e){} }
-          slot.addEventListener('click', function(){
-            if(preview) return;
-            try { fetch(base + '/track?key=' + encodeURIComponent(key) + '&event=click' + rid); } catch(e){}
-          });
         }
       })
       .catch(function(){});
@@ -544,7 +684,7 @@ app.get('/ad', async (req, res) => {
   if (!key) return res.json({ teksti: null });
   const preview = req.query.preview === '1';
   try {
-    const b = await pool.query('SELECT id, snippet_active FROM bizneset WHERE celes=$1', [key]);
+    const b = await pool.query('SELECT id, snippet_active, url_konvertimi FROM bizneset WHERE celes=$1', [key]);
     if (!b.rows.length) return res.json({ teksti: null });
     const bizId = b.rows[0].id;
     const origin = req.headers.origin || req.headers.referer || null;
@@ -573,7 +713,8 @@ app.get('/ad', async (req, res) => {
 
     // Shperndarja: logjika ndodhet te selector.js (ndryshohet vetem aty).
     const rek = await selector.zgjidhReklame(pool, bizId);
-    res.json(rek || {});
+    // konv_url = faqja e konvertimit E KETIJ biznesi (snippet-i e perdor per te njohur suksesin)
+    res.json(Object.assign({ konv_url: b.rows[0].url_konvertimi || null }, rek || {}));
   } catch (e) {
     res.json({ teksti: null });
   }
