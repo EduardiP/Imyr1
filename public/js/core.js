@@ -5,7 +5,8 @@ let pollTimer = null, prog = null, une = null, curStep = 0, curNav = 'dashboard'
 const STEPS = [
   { key:'llogaria',   label:'Llogaria' },
   { key:'pershkrimi', label:'Përshkrimi' },
-  { key:'lidhja',     label:'Lidhja' }
+  { key:'lidhja',     label:'Lidhja' },
+  { key:'konvertimi', label:'Konvertimi' }
 ];
 const NAV = [
   { k:'dashboard', l:'Dashboard' },
@@ -26,7 +27,7 @@ function showView(v){ ['hero','home','wizard','profile'].forEach(x=>$('v-'+x).cl
 
 async function refreshProg(){
   try { prog = await (await fetch('/api/progres')).json(); }
-  catch(e){ prog = { llogaria:true, pershkrimi:false, lidhja:false, reklama:false }; }
+  catch(e){ prog = { llogaria:true, pershkrimi:false, lidhja:false, konvertimi:false, reklama:false }; }
 }
 function nextIncomplete(){ for(let i=0;i<STEPS.length;i++){ if(!prog[STEPS[i].key]) return i; } return STEPS.length; }
 
