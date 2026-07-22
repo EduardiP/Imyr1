@@ -189,6 +189,52 @@ function renderStepBody(i){
   if(i===0) return stepLlogaria(b);
   if(i===1) return stepPershkrimi(b);
   if(i===2) return stepLidhja(b);
+  if(i===3) return stepKonvertimi(b);
+}
+
+// STEP 3 — Konvertimi (faqja qe shfaqet vetem pas regjistrimit)
+function stepKonvertimi(b){
+  b.innerHTML=
+    '<h2 class="h">Gjurmo konvertimet</h2>'+
+    '<p class="small" style="margin:2px 0 16px;">Që të dimë kur një klikim sjell një regjistrim të vërtetë, na duhet adresa e faqes që shfaqet <b>vetëm pasi dikush regjistrohet</b>.</p>'+
+    '<label>A ke një faqe të tillë?</label>'+
+    '<div class="seg" id="k_ka">'+
+      '<button type="button" data-v="po" onclick="segPick(this);kSwitch()">Po, kam</button>'+
+      '<button type="button" data-v="jo" onclick="segPick(this);kSwitch()">Jo, s\'kam</button>'+
+    '</div>'+
+    '<div id="k_po" class="hide" style="margin-top:14px;">'+
+      '<label>Adresa e asaj faqeje</label>'+
+      '<input id="k_url" placeholder="/welcome">'+
+      '<p class="small" style="margin:6px 0 0;">Shkruaj vetëm pjesën pas adresës së faqes, p.sh. <b>/welcome</b> ose <b>/faleminderit</b>. Ajo faqe s\'duhet të hapet nga menuja — vetëm pas regjistrimit.</p>'+
+      '<button class="primary" id="k_btn" onclick="ruajKonvertim()">Ruaj &amp; vazhdo →</button>'+
+    '</div>'+
+    '<div id="k_jo" class="hide" style="margin-top:14px;">'+
+      '<p class="small">Atëherë do të të duhet një rresht kod te faqja jote. Këtë do ta shtojmë së shpejti — tani mund të vazhdosh dhe ta konfigurosh më vonë nga profili.</p>'+
+      '<button class="primary" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">Vazhdo →</button>'+
+    '</div>'+
+    '<div class="msg" id="k_msg"></div>';
+  if(une && une.url_konvertimi){
+    const btn=document.querySelector('#k_ka button[data-v="po"]');
+    if(btn){ segPick(btn); kSwitch(); $('k_url').value=une.url_konvertimi; }
+  }
+}
+function kSwitch(){
+  const v=segVal('k_ka');
+  $('k_po').classList.toggle('hide', v!=='po');
+  $('k_jo').classList.toggle('hide', v!=='jo');
+}
+async function ruajKonvertim(){
+  const url=($('k_url').value||'').trim();
+  if(!url){ $('k_msg').className='msg err'; $('k_msg').textContent='Shkruaj adresën e faqes.'; return; }
+  $('k_btn').disabled=true; $('k_msg').className='msg'; $('k_msg').textContent='';
+  try{
+    const r=await(await fetch('/api/url-konvertimi',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({url})})).json();
+    if(r.error){ $('k_msg').className='msg err'; $('k_msg').textContent=r.error; $('k_btn').disabled=false; return; }
+    if(une) une.url_konvertimi=r.url;
+    await refreshProg();
+    nav({v:'profile',nav:'reklamat',sub:'create'});
+  }catch(e){ $('k_msg').className='msg err'; $('k_msg').textContent='Gabim: '+e.message; $('k_btn').disabled=false; }
 }
 
 // STEP 0 — Llogaria
@@ -271,8 +317,8 @@ function stepLidhja(b){
     '<h2 class="h">Lidh Imyr-in te faqja jote</h2>'+
     '<p class="small">Kopjo këtë rresht dhe vendose kudo te faqja jote (p.sh. te footer-i).</p>'+
     '<div id="connectWrap"></div>'+
-    '<button class="primary hide" id="lidhNext" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">Krijo reklamën →</button>';
-  window.__onLidhur = ()=>{ renderHStep(); $('lidhNext').classList.remove('hide'); setTimeout(()=>nav({v:'profile',nav:'reklamat',sub:'create'}),900); };
+    '<button class="primary hide" id="lidhNext" onclick="openWizard(3)">Vazhdo →</button>';
+  window.__onLidhur = ()=>{ renderHStep(); $('lidhNext').classList.remove('hide'); setTimeout(()=>openWizard(3),900); };
   connectUI($('connectWrap'));
   if(prog.lidhja){ $('lidhNext').classList.remove('hide'); }
 }
