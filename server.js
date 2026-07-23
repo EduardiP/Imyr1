@@ -982,7 +982,11 @@ app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'public', 'ter
 app.get('/contact', (req, res) => res.sendFile(path.join(__dirname, 'public', 'contact.html')));
 app.get('/about', (req, res) => res.sendFile(path.join(__dirname, 'public', 'about.html')));
 app.get('/test', (req, res) => res.sendFile(path.join(__dirname, 'index-test-saas.html')));
+app.get('/test/regjistrohu', (req, res) => res.sendFile(path.join(__dirname, 'test-regjistrohu.html')));
+app.get('/test/welcome', (req, res) => res.sendFile(path.join(__dirname, 'test-welcome.html')));
 app.get('/test2', (req, res) => res.sendFile(path.join(__dirname, 'index-test-saas2.html')));
+app.get('/test2/regjistrohu', (req, res) => res.sendFile(path.join(__dirname, 'test2-regjistrohu.html')));
+app.get('/test2/welcome', (req, res) => res.sendFile(path.join(__dirname, 'test2-welcome.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 
 // health check
