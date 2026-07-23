@@ -543,13 +543,9 @@ app.get('/imyr.js', (req, res) => {
   var base = s ? new URL(s.src).origin : '';
   if(!key) return;
   var preview = !!(window.Shopify && window.Shopify.designMode);
-  if(!preview){
-    try { var u = base + '/lidh?key=' + encodeURIComponent(key);
-      navigator.sendBeacon ? navigator.sendBeacon(u) : fetch(u,{mode:'no-cors'}); } catch(e){}
-  }
   function esc(t){ var d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
 
-  // --- Kodi i klikimit: ruajtje/leximi (cookie i pales se pare + localStorage) ---
+  // ---------- KODI I KLIKIMIT ----------
   function ruajKod(kod){
     try { localStorage.setItem('imyr_klik', kod); } catch(e){}
     try {
@@ -564,50 +560,67 @@ app.get('/imyr.js', (req, res) => {
     var m = document.cookie.match(/(?:^|;\\s*)imyr_klik=([^;]+)/);
     return m ? m[1] : null;
   }
-  // Vizitori mberriti nga nje reklame? Ruaje kodin.
-  try {
-    var qp = new URLSearchParams(location.search).get('imyr');
-    if(qp) ruajKod(qp);
-  } catch(e){}
+  try { var qp = new URLSearchParams(location.search).get('imyr'); if(qp) ruajKod(qp); } catch(e){}
 
-  // --- Konvertimi: kjo faqe eshte faqja e suksesit? ---
+  // ---------- KONVERTIMI ----------
+  function dergoKonv(){
+    var kod = lexoKod(); if(!kod || preview) return;
+    try { if(localStorage.getItem('imyr_konv_' + kod)) return; } catch(e){}
+    try {
+      var u = base + '/konvertim?kod=' + encodeURIComponent(kod);
+      navigator.sendBeacon ? navigator.sendBeacon(u) : fetch(u, {mode:'no-cors'});
+      localStorage.setItem('imyr_konv_' + kod, '1');
+    } catch(e){}
+  }
+  window.imyr = window.imyr || {};
+  window.imyr.konvertim = dergoKonv;
+
   function kontrolloKonvertim(konvUrl){
     if(!konvUrl || preview) return;
+    if(!lexoKod()) return;
     var tani = location.pathname + location.search;
-    var pos = tani.indexOf(konvUrl);
-    if(pos === -1) return;
+    var pos = tani.indexOf(konvUrl); if(pos === -1) return;
     var pas = tani.charAt(pos + konvUrl.length);
     if(pas !== '' && pas !== '?' && pas !== '#' && pas !== '/' && pas !== '&') return;
-    var kod = lexoKod(); if(!kod) return;              // s'erdhi nga Imyr => s'numerohet
-    try { if(localStorage.getItem('imyr_konv_' + kod)) return; } catch(e){}
+    dergoKonv();
+  }
+
+  // ---------- NJOFTO LIDHJEN ----------
+  if(!preview){
     try {
-      var u = base + '/konvertim?kod=' + encodeURIComponent(kod);
-      navigator.sendBeacon ? navigator.sendBeacon(u) : fetch(u, {mode:'no-cors'});
-      localStorage.setItem('imyr_konv_' + kod, '1');
+      var pu = base + '/track-lidh?key=' + encodeURIComponent(key);
+      navigator.sendBeacon ? navigator.sendBeacon(pu) : fetch(pu, {mode:'no-cors'});
     } catch(e){}
   }
-  // Metoda me kod, per ata qe s'kane faqe suksesi te vecante
-  window.imyr = window.imyr || {};
-  window.imyr.konvertim = function(){
-    var kod = lexoKod(); if(!kod) return;
-    try { if(localStorage.getItem('imyr_konv_' + kod)) return; } catch(e){}
-    try {
-      var u = base + '/konvertim?kod=' + encodeURIComponent(kod);
-      navigator.sendBeacon ? navigator.sendBeacon(u) : fetch(u, {mode:'no-cors'});
-      localStorage.setItem('imyr_konv_' + kod, '1');
-    } catch(e){}
-  };
 
-  function slotEl(){
+  // ---------- HAPESIRA E REKLAMES ----------
+  // 1) Nese ekziston <div id="imyr-slot"> => reklama shfaqet aty.
+  // 2) Perndryshe krijohet menjehere pas skriptit — POR vetem nese skripti
+  //    s'eshte vendosur direkt te <body>/<head> (d.m.th. te layout-i).
+  //    Keshtu, i njejti rresht te layout-i gjurmon kudo pa nxjerre reklama kudo.
+  function gjejSlot(){
     var el = document.getElementById('imyr-slot');
-    if(!el){ el = document.createElement('div'); el.id='imyr-slot';
-      if(s && s.parentNode) s.parentNode.insertBefore(el, s.nextSibling);
-      else if(document.body) document.body.appendChild(el); }
+    if(el) return el;
+    if(!s || !s.parentNode) return null;
+    var p = s.parentNode.nodeName;
+    if(p === 'BODY' || p === 'HEAD' || p === 'HTML') return null;
+    el = document.createElement('div'); el.id = 'imyr-slot';
+    s.parentNode.insertBefore(el, s.nextSibling);
     return el;
   }
+
   function run(){
-    var slot = slotEl(); if(!slot) return;
-    // Bosh => zero hapesire. Permbajtja e cakton madhesine (inline-block sipas permbajtjes).
+    var slot = gjejSlot();
+    if(!slot){
+      // Vetem gjurmim (skripti eshte te layout-i, pa hapesire reklame ketu)
+      if(!preview && lexoKod()){
+        fetch(base + '/cil?key=' + encodeURIComponent(key))
+          .then(function(r){ return r.json(); })
+          .then(function(c){ kontrolloKonvertim(c && c.konv_url); })
+          .catch(function(){});
+      }
+      return;
+    }
     fetch(base + '/ad?key=' + encodeURIComponent(key) + (preview?'&preview=1':''))
       .then(function(r){ return r.json(); })
       .then(function(d){
@@ -981,9 +994,11 @@ app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'p
 app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
 app.get('/contact', (req, res) => res.sendFile(path.join(__dirname, 'public', 'contact.html')));
 app.get('/about', (req, res) => res.sendFile(path.join(__dirname, 'public', 'about.html')));
-app.get('/test', (req, res) => res.sendFile(path.join(__dirname, 'index-test-saas.html')));
-app.get('/test/regjistrohu', (req, res) => res.sendFile(path.join(__dirname, 'test-regjistrohu.html')));
-app.get('/test/welcome', (req, res) => res.sendFile(path.join(__dirname, 'test-welcome.html')));
+// --- SAJTI I PROVES (test-saas.js — fshije bashke me kete bllok kur te mbaroje testimi) ---
+const testSaas = require('./test-saas');
+app.get('/test', (req, res) => res.send(testSaas.faqet.ballina()));
+app.get('/test/regjistrohu', (req, res) => res.send(testSaas.faqet.regjistrohu()));
+app.get('/test/welcome', (req, res) => res.send(testSaas.faqet.welcome()));
 app.get('/test2', (req, res) => res.sendFile(path.join(__dirname, 'index-test-saas2.html')));
 app.get('/test2/regjistrohu', (req, res) => res.sendFile(path.join(__dirname, 'test2-regjistrohu.html')));
 app.get('/test2/welcome', (req, res) => res.sendFile(path.join(__dirname, 'test2-welcome.html')));
