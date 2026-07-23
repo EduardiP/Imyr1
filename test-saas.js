@@ -52,13 +52,14 @@ ${trupi}
 
 <!-- ═══ NGJIT KËTU rreshtin e Imyr-it (nga wizard-i, hapi "Konvertimi") ═══ -->
 <script src="https://imyr-production.up.railway.app/imyr.js" data-key="imyr_ab2a9a0ea22373c3b24461c2"></script>
-
+<script src="https://imyr-production.up.railway.app/imyr-track.js" data-key="imyr_ab2a9a0ea22373c3b24461c2"></script>
 <!-- ═══ deri këtu — vlen për TË GJITHA faqet ═══ -->
 </body>
 </html>`;
 }
 
 // ===== FAQET (vetem permbajtja; layout-i shtohet vete) =====
+
 const faqet = {
   ballina: () => layout('ballina', `
 <div class="wrap">
