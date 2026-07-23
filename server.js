@@ -999,9 +999,10 @@ const testSaas = require('./test-saas');
 app.get('/test', (req, res) => res.send(testSaas.faqet.ballina()));
 app.get('/test/regjistrohu', (req, res) => res.send(testSaas.faqet.regjistrohu()));
 app.get('/test/welcome', (req, res) => res.send(testSaas.faqet.welcome()));
-app.get('/test2', (req, res) => res.sendFile(path.join(__dirname, 'index-test-saas2.html')));
-app.get('/test2/regjistrohu', (req, res) => res.sendFile(path.join(__dirname, 'test2-regjistrohu.html')));
-app.get('/test2/welcome', (req, res) => res.sendFile(path.join(__dirname, 'test2-welcome.html')));
+const testSaas2 = require('./test-saas2');
+app.get('/test2', (req, res) => res.send(testSaas2.faqet.ballina()));
+app.get('/test2/regjistrohu', (req, res) => res.send(testSaas2.faqet.regjistrohu()));
+app.get('/test2/welcome', (req, res) => res.send(testSaas2.faqet.welcome()));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 
 // health check
