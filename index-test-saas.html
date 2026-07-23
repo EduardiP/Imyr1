@@ -3,31 +3,62 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SaaS Test — faqe prove për Imyr</title>
+<title>SaaS Test — ballina</title>
 <style>
   body { margin:0; font:16px/1.6 system-ui,Segoe UI,Roboto,sans-serif; color:#1a1a2e; background:#f5f6fa; }
-  header { background:#3b3b98; color:#fff; padding:16px 24px; font-weight:700; letter-spacing:.05em; }
-  .hero { max-width:760px; margin:0 auto; padding:48px 24px; }
-  .hero h1 { font-size:34px; margin:0 0 8px; }
-  .hero p { color:#555; font-size:18px; }
-  .cta { display:inline-block; margin-top:16px; background:#3b3b98; color:#fff; padding:12px 22px; border-radius:8px; text-decoration:none; }
-  .box { max-width:760px; margin:0 auto 40px; padding:0 24px; }
-  .note { border:1px dashed #b0b0d0; border-radius:10px; padding:14px 16px; color:#555; font-size:14px; background:#fff; }
+  header { background:#3b3b98; color:#fff; padding:16px 24px; display:flex; justify-content:space-between; align-items:center; }
+  header .lg { font-weight:700; letter-spacing:.05em; }
+  header nav a { color:#c8c8e8; text-decoration:none; margin-left:18px; font-size:14px; }
+  header nav a:hover { color:#fff; }
+  .wrap { max-width:760px; margin:0 auto; padding:44px 24px; }
+  h1 { font-size:32px; margin:0 0 10px; }
+  p.lead { color:#555; font-size:18px; margin:0 0 22px; }
+  .cta { display:inline-block; background:#3b3b98; color:#fff; padding:13px 26px; border-radius:8px;
+         text-decoration:none; font-weight:600; border:none; cursor:pointer; font-size:16px; font-family:inherit; }
+  .cta:hover { background:#2f2f7a; }
+  .card { background:#fff; border:1px solid #dcdcec; border-radius:12px; padding:24px; margin-top:8px; }
+  label { display:block; font-size:13px; color:#555; margin:14px 0 5px; font-weight:600; }
+  input { width:100%; box-sizing:border-box; padding:11px 13px; border:1px solid #dcdcec; border-radius:8px;
+          font-size:15px; font-family:inherit; }
+  .note { border:1px dashed #b0b0d0; border-radius:10px; padding:14px 16px; color:#555; font-size:14px;
+          background:#fff; margin-top:26px; }
+  .note b { color:#3b3b98; }
+  .ok { width:56px; height:56px; border-radius:50%; background:#e8e8f7; color:#3b3b98; display:flex;
+        align-items:center; justify-content:center; font-size:28px; margin-bottom:14px; }
+  .steps { display:flex; gap:8px; margin-bottom:26px; font-size:13px; color:#9a9ab8; }
+  .steps span { padding:5px 12px; border-radius:20px; background:#fff; border:1px solid #dcdcec; }
+  .steps span.on { background:#3b3b98; color:#fff; border-color:#3b3b98; }
+  footer { max-width:760px; margin:0 auto; padding:24px; color:#888; font-size:13px; border-top:1px solid #ddd; }
 </style>
 </head>
 <body>
 
-<header>SAAS TEST</header>
+<header>
+  <span class="lg">SAAS TEST</span>
+  <nav><a href="/test">Ballina</a><a href="/test/regjistrohu">Regjistrohu</a></nav>
+</header>
 
-<div class="hero">
-  <h1>Faqja ime SaaS (prove)</h1>
-  <p>Kjo është një faqe e thjeshtë publike që imiton një SaaS real, për të testuar lidhjen me Imyr saktë siç do të ishte për një partner të vërtetë.</p>
-  <a class="cta" href="#">Provo falas</a>
+<div class="wrap">
+  <h1>Faqja ime SaaS (provë)</h1>
+  <p class="lead">Ballina. Këtu shfaqet reklama e një biznesi tjetër, dhe këtu zbret vizitori që klikon reklamën tënde.</p>
+  <a class="cta" href="/test/regjistrohu">Krijo llogari →</a>
+
+  <!-- IMYR: reklama shfaqet VETEM ketu (ballina) -->
+  <div style="margin-top:34px;">
+    <div id="imyr-slot"></div>
+    <script src="https://imyr-production.up.railway.app/imyr.js" data-key="CELESI_YT"></script>
+  </div>
+
+  <div class="note">
+    <b>Si ta provosh:</b> zëvendëso <b>CELESI_YT</b> dhe <b>CELESI_TRACK</b> me çelësin e biznesit të parë.
+    Te Imyr, vendos si URL konvertimi: <b>/test/welcome</b>, dhe si website: <b>https://imyr-production.up.railway.app/test</b>.
+    Pastaj kliko reklamën nga <b>/test2</b> dhe ndiq hapat deri te faqja e fundit.
+  </div>
 </div>
 
-<div class="box">
-  <script src="https://imyr-production.up.railway.app/imyr.js" data-key="imyr_a4d2cd228499f0a4166f492d"></script>
-</div>
-<script src="https://imyr-production.up.railway.app/imyr-track.js" data-key="imyr_a4d2cd228499f0a4166f492d"></script>
+<footer>© 2026 SaaS Test</footer>
+
+<!-- IMYR: gjurmuesi — ne CDO faqe, s'shfaq asgje -->
+<script src="https://imyr-production.up.railway.app/imyr-track.js" data-key="CELESI_TRACK"></script>
 </body>
 </html>
