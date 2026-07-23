@@ -51,7 +51,7 @@ ${trupi}
 <footer>© 2026 SaaS Prov 1</footer>
 
 <!-- ═══ NGJIT KËTU rreshtin e Imyr-it (nga wizard-i, hapi "Konvertimi") ═══ -->
-
+<script src="https://imyr-production.up.railway.app/imyr.js" data-key="imyr_ab2a9a0ea22373c3b24461c2"></script>
 
 <!-- ═══ deri këtu — vlen për TË GJITHA faqet ═══ -->
 </body>
@@ -92,7 +92,7 @@ const faqet = {
 
   <div class="note">Pa <b>imyr-slot</b> këtu — pra pa reklamë, vetëm gjurmim. Pas butonit: <b>/test/welcome</b>.</div>
 </div>`),
-<script src="https://imyr-production.up.railway.app/imyr.js" data-key="imyr_ab2a9a0ea22373c3b24461c2"></script>
+
   welcome: () => layout('mirë se erdhe', `
 <div class="wrap">
   <div class="steps"><span>1. Të dhënat</span><span class="on">2. Gati</span></div>
