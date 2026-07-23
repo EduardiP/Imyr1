@@ -186,3 +186,7 @@ footer.site{background:#080a0e;border-top:1px solid var(--line);padding:54px 0 3
 .seg button:hover{ border-color:var(--mut); }
 .seg button.sel{ border-color:var(--acc); background:#0a1b2e; color:var(--acc); font-weight:600; }
 @media(max-width:700px){ .seg{ flex-direction:column; } }
+
+/* Kutia e kodit (snippet gjurmues) */
+.kodbox{ background:#06090d; border:1px solid var(--line); border-radius:8px; padding:10px 12px;
+  font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace; color:#9fb3c8; word-break:break-all; white-space:pre-wrap; }
