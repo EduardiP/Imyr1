@@ -91,6 +91,9 @@ async function initDB() {
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS permbledhje TEXT`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS tipi TEXT`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS url_konvertimi TEXT`);
+  await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS track_active BOOLEAN DEFAULT false`);
+  await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS track_seen_at TIMESTAMPTZ`);
+  await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS track_url TEXT`);
 
   // Ngjarjet (shfaqje/klikime) — per gjurmimin
   await pool.query(`
@@ -634,6 +637,100 @@ app.get('/imyr.js', (req, res) => {
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
   else run();
+})();`);
+});
+
+// --- KODI GJURMUES U NGARKUA (konfirmimi i lidhjes) ---
+app.all('/track-lidh', async (req, res) => {
+  cors(res);
+  try {
+    await pool.query(
+      `UPDATE bizneset SET track_active=true, track_seen_at=now(), track_url=$2 WHERE celes=$1`,
+      [req.query.key, req.headers.referer || req.headers.origin || null]);
+  } catch (e) {}
+  res.status(204).end();
+});
+
+// --- STATUSI I KODIT GJURMUES ---
+app.get('/api/track-status', iLoguar, async (req, res) => {
+  try {
+    const r = await pool.query(
+      'SELECT track_active, track_seen_at, track_url FROM bizneset WHERE id=$1', [req.biznesId]);
+    res.json(r.rows[0] || { track_active: false });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- CILESIMET E GJURMIMIT (endpoint i lehte per imyr-track.js) ---
+app.get('/cil', async (req, res) => {
+  cors(res);
+  try {
+    const b = await pool.query('SELECT url_konvertimi FROM bizneset WHERE celes=$1', [req.query.key]);
+    res.json({ konv_url: b.rows.length ? (b.rows[0].url_konvertimi || null) : null });
+  } catch (e) { res.json({ konv_url: null }); }
+});
+
+// --- IMYR-TRACK.JS (vetem gjurmim: vendoset ne CDO faqe, s'shfaq asgje) ---
+app.get('/imyr-track.js', (req, res) => {
+  res.type('application/javascript');
+  res.send(`(function(){
+  var s = document.currentScript;
+  var key = s ? s.getAttribute('data-key') : null;
+  var base = s ? new URL(s.src).origin : '';
+  if(!key) return;
+  var preview = !!(window.Shopify && window.Shopify.designMode);
+
+  function ruajKod(kod){
+    try { localStorage.setItem('imyr_klik', kod); } catch(e){}
+    try {
+      var pjeset = location.hostname.split('.');
+      var rrenja = pjeset.length > 1 ? '.' + pjeset.slice(-2).join('.') : location.hostname;
+      document.cookie = 'imyr_klik=' + kod + ';path=/;max-age=2592000;SameSite=Lax';
+      document.cookie = 'imyr_klik=' + kod + ';path=/;max-age=2592000;domain=' + rrenja + ';SameSite=Lax';
+    } catch(e){}
+  }
+  function lexoKod(){
+    try { var v = localStorage.getItem('imyr_klik'); if(v) return v; } catch(e){}
+    var m = document.cookie.match(/(?:^|;\\s*)imyr_klik=([^;]+)/);
+    return m ? m[1] : null;
+  }
+  try {
+    var qp = new URLSearchParams(location.search).get('imyr');
+    if(qp) ruajKod(qp);
+  } catch(e){}
+
+  function dergo(){
+    var kod = lexoKod(); if(!kod || preview) return;
+    try { if(localStorage.getItem('imyr_konv_' + kod)) return; } catch(e){}
+    try {
+      var u = base + '/konvertim?kod=' + encodeURIComponent(kod);
+      navigator.sendBeacon ? navigator.sendBeacon(u) : fetch(u, {mode:'no-cors'});
+      localStorage.setItem('imyr_konv_' + kod, '1');
+    } catch(e){}
+  }
+  window.imyr = window.imyr || {};
+  window.imyr.konvertim = dergo;
+
+  // Njofto nje here qe kodi u ngarkua (per konfirmimin te profili)
+  if(!preview){
+    try {
+      var pu = base + '/track-lidh?key=' + encodeURIComponent(key);
+      navigator.sendBeacon ? navigator.sendBeacon(pu) : fetch(pu, {mode:'no-cors'});
+    } catch(e){}
+  }
+
+  // A eshte kjo faqja e suksesit? (vetem nese ka kod te ruajtur)
+  if(!lexoKod() || preview) return;
+  fetch(base + '/cil?key=' + encodeURIComponent(key))
+    .then(function(r){ return r.json(); })
+    .then(function(c){
+      var konvUrl = c && c.konv_url; if(!konvUrl) return;
+      var tani = location.pathname + location.search;
+      var pos = tani.indexOf(konvUrl); if(pos === -1) return;
+      var pas = tani.charAt(pos + konvUrl.length);
+      if(pas !== '' && pas !== '?' && pas !== '#' && pas !== '/' && pas !== '&') return;
+      dergo();
+    })
+    .catch(function(){});
 })();`);
 });
 
