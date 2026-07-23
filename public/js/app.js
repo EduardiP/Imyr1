@@ -206,7 +206,17 @@ function stepKonvertimi(b){
       '<label>Adresa e asaj faqeje</label>'+
       '<input id="k_url" placeholder="/welcome">'+
       '<p class="small" style="margin:6px 0 0;">Shkruaj vetëm pjesën pas adresës së faqes, p.sh. <b>/welcome</b> ose <b>/faleminderit</b>. Ajo faqe s\'duhet të hapet nga menuja — vetëm pas regjistrimit.</p>'+
-      '<button class="primary" id="k_btn" onclick="ruajKonvertim()">Ruaj &amp; vazhdo →</button>'+
+      '<div style="margin-top:18px;padding:14px;border:1px solid var(--line);border-radius:10px;background:#0e1116;">'+
+        '<b style="font-size:14px;">Edhe një rresht, te çdo faqe</b>'+
+        '<p class="small" style="margin:6px 0 10px;">Ky rresht nuk shfaq asgjë — vetëm gjurmon. Vendose para <code>&lt;/body&gt;</code> te skedari që ngarkohet në <b>çdo</b> faqe (te Shopify: <i>Online Store → Themes → Edit code → Layout → theme.liquid</i>).</p>'+
+        '<div class="kodbox" id="k_kod"></div>'+
+        '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">'+
+          '<button class="btn" onclick="kopjoTrack()">Kopjo</button>'+
+          '<button class="btn" id="k_ver" onclick="verifikoTrack()">Verifiko lidhjen</button>'+
+        '</div>'+
+        '<div id="k_stat" class="small" style="margin-top:10px;"></div>'+
+      '</div>'+
+      '<button class="primary" id="k_btn" onclick="ruajKonvertim()" disabled>Ruaj &amp; vazhdo →</button>'+
     '</div>'+
     '<div id="k_jo" class="hide" style="margin-top:14px;">'+
       '<p class="small">Atëherë do të të duhet një rresht kod te faqja jote. Këtë do ta shtojmë së shpejti — tani mund të vazhdosh dhe ta konfigurosh më vonë nga profili.</p>'+
@@ -217,6 +227,44 @@ function stepKonvertimi(b){
     const btn=document.querySelector('#k_ka button[data-v="po"]');
     if(btn){ segPick(btn); kSwitch(); $('k_url').value=une.url_konvertimi; }
   }
+  mbushTrack();
+}
+function trackKod(){
+  return '<script src="'+location.origin+'/imyr-track.js" data-key="'+((une&&une.celes)||'')+'"><\/script>';
+}
+function mbushTrack(){ const el=$('k_kod'); if(el) el.textContent=trackKod(); kStatus(); }
+function kopjoTrack(){
+  navigator.clipboard.writeText(trackKod()).then(()=>{
+    const m=$('k_msg'); if(m){ m.className='msg ok'; m.textContent='U kopjua.'; setTimeout(()=>{m.textContent='';},2000); }
+  }).catch(()=>{});
+}
+async function kStatus(){
+  const st=$('k_stat'); if(!st) return false;
+  try{
+    const r=await(await fetch('/api/track-status')).json();
+    if(r.track_active){
+      st.innerHTML='<span style="color:var(--good)">✓ Kodi u gjet te faqja jote'+(r.track_url?' ('+esc(r.track_url)+')':'')+'</span>';
+      const b=$('k_btn'); if(b) b.disabled=false;
+      if(kTimer){ clearInterval(kTimer); kTimer=null; }
+      return true;
+    }
+    st.innerHTML='<span class="mut">Ende s\'e kemi parë kodin. Vendose te faqja jote dhe kliko “Verifiko lidhjen”.</span>';
+  }catch(e){}
+  return false;
+}
+let kTimer=null;
+async function verifikoTrack(){
+  const st=$('k_stat'), btn=$('k_ver');
+  if(btn) btn.disabled=true;
+  if(st) st.innerHTML='<span class="spin"></span> Po kontrolloj… hap faqen tënde në një skedë tjetër.';
+  const gjetur=await kStatus();
+  if(!gjetur && !kTimer){
+    let here=0;
+    kTimer=setInterval(async ()=>{
+      here++;
+      if(await kStatus() || here>20){ clearInterval(kTimer); kTimer=null; if(btn) btn.disabled=false; }
+    },3000);
+  } else if(btn) btn.disabled=false;
 }
 function kSwitch(){
   const v=segVal('k_ka');
