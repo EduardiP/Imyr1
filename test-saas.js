@@ -1,8 +1,6 @@
 // test-saas.js — SAJT PROVE (i ndare nga Imyr; fshije kur te mbaroje testimi)
-// Skripti i Imyr-it shkruhet NJE HERE, te layout-i. Te gjitha faqet e trashegojne.
-
-const CELESI = 'imyr_20fc97c02eebb523a1f18d1d';   // <- celesi i "saas prov 1"
-const BASE   = 'https://imyr-production.up.railway.app';
+// Faqe te ndara, kornize e perbashket — si nje SaaS i vertete.
+// Rreshtin e Imyr-it ngjite NJE HERE te layout() me poshte; vlen per te gjitha faqet.
 
 const CSS = `
   body { margin:0; font:16px/1.6 system-ui,Segoe UI,Roboto,sans-serif; color:#1a1a2e; background:#f5f6fa; }
@@ -52,8 +50,10 @@ ${trupi}
 
 <footer>© 2026 SaaS Prov 1</footer>
 
-<!-- IMYR: NJE rresht, ne layout => vlen per TE GJITHA faqet -->
-<script src="${BASE}/imyr.js" data-key="${CELESI}"></script>
+<!-- ═══ NGJIT KËTU rreshtin e Imyr-it (nga wizard-i, hapi "Konvertimi") ═══ -->
+
+
+<!-- ═══ deri këtu — vlen për TË GJITHA faqet ═══ -->
 </body>
 </html>`;
 }
@@ -107,4 +107,4 @@ const faqet = {
 </div>`)
 };
 
-module.exports = { faqet, CELESI };
+module.exports = { faqet };
