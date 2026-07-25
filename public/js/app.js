@@ -97,6 +97,9 @@ async function mainProfili(m){
   let d={};
   try{ d=await(await fetch('/api/profili')).json(); }catch(e){ m.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; return; }
   const inic=(d.emri||'?').trim().charAt(0).toUpperCase();
+  const avatarHTML = d.logo_url
+    ? '<div class="avatar" style="overflow:hidden;"><img src="'+esc(d.logo_url)+'" style="width:100%;height:100%;object-fit:cover;"></div>'
+    : '<div class="avatar">'+esc(inic)+'</div>';
   const tipiTekst = d.tipi==='b2b'?'Bizneseve (B2B)':(d.tipi==='b2c'?'Individëve (B2C)':'Të dyjave');
   const konvLidhur = !!(une && une.url_konvertimi);
   let snip='';
@@ -118,7 +121,7 @@ async function mainProfili(m){
     : '<div class="miniStat" onclick="nav({v:\'profile\',nav:\'konvertimi\'})" style="cursor:pointer;border-color:var(--err);"><div class="mv" style="font-size:15px;color:var(--err);">I palidhur</div><div class="small">konvertime</div><div class="small" style="color:var(--acc);margin-top:2px;">Lidh →</div></div>';
   m.innerHTML=
     '<div style="display:flex;align-items:center;gap:16px;margin-bottom:6px;">'+
-      '<div class="avatar">'+esc(inic)+'</div>'+
+      avatarHTML+
       '<div><div style="font-size:20px;font-weight:700;">'+esc(d.emri||'')+'</div>'+
         '<div class="small">'+esc(d.email||'')+'</div>'+
         '<div class="small">Audienca: '+tipiTekst+'</div></div>'+
@@ -247,7 +250,7 @@ function renderVStep(){
 }
 
 // ---------- WIZARD ----------
-function startWizard(){ openWizard(une ? nextIncomplete() : 0); }
+function startWizard(){ if(une){ openWizard(nextIncomplete()); } else { hapModal('reg'); } }
 function closeWizard(){ if(pollTimer){clearInterval(pollTimer);pollTimer=null;} nav({v: une?'home':'hero'}); }
 function openWizard(i){ const max=STEPS.length; if(i>max) i=max; nav({v:'wizard', step:i}); }
 function renderWizard(i){
@@ -402,6 +405,11 @@ function stepLlogaria(b){
       b.innerHTML=
         '<h2 class="h">Të dhënat e biznesit</h2><p class="small" style="margin:2px 0 14px;">Plotëso këto për të vazhduar.</p>'+
         '<label>Emri i biznesit (SaaS-it)</label><input id="a_emri" placeholder="Biznesi im" value="'+esc(une.emri||'')+'">'+
+        '<label>Logo (opsionale)</label>'+
+        '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">'+
+          '<div id="a_logoPrev" class="avatar" style="width:52px;height:52px;font-size:22px;overflow:hidden;">'+((une.logo_url)?'<img src="'+esc(une.logo_url)+'" style="width:100%;height:100%;object-fit:cover;">':esc((une.emri||'?').charAt(0).toUpperCase()))+'</div>'+
+          '<label class="btn" style="cursor:pointer;margin:0;">Ngarko<input type="file" id="a_logo" accept="image/*" onchange="ngarkoLogo(this)" style="display:none;"></label>'+
+        '</div>'+
         '<label>Faqja (website)</label><input id="a_web" placeholder="https://saasi-im.com" value="'+esc(une.website||'')+'">'+
         segHTML('a_tipi')+
         '<button class="primary" id="a_btn" onclick="wizPlotesoBiz()">Vazhdo →</button><div class="msg" id="a_msg"></div>';
@@ -420,6 +428,17 @@ function stepLlogaria(b){
     '<label>Faqja / linku i SaaS-it</label><input id="a_web" placeholder="https://saasi-im.com">'+
     segHTML('a_tipi')+
     '<button class="primary" id="a_btn" onclick="wizKrijo()">Vazhdo →</button><div class="msg" id="a_msg"></div>';
+}
+async function ngarkoLogo(inp){
+  const f=inp.files&&inp.files[0]; if(!f) return;
+  const fd=new FormData(); fd.append('file', f);
+  try{
+    const r=await(await fetch('/api/ngarko-logo',{method:'POST',body:fd})).json();
+    if(r.url){
+      if(une) une.logo_url=r.url;
+      const prev=$('a_logoPrev'); if(prev) prev.innerHTML='<img src="'+r.url+'" style="width:100%;height:100%;object-fit:cover;">';
+    }
+  }catch(e){}
 }
 async function wizPlotesoBiz(){
   const emri=($('a_emri').value||'').trim();
