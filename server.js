@@ -91,6 +91,9 @@ async function initDB() {
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS nenkategorite TEXT`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS permbledhje TEXT`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS tipi TEXT`);
+  await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pranoi_kushtet BOOLEAN DEFAULT false`);
+  await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pranoi_oferta BOOLEAN DEFAULT false`);
+  await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pranoi_kushtet_at TIMESTAMPTZ`);
   await pool.query(`ALTER TABLE bizneset ALTER COLUMN fjalekalimi DROP NOT NULL`).catch(()=>{});
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS url_konvertimi TEXT`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS track_active BOOLEAN DEFAULT false`);
@@ -147,8 +150,12 @@ async function iLoguar(req, res, next) {
 app.post('/api/regjistrohu', async (req, res) => {
   const { emri, email, fjalekalimi, kategoria, website } = req.body;
   const tipi = ['b2b','b2c','b2b2c'].includes(req.body.tipi) ? req.body.tipi : null;
+  const oferta = !!req.body.oferta;
   if (!emri || !email || !fjalekalimi) {
     return res.status(400).json({ error: 'Emri, email dhe fjalekalimi jane te detyrueshem.' });
+  }
+  if (!req.body.kushtet) {
+    return res.status(400).json({ error: 'Duhet te pranosh Kushtet dhe Privatesine.' });
   }
   if (String(fjalekalimi).length < 6) {
     return res.status(400).json({ error: 'Fjalekalimi duhet te kete te pakten 6 shkronja.' });
@@ -157,9 +164,9 @@ app.post('/api/regjistrohu', async (req, res) => {
     const hash = await bcrypt.hash(fjalekalimi, 10);
     const celes = beCeles();
     const r = await pool.query(
-      `INSERT INTO bizneset (emri, email, fjalekalimi, kategoria, website, celes, tipi)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
-      [emri, email.toLowerCase().trim(), hash, kategoria || null, website || null, celes, tipi]
+      `INSERT INTO bizneset (emri, email, fjalekalimi, kategoria, website, celes, tipi, pranoi_kushtet, pranoi_oferta, pranoi_kushtet_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,true,$8,now()) RETURNING id`,
+      [emri, email.toLowerCase().trim(), hash, kategoria || null, website || null, celes, tipi, oferta]
     );
     // krijo seance (login automatik pas regjistrimit)
     const token = crypto.randomBytes(24).toString('hex');
@@ -190,6 +197,10 @@ app.post('/api/hyr', async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+// Mban perkohesisht te dhenat e Google-it derisa perdoruesi i ri te pranoje kushtet
+const googlePending = {};
+setInterval(() => { const tani = Date.now(); for (const k in googlePending) { if (tani - googlePending[k].koha > 15*60*1000) delete googlePending[k]; } }, 5*60*1000);
 
 // --- LOGIN ME GOOGLE ---
 app.get('/auth/google', (req, res) => {
@@ -238,25 +249,58 @@ app.get('/auth/google/callback', async (req, res) => {
 
     // 3. Gjej ose krijo biznesin
     let biz = await pool.query('SELECT id FROM bizneset WHERE email=$1', [email]);
+    if (biz.rows.length) {
+      // Ekziston => hyr direkt
+      const token = crypto.randomBytes(24).toString('hex');
+      await pool.query('INSERT INTO seancat (token, biznes_id) VALUES ($1,$2)', [token, biz.rows[0].id]);
+      res.cookie('imyr_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 30*24*60*60*1000 });
+      return res.redirect('/?login=ok');
+    }
+    // Hyrje e PARE (ose pas fshirjes) => kerko pranimin e kushteve para se te krijohet
+    const pending = crypto.randomBytes(16).toString('hex');
+    googlePending[pending] = { email, emri, koha: Date.now() };
+    res.cookie('imyr_pending', pending, { httpOnly: true, sameSite: 'lax', maxAge: 15*60*1000 });
+    return res.redirect('/?login=kushte');
+  } catch (e) {
+    res.redirect('/?login=gabim');
+  }
+});
+
+// --- Kush eshte ne pritje te pranimit (per faqen e kushteve) ---
+app.get('/api/google-pending', (req, res) => {
+  const p = req.cookies.imyr_pending;
+  if (!p || !googlePending[p]) return res.json({ pending: false });
+  res.json({ pending: true, emri: googlePending[p].emri, email: googlePending[p].email });
+});
+
+// --- Perfundo krijimin e llogarise Google pas pranimit te kushteve ---
+app.post('/api/google-prano', async (req, res) => {
+  const p = req.cookies.imyr_pending;
+  if (!p || !googlePending[p]) return res.status(400).json({ error: 'Seanca skadoi. Provo sërish.' });
+  if (!req.body.kushtet) return res.status(400).json({ error: 'Duhet të pranosh Kushtet dhe Privatësinë.' });
+  const { email, emri } = googlePending[p];
+  const oferta = !!req.body.oferta;
+  try {
+    // Nese u krijua ndermjet kohes, thjesht hyr
+    let biz = await pool.query('SELECT id FROM bizneset WHERE email=$1', [email]);
     let bizId;
     if (biz.rows.length) {
       bizId = biz.rows[0].id;
     } else {
       const celes = beCeles();
       const ins = await pool.query(
-        `INSERT INTO bizneset (emri, email, fjalekalimi, celes) VALUES ($1,$2,$3,$4) RETURNING id`,
-        [emri, email, null, celes]);
+        `INSERT INTO bizneset (emri, email, fjalekalimi, celes, pranoi_kushtet, pranoi_oferta, pranoi_kushtet_at)
+         VALUES ($1,$2,$3,$4,true,$5,now()) RETURNING id`,
+        [emri, email, null, celes, oferta]);
       bizId = ins.rows[0].id;
     }
-
-    // 4. Hap seancen
+    delete googlePending[p];
+    res.clearCookie('imyr_pending');
     const token = crypto.randomBytes(24).toString('hex');
     await pool.query('INSERT INTO seancat (token, biznes_id) VALUES ($1,$2)', [token, bizId]);
     res.cookie('imyr_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 30*24*60*60*1000 });
-    res.redirect('/?login=ok');
-  } catch (e) {
-    res.redirect('/?login=gabim');
-  }
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // --- TE DHENAT BAZE TE BIZNESIT (emri + website + tipi) — pas login-it me Google ---
