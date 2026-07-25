@@ -401,13 +401,14 @@ function stepLlogaria(b){
     if(!une.website || !une.tipi){
       b.innerHTML=
         '<h2 class="h">Të dhënat e biznesit</h2><p class="small" style="margin:2px 0 14px;">Plotëso këto për të vazhduar.</p>'+
+        '<label>Emri i biznesit (SaaS-it)</label><input id="a_emri" placeholder="Biznesi im" value="'+esc(une.emri||'')+'">'+
         '<label>Faqja (website)</label><input id="a_web" placeholder="https://saasi-im.com" value="'+esc(une.website||'')+'">'+
         segHTML('a_tipi')+
         '<button class="primary" id="a_btn" onclick="wizPlotesoBiz()">Vazhdo →</button><div class="msg" id="a_msg"></div>';
       if(une.tipi){ const btn=document.querySelector('#a_tipi button[data-v="'+une.tipi+'"]'); if(btn) segPick(btn); }
       return;
     }
-    b.innerHTML='<h2 class="h">Llogaria ✓</h2><p class="small">Llogaria u krijua për <b>'+esc(une.emri)+'</b>.</p>'+
+    b.innerHTML='<h2 class="h">Biznesi ✓</h2><p class="small">Të dhënat u ruajtën për <b>'+esc(une.emri)+'</b>.</p>'+
       '<button class="primary" onclick="openWizard(1)">Vazhdo →</button>';
     return;
   }
@@ -421,16 +422,18 @@ function stepLlogaria(b){
     '<button class="primary" id="a_btn" onclick="wizKrijo()">Vazhdo →</button><div class="msg" id="a_msg"></div>';
 }
 async function wizPlotesoBiz(){
+  const emri=($('a_emri').value||'').trim();
   const web=($('a_web').value||'').trim();
   const tipi=segVal('a_tipi');
+  if(!emri){ $('a_msg').className='msg err'; $('a_msg').textContent='Shkruaj emrin e biznesit.'; return; }
   if(!web){ $('a_msg').className='msg err'; $('a_msg').textContent='Shkruaj adresën e faqes.'; return; }
   if(!tipi){ $('a_msg').className='msg err'; $('a_msg').textContent='Zgjidh kujt i shërben platforma.'; return; }
   $('a_btn').disabled=true;
   try{
     const r=await(await fetch('/api/biz-baza',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({website:web,tipi})})).json();
+      body:JSON.stringify({emri,website:web,tipi})})).json();
     if(r.error){ $('a_msg').className='msg err'; $('a_msg').textContent=r.error; $('a_btn').disabled=false; return; }
-    if(une){ une.website=web; une.tipi=tipi; }
+    if(une){ une.emri=emri; une.website=web; une.tipi=tipi; }
     await refreshProg();
     openWizard(1);
   }catch(e){ $('a_msg').className='msg err'; $('a_msg').textContent='Gabim: '+e.message; $('a_btn').disabled=false; }
