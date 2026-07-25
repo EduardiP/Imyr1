@@ -259,13 +259,14 @@ app.get('/auth/google/callback', async (req, res) => {
   }
 });
 
-// --- TE DHENAT BAZE TE BIZNESIT (website + tipi) — pas login-it me Google ---
+// --- TE DHENAT BAZE TE BIZNESIT (emri + website + tipi) — pas login-it me Google ---
 app.post('/api/biz-baza', iLoguar, async (req, res) => {
+  const emri = (req.body.emri || '').trim();
   const website = (req.body.website || '').trim();
   const tipi = ['b2b','b2c','b2b2c'].includes(req.body.tipi) ? req.body.tipi : null;
-  if (!website || !tipi) return res.status(400).json({ error: 'Website dhe tipi jane te detyrueshem.' });
+  if (!emri || !website || !tipi) return res.status(400).json({ error: 'Emri, website dhe tipi jane te detyrueshem.' });
   try {
-    await pool.query('UPDATE bizneset SET website=$2, tipi=$3 WHERE id=$1', [req.biznesId, website, tipi]);
+    await pool.query('UPDATE bizneset SET emri=$2, website=$3, tipi=$4 WHERE id=$1', [req.biznesId, emri, website, tipi]);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
