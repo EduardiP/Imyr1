@@ -115,6 +115,11 @@ async function boot(){
   if(loginRez){
     // Pastro parametrin nga URL-ja
     history.replaceState(null,'',location.pathname);
+    if(loginRez==='kushte'){
+      applyState({v:'hero'}, true);
+      if(typeof hapKushteGoogle==='function') await hapKushteGoogle();
+      return;
+    }
     if(loginRez==='ok' && une){
       applyState({v:'wizard', step: nextIncomplete()}, true);
       return;
