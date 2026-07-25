@@ -2,8 +2,6 @@
 // Faqe te ndara, kornize e perbashket per KETE saas.
 // Rreshtin e Imyr-it e ngjit NJE HERE te layout() me poshte; vlen per te 3 faqet.
 
-const CELESI = 'CELESI_IMYR';   // <- vendos celesin e ktij biznesi (nga wizard-i)
-const BASE   = 'https://imyr-production.up.railway.app';
 
 const CSS = `
   body{ margin:0; font:16px/1.6 system-ui,Segoe UI,Roboto,sans-serif; color:#1a1a2e; background:#f6f7fb; }
@@ -58,8 +56,10 @@ ${trupi}
 
 <footer>© 2026 DizajnKit — faqe prove per Imyr</footer>
 
-<!-- Imyr: NJE rresht, ne layout => vlen per TE GJITHA faqet e DizajnKit -->
-<script src="${BASE}/imyr.js" data-key="${CELESI}"></script>
+<!-- ═══ NGJIT KETU rreshtin e Imyr-it (copy-paste nga wizard-i) — vlen per TE GJITHA faqet e DizajnKit -->
+
+
+<!-- ═══ deri ketu ═══ -->
 </body>
 </html>`;
 }
