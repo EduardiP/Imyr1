@@ -220,3 +220,12 @@ footer.site{background:#080a0e;border-top:1px solid var(--line);padding:54px 0 3
 .miniStat{ flex:1; min-width:150px; background:#0e1116; border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
 .miniStat .mv{ font-size:22px; font-weight:700; color:var(--txt); }
 .mut{ color:var(--mut); }
+
+/* ═══ LOGIN ME GOOGLE ═══ */
+.gbtn{ width:100%; display:flex; align-items:center; justify-content:center; gap:10px;
+  background:#fff; color:#1f1f1f; border:1px solid #dadce0; border-radius:8px;
+  padding:11px 14px; font-size:15px; font-weight:600; cursor:pointer; font-family:inherit; }
+.gbtn:hover{ background:#f7f8f8; }
+.ndaresi{ display:flex; align-items:center; text-align:center; color:var(--mut); font-size:12px; margin:16px 0; }
+.ndaresi::before,.ndaresi::after{ content:''; flex:1; height:1px; background:var(--line); }
+.ndaresi span{ padding:0 12px; }
