@@ -51,7 +51,7 @@ ${trupi}
 <footer>© 2026 SaaS Prov 1</footer>
 
 <!-- ═══ NGJIT KËTU rreshtin e Imyr-it (nga wizard-i, hapi "Konvertimi") ═══ -->
-<script src="https://imyr-production.up.railway.app/imyr.js" data-key="imyr_ab2a9a0ea22373c3b24461c2"></script>
+<script src="https://imyr-production.up.railway.app/imyr.js" data-key="imyr_594ecfa60c0aac3c9253314f"></script>
 <script src="https://imyr-production.up.railway.app/imyr-track.js" data-key="imyr_ab2a9a0ea22373c3b24461c2"></script>
 <!-- ═══ deri këtu — vlen për TË GJITHA faqet ═══ -->
 </body>
