@@ -13,6 +13,7 @@ const https = require('https');
 const http = require('http');
 const selector = require('./selector');
 const analytics = require('./analytics');
+const pesha = require('./pesha');
 const multer = require('multer');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 
@@ -221,6 +222,76 @@ app.get('/api/progres', iLoguar, async (req, res) => {
       konvertimi: !!row.url_konvertimi,                 // url-ja e konvertimit u dha
       reklama: p.rows.length > 0                         // reklama u krijua
     });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- PROFILI I ZGJERUAR: pikët e profilit + analitika për çdo snippet ---
+app.get('/api/profili', iLoguar, async (req, res) => {
+  try {
+    const bq = await pool.query(
+      'SELECT emri, email, tipi, url_konvertimi, created_at FROM bizneset WHERE id=$1', [req.biznesId]);
+    const biz = bq.rows[0] || {};
+    const tipi = biz.tipi || 'b2c';
+
+    const perSnippet = await pool.query(
+      `SELECT COALESCE(origjina,'(pa origjinë)') AS origjina,
+              COUNT(*) FILTER (WHERE lloji='view')::int      AS shfaqje,
+              COUNT(*) FILTER (WHERE lloji='click')::int     AS klikime,
+              COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
+       FROM ngjarjet WHERE biznes_id=$1
+       GROUP BY origjina ORDER BY shfaqje DESC`, [req.biznesId]);
+
+    const tot = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE lloji='view')::int      AS shfaqje,
+              COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
+       FROM ngjarjet WHERE biznes_id=$1`, [req.biznesId]);
+    const shfaqje = tot.rows[0].shfaqje, konvertime = tot.rows[0].konvertime;
+
+    const rate = pesha.PARAM.RATE[tipi] || pesha.PARAM.RATE.b2c;
+    const pikeShfaqje = shfaqje / rate;
+    const pikeTotal = pikeShfaqje + konvertime;
+
+    res.json({
+      emri: biz.emri, email: biz.email, tipi,
+      pike_profili: Math.round(pikeTotal * 10) / 10,
+      pike: {
+        shfaqje, pike_nga_shfaqjet: Math.round(pikeShfaqje * 10) / 10, rate,
+        konvertime, pike_nga_konvertimet: konvertime
+      },
+      snippets: perSnippet.rows
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- NJOFTIMET (llogariten në çast: gjendja + ditët nga regjistrimi) ---
+app.get('/api/njoftimet', iLoguar, async (req, res) => {
+  try {
+    const b = await pool.query(
+      'SELECT created_at, snippet_active, url_konvertimi FROM bizneset WHERE id=$1', [req.biznesId]);
+    const p = await pool.query('SELECT COUNT(*)::int n FROM promovimet WHERE biznes_id=$1 AND aktiv=true', [req.biznesId]);
+    const row = b.rows[0] || {};
+    const ditet = Math.floor((Date.now() - new Date(row.created_at).getTime()) / 86400000);
+    const kaReklame = p.rows[0].n > 0;
+    const njf = [];
+
+    if (!row.snippet_active) {
+      njf.push({ tip: 'snippet', titull: 'Lidh snippet-in',
+        teksti: "Vendos snippet-in te faqja jote që të marrësh dhe të japësh shfaqje.", veprim: 'lidhja' });
+    }
+    if (!kaReklame) {
+      njf.push({ tip: 'reklama', titull: 'Krijo reklamën tënde të parë',
+        teksti: "Ende s'ke një reklamë aktive. Krijo një te Creatives që të fillosh të shfaqesh te rrjeti.", veprim: 'creatives' });
+    }
+    if (!row.url_konvertimi) {
+      njf.push({ tip: 'konvertim', titull: 'Aktivizo gjurmimin e konvertimeve',
+        teksti: "Gjurmimi i leads-ave s'është aktiv. Aktivizoje — konvertimet rrisin pikët e tua të profilit, që rrisin sa shpesh shfaqet reklama jote.", veprim: 'konvertimi' });
+    }
+    if (ditet >= 3 && !row.url_konvertimi) {
+      njf.push({ tip: 'kujtese', titull: 'Kanë kaluar disa ditë',
+        teksti: "Lidhja e konvertimit ende s'është bërë. Është mënyra kryesore për të mbledhur pikë nëse ke pak trafik.", veprim: 'konvertimi' });
+    }
+
+    res.json({ ditet, njoftimet: njf });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
