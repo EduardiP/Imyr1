@@ -67,7 +67,9 @@ function renderProfile(s){
   curNav = s.nav || 'dashboard';
   $('p_emri').textContent = une.emri;
   $('p_email').textContent = une.email;
-  $('p_kat').textContent = ''; // kategoria s'i tregohet klientit
+  $('p_kat').textContent = '';
+  const card = document.querySelector('.pcard');
+  if(card){ card.style.cursor='pointer'; card.onclick=()=>nav({v:'profile', nav:'profili'}); }
   renderNav();
   renderMain(s);
 }
@@ -83,9 +85,64 @@ function renderNav(){
 function renderMain(s){
   s = s || {};
   const m=$('mainPanel');
-  if(curNav==='dashboard') return mainDashboard(m);
-  if(curNav==='reklamat')  return mainReklamat(m, s);
-  if(curNav==='analytics') return mainAnalytics(m);
+  if(curNav==='profili')    return mainProfili(m);
+  if(curNav==='njoftimet')  return mainNjoftimet(m);
+  if(curNav==='dashboard')  return mainDashboard(m);
+  if(curNav==='reklamat')   return mainReklamat(m, s);
+  if(curNav==='analytics')  return mainAnalytics(m);
+}
+async function mainProfili(m){
+  m.innerHTML='<p class="small">Po ngarkoj…</p>';
+  let d={};
+  try{ d=await(await fetch('/api/profili')).json(); }catch(e){ m.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; return; }
+  const inic=(d.emri||'?').trim().charAt(0).toUpperCase();
+  const tipiTekst = d.tipi==='b2b'?'Bizneseve (B2B)':(d.tipi==='b2c'?'Individëve (B2C)':'Të dyjave');
+  let snip='';
+  if(d.snippets && d.snippets.length){
+    snip='<div class="rektbl" style="margin-top:10px;"><div class="rekhead"><span>Faqja (snippet)</span><span>Shfaqje</span><span>Klikime</span><span>Konvertime</span></div>';
+    d.snippets.forEach(x=>{
+      snip+='<div class="rekrow" style="cursor:default;"><span class="rekname"><span class="nm">'+esc(x.origjina)+'</span></span>'+
+            '<span>'+x.shfaqje+'</span><span>'+x.klikime+'</span><span>'+x.konvertime+'</span></div>';
+    });
+    snip+='</div>';
+  } else {
+    snip='<p class="small" style="margin-top:8px;">Ende s\'ka të dhëna nga asnjë snippet.</p>';
+  }
+  m.innerHTML=
+    '<div style="display:flex;align-items:center;gap:16px;margin-bottom:6px;">'+
+      '<div class="avatar">'+esc(inic)+'</div>'+
+      '<div><div style="font-size:20px;font-weight:700;">'+esc(d.emri||'')+'</div>'+
+        '<div class="small">'+esc(d.email||'')+'</div>'+
+        '<div class="small">Audienca: '+tipiTekst+'</div></div>'+
+    '</div>'+
+    '<div class="pikeCard">'+
+      '<div class="pikeNr">'+(d.pike_profili||0)+'</div>'+
+      '<div class="small">pikë profili</div>'+
+    '</div>'+
+    '<h3 class="h" style="font-size:16px;margin:22px 0 4px;">Nga faqja jote (kontributi)</h3>'+
+    '<div style="display:flex;gap:10px;margin:8px 0 4px;flex-wrap:wrap;">'+
+      '<div class="miniStat"><div class="mv">'+(d.pike?d.pike.shfaqje:0)+'</div><div class="small">shfaqje → '+(d.pike?d.pike.pike_nga_shfaqjet:0)+' pikë</div><div class="small mut">('+(d.pike?d.pike.rate:0)+' shfaqje = 1 pikë)</div></div>'+
+      '<div class="miniStat"><div class="mv">'+(d.pike?d.pike.konvertime:0)+'</div><div class="small">konvertime → '+(d.pike?d.pike.pike_nga_konvertimet:0)+' pikë</div><div class="small mut">(1 konvertim = 1 pikë)</div></div>'+
+    '</div>'+
+    '<p class="small mut" style="margin:6px 0 18px;">Pikët e profilit rrisin sa shpesh shfaqet reklama jote te rrjeti. Mblidhen nga shfaqjet dhe konvertimet që sjell faqja jote.</p>'+
+    '<h3 class="h" style="font-size:16px;margin:0 0 4px;">Sipas snippet-it</h3>'+snip;
+}
+async function mainNjoftimet(m){
+  m.innerHTML='<h2 class="h">Njoftime</h2><div id="njLista" style="margin-top:12px;"><p class="small">Po ngarkoj…</p></div>';
+  try{
+    const r=await(await fetch('/api/njoftimet')).json();
+    const nj=r.njoftimet||[];
+    const el=$('njLista');
+    if(!nj.length){ el.innerHTML='<p class="small">S\'ke njoftime të reja.</p>'; return; }
+    let h='';
+    nj.forEach(x=>{
+      h+='<div class="njCard" onclick="njVeprim(\''+x.veprim+'\')">'+
+         '<div class="njT">'+esc(x.titull)+'</div>'+
+         '<div class="njX">'+esc(x.teksti)+'</div>'+
+         '<div class="njGo">Rregulloje →</div></div>';
+    });
+    el.innerHTML=h;
+  }catch(e){ $('njLista').innerHTML='<p class="small">Gabim.</p>'; }
 }
 function mainDashboard(m){
   m.innerHTML='<h2 class="h">Hapat e konfigurimit</h2>'+
@@ -125,13 +182,18 @@ async function hapReklame(id, m){
   let rows=window.__reklamat;
   if(!rows){ try{ rows=await(await fetch('/api/reklamat')).json(); window.__reklamat=rows; }catch(e){ rows=[]; } }
   const r=(rows||[]).find(x=>x.id===id)||{};
+  const konvLidhur = !!(une && une.url_konvertimi);
+  const konvKuti = konvLidhur
+    ? '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.konvertime||0)+'</div><div class="small">Konvertime</div></div>'
+    : '<div onclick="openWizard(3)" style="flex:1;background:#0e1116;border:1px dashed var(--err);border-radius:10px;padding:12px 14px;cursor:pointer;"><div style="font-size:13px;font-weight:700;color:var(--err);">E palidhur</div><div class="small">Konvertime</div><div class="small" style="color:var(--acc);margin-top:4px;">Aktivizo →</div></div>';
   m.innerHTML=
     '<h2 class="h">'+esc(r.emri||'Reklama')+'</h2>'+
     '<div style="display:flex;gap:10px;margin:14px 0;">'+
       '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.shikime||0)+'</div><div class="small">Shikime</div></div>'+
       '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.klikime||0)+'</div><div class="small">Klikime</div></div>'+
-      '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.konvertime||0)+'</div><div class="small">Konvertime</div></div>'+
+      konvKuti+
     '</div>'+
+    (konvLidhur ? '' : '<p class="small mut" style="margin-bottom:10px;">Gjurmimi i konvertimeve s\'është aktiv. Aktivizoje — konvertimet rrisin pikët e tua të profilit dhe sa shpesh shfaqet reklama.</p>')+
     '<p class="small">Variantet e krijuara (Image / Video / HTML5) do të shfaqen këtu — për të parë cili performon më mirë në testim.</p>';
 }
 function krijoReklame(m){
@@ -161,14 +223,16 @@ function renderVStep(){
 // ---------- WIZARD ----------
 function startWizard(){ openWizard(une ? nextIncomplete() : 0); }
 function closeWizard(){ if(pollTimer){clearInterval(pollTimer);pollTimer=null;} nav({v: une?'home':'hero'}); }
-function openWizard(i){ if(i>=STEPS.length) i=STEPS.length-1; nav({v:'wizard', step:i}); }
+function openWizard(i){ const max=STEPS.length; if(i>max) i=max; nav({v:'wizard', step:i}); }
 function renderWizard(i){
   if(!une) i=0;
-  if(i>=STEPS.length) i=STEPS.length-1;
+  if(i>STEPS.length) i=STEPS.length;
   curStep=i; showView('wizard'); renderHStep(); renderStepBody(i);
 }
 function renderHStep(){
-  $('wizStepN').textContent='Hapi '+(curStep+1)+' nga '+STEPS.length;
+  const total = STEPS.length;
+  if(curStep>=total){ $('wizStepN').textContent='Opsionale'; }
+  else $('wizStepN').textContent='Hapi '+(curStep+1)+' nga '+total;
   const el=$('hstep'); el.innerHTML='';
   STEPS.forEach((s,i)=>{
     const done=une&&prog[s.key], cur=(i===curStep);
@@ -189,7 +253,7 @@ function renderStepBody(i){
   if(i===0) return stepLlogaria(b);
   if(i===1) return stepPershkrimi(b);
   if(i===2) return stepLidhja(b);
-  if(i===3) return stepKonvertimi(b);
+  if(i===3) return stepKonvertimi(b);   // opsional — hapet nga "Aktivizo" te Konvertimet, jo nga rrjedha
 }
 
 // STEP 3 — Konvertimi (faqja qe shfaqet vetem pas regjistrimit)
@@ -207,8 +271,8 @@ function stepKonvertimi(b){
       '<input id="k_url" placeholder="/welcome">'+
       '<p class="small" style="margin:6px 0 0;">Shkruaj vetëm pjesën pas adresës së faqes, p.sh. <b>/welcome</b> ose <b>/faleminderit</b>. Ajo faqe s\'duhet të hapet nga menuja — vetëm pas regjistrimit.</p>'+
       '<div style="margin-top:18px;padding:14px;border:1px solid var(--line);border-radius:10px;background:#0e1116;">'+
-        '<b style="font-size:14px;">Edhe një rresht, te çdo faqe</b>'+
-        '<p class="small" style="margin:6px 0 10px;">Ky rresht nuk shfaq asgjë — vetëm gjurmon. Vendose para <code>&lt;/body&gt;</code> te skedari që ngarkohet në <b>çdo</b> faqe (te Shopify: <i>Online Store → Themes → Edit code → Layout → theme.liquid</i>).</p>'+
+        '<b style="font-size:14px;">Një rresht, te çdo faqe</b>'+
+        '<p class="small" style="margin:6px 0 10px;">Vendose para <code>&lt;/body&gt;</code> te skedari që ngarkohet në <b>çdo</b> faqe (te Shopify: <i>Online Store → Themes → Edit code → Layout → theme.liquid</i>). Aty ku do reklamën, shto <code>&lt;div id="imyr-slot"&gt;&lt;/div&gt;</code>.</p>'+
         '<div class="kodbox" id="k_kod"></div>'+
         '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">'+
           '<button class="btn" onclick="kopjoTrack()">Kopjo</button>'+
@@ -230,7 +294,7 @@ function stepKonvertimi(b){
   mbushTrack();
 }
 function trackKod(){
-  return '<script src="'+location.origin+'/imyr-track.js" data-key="'+((une&&une.celes)||'')+'"><\/script>';
+  return '<script src="'+location.origin+'/imyr.js" data-key="'+((une&&une.celes)||'')+'"><\/script>';
 }
 function mbushTrack(){ const el=$('k_kod'); if(el) el.textContent=trackKod(); kStatus(); }
 function kopjoTrack(){
@@ -256,7 +320,12 @@ let kTimer=null;
 async function verifikoTrack(){
   const st=$('k_stat'), btn=$('k_ver');
   if(btn) btn.disabled=true;
-  if(st) st.innerHTML='<span class="spin"></span> Po kontrolloj… hap faqen tënde në një skedë tjetër.';
+  let faqja = (une && une.website) || '';
+  if(faqja && !/^https?:\/\//i.test(faqja)) faqja = 'https://' + faqja;
+  if(faqja){ try{ window.open(faqja, '_blank', 'noopener'); }catch(e){} }
+  if(st) st.innerHTML='<span class="spin"></span> '+(faqja
+    ? 'Hapëm faqen tënde në një skedë tjetër. Po kontrolloj…'
+    : 'Po kontrolloj… hap faqen tënde në një skedë tjetër.');
   const gjetur=await kStatus();
   if(!gjetur && !kTimer){
     let here=0;
@@ -365,8 +434,8 @@ function stepLidhja(b){
     '<h2 class="h">Lidh Imyr-in te faqja jote</h2>'+
     '<p class="small">Kopjo këtë rresht dhe vendose kudo te faqja jote (p.sh. te footer-i).</p>'+
     '<div id="connectWrap"></div>'+
-    '<button class="primary hide" id="lidhNext" onclick="openWizard(3)">Vazhdo →</button>';
-  window.__onLidhur = ()=>{ renderHStep(); $('lidhNext').classList.remove('hide'); setTimeout(()=>openWizard(3),900); };
+    '<button class="primary hide" id="lidhNext" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">Krijo reklamën →</button>';
+  window.__onLidhur = ()=>{ renderHStep(); $('lidhNext').classList.remove('hide'); setTimeout(()=>nav({v:'profile',nav:'reklamat',sub:'create'}),900); };
   connectUI($('connectWrap'));
   if(prog.lidhja){ $('lidhNext').classList.remove('hide'); }
 }
