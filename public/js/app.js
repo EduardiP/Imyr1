@@ -87,6 +87,7 @@ function renderMain(s){
   const m=$('mainPanel');
   if(curNav==='profili')    return mainProfili(m);
   if(curNav==='njoftimet')  return mainNjoftimet(m);
+  if(curNav==='konvertimi') return mainKonvertimi(m);
   if(curNav==='dashboard')  return mainDashboard(m);
   if(curNav==='reklamat')   return mainReklamat(m, s);
   if(curNav==='analytics')  return mainAnalytics(m);
@@ -97,12 +98,16 @@ async function mainProfili(m){
   try{ d=await(await fetch('/api/profili')).json(); }catch(e){ m.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; return; }
   const inic=(d.emri||'?').trim().charAt(0).toUpperCase();
   const tipiTekst = d.tipi==='b2b'?'Bizneseve (B2B)':(d.tipi==='b2c'?'Individëve (B2C)':'Të dyjave');
+  const konvLidhur = !!(une && une.url_konvertimi);
   let snip='';
   if(d.snippets && d.snippets.length){
     snip='<div class="rektbl" style="margin-top:10px;"><div class="rekhead"><span>Faqja (snippet)</span><span>Shfaqje</span><span>Klikime</span><span>Konvertime</span></div>';
     d.snippets.forEach(x=>{
+      const konvQel = konvLidhur
+        ? '<span>'+x.konvertime+'</span>'
+        : '<span onclick="nav({v:\'profile\',nav:\'konvertimi\'})" style="color:var(--err);cursor:pointer;font-size:12px;">Lidh →</span>';
       snip+='<div class="rekrow" style="cursor:default;"><span class="rekname"><span class="nm">'+esc(x.origjina)+'</span></span>'+
-            '<span>'+x.shfaqje+'</span><span>'+x.klikime+'</span><span>'+x.konvertime+'</span></div>';
+            '<span>'+x.shfaqje+'</span><span>'+x.klikime+'</span>'+konvQel+'</div>';
     });
     snip+='</div>';
   } else {
@@ -145,10 +150,28 @@ async function mainNjoftimet(m){
   }catch(e){ $('njLista').innerHTML='<p class="small">Gabim.</p>'; }
 }
 function mainDashboard(m){
-  m.innerHTML='<h2 class="h">Hapat e konfigurimit</h2>'+
-    '<p class="small" style="margin:2px 0 18px;">Përfundo hapat për ta aktivizuar plotësisht Imyr.</p>'+
-    '<div class="vstep" id="vstep" style="max-width:460px;"></div>';
-  renderVStep();
+  m.innerHTML='<h2 class="h">Statusi i llogarisë</h2>'+
+    '<p class="small" style="margin:2px 0 18px;">Këto tregojnë çfarë është gati dhe çfarë jo. Kliko një rresht për ta plotësuar.</p>'+
+    '<div class="vstep" id="vstep" style="max-width:520px;"></div>';
+  renderDashStatus();
+}
+function renderDashStatus(){
+  const el=$('vstep'); if(!el) return; el.innerHTML='';
+  const rreshtat=[
+    { done: !!prog.llogaria,   label:'Llogaria',            veprim:()=>openWizard(0) },
+    { done: !!prog.pershkrimi, label:'Përshkrimi',          veprim:()=>openWizard(1) },
+    { done: !!prog.lidhja,     label:'Lidhja e snippet-it', veprim:()=>openWizard(2) },
+    { done: !!prog.reklama,    label:'Krijo produkt',       veprim:()=>nav({v:'profile',nav:'reklamat',sub:'create'}) },
+    { done: !!prog.konvertimi, label:'Lidh konvertimin',    veprim:()=>nav({v:'profile',nav:'konvertimi'}) }
+  ];
+  rreshtat.forEach(r=>{
+    const d=document.createElement('div');
+    d.className='vs click'+(r.done?' done':'');
+    d.innerHTML='<span class="vd">'+(r.done?'✓':'+')+'</span>'+
+      '<span class="vl">'+r.label+(r.done?'':' — plotëso')+'</span>';
+    d.onclick=r.veprim;
+    el.appendChild(d);
+  });
 }
 function mainReklamat(m, s){
   s = s || {};
@@ -185,7 +208,7 @@ async function hapReklame(id, m){
   const konvLidhur = !!(une && une.url_konvertimi);
   const konvKuti = konvLidhur
     ? '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.konvertime||0)+'</div><div class="small">Konvertime</div></div>'
-    : '<div onclick="openWizard(3)" style="flex:1;background:#0e1116;border:1px dashed var(--err);border-radius:10px;padding:12px 14px;cursor:pointer;"><div style="font-size:13px;font-weight:700;color:var(--err);">E palidhur</div><div class="small">Konvertime</div><div class="small" style="color:var(--acc);margin-top:4px;">Aktivizo →</div></div>';
+    : '<div onclick="nav({v:\'profile\',nav:\'konvertimi\'})" style="flex:1;background:#0e1116;border:1px dashed var(--err);border-radius:10px;padding:12px 14px;cursor:pointer;"><div style="font-size:13px;font-weight:700;color:var(--err);">E palidhur</div><div class="small">Konvertime</div><div class="small" style="color:var(--acc);margin-top:4px;">Aktivizo →</div></div>';
   m.innerHTML=
     '<h2 class="h">'+esc(r.emri||'Reklama')+'</h2>'+
     '<div style="display:flex;gap:10px;margin:14px 0;">'+
@@ -257,10 +280,21 @@ function renderStepBody(i){
 }
 
 // STEP 3 — Konvertimi (faqja qe shfaqet vetem pas regjistrimit)
+// Pamja e VETME e lidhjes se konvertimit (brenda profilit, si Creatives)
+function mainKonvertimi(m){
+  ndertoKonvertim(m, false);
+}
+// Hapi opsional i wizardit (arrihet vetem nga "Aktivizo"/Dashboard perpara krijimit)
 function stepKonvertimi(b){
+  ndertoKonvertim(b, true);
+}
+function ndertoKonvertim(b, ngaWizard){
+  const pasRuajtjes = ngaWizard
+    ? 'nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})'
+    : 'nav({v:\'profile\',nav:\'dashboard\'})';
   b.innerHTML=
     '<h2 class="h">Gjurmo konvertimet</h2>'+
-    '<p class="small" style="margin:2px 0 16px;">Që të dimë kur një klikim sjell një regjistrim të vërtetë, na duhet adresa e faqes që shfaqet <b>vetëm pasi dikush regjistrohet</b>.</p>'+
+    '<p class="small" style="margin:2px 0 16px;">Që të dimë kur një klikim sjell një regjistrim të vërtetë, na duhet adresa e faqes që shfaqet <b>vetëm pasi dikush regjistrohet</b>. Konvertimet rrisin pikët e tua të profilit.</p>'+
     '<label>A ke një faqe të tillë?</label>'+
     '<div class="seg" id="k_ka">'+
       '<button type="button" data-v="po" onclick="segPick(this);kSwitch()">Po, kam</button>'+
@@ -280,11 +314,12 @@ function stepKonvertimi(b){
         '</div>'+
         '<div id="k_stat" class="small" style="margin-top:10px;"></div>'+
       '</div>'+
-      '<button class="primary" id="k_btn" onclick="ruajKonvertim()" disabled>Ruaj &amp; vazhdo →</button>'+
+      '<button class="primary" id="k_btn" onclick="ruajKonvertim(\''+pasRuajtjes.replace(/'/g,"\\'")+'\')" disabled>Ruaj →</button>'+
     '</div>'+
     '<div id="k_jo" class="hide" style="margin-top:14px;">'+
-      '<p class="small">Atëherë do të të duhet një rresht kod te faqja jote. Këtë do ta shtojmë së shpejti — tani mund të vazhdosh dhe ta konfigurosh më vonë nga profili.</p>'+
-      '<button class="primary" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">Vazhdo →</button>'+
+      '<p class="small">Atëherë do të të duhet një rresht kod te faqja jote. Këtë do ta shtojmë së shpejti — mund ta konfigurosh më vonë nga këtu.</p>'+
+      (ngaWizard ? '<button class="primary" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">Vazhdo →</button>'
+                 : '<button class="primary" onclick="nav({v:\'profile\',nav:\'dashboard\'})">Kthehu →</button>')+
     '</div>'+
     '<div class="msg" id="k_msg"></div>';
   if(une && une.url_konvertimi){
@@ -340,7 +375,7 @@ function kSwitch(){
   $('k_po').classList.toggle('hide', v!=='po');
   $('k_jo').classList.toggle('hide', v!=='jo');
 }
-async function ruajKonvertim(){
+async function ruajKonvertim(pasRuajtjes){
   const url=($('k_url').value||'').trim();
   if(!url){ $('k_msg').className='msg err'; $('k_msg').textContent='Shkruaj adresën e faqes.'; return; }
   $('k_btn').disabled=true; $('k_msg').className='msg'; $('k_msg').textContent='';
@@ -350,7 +385,9 @@ async function ruajKonvertim(){
     if(r.error){ $('k_msg').className='msg err'; $('k_msg').textContent=r.error; $('k_btn').disabled=false; return; }
     if(une) une.url_konvertimi=r.url;
     await refreshProg();
-    nav({v:'profile',nav:'reklamat',sub:'create'});
+    ngarkoNjoftimet();
+    if(pasRuajtjes){ try{ eval(pasRuajtjes); return; }catch(e){} }
+    nav({v:'profile',nav:'dashboard'});
   }catch(e){ $('k_msg').className='msg err'; $('k_msg').textContent='Gabim: '+e.message; $('k_btn').disabled=false; }
 }
 
