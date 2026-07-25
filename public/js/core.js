@@ -63,7 +63,7 @@ async function ngarkoNjoftimet(){
 }
 function njVeprim(v){
   const box=$('njBox'); if(box) box.classList.add('hide');
-  if(v==='konvertimi') openWizard(3);
+  if(v==='konvertimi') nav({v:'profile', nav:'konvertimi'});
   else if(v==='creatives') nav({v:'profile',nav:'reklamat',sub:'create'});
   else if(v==='lidhja') openWizard(2);
   else nav({v:'profile'});
