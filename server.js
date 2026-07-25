@@ -1210,6 +1210,30 @@ app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'p
 app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
 app.get('/contact', (req, res) => res.sendFile(path.join(__dirname, 'public', 'contact.html')));
 app.get('/about', (req, res) => res.sendFile(path.join(__dirname, 'public', 'about.html')));
+// --- 5 SAAS PROVE (demo-*.js — secili i pavarur; fshiji kur te mbarosh) ---
+const demot = {
+  paguar: require('./demo-paguar'),
+  matje:  require('./demo-matje'),
+  posta:  require('./demo-posta'),
+  suport: require('./demo-suport'),
+  dizajn: require('./demo-dizajn')
+};
+app.get('/demo/:slug', (req, res) => {
+  const d = demot[req.params.slug];
+  if (!d) return res.status(404).send('SaaS i panjohur');
+  res.send(d.faqet.ballina());
+});
+app.get('/demo/:slug/regjistrohu', (req, res) => {
+  const d = demot[req.params.slug];
+  if (!d) return res.status(404).send('SaaS i panjohur');
+  res.send(d.faqet.regjistrohu());
+});
+app.get('/demo/:slug/welcome', (req, res) => {
+  const d = demot[req.params.slug];
+  if (!d) return res.status(404).send('SaaS i panjohur');
+  res.send(d.faqet.welcome());
+});
+
 // --- SAJTI I PROVES (test-saas.js — fshije bashke me kete bllok kur te mbaroje testimi) ---
 const testSaas = require('./test-saas');
 app.get('/test', (req, res) => res.send(testSaas.faqet.ballina()));
