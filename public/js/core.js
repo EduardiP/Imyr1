@@ -3,7 +3,7 @@ const $ = id => document.getElementById(id);
 let pollTimer = null, prog = null, une = null, curStep = 0, curNav = 'dashboard';
 
 const STEPS = [
-  { key:'llogaria',   label:'Llogaria' },
+  { key:'llogaria',   label:'Biznesi' },
   { key:'pershkrimi', label:'Përshkrimi' },
   { key:'lidhja',     label:'Lidhja' }
 ];
@@ -116,7 +116,7 @@ async function boot(){
     // Pastro parametrin nga URL-ja
     history.replaceState(null,'',location.pathname);
     if(loginRez==='ok' && une){
-      applyState({v:'home'}, true);
+      applyState({v:'wizard', step: nextIncomplete()}, true);
       return;
     }
     if(loginRez==='gabim'){
