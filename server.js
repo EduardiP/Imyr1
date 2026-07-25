@@ -91,6 +91,7 @@ async function initDB() {
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS nenkategorite TEXT`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS permbledhje TEXT`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS tipi TEXT`);
+  await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS logo_url TEXT`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pranoi_kushtet BOOLEAN DEFAULT false`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pranoi_oferta BOOLEAN DEFAULT false`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pranoi_kushtet_at TIMESTAMPTZ`);
@@ -327,7 +328,7 @@ app.post('/api/dil', async (req, res) => {
 app.get('/api/une', iLoguar, async (req, res) => {
   try {
     const r = await pool.query(
-      `SELECT id, emri, email, kategoria, plani, website, celes, tipi, url_konvertimi,
+      `SELECT id, emri, email, kategoria, plani, website, celes, tipi, url_konvertimi, logo_url,
               kategoria_kryesore, nenkategorite, permbledhje, pershkrimi
        FROM bizneset WHERE id=$1`, [req.biznesId]);
     res.json(r.rows[0]);
@@ -355,7 +356,7 @@ app.get('/api/progres', iLoguar, async (req, res) => {
 app.get('/api/profili', iLoguar, async (req, res) => {
   try {
     const bq = await pool.query(
-      'SELECT emri, email, tipi, url_konvertimi, created_at FROM bizneset WHERE id=$1', [req.biznesId]);
+      'SELECT emri, email, tipi, url_konvertimi, created_at, logo_url FROM bizneset WHERE id=$1', [req.biznesId]);
     const biz = bq.rows[0] || {};
     const tipi = biz.tipi || 'b2c';
 
@@ -378,7 +379,7 @@ app.get('/api/profili', iLoguar, async (req, res) => {
     const pikeTotal = pikeShfaqje + konvertime;
 
     res.json({
-      emri: biz.emri, email: biz.email, tipi,
+      emri: biz.emri, email: biz.email, tipi, logo_url: biz.logo_url || null,
       pike_profili: Math.round(pikeTotal * 10) / 10,
       pike: {
         shfaqje, pike_nga_shfaqjet: Math.round(pikeShfaqje * 10) / 10, rate,
@@ -536,6 +537,24 @@ app.post('/api/ngarko', iLoguar, upload.single('file'), async (req, res) => {
     await pool.query(
       'INSERT INTO promovimet (biznes_id, titulli, imazh_url, aktiv) VALUES ($1,$2,$3,true)',
       [req.biznesId, titulli, url]);
+    res.json({ ok: true, url });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- NGARKO LOGON E BIZNESIT ---
+app.post('/api/ngarko-logo', iLoguar, upload.single('file'), async (req, res) => {
+  if (!s3) return res.status(500).json({ error: "Ruajtja (R2) s'është konfiguruar te serveri." });
+  if (!req.file) return res.status(400).json({ error: "S'ka skedar." });
+  const ext = (req.file.originalname.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const key = 'logos/' + req.biznesId + '_' + Date.now() + '.' + ext;
+  try {
+    await s3.send(new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET, Key: key,
+      Body: req.file.buffer, ContentType: req.file.mimetype
+    }));
+    const base = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '');
+    const url = base + '/' + key;
+    await pool.query('UPDATE bizneset SET logo_url=$2 WHERE id=$1', [req.biznesId, url]);
     res.json({ ok: true, url });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
