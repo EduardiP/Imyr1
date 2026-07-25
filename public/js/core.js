@@ -109,6 +109,21 @@ function nav(s){ history.pushState(s,''); applyState(s); }
 window.onpopstate = e => applyState(e.state);
 
 async function boot(){
+  const params = new URLSearchParams(location.search);
+  const loginRez = params.get('login');
   await loadMe();
+  if(loginRez){
+    // Pastro parametrin nga URL-ja
+    history.replaceState(null,'',location.pathname);
+    if(loginRez==='ok' && une){
+      applyState({v:'home'}, true);
+      return;
+    }
+    if(loginRez==='gabim'){
+      applyState(history.state, true);
+      alert('Hyrja me Google dështoi. Provo sërish.');
+      return;
+    }
+  }
   applyState(history.state, true);
 }
