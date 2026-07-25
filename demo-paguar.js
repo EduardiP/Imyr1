@@ -57,7 +57,7 @@ ${trupi}
 <footer>© 2026 PaguarFlow — faqe prove per Imyr</footer>
 
 <!-- ═══ NGJIT KETU rreshtin e Imyr-it (copy-paste nga wizard-i) — vlen per TE GJITHA faqet e PaguarFlow -->
-
+<script src="https://imyr-production.up.railway.app/imyr.js" data-key="imyr_5abaef6297d023b40a72b41f"></script>
 
 <!-- ═══ deri ketu ═══ -->
 </body>
