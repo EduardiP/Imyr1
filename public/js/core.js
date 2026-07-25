@@ -5,8 +5,7 @@ let pollTimer = null, prog = null, une = null, curStep = 0, curNav = 'dashboard'
 const STEPS = [
   { key:'llogaria',   label:'Llogaria' },
   { key:'pershkrimi', label:'Përshkrimi' },
-  { key:'lidhja',     label:'Lidhja' },
-  { key:'konvertimi', label:'Konvertimi' }
+  { key:'lidhja',     label:'Lidhja' }
 ];
 const NAV = [
   { k:'dashboard', l:'Dashboard' },
@@ -35,14 +34,59 @@ function nextIncomplete(){ for(let i=0;i<STEPS.length;i++){ if(!prog[STEPS[i].ke
 function setHeaderLoggedIn(){
   $('hdrLeft').innerHTML='<button class="btn ghost" onclick="goHome()">Home</button>';
   $('hdrRight').innerHTML=
+    '<div class="zile-wrap"><button class="zile" onclick="toggleNjoftimet(event)" aria-label="Njoftimet">'+
+      '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>'+
+      '<span id="zileBadge" class="zile-badge hide">0</span>'+
+    '</button><div id="njBox" class="njBox hide"></div></div>'+
     '<div class="menu"><button class="btn" onclick="toggleMenu(event)">Profili ▾</button>'+
     '<div id="menuBox" class="menuBox hide">'+
       '<button onclick="goProfile()">Profili im</button>'+
       '<button onclick="dil()">Log out</button>'+
     '</div></div>';
+  ngarkoNjoftimet();
 }
-function toggleMenu(e){ e.stopPropagation(); const m=$('menuBox'); if(m) m.classList.toggle('hide'); }
-document.addEventListener('click', ()=>{ const m=$('menuBox'); if(m) m.classList.add('hide'); });
+function toggleMenu(e){ e.stopPropagation(); const m=$('menuBox'); if(m) m.classList.toggle('hide'); const n=$('njBox'); if(n) n.classList.add('hide'); }
+function toggleNjoftimet(e){ e.stopPropagation(); const n=$('njBox'); if(n) n.classList.toggle('hide'); const m=$('menuBox'); if(m) m.classList.add('hide'); }
+document.addEventListener('click', ()=>{ const m=$('menuBox'); if(m) m.classList.add('hide'); const n=$('njBox'); if(n) n.classList.add('hide'); });
+
+async function ngarkoNjoftimet(){
+  try{
+    const r=await(await fetch('/api/njoftimet')).json();
+    window.__njoftimet=r.njoftimet||[];
+    const badge=$('zileBadge');
+    if(badge){
+      const n=window.__njoftimet.length;
+      badge.textContent=n; badge.classList.toggle('hide', n===0);
+    }
+    renderNjBox();
+  }catch(e){}
+}
+function njVeprim(v){
+  const box=$('njBox'); if(box) box.classList.add('hide');
+  if(v==='konvertimi') openWizard(3);
+  else if(v==='creatives') nav({v:'profile',nav:'reklamat',sub:'create'});
+  else if(v==='lidhja') openWizard(2);
+  else nav({v:'profile'});
+}
+function renderNjBox(){
+  const box=$('njBox'); if(!box) return;
+  const nj=window.__njoftimet||[];
+  let h='<div class="njHead">Njoftime</div>';
+  if(!nj.length){ h+='<div class="njEmpty">S\'ke njoftime të reja.</div>'; }
+  else {
+    nj.slice(0,4).forEach((x,i)=>{
+      h+='<div class="njItem" onclick="njVeprim(\''+x.veprim+'\')">'+
+         '<div class="njT">'+esc(x.titull)+'</div>'+
+         '<div class="njX">'+esc(x.teksti)+'</div></div>';
+    });
+  }
+  h+='<div class="njMore" onclick="hapNjoftimet()">Shiko më shumë →</div>';
+  box.innerHTML=h;
+}
+function hapNjoftimet(){
+  const box=$('njBox'); if(box) box.classList.add('hide');
+  nav({v:'profile', nav:'njoftimet'});
+}
 function goProfile(){ nav({v:'profile'}); }
 function goHome(){ nav({v:'home'}); }
 
