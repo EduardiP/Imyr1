@@ -18,19 +18,18 @@ async function hyr(){
     const r=await(await fetch('/api/hyr',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({email:$('h_email').value.trim(),fjalekalimi:$('h_pass').value})})).json();
     if(r.error){ msg(r.error); $('btnHyr').disabled=false; return; }
-    mbyllModal(); await loadMe(); nav({v:'home'});
+    mbyllModal(); await loadMe(); nav({v:'wizard', step: nextIncomplete()});
   }catch(e){ msg('Gabim: '+e.message); }
   $('btnHyr').disabled=false;
 }
 async function regjistrohu(){
   $('btnReg').disabled=true;
   try{
-    const tipi=segVal('r_tipi');
-    if(!tipi){ msg('Zgjidh kujt i shërben platforma.'); $('btnReg').disabled=false; return; }
-    const body={emri:$('r_emri').value.trim(),email:$('r_email').value.trim(),fjalekalimi:$('r_pass').value,website:$('r_web').value.trim(),tipi};
+    const body={emri:$('r_emri').value.trim(),email:$('r_email').value.trim(),fjalekalimi:$('r_pass').value};
+    if(!body.emri||!body.email||!body.fjalekalimi){ msg('Plotëso emrin, email-in dhe fjalëkalimin.'); $('btnReg').disabled=false; return; }
     const r=await(await fetch('/api/regjistrohu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
     if(r.error){ msg(r.error); $('btnReg').disabled=false; return; }
-    mbyllModal(); await loadMe(); nav({v:'profile'});
+    mbyllModal(); await loadMe(); nav({v:'wizard', step: nextIncomplete()});
   }catch(e){ msg('Gabim: '+e.message); }
   $('btnReg').disabled=false;
 }
