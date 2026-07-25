@@ -43,7 +43,7 @@ async function initDB() {
       created_at TIMESTAMPTZ DEFAULT now(),
       emri TEXT NOT NULL,
       email TEXT UNIQUE NOT NULL,
-      fjalekalimi TEXT NOT NULL,       -- i hash-uar (bcrypt)
+      fjalekalimi TEXT,                -- i hash-uar (bcrypt); NULL nese hyri me Google
       kategoria TEXT,                  -- kategoria e biznesit
       plani TEXT DEFAULT 'falas',      -- falas | plan1 | plan2 ...
       website TEXT,                    -- faqja e biznesit
@@ -91,6 +91,7 @@ async function initDB() {
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS nenkategorite TEXT`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS permbledhje TEXT`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS tipi TEXT`);
+  await pool.query(`ALTER TABLE bizneset ALTER COLUMN fjalekalimi DROP NOT NULL`).catch(()=>{});
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS url_konvertimi TEXT`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS track_active BOOLEAN DEFAULT false`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS track_seen_at TIMESTAMPTZ`);
@@ -178,6 +179,7 @@ app.post('/api/hyr', async (req, res) => {
   try {
     const r = await pool.query('SELECT id, fjalekalimi FROM bizneset WHERE email=$1', [email.toLowerCase().trim()]);
     if (!r.rows.length) return res.status(400).json({ error: 'Email ose fjalekalim i gabuar.' });
+    if (!r.rows[0].fjalekalimi) return res.status(400).json({ error: 'Kjo llogari u krijua me Google. Hyr me Google.' });
     const ok = await bcrypt.compare(fjalekalimi, r.rows[0].fjalekalimi);
     if (!ok) return res.status(400).json({ error: 'Email ose fjalekalim i gabuar.' });
     const token = crypto.randomBytes(24).toString('hex');
@@ -187,6 +189,85 @@ app.post('/api/hyr', async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// --- LOGIN ME GOOGLE ---
+app.get('/auth/google', (req, res) => {
+  const cid = process.env.GOOGLE_CLIENT_ID;
+  const appUrl = process.env.APP_URL;
+  if (!cid || !appUrl) return res.status(500).send('Google login s\'është konfiguruar.');
+  const params = new URLSearchParams({
+    client_id: cid,
+    redirect_uri: appUrl + '/auth/google/callback',
+    response_type: 'code',
+    scope: 'openid email profile',
+    access_type: 'online',
+    prompt: 'select_account'
+  });
+  res.redirect('https://accounts.google.com/o/oauth2/v2/auth?' + params.toString());
+});
+
+app.get('/auth/google/callback', async (req, res) => {
+  const code = req.query.code;
+  const cid = process.env.GOOGLE_CLIENT_ID;
+  const secret = process.env.GOOGLE_CLIENT_SECRET;
+  const appUrl = process.env.APP_URL;
+  if (!code || !cid || !secret || !appUrl) return res.redirect('/?login=gabim');
+  try {
+    // 1. Shkembe kodin per token
+    const tokRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code, client_id: cid, client_secret: secret,
+        redirect_uri: appUrl + '/auth/google/callback',
+        grant_type: 'authorization_code'
+      })
+    });
+    const tok = await tokRes.json();
+    if (!tok.access_token) return res.redirect('/?login=gabim');
+
+    // 2. Merr profilin (email + emri)
+    const uRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: 'Bearer ' + tok.access_token }
+    });
+    const u = await uRes.json();
+    if (!u.email) return res.redirect('/?login=gabim');
+    const email = u.email.toLowerCase().trim();
+    const emri = u.name || email.split('@')[0];
+
+    // 3. Gjej ose krijo biznesin
+    let biz = await pool.query('SELECT id FROM bizneset WHERE email=$1', [email]);
+    let bizId;
+    if (biz.rows.length) {
+      bizId = biz.rows[0].id;
+    } else {
+      const celes = beCeles();
+      const ins = await pool.query(
+        `INSERT INTO bizneset (emri, email, fjalekalimi, celes) VALUES ($1,$2,$3,$4) RETURNING id`,
+        [emri, email, null, celes]);
+      bizId = ins.rows[0].id;
+    }
+
+    // 4. Hap seancen
+    const token = crypto.randomBytes(24).toString('hex');
+    await pool.query('INSERT INTO seancat (token, biznes_id) VALUES ($1,$2)', [token, bizId]);
+    res.cookie('imyr_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 30*24*60*60*1000 });
+    res.redirect('/?login=ok');
+  } catch (e) {
+    res.redirect('/?login=gabim');
+  }
+});
+
+// --- TE DHENAT BAZE TE BIZNESIT (website + tipi) — pas login-it me Google ---
+app.post('/api/biz-baza', iLoguar, async (req, res) => {
+  const website = (req.body.website || '').trim();
+  const tipi = ['b2b','b2c','b2b2c'].includes(req.body.tipi) ? req.body.tipi : null;
+  if (!website || !tipi) return res.status(400).json({ error: 'Website dhe tipi jane te detyrueshem.' });
+  try {
+    await pool.query('UPDATE bizneset SET website=$2, tipi=$3 WHERE id=$1', [req.biznesId, website, tipi]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // --- DIL (logout) ---
@@ -212,11 +293,11 @@ app.get('/api/une', iLoguar, async (req, res) => {
 app.get('/api/progres', iLoguar, async (req, res) => {
   try {
     const b = await pool.query(
-      'SELECT permbledhje, pershkrimi, snippet_active, url_konvertimi FROM bizneset WHERE id=$1', [req.biznesId]);
+      'SELECT permbledhje, pershkrimi, snippet_active, url_konvertimi, website, tipi FROM bizneset WHERE id=$1', [req.biznesId]);
     const p = await pool.query('SELECT 1 FROM promovimet WHERE biznes_id=$1 AND aktiv=true LIMIT 1', [req.biznesId]);
     const row = b.rows[0] || {};
     res.json({
-      llogaria: true,                                   // i loguar => llogaria gati
+      llogaria: !!(row.website && row.tipi),            // gati kur ka website + tipi
       pershkrimi: !!(row.permbledhje || row.pershkrimi),// pershkrimi/AI u dha
       lidhja: !!row.snippet_active,                     // snippet-i u lidh
       konvertimi: !!row.url_konvertimi,                 // url-ja e konvertimit u dha
