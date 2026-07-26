@@ -360,7 +360,7 @@ async function kStatus(){
 let kTimer=null;
 async function verifikoTrack(){
   const st=$('k_stat'), btn=$('k_ver');
-  if(btn) btn.disabled=true;
+  if(kTimer){ clearInterval(kTimer); kTimer=null; }   // rifillo pastër sa herë klikohet
   let faqja = (une && une.website) || '';
   if(faqja && !/^https?:\/\//i.test(faqja)) faqja = 'https://' + faqja;
   if(faqja){ try{ window.open(faqja, '_blank', 'noopener'); }catch(e){} }
@@ -368,13 +368,13 @@ async function verifikoTrack(){
     ? 'Hapëm faqen tënde në një skedë tjetër. Po kontrolloj…'
     : 'Po kontrolloj… hap faqen tënde në një skedë tjetër.');
   const gjetur=await kStatus();
-  if(!gjetur && !kTimer){
+  if(!gjetur){
     let here=0;
     kTimer=setInterval(async ()=>{
       here++;
-      if(await kStatus() || here>20){ clearInterval(kTimer); kTimer=null; if(btn) btn.disabled=false; }
+      if(await kStatus() || here>20){ clearInterval(kTimer); kTimer=null; }
     },3000);
-  } else if(btn) btn.disabled=false;
+  }
 }
 function kSwitch(){
   const v=segVal('k_ka');
@@ -493,11 +493,16 @@ function stepPershkrimi(b){
 }
 async function wizAnalizo(){
   const pershkrimi=$('d_persh').value.trim(), lejo=$('d_lejo').checked;
-  if(!pershkrimi){ $('d_msg').className='msg err'; $('d_msg').textContent='Shkruaj një përshkrim.'; return; }
+  if(!pershkrimi && !lejo){
+    $('d_msg').className='msg err';
+    $('d_msg').textContent='Shkruaj një përshkrim ose lejo studimin automatik të faqes.';
+    return;
+  }
   $('d_btn').disabled=true; $('d_msg').className='msg'; $('d_msg').innerHTML='<span class="spin"></span> Imyr po studion biznesin…';
   try{
     const r=await(await fetch('/api/analizo',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({pershkrimi,lejo})})).json();
+    if(r.error){ $('d_msg').className='msg err'; $('d_msg').textContent=r.error; $('d_btn').disabled=false; return; }
     $('d_msg').textContent = r.ai ? '' : (r.note||'');
     $('e_perm').value = r.permbledhje || pershkrimi;
     $('d_res').classList.remove('hide');
