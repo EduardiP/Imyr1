@@ -58,7 +58,7 @@ ${trupi}
 
 <!-- ═══ NGJIT KETU rreshtin e Imyr-it (copy-paste nga wizard-i) — vlen per TE GJITHA faqet e PaguarFlow -->
 <script src="https://imyr-production.up.railway.app/imyr.js" data-key="imyr_cb7f25e44d9533d434b68d92"></script>
-
+<script src="https://imyr-production.up.railway.app/imyr-track.js" data-key="imyr_cb7f25e44d9533d434b68d92"></script>
 <!-- ═══ deri ketu ═══ -->
 </body>
 </html>`;
