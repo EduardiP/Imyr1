@@ -1055,7 +1055,7 @@ app.post('/api/analizo', iLoguar, async (req, res) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
         body: JSON.stringify({
-          model, temperature: 0, response_format: { type: 'json_object' },
+          model, response_format: { type: 'json_object' },
           messages: [{ role: 'system', content: sys }, { role: 'user', content: user }]
         })
       });
