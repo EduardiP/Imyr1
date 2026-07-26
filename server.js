@@ -1039,11 +1039,15 @@ app.post('/api/analizo', iLoguar, async (req, res) => {
       'Zgjidh SAKTESISHT nje kategori kryesore nga kjo liste: ' + KATEGORITE.join('; ') + '.\n\n' +
       'Pershkrimi i dhene nga biznesi: ' + (pershkrimi || '(pa pershkrim)') + '\n\n' +
       (webTekst ? ('Teksti i nxjerre nga faqja e biznesit:\n' + webTekst + '\n\n') : '') +
+      'Detyra: shpjego QARTE cfare ofron ky biznes. Shpjegoje mire dhe plotesisht, pa e zgjatur kot, ' +
+      'me gjuhe te thjeshte e te kuptueshme. Nje person qe e lexon duhet ta kuptoje sakte se cfare eshte sherbimi dhe kujt i sherben. ' +
+      'Perdor aq fjale sa duhet per ta shpjeguar qarte — as te ngjeshura sa te humbase kuptimi, as te zgjatura kot. ' +
+      'Kombino pershkrimin e biznesit me tekstin e faqes (nese ka) per ta bere me te sakte.\n\n' +
       'Kthe JSON me keto fusha:\n' +
       '{"kategoria_kryesore": string (SAKTESISHT nje nga lista), ' +
       '"nenkategorite": string[] (2-4 nenkategori specifike), ' +
-      '"permbledhje": string (1-3 fjali te qarta qe tregojne cfare ofron biznesi dhe audiencen e tij, ' +
-      'te shkruara ashtu qe nje algoritem te gjeje me cilat sherbime plotesuese (jo konkurrente) mund te cohet)}';
+      '"permbledhje": string (2-4 fjali te qarta qe shpjegojne cfare ofron biznesi dhe kujt i sherben, ' +
+      'me gjuhe te thjeshte, te shkruara ashtu qe nje algoritem te gjeje me cilat sherbime plotesuese mund te cohet)}';
 
     let parsed = {};
     try {
