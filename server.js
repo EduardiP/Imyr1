@@ -1101,6 +1101,9 @@ app.post('/api/admin/dil', async (req, res) => {
 });
 app.get('/api/admin/une', iAdmin, (req, res) => res.json({ ok:true }));
 
+// Endpoint-e shtese te admin-it (skedar i ndare — nuk prek webin real)
+require('./admin-routes')(app, pool, iAdmin);
+
 // Lista e bizneseve (emer + email)
 app.get('/api/admin/bizneset', iAdmin, async (req, res) => {
   try {
