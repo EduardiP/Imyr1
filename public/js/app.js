@@ -311,8 +311,8 @@ function ndertoKonvertim(b, ngaWizard){
       '<input id="k_url" placeholder="/welcome">'+
       '<p class="small" style="margin:6px 0 0;">Shkruaj vetëm pjesën pas adresës së faqes, p.sh. <b>/welcome</b> ose <b>/faleminderit</b>. Ajo faqe s\'duhet të hapet nga menuja — vetëm pas regjistrimit.</p>'+
       '<div style="margin-top:18px;padding:14px;border:1px solid var(--line);border-radius:10px;background:#0e1116;">'+
-        '<b style="font-size:14px;">Një rresht, te çdo faqe</b>'+
-        '<p class="small" style="margin:6px 0 10px;">Vendose para <code>&lt;/body&gt;</code> te skedari që ngarkohet në <b>çdo</b> faqe (te Shopify: <i>Online Store → Themes → Edit code → Layout → theme.liquid</i>). Aty ku do reklamën, shto <code>&lt;div id="imyr-slot"&gt;&lt;/div&gt;</code>.</p>'+
+        '<b style="font-size:14px;">Rreshti i gjurmimit — te çdo faqe</b>'+
+        '<p class="small" style="margin:6px 0 10px;">Ky rresht <b>nuk shfaq asgjë</b> — vetëm gjurmon konvertimin. Vendose para <code>&lt;/body&gt;</code> te skedari që ngarkohet në <b>çdo</b> faqe (te Shopify: <i>Online Store → Themes → Edit code → Layout → theme.liquid</i>), që të mbulojë edhe faqen e suksesit. Ndryshe nga rreshti i reklamës, ky s\'del në faqe.</p>'+
         '<div class="kodbox" id="k_kod"></div>'+
         '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">'+
           '<button class="btn" onclick="kopjoTrack()">Kopjo</button>'+
@@ -335,7 +335,7 @@ function ndertoKonvertim(b, ngaWizard){
   mbushTrack();
 }
 function trackKod(){
-  return '<script src="'+location.origin+'/imyr.js" data-key="'+((une&&une.celes)||'')+'"><\/script>';
+  return '<script src="'+location.origin+'/imyr-track.js" data-key="'+((une&&une.celes)||'')+'"><\/script>';
 }
 function mbushTrack(){ const el=$('k_kod'); if(el) el.textContent=trackKod(); kStatus(); }
 function kopjoTrack(){
