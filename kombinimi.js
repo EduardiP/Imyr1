@@ -44,18 +44,24 @@ async function skoroCiftin(a, b) {
     'Kthe VETEM JSON, pa asnje tekst tjeter.';
 
   const user =
-    'Ke dy biznese. Per secilin, logjiko KUSH jane klientet/vizitoret e tij nga pershkrimi, ' +
+    'Ke dy biznese. Per secilin, logjiko KUSH jane klientet/vizitoret e tij nga pershkrimi dhe audienca, ' +
     'dhe vlereso sa GATI do te ishin ata per te perdorur sherbimin e biznesit tjeter (potenciali i konvertimit).\n\n' +
     'BIZNESI A:\n' + pershkrimBiznesi(a) + '\n\n' +
     'BIZNESI B:\n' + pershkrimBiznesi(b) + '\n\n' +
-    'Jep DY vleresime, secili 0-1000:\n' +
-    '- "ab": sa gati jane klientet/vizitoret e B per te perdorur sherbimin e A ' +
-    '(a i duhet audiences se B ajo qe ofron A). Sa me e larte nevoja reale, aq me e larte pika.\n' +
+    'Mendo keshtu: kur nje biznes eshte B2B, klientet e tij jane BIZNESE. Nese biznesi tjeter gjithashtu ' +
+    'i sherben bizneseve me dicka qe atyre mund t\'u duhet, potenciali eshte i LARTE — mos e nenvleroso. ' +
+    'Nje pronar biznesi qe perdor nje mjet, shpesh ka nevoje edhe per mjete te tjera plotesuese.\n\n' +
+    'SHKALLA (perdore te gjithe, mos u mbaj poshte pa arsye):\n' +
+    '- 800-1000: perputhje shume e forte — audienca e njerit ka gati gjithmone nevoje per tjetrin.\n' +
+    '- 550-799: perputhje e mire — shume nga audienca do ta perdornin.\n' +
+    '- 300-549: perputhje e moderuar — disa do ta perdornin.\n' +
+    '- 100-299: perputhje e dobet — pak gjasa.\n' +
+    '- 0-99: pa lidhje, ose konkurrente (i njejti sherbim → ul deri ne zero).\n\n' +
+    'Jep DY vleresime 0-1000:\n' +
+    '- "ab": sa gati jane klientet/vizitoret e B per te perdorur sherbimin e A.\n' +
     '- "ba": sa gati jane klientet/vizitoret e A per te perdorur sherbimin e B.\n\n' +
-    'Fokusi kryesor: potenciali real i konvertimit — a do ta perdornin vertet. ' +
-    'Nese dy bizneset jane konkurrente (ofrojne te njejtin sherbim), ul ndjeshem piken, ' +
-    'sepse s\'ka kuptim te promovohet nje konkurrent. ' +
-    'Perdor gjithe shkallen 0-1000 qe vleresimet te jene te dallueshme.\n\n' +
+    'Vetem konkurrentet direkte (i njejti sherbim) marrin pike shume te ulet. ' +
+    'Sherbime te ndryshme por qe i sherbejne te njejtes audience jane KOMPLEMENTARE — pike te larta.\n\n' +
     'Kthe JSON: {"ab": numer 0-1000, "ba": numer 0-1000}';
 
   try {
