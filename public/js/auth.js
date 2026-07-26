@@ -18,7 +18,7 @@ async function hyr(){
     const r=await(await fetch('/api/hyr',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({email:$('h_email').value.trim(),fjalekalimi:$('h_pass').value})})).json();
     if(r.error){ msg(r.error); $('btnHyr').disabled=false; return; }
-    mbyllModal(); await loadMe(); nav({v:'wizard', step: nextIncomplete()});
+    mbyllModal(); await loadMe(); nav(pasHyrjes());
   }catch(e){ msg('Gabim: '+e.message); }
   $('btnHyr').disabled=false;
 }
@@ -35,7 +35,7 @@ async function regjistrohu(){
     if(!body.emri||!body.email||!body.fjalekalimi){ msg('Plotëso emrin, email-in dhe fjalëkalimin.'); $('btnReg').disabled=false; return; }
     const r=await(await fetch('/api/regjistrohu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
     if(r.error){ msg(r.error); $('btnReg').disabled=false; return; }
-    mbyllModal(); await loadMe(); nav({v:'wizard', step: nextIncomplete()});
+    mbyllModal(); await loadMe(); nav(pasHyrjes());
   }catch(e){ msg('Gabim: '+e.message); }
   $('btnReg').disabled=false;
 }
@@ -57,7 +57,7 @@ async function pranoGoogle(){
       body:JSON.stringify({kushtet:true, oferta:$('gk_oferta').checked})})).json();
     if(r.error){ const m=$('gk_msg'); m.className='msg err'; m.textContent=r.error; $('gk_btn').disabled=false; return; }
     $('modalKushte').classList.add('hide');
-    await loadMe(); nav({v:'wizard', step: nextIncomplete()});
+    await loadMe(); nav(pasHyrjes());
   }catch(e){ const m=$('gk_msg'); m.className='msg err'; m.textContent='Gabim: '+e.message; $('gk_btn').disabled=false; }
 }
 async function dil(){ await fetch('/api/dil',{method:'POST'}); une=null; location.href='/'; }
