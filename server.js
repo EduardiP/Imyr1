@@ -818,8 +818,7 @@ app.get('/imyr.js', (req, res) => {
     var el = document.getElementById('imyr-slot');
     if(el) return el;
     if(!s || !s.parentNode) return null;
-    var p = s.parentNode.nodeName;
-    if(p === 'BODY' || p === 'HEAD' || p === 'HTML') return null;
+    // Reklama del pikerisht aty ku ndodhet ky rresht (pa kerkuar imyr-slot).
     el = document.createElement('div'); el.id = 'imyr-slot';
     s.parentNode.insertBefore(el, s.nextSibling);
     return el;
