@@ -88,9 +88,13 @@ function kufizo(n) {
 
 function pershkrimBiznesi(b) {
   const p = b.permbledhje || b.pershkrimi || '(pa pershkrim)';
+  const audienca = b.tipi === 'b2b' ? 'Biznese (klientet jane kompani/biznese)'
+                 : b.tipi === 'b2c' ? 'Individe (klientet jane konsumatore/individe)'
+                 : b.tipi === 'b2b2c' ? 'Te dyja (biznese dhe individe)'
+                 : '(e papercaktuar)';
   const kat = b.kategoria_kryesore ? ('\nKategoria: ' + b.kategoria_kryesore) : '';
   const nk = b.nenkategorite ? ('\nNenkategorite: ' + b.nenkategorite) : '';
-  return p + kat + nk;
+  return p + '\nAudienca/klientet: ' + audienca + kat + nk;
 }
 
 // --- Merr te dhenat e nevojshme te nje biznesi ---
