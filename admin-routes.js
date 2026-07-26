@@ -2,7 +2,7 @@
 // Server.js e therret me nje rresht: require('./admin-routes')(app, pool, iAdmin);
 // Nuk prek asnje endpoint te klienteve realë.
 
-module.exports = function (app, pool, iAdmin) {
+module.exports = function (app, pool, iAdmin, kombinimi) {
 
   // --- Bizneset "gati per kombinim": kane plotesuar 3 pikat (biznesi + pershkrimi + lidhja) ---
   // biznesi = website && tipi ; pershkrimi = permbledhje||pershkrimi ; lidhja = snippet_active
@@ -48,6 +48,23 @@ module.exports = function (app, pool, iAdmin) {
         a_per_b: ab,   // sa eshte A plotesues per B (null = ende s'eshte llogaritur)
         b_per_a: ba    // sa eshte B plotesues per A
       });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // --- Nis kombinimin per te gjitha bizneset gati (per ekzistueset, nje here) ---
+  app.post('/api/admin/kombinim/nis', iAdmin, async (req, res) => {
+    if (!kombinimi) return res.status(500).json({ error: 'Moduli i kombinimit s\'eshte i disponueshem.' });
+    try {
+      const r = await pool.query(
+        `SELECT id FROM bizneset
+         WHERE tipi IS NOT NULL AND snippet_active = true
+           AND (permbledhje IS NOT NULL OR pershkrimi IS NOT NULL)`);
+      res.json({ ok: true, nisur: r.rows.length });
+      (async () => {
+        for (const row of r.rows) {
+          try { await kombinimi.kombinoBiznesin(row.id); } catch (e) {}
+        }
+      })();
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
