@@ -60,4 +60,4 @@ async function pranoGoogle(){
     await loadMe(); nav({v:'wizard', step: nextIncomplete()});
   }catch(e){ const m=$('gk_msg'); m.className='msg err'; m.textContent='Gabim: '+e.message; $('gk_btn').disabled=false; }
 }
-async function dil(){ await fetch('/api/dil',{method:'POST'}); location.reload(); }
+async function dil(){ await fetch('/api/dil',{method:'POST'}); une=null; location.href='/'; }
