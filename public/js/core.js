@@ -27,6 +27,7 @@ function showView(v){ ['hero','home','wizard','profile'].forEach(x=>$('v-'+x).cl
 async function refreshProg(){
   try { prog = await (await fetch('/api/progres')).json(); }
   catch(e){ prog = { llogaria:true, pershkrimi:false, lidhja:false, konvertimi:false, reklama:false }; }
+  if(typeof ngarkoNjoftimet==='function') ngarkoNjoftimet();
 }
 function nextIncomplete(){ for(let i=0;i<STEPS.length;i++){ if(!prog[STEPS[i].key]) return i; } return STEPS.length; }
 
