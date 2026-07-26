@@ -37,7 +37,7 @@
     .subnav { width:auto; white-space:nowrap; flex:0 0 auto; margin-bottom:0; }
   }
   .kfilter{ display:flex; gap:12px; }
-  .kbtn{ flex:1; padding:16px; background:transparent; border:1px solid #2a313c; border-radius:10px;
+  .kbtn{ flex:1; padding:14px; background:transparent; border:1px solid #2a313c; border-radius:10px;
     color:#e6edf3; font-size:15px; font-weight:700; letter-spacing:.05em; cursor:pointer; font-family:inherit; }
   .kbtn:hover{ border-color:#4a9eff; }
   .kbtn.active{ border-color:#4a9eff; background:#4a9eff18; color:#4a9eff; }
@@ -46,15 +46,20 @@
   .ksmall{ font-size:12px; color:#8b949e; margin-bottom:8px; }
   .kinput{ width:100%; box-sizing:border-box; padding:9px 12px; background:#0e1116; border:1px solid #2a313c;
     border-radius:8px; color:#e6edf3; font-size:14px; font-family:inherit; margin-bottom:8px; }
-  .kcarousel{ max-height:240px; overflow-y:auto; border:1px solid #2a313c; border-radius:10px; background:#0e1116; }
-  .kitem{ padding:11px 14px; border-bottom:1px solid #1c2230; cursor:pointer; font-size:14px; }
+  .kcarousel{ max-height:200px; overflow-y:auto; border:1px solid #2a313c; border-radius:10px; background:#0e1116; }
+  .kitem{ padding:10px 14px; border-bottom:1px solid #1c2230; cursor:pointer; font-size:14px; }
   .kitem:last-child{ border-bottom:none; }
   .kitem:hover{ background:#161b22; }
   .kitem.sel{ background:#4a9eff22; color:#4a9eff; font-weight:600; }
-  .kzonac{ margin-top:24px; padding:20px; border:1px solid #2a313c; border-radius:12px; background:#0e1116; }
-  .kcift{ display:flex; gap:16px; }
-  .kcard{ flex:1; text-align:center; padding:18px; background:#161b22; border:1px solid #2a313c; border-radius:10px; }
-  .kscore{ font-size:40px; font-weight:800; color:#4a9eff; margin-top:8px; }
+  .kitem.disabled{ opacity:.35; cursor:not-allowed; }
+  .ktabela{ border:1px solid #2a313c; border-radius:10px; overflow:hidden; }
+  .krow{ display:flex; align-items:center; padding:11px 14px; border-bottom:1px solid #1c2230; font-size:14px; }
+  .krow:last-child{ border-bottom:none; }
+  .krow.khead{ background:#161b22; color:#8b949e; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+  .kc1{ flex:1; }
+  .kc2{ width:70px; text-align:center; font-weight:700; color:#4a9eff; }
+  .khead .kc2{ color:#8b949e; font-weight:600; }
+  .kright{ text-align:right; }
 </style>
 </head>
 <body>
@@ -132,45 +137,35 @@
   }
 
   // ================= KOMBINIMET AI =================
-  var kFiltri=null, kA=null, kB=null, kBizneset=[], kKerkimA='', kKerkimB='';
+  var kFiltri=null, kA=null, kB=null, kBizneset=[];
   function renderKombinimet(c){
     c.innerHTML=
       '<div class="wrap" style="max-width:1040px;">'+
         '<h2 class="h">Kombinimet AI</h2>'+
-        '<p class="small" style="margin:2px 0 18px;">Vlerësimet gjenerohen nga AI kur një biznes plotëson tri pikat (biznesi, përshkrimi, lidhja). Zgjidh një tip, pastaj dy biznese për të parë sa plotëson njëri tjetrin.</p>'+
-        // Filtri hierarkik i tipit
+        '<p class="small" style="margin:2px 0 18px;">Zgjidh një tip. Tabela poshtë tregon të gjitha kombinimet e asaj kategorie. Zgjidh dy biznese për të parë vetëm atë çift.</p>'+
         '<div class="kfilter">'+
           '<button class="kbtn" data-t="b2b"   onclick="kSetFiltri(\'b2b\')">B2B</button>'+
           '<button class="kbtn" data-t="b2c"   onclick="kSetFiltri(\'b2c\')">B2C</button>'+
           '<button class="kbtn" data-t="b2b2c" onclick="kSetFiltri(\'b2b2c\')">B2B2C</button>'+
         '</div>'+
-        '<div id="kZgjedhesit" class="hide" style="margin-top:20px;">'+
+        '<div id="kZgjedhesit" style="margin-top:18px;">'+
           '<div class="kcols">'+
             '<div class="kcol">'+
               '<div class="ksmall">Biznesi A</div>'+
               '<input class="kinput" id="kKerkimA" placeholder="Kërko…" oninput="kFiltroLista(\'A\',this.value)">'+
-              '<div class="kcarousel" id="kListaA"></div>'+
+              '<div class="kcarousel" id="kListaA"><p class="small" style="padding:10px;">Zgjidh një tip lart.</p></div>'+
             '</div>'+
             '<div class="kcol">'+
               '<div class="ksmall">Biznesi B</div>'+
               '<input class="kinput" id="kKerkimB" placeholder="Kërko…" oninput="kFiltroLista(\'B\',this.value)">'+
-              '<div class="kcarousel" id="kListaB"></div>'+
+              '<div class="kcarousel" id="kListaB"><p class="small" style="padding:10px;">Zgjidh një tip lart.</p></div>'+
             '</div>'+
           '</div>'+
+          '<button class="btn ghost" style="margin-top:10px;" onclick="kPastro()">Pastro zgjedhjen</button>'+
         '</div>'+
-        // Zona C — vleresimet
-        '<div id="kZonaC" class="kzonac hide">'+
-          '<div class="kcift">'+
-            '<div class="kcard">'+
-              '<div class="ksmall">Sa është <b id="kNaA">A</b> plotësues për <b id="kNaB">B</b></div>'+
-              '<div class="kscore" id="kScoreAB">—</div>'+
-            '</div>'+
-            '<div class="kcard">'+
-              '<div class="ksmall">Sa është <b id="kNbB">B</b> plotësues për <b id="kNbA">A</b></div>'+
-              '<div class="kscore" id="kScoreBA">—</div>'+
-            '</div>'+
-          '</div>'+
-          '<p class="small" id="kNote" style="text-align:center;margin-top:14px;"></p>'+
+        '<div class="ktabela" style="margin-top:20px;">'+
+          '<div class="krow khead"><span class="kc1">Biznesi A</span><span class="kc2">A→B</span><span class="kc2">B→A</span><span class="kc1 kright">Biznesi B</span></div>'+
+          '<div id="kRows"><p class="small" style="padding:14px;">Zgjidh një tip lart për të parë kombinimet.</p></div>'+
         '</div>'+
       '</div>';
     kFiltri=null; kA=null; kB=null;
@@ -178,16 +173,13 @@
   function kSetFiltri(t){
     kFiltri=t; kA=null; kB=null;
     document.querySelectorAll('.kbtn').forEach(b=>b.classList.toggle('active', b.getAttribute('data-t')===t));
-    $('kZgjedhesit').classList.remove('hide');
-    $('kZonaC').classList.add('hide');
     kNgarkoBizneset();
   }
   async function kNgarkoBizneset(){
-    $('kListaA').innerHTML='<p class="small">Po ngarkoj…</p>';
-    $('kListaB').innerHTML='';
+    $('kListaA').innerHTML='<p class="small" style="padding:10px;">Po ngarkoj…</p>';
+    $('kListaB').innerHTML=''; $('kRows').innerHTML='<p class="small" style="padding:14px;">Po ngarkoj…</p>';
     try{
       const rows=await(await fetch('/api/admin/kombinim/bizneset')).json();
-      // Filtri i tipit: b2b→b2b+b2b2c, b2c→b2c+b2b2c, b2b2c→te gjitha (b2b2c kombinohet me te gjitha)
       kBizneset=(rows||[]).filter(b=>{
         if(kFiltri==='b2b')   return b.tipi==='b2b'  || b.tipi==='b2b2c';
         if(kFiltri==='b2c')   return b.tipi==='b2c'  || b.tipi==='b2b2c';
@@ -195,44 +187,79 @@
         return true;
       });
       kFiltroLista('A',''); kFiltroLista('B','');
-    }catch(e){ $('kListaA').innerHTML='<p class="small">Gabim.</p>'; }
+      kRenderTabela();
+    }catch(e){ $('kListaA').innerHTML='<p class="small" style="padding:10px;">Gabim.</p>'; }
   }
   function kFiltroLista(cili, kerkim){
     const q=(kerkim||'').toLowerCase().trim();
     const lista=kBizneset.filter(b=>!q || (b.emri||'').toLowerCase().includes(q));
     const el=$(cili==='A'?'kListaA':'kListaB');
     const zgjedhur=cili==='A'?kA:kB;
-    if(!lista.length){ el.innerHTML='<p class="small" style="padding:8px;">Asnjë biznes.</p>'; return; }
+    const tjetri=cili==='A'?kB:kA;   // s'lejohet i njejti biznes ne te dyja
+    if(!lista.length){ el.innerHTML='<p class="small" style="padding:10px;">Asnjë biznes.</p>'; return; }
     el.innerHTML='';
     lista.forEach(b=>{
+      const eZene=(b.id===tjetri);
       const d=document.createElement('div');
-      d.className='kitem'+(zgjedhur===b.id?' sel':'');
+      d.className='kitem'+(zgjedhur===b.id?' sel':'')+(eZene?' disabled':'');
       d.textContent=b.emri;
-      d.onclick=()=>kZgjidh(cili, b.id);
+      if(!eZene) d.onclick=()=>kZgjidh(cili, b.id);
       el.appendChild(d);
     });
   }
   function kZgjidh(cili, id){
-    if(cili==='A') kA=id; else kB=id;
+    if(cili==='A'){ kA=(kA===id?null:id); } else { kB=(kB===id?null:id); }
     kFiltroLista('A', ($('kKerkimA')||{}).value||'');
     kFiltroLista('B', ($('kKerkimB')||{}).value||'');
-    if(kA && kB && kA!==kB) kShfaqCift();
-    else $('kZonaC').classList.add('hide');
+    kRenderTabela();
   }
-  async function kShfaqCift(){
-    $('kZonaC').classList.remove('hide');
-    $('kScoreAB').textContent='…'; $('kScoreBA').textContent='…'; $('kNote').textContent='';
-    try{
-      const r=await(await fetch('/api/admin/kombinim/cift?a='+kA+'&b='+kB)).json();
-      if(r.error){ $('kNote').textContent=r.error; return; }
-      $('kNaA').textContent=r.a.emri; $('kNaB').textContent=r.b.emri;
-      $('kNbB').textContent=r.b.emri; $('kNbA').textContent=r.a.emri;
-      $('kScoreAB').textContent = (r.a_per_b==null?'—':r.a_per_b);
-      $('kScoreBA').textContent = (r.b_per_a==null?'—':r.b_per_a);
-      if(r.a_per_b==null && r.b_per_a==null){
-        $('kNote').textContent='Vlerësimet ende s\'janë llogaritur (skori AI s\'është ndërtuar).';
-      } else { $('kNote').textContent=''; }
-    }catch(e){ $('kNote').textContent='Gabim gjatë ngarkimit.'; }
+  function kPastro(){ kA=null; kB=null; kFiltroLista('A',''); kFiltroLista('B',''); kRenderTabela(); }
+  function kEmri(id){ const b=kBizneset.find(x=>x.id===id); return b?b.emri:('#'+id); }
+
+  async function kRenderTabela(){
+    const el=$('kRows'); if(!el) return;
+    // Nese zgjedhur te dy → vetem ai cift. Perndryshe → te gjitha ciftet e kategorise.
+    if(kA && kB){
+      el.innerHTML='<p class="small" style="padding:14px;">Po ngarkoj…</p>';
+      const r=await kCift(kA,kB);
+      el.innerHTML=kRreshti(kA,kB,r.a_per_b,r.b_per_a);
+      return;
+    }
+    // Te gjitha ciftet unike (pa dublikate, pa vetveten)
+    const b=kBizneset;
+    if(b.length<2){ el.innerHTML='<p class="small" style="padding:14px;">S\'ka mjaftueshëm biznese në këtë kategori.</p>'; return; }
+    let h='';
+    for(let i=0;i<b.length;i++){
+      for(let j=i+1;j<b.length;j++){
+        h+=kRreshti(b[i].id,b[j].id,null,null,true);
+      }
+    }
+    el.innerHTML=h;
+    // Mbush skoret nje nga nje (nese ekzistojne)
+    for(let i=0;i<b.length;i++){
+      for(let j=i+1;j<b.length;j++){
+        kCift(b[i].id,b[j].id).then(r=>{
+          const ab=document.getElementById('sc_'+b[i].id+'_'+b[j].id+'_ab');
+          const ba=document.getElementById('sc_'+b[i].id+'_'+b[j].id+'_ba');
+          if(ab) ab.textContent=(r.a_per_b==null?'—':r.a_per_b);
+          if(ba) ba.textContent=(r.b_per_a==null?'—':r.b_per_a);
+        }).catch(()=>{});
+      }
+    }
+  }
+  function kRreshti(aId,bId,ab,ba,meId){
+    const idAB = meId?(' id="sc_'+aId+'_'+bId+'_ab"'):'';
+    const idBA = meId?(' id="sc_'+aId+'_'+bId+'_ba"'):'';
+    return '<div class="krow">'+
+      '<span class="kc1">'+kEmri(aId)+'</span>'+
+      '<span class="kc2"'+idAB+'>'+(ab==null?'—':ab)+'</span>'+
+      '<span class="kc2"'+idBA+'>'+(ba==null?'—':ba)+'</span>'+
+      '<span class="kc1 kright">'+kEmri(bId)+'</span>'+
+    '</div>';
+  }
+  async function kCift(a,b){
+    try{ return await(await fetch('/api/admin/kombinim/cift?a='+a+'&b='+b)).json(); }
+    catch(e){ return {a_per_b:null,b_per_a:null}; }
   }
 
   // ---- SEKSIONI BIZNESET: menu majtas + permbajtja djathtas ----
