@@ -14,6 +14,7 @@ const http = require('http');
 const selector = require('./selector');
 const analytics = require('./analytics');
 const pesha = require('./pesha');
+const kombinimi = require('./kombinimi');
 const multer = require('multer');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 
@@ -659,6 +660,8 @@ app.all('/lidh', async (req, res) => {
           `UPDATE bizneset SET snippet_active=true, first_seen_at=now(), last_seen_at=now(),
              origjina=$2, kandidat_url=COALESCE(kandidat_url,$2) WHERE id=$1`,
           [bizId, faqja]);
+        // Pika e 3-te u plotesua → nis kombinimin me AI ne sfond (pa e bllokuar pergjigjen)
+        kombinimi.kombinoBiznesin(bizId).catch(()=>{});
       } else {
         await pool.query('UPDATE bizneset SET last_seen_at=now() WHERE id=$1', [bizId]);
       }
@@ -1176,6 +1179,7 @@ app.get('/health', (req, res) => res.json({ ok: true, koha: new Date().toISOStri
 
 const PORT = process.env.PORT || 3000;
 initDB(pool)
+  .then(() => kombinimi.init(pool))
   .then(() => app.listen(PORT, () => console.log('Imyr po punon ne portin ' + PORT)))
   .catch(e => {
     console.error('Gabim init DB:', e.message);
