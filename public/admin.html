@@ -36,6 +36,25 @@
     #bizNav { display:flex; overflow-x:auto; gap:8px; -webkit-overflow-scrolling:touch; }
     .subnav { width:auto; white-space:nowrap; flex:0 0 auto; margin-bottom:0; }
   }
+  .kfilter{ display:flex; gap:12px; }
+  .kbtn{ flex:1; padding:16px; background:transparent; border:1px solid #2a313c; border-radius:10px;
+    color:#e6edf3; font-size:15px; font-weight:700; letter-spacing:.05em; cursor:pointer; font-family:inherit; }
+  .kbtn:hover{ border-color:#4a9eff; }
+  .kbtn.active{ border-color:#4a9eff; background:#4a9eff18; color:#4a9eff; }
+  .kcols{ display:flex; gap:16px; }
+  .kcol{ flex:1; }
+  .ksmall{ font-size:12px; color:#8b949e; margin-bottom:8px; }
+  .kinput{ width:100%; box-sizing:border-box; padding:9px 12px; background:#0e1116; border:1px solid #2a313c;
+    border-radius:8px; color:#e6edf3; font-size:14px; font-family:inherit; margin-bottom:8px; }
+  .kcarousel{ max-height:240px; overflow-y:auto; border:1px solid #2a313c; border-radius:10px; background:#0e1116; }
+  .kitem{ padding:11px 14px; border-bottom:1px solid #1c2230; cursor:pointer; font-size:14px; }
+  .kitem:last-child{ border-bottom:none; }
+  .kitem:hover{ background:#161b22; }
+  .kitem.sel{ background:#4a9eff22; color:#4a9eff; font-weight:600; }
+  .kzonac{ margin-top:24px; padding:20px; border:1px solid #2a313c; border-radius:12px; background:#0e1116; }
+  .kcift{ display:flex; gap:16px; }
+  .kcard{ flex:1; text-align:center; padding:18px; background:#161b22; border:1px solid #2a313c; border-radius:10px; }
+  .kscore{ font-size:40px; font-weight:800; color:#4a9eff; margin-top:8px; }
 </style>
 </head>
 <body>
@@ -65,7 +84,7 @@
   const $ = id => document.getElementById(id);
   const SECTIONS = [
     { k:'bizneset', l:'Bizneset' },
-    { k:'b1', l:'Buton 1' }, { k:'b2', l:'Buton 2' },
+    { k:'b1', l:'Kombinimet AI' }, { k:'b2', l:'Buton 2' },
     { k:'b3', l:'Buton 3' }, { k:'b4', l:'Buton 4' }
   ];
   const BIZ_SUB = [
@@ -107,8 +126,113 @@
   function renderContent(){
     const c=$('content');
     if(curSec==='bizneset'){ renderBizneset(c); return; }
+    if(curSec==='b1'){ renderKombinimet(c); return; }
     const lbl=(SECTIONS.find(s=>s.k===curSec)||{}).l||'';
     c.innerHTML='<div class="wrap"><h2 class="h">'+lbl+'</h2><p class="small" style="margin-top:8px;">Së shpejti.</p></div>';
+  }
+
+  // ================= KOMBINIMET AI =================
+  var kFiltri=null, kA=null, kB=null, kBizneset=[], kKerkimA='', kKerkimB='';
+  function renderKombinimet(c){
+    c.innerHTML=
+      '<div class="wrap" style="max-width:1040px;">'+
+        '<h2 class="h">Kombinimet AI</h2>'+
+        '<p class="small" style="margin:2px 0 18px;">Vlerësimet gjenerohen nga AI kur një biznes plotëson tri pikat (biznesi, përshkrimi, lidhja). Zgjidh një tip, pastaj dy biznese për të parë sa plotëson njëri tjetrin.</p>'+
+        // Filtri hierarkik i tipit
+        '<div class="kfilter">'+
+          '<button class="kbtn" data-t="b2b"   onclick="kSetFiltri(\'b2b\')">B2B</button>'+
+          '<button class="kbtn" data-t="b2c"   onclick="kSetFiltri(\'b2c\')">B2C</button>'+
+          '<button class="kbtn" data-t="b2b2c" onclick="kSetFiltri(\'b2b2c\')">B2B2C</button>'+
+        '</div>'+
+        '<div id="kZgjedhesit" class="hide" style="margin-top:20px;">'+
+          '<div class="kcols">'+
+            '<div class="kcol">'+
+              '<div class="ksmall">Biznesi A</div>'+
+              '<input class="kinput" id="kKerkimA" placeholder="Kërko…" oninput="kFiltroLista(\'A\',this.value)">'+
+              '<div class="kcarousel" id="kListaA"></div>'+
+            '</div>'+
+            '<div class="kcol">'+
+              '<div class="ksmall">Biznesi B</div>'+
+              '<input class="kinput" id="kKerkimB" placeholder="Kërko…" oninput="kFiltroLista(\'B\',this.value)">'+
+              '<div class="kcarousel" id="kListaB"></div>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+        // Zona C — vleresimet
+        '<div id="kZonaC" class="kzonac hide">'+
+          '<div class="kcift">'+
+            '<div class="kcard">'+
+              '<div class="ksmall">Sa është <b id="kNaA">A</b> plotësues për <b id="kNaB">B</b></div>'+
+              '<div class="kscore" id="kScoreAB">—</div>'+
+            '</div>'+
+            '<div class="kcard">'+
+              '<div class="ksmall">Sa është <b id="kNbB">B</b> plotësues për <b id="kNbA">A</b></div>'+
+              '<div class="kscore" id="kScoreBA">—</div>'+
+            '</div>'+
+          '</div>'+
+          '<p class="small" id="kNote" style="text-align:center;margin-top:14px;"></p>'+
+        '</div>'+
+      '</div>';
+    kFiltri=null; kA=null; kB=null;
+  }
+  function kSetFiltri(t){
+    kFiltri=t; kA=null; kB=null;
+    document.querySelectorAll('.kbtn').forEach(b=>b.classList.toggle('active', b.getAttribute('data-t')===t));
+    $('kZgjedhesit').classList.remove('hide');
+    $('kZonaC').classList.add('hide');
+    kNgarkoBizneset();
+  }
+  async function kNgarkoBizneset(){
+    $('kListaA').innerHTML='<p class="small">Po ngarkoj…</p>';
+    $('kListaB').innerHTML='';
+    try{
+      const rows=await(await fetch('/api/admin/kombinim/bizneset')).json();
+      // Filtri i tipit: b2b→b2b+b2b2c, b2c→b2c+b2b2c, b2b2c→te gjitha (b2b2c kombinohet me te gjitha)
+      kBizneset=(rows||[]).filter(b=>{
+        if(kFiltri==='b2b')   return b.tipi==='b2b'  || b.tipi==='b2b2c';
+        if(kFiltri==='b2c')   return b.tipi==='b2c'  || b.tipi==='b2b2c';
+        if(kFiltri==='b2b2c') return true;
+        return true;
+      });
+      kFiltroLista('A',''); kFiltroLista('B','');
+    }catch(e){ $('kListaA').innerHTML='<p class="small">Gabim.</p>'; }
+  }
+  function kFiltroLista(cili, kerkim){
+    const q=(kerkim||'').toLowerCase().trim();
+    const lista=kBizneset.filter(b=>!q || (b.emri||'').toLowerCase().includes(q));
+    const el=$(cili==='A'?'kListaA':'kListaB');
+    const zgjedhur=cili==='A'?kA:kB;
+    if(!lista.length){ el.innerHTML='<p class="small" style="padding:8px;">Asnjë biznes.</p>'; return; }
+    el.innerHTML='';
+    lista.forEach(b=>{
+      const d=document.createElement('div');
+      d.className='kitem'+(zgjedhur===b.id?' sel':'');
+      d.textContent=b.emri;
+      d.onclick=()=>kZgjidh(cili, b.id);
+      el.appendChild(d);
+    });
+  }
+  function kZgjidh(cili, id){
+    if(cili==='A') kA=id; else kB=id;
+    kFiltroLista('A', ($('kKerkimA')||{}).value||'');
+    kFiltroLista('B', ($('kKerkimB')||{}).value||'');
+    if(kA && kB && kA!==kB) kShfaqCift();
+    else $('kZonaC').classList.add('hide');
+  }
+  async function kShfaqCift(){
+    $('kZonaC').classList.remove('hide');
+    $('kScoreAB').textContent='…'; $('kScoreBA').textContent='…'; $('kNote').textContent='';
+    try{
+      const r=await(await fetch('/api/admin/kombinim/cift?a='+kA+'&b='+kB)).json();
+      if(r.error){ $('kNote').textContent=r.error; return; }
+      $('kNaA').textContent=r.a.emri; $('kNaB').textContent=r.b.emri;
+      $('kNbB').textContent=r.b.emri; $('kNbA').textContent=r.a.emri;
+      $('kScoreAB').textContent = (r.a_per_b==null?'—':r.a_per_b);
+      $('kScoreBA').textContent = (r.b_per_a==null?'—':r.b_per_a);
+      if(r.a_per_b==null && r.b_per_a==null){
+        $('kNote').textContent='Vlerësimet ende s\'janë llogaritur (skori AI s\'është ndërtuar).';
+      } else { $('kNote').textContent=''; }
+    }catch(e){ $('kNote').textContent='Gabim gjatë ngarkimit.'; }
   }
 
   // ---- SEKSIONI BIZNESET: menu majtas + permbajtja djathtas ----
