@@ -57,7 +57,7 @@ ${trupi}
 <footer>© 2026 PostaPro — faqe prove per Imyr</footer>
 
 <!-- ═══ NGJIT KETU rreshtin e Imyr-it (copy-paste nga wizard-i) — vlen per TE GJITHA faqet e PostaPro -->
-<script src="https://imyr-production.up.railway.app/imyr.js" data-key="imyr_ab99ba2cf2d7d5f6e5c9b379"></script>
+
 
 <!-- ═══ deri ketu ═══ -->
 </body>
