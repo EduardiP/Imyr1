@@ -148,6 +148,7 @@ async function kombinoBiznesin(bizId) {
     const vetja = await merrBiznesin(bizId);
     if (!eshteGati(vetja)) return;
     const tetjeret = await biznesetPerKombinim(vetja);
+    if (!tetjeret.length) return;
     for (const tjetri of tetjeret) {
       if (await ekzistonCifti(vetja.id, tjetri.id)) continue;   // llogaritur tashme
       const skor = await skoroCiftin(vetja, tjetri);
