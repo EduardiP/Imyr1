@@ -88,6 +88,9 @@ function renderMain(s){
   if(curNav==='profili')    return mainProfili(m);
   if(curNav==='njoftimet')  return mainNjoftimet(m);
   if(curNav==='konvertimi') return mainKonvertimi(m);
+  if(curNav==='biznesi')    return mainBiznesi(m);
+  if(curNav==='pershkrimi') return mainPershkrimi(m);
+  if(curNav==='lidhja')     return mainLidhja(m);
   if(curNav==='dashboard')  return mainDashboard(m);
   if(curNav==='reklamat')   return mainReklamat(m, s);
   if(curNav==='analytics')  return mainAnalytics(m);
@@ -164,9 +167,9 @@ function mainDashboard(m){
 function renderDashStatus(){
   const el=$('vstep'); if(!el) return; el.innerHTML='';
   const rreshtat=[
-    { done: !!prog.llogaria,   label:'Llogaria',            veprim:()=>openWizard(0) },
-    { done: !!prog.pershkrimi, label:'Përshkrimi',          veprim:()=>openWizard(1) },
-    { done: !!prog.lidhja,     label:'Lidhja e snippet-it', veprim:()=>openWizard(2) },
+    { done: !!prog.llogaria,   label:'Biznesi',             veprim:()=>nav({v:'profile',nav:'biznesi'}) },
+    { done: !!prog.pershkrimi, label:'Përshkrimi',          veprim:()=>nav({v:'profile',nav:'pershkrimi'}) },
+    { done: !!prog.lidhja,     label:'Lidhja e snippet-it', veprim:()=>nav({v:'profile',nav:'lidhja'}) },
     { done: !!prog.reklama,    label:'Krijo produkt',       veprim:()=>nav({v:'profile',nav:'reklamat',sub:'create'}) },
     { done: !!prog.konvertimi, label:'Lidh konvertimin',    veprim:()=>nav({v:'profile',nav:'konvertimi'}) }
   ];
@@ -179,6 +182,10 @@ function renderDashStatus(){
     el.appendChild(d);
   });
 }
+// Pamje te vecanta (jo wizard) — hapen nga Dashboard-i
+function mainBiznesi(m){ window.__pamjeVecante=true; m.innerHTML='<h2 class="h" style="margin-bottom:14px;">Biznesi</h2><div id="wizBody"></div>'; stepLlogaria($('wizBody')); }
+function mainPershkrimi(m){ window.__pamjeVecante=true; m.innerHTML='<div id="wizBody"></div>'; stepPershkrimi($('wizBody')); }
+function mainLidhja(m){ window.__pamjeVecante=true; m.innerHTML='<div id="wizBody"></div>'; stepLidhja($('wizBody')); }
 function mainReklamat(m, s){
   s = s || {};
   if(s.sub==='detail'){ return hapReklame(s.id, m); }
@@ -272,12 +279,16 @@ function renderHStep(){
   });
 }
 async function advance(){
-  await refreshProg(); renderHStep();
+  await refreshProg();
+  // Nese hapi u hap si pamje e vecante (nga Dashboard-i), kthehu te Dashboard
+  if(window.__pamjeVecante){ window.__pamjeVecante=false; nav({v:'profile',nav:'dashboard'}); return; }
+  renderHStep();
   const nx=nextIncomplete();
   if(nx>=STEPS.length){ closeWizard(); return; }
   openWizard(nx);
 }
 function renderStepBody(i){
+  window.__pamjeVecante=false;
   const b=$('wizBody');
   if(i===0) return stepLlogaria(b);
   if(i===1) return stepPershkrimi(b);
@@ -454,6 +465,7 @@ async function wizPlotesoBiz(){
     if(r.error){ $('a_msg').className='msg err'; $('a_msg').textContent=r.error; $('a_btn').disabled=false; return; }
     if(une){ une.emri=emri; une.website=web; une.tipi=tipi; }
     await refreshProg();
+    if(window.__pamjeVecante){ window.__pamjeVecante=false; nav({v:'profile',nav:'dashboard'}); return; }
     openWizard(1);
   }catch(e){ $('a_msg').className='msg err'; $('a_msg').textContent='Gabim: '+e.message; $('a_btn').disabled=false; }
 }
