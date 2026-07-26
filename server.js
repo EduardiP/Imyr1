@@ -617,6 +617,8 @@ app.get('/api/kontrollo', iLoguar, async (req, res) => {
                first_seen_at=COALESCE(first_seen_at, now()),
                last_seen_at=now(), origjina=$2 WHERE id=$1`,
             [req.biznesId, url]);
+          // Pika e 3-te u plotesua → nis studimin/kombinimin me AI ne sfond
+          kombinimi.kombinoBiznesin(req.biznesId).catch(()=>{});
           return res.json({ active: true, live: true, origjina: url });
         }
       } catch (e) { /* faqja s'u arrit — ende pa lidhur */ }
@@ -660,8 +662,6 @@ app.all('/lidh', async (req, res) => {
           `UPDATE bizneset SET snippet_active=true, first_seen_at=now(), last_seen_at=now(),
              origjina=$2, kandidat_url=COALESCE(kandidat_url,$2) WHERE id=$1`,
           [bizId, faqja]);
-        // Pika e 3-te u plotesua → nis kombinimin me AI ne sfond (pa e bllokuar pergjigjen)
-        kombinimi.kombinoBiznesin(bizId).catch(()=>{});
       } else {
         await pool.query('UPDATE bizneset SET last_seen_at=now() WHERE id=$1', [bizId]);
       }
@@ -1109,7 +1109,7 @@ app.post('/api/admin/dil', async (req, res) => {
 app.get('/api/admin/une', iAdmin, (req, res) => res.json({ ok:true }));
 
 // Endpoint-e shtese te admin-it (skedar i ndare — nuk prek webin real)
-require('./admin-routes')(app, pool, iAdmin);
+require('./admin-routes')(app, pool, iAdmin, kombinimi);
 
 // Lista e bizneseve (emer + email)
 app.get('/api/admin/bizneset', iAdmin, async (req, res) => {
