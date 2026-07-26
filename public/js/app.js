@@ -57,6 +57,7 @@ async function ngarkoImazh(){
     const r=await(await fetch('/api/ngarko',{method:'POST',body:fd})).json();
     if(r.error){ $('up_msg').className='msg err'; $('up_msg').textContent=r.error; $('up_btn').disabled=false; return; }
     window.__reklamat=null;
+    await refreshProg();
     nav({v:'profile',nav:'reklamat'});
   }catch(e){ $('up_msg').className='msg err'; $('up_msg').textContent='Gabim: '+e.message; $('up_btn').disabled=false; }
 }
@@ -182,8 +183,22 @@ function renderDashStatus(){
     el.appendChild(d);
   });
 }
-// Pamje te vecanta (jo wizard) — hapen nga Dashboard-i
-function mainBiznesi(m){ window.__pamjeVecante=true; m.innerHTML='<h2 class="h" style="margin-bottom:14px;">Biznesi</h2><div id="wizBody"></div>'; stepLlogaria($('wizBody')); }
+// Pamje te vecanta (jo wizard) — hapen nga Dashboard-i, gjithmone forma e plote
+function mainBiznesi(m){
+  window.__pamjeVecante=true;
+  m.innerHTML='<h2 class="h" style="margin-bottom:4px;">Biznesi</h2>'+
+    '<p class="small" style="margin:0 0 16px;">Të dhënat e biznesit tënd.</p>'+
+    '<label>Emri i biznesit (SaaS-it)</label><input id="a_emri" placeholder="Biznesi im" value="'+esc((une&&une.emri)||'')+'">'+
+    '<label>Logo (opsionale)</label>'+
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">'+
+      '<div id="a_logoPrev" class="avatar" style="width:52px;height:52px;font-size:22px;overflow:hidden;">'+(((une&&une.logo_url))?'<img src="'+esc(une.logo_url)+'" style="width:100%;height:100%;object-fit:cover;">':esc(((une&&une.emri)||'?').charAt(0).toUpperCase()))+'</div>'+
+      '<label class="btn" style="cursor:pointer;margin:0;">Ngarko<input type="file" id="a_logo" accept="image/*" onchange="ngarkoLogo(this)" style="display:none;"></label>'+
+    '</div>'+
+    '<label>Faqja (website)</label><input id="a_web" placeholder="https://saasi-im.com" value="'+esc((une&&une.website)||'')+'">'+
+    segHTML('a_tipi')+
+    '<button class="primary" id="a_btn" onclick="wizPlotesoBiz()">Ruaj →</button><div class="msg" id="a_msg"></div>';
+  if(une&&une.tipi){ const btn=document.querySelector('#a_tipi button[data-v="'+une.tipi+'"]'); if(btn) segPick(btn); }
+}
 function mainPershkrimi(m){ window.__pamjeVecante=true; m.innerHTML='<div id="wizBody"></div>'; stepPershkrimi($('wizBody')); }
 function mainLidhja(m){ window.__pamjeVecante=true; m.innerHTML='<div id="wizBody"></div>'; stepLidhja($('wizBody')); }
 function mainReklamat(m, s){
