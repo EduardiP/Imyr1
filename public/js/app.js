@@ -199,8 +199,18 @@ function mainBiznesi(m){
     '<button class="primary" id="a_btn" onclick="wizPlotesoBiz()">Ruaj →</button><div class="msg" id="a_msg"></div>';
   if(une&&une.tipi){ const btn=document.querySelector('#a_tipi button[data-v="'+une.tipi+'"]'); if(btn) segPick(btn); }
 }
-function mainPershkrimi(m){ window.__pamjeVecante=true; m.innerHTML='<div id="wizBody"></div>'; stepPershkrimi($('wizBody')); }
-function mainLidhja(m){ window.__pamjeVecante=true; m.innerHTML='<div id="wizBody"></div>'; stepLidhja($('wizBody')); }
+function mainPershkrimi(m){
+  window.__pamjeVecante=true;
+  m.innerHTML='<div id="pvBody"></div>';
+  const b=document.getElementById('pvBody');
+  if(b) stepPershkrimi(b);
+}
+function mainLidhja(m){
+  window.__pamjeVecante=true;
+  m.innerHTML='<div id="pvBody"></div>';
+  const b=document.getElementById('pvBody');
+  if(b) stepLidhja(b);
+}
 function mainReklamat(m, s){
   s = s || {};
   if(s.sub==='detail'){ return hapReklame(s.id, m); }
