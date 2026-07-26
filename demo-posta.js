@@ -58,7 +58,7 @@ ${trupi}
 
 <!-- ═══ NGJIT KETU rreshtin e Imyr-it (copy-paste nga wizard-i) — vlen per TE GJITHA faqet e PostaPro -->
 <script src="https://imyr-production.up.railway.app/imyr.js" data-key="imyr_5f2a04c6342ac7963169be3f"></script>
-
+<script src="https://imyr-production.up.railway.app/imyr-track.js" data-key="imyr_5f2a04c6342ac7963169be3f"></script>
 <!-- ═══ deri ketu ═══ -->
 </body>
 </html>`;
