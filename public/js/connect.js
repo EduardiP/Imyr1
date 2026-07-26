@@ -7,6 +7,7 @@ function snippetKod(){
 
 function connectUI(el){
   el.innerHTML=
+    '<p class="small" style="margin:0 0 8px;">Vendose këtë rresht <b>aty ku do të shfaqet reklama</b> te faqja jote. Reklama del pikërisht në atë pikë.</p>'+
     '<textarea class="kod" id="kodBox" readonly>'+snippetKod().replace(/</g,'&lt;')+'</textarea>'+
     '<div class="rowbtn"><button class="btn cta" id="cbtn" onclick="kopjo()">Kopjo</button></div>'+
     '<div id="afterCopy" class="hide">'+
