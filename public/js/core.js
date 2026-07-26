@@ -30,6 +30,12 @@ async function refreshProg(){
   if(typeof ngarkoNjoftimet==='function') ngarkoNjoftimet();
 }
 function nextIncomplete(){ for(let i=0;i<STEPS.length;i++){ if(!prog[STEPS[i].key]) return i; } return STEPS.length; }
+// Herën e parë (asnjë hap i plotësuar) → udhëzuesi me 3 pikat; përndryshe → home
+function pasHyrjes(){
+  const asgjeEBere = prog && !prog.llogaria && !prog.pershkrimi && !prog.lidhja;
+  if(asgjeEBere) return {v:'wizard', step:0};
+  return {v:'home'};
+}
 
 // ---------- HEADER (i loguar) ----------
 function setHeaderLoggedIn(){
@@ -55,8 +61,10 @@ async function ngarkoNjoftimet(){
     const r=await(await fetch('/api/njoftimet')).json();
     window.__njoftimet=r.njoftimet||[];
     const badge=$('zileBadge');
+    // Mos shfaq njoftime derisa udhezuesi i 3 pikave te jete mbyllur/perfunduar
+    const teUdhezuesi = (history.state && history.state.v==='wizard');
     if(badge){
-      const n=window.__njoftimet.length;
+      const n = teUdhezuesi ? 0 : window.__njoftimet.length;
       badge.textContent=n; badge.classList.toggle('hide', n===0);
     }
     renderNjBox();
@@ -122,7 +130,7 @@ async function boot(){
       return;
     }
     if(loginRez==='ok' && une){
-      applyState({v:'wizard', step: nextIncomplete()}, true);
+      applyState(pasHyrjes(), true);
       return;
     }
     if(loginRez==='gabim'){
