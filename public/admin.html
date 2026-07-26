@@ -143,6 +143,7 @@
       '<div class="wrap" style="max-width:1040px;">'+
         '<h2 class="h">Kombinimet AI</h2>'+
         '<p class="small" style="margin:2px 0 18px;">Zgjidh një tip. Tabela poshtë tregon të gjitha kombinimet e asaj kategorie. Zgjidh dy biznese për të parë vetëm atë çift.</p>'+
+        '<div style="margin-bottom:16px;"><button class="btn" onclick="kNisEkzistueset(this)">Nis kombinimin për bizneset ekzistuese</button> <span class="small" id="kNisStat"></span></div>'+
         '<div class="kfilter">'+
           '<button class="kbtn" data-t="b2b"   onclick="kSetFiltri(\'b2b\')">B2B</button>'+
           '<button class="kbtn" data-t="b2c"   onclick="kSetFiltri(\'b2c\')">B2C</button>'+
@@ -169,6 +170,15 @@
         '</div>'+
       '</div>';
     kFiltri=null; kA=null; kB=null;
+  }
+  async function kNisEkzistueset(btn){
+    if(btn) btn.disabled=true;
+    const st=$('kNisStat'); if(st) st.textContent='Po nis…';
+    try{
+      const r=await(await fetch('/api/admin/kombinim/nis',{method:'POST'})).json();
+      if(st) st.textContent = r.error ? ('Gabim: '+r.error) : ('U nis për '+r.nisur+' biznese. Prit pak, pastaj zgjidh tipin për të parë pikët.');
+    }catch(e){ if(st) st.textContent='Gabim.'; }
+    if(btn) btn.disabled=false;
   }
   function kSetFiltri(t){
     kFiltri=t; kA=null; kB=null;
