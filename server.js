@@ -802,9 +802,10 @@ app.get('/imyr.js', (req, res) => {
   }
 
   // ---------- NJOFTO LIDHJEN ----------
+  // ---------- NJOFTO LIDHJEN E REKLAMES ----------
   if(!preview){
     try {
-      var pu = base + '/track-lidh?key=' + encodeURIComponent(key);
+      var pu = base + '/lidh?key=' + encodeURIComponent(key);
       navigator.sendBeacon ? navigator.sendBeacon(pu) : fetch(pu, {mode:'no-cors'});
     } catch(e){}
   }
