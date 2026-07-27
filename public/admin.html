@@ -93,8 +93,8 @@
     { k:'b3', l:'Buton 3' }, { k:'b4', l:'Buton 4' }
   ];
   const BIZ_SUB = [
-    { k:'bizneset', l:'Bizneset' },
-    { k:'r2', l:'Rreshti 2' }, { k:'r3', l:'Rreshti 3' }, { k:'r4', l:'Rreshti 4' }
+    { k:'bizneset', l:'Llogaritë' },
+    { k:'r2', l:'Ankandet' }, { k:'r3', l:'Rreshti 3' }, { k:'r4', l:'Rreshti 4' }
   ];
   let curSec = 'bizneset', curBizSub = 'bizneset';
 
@@ -293,8 +293,57 @@
   function renderBizMain(){
     const m=$('bizMain');
     if(curBizSub==='bizneset'){ loadBizList(m); return; }
+    if(curBizSub==='r2'){ renderAnkandet(m); return; }
     const lbl=(BIZ_SUB.find(s=>s.k===curBizSub)||{}).l||'';
     m.innerHTML='<h2 class="h">'+lbl+'</h2><p class="small" style="margin-top:8px;">Së shpejti.</p>';
+  }
+
+  // ============ ANKANDET ============
+  var ankBizneset=[];
+  async function renderAnkandet(m){
+    m.innerHTML='<h2 class="h">Ankandet</h2>'+
+      '<p class="small" style="margin:2px 0 14px;">Kliko një biznes për të parë sa herë faqja e tij (si host) ka kërkuar reklamë, cilat reklama garuan, peshat e tyre, dhe sa herë secila fitoi.</p>'+
+      '<input class="kinput" id="ankKerkim" placeholder="Kërko biznes…" oninput="ankFiltro(this.value)" style="max-width:360px;">'+
+      '<div id="ankLista" style="margin-top:12px;"><p class="small">Po ngarkoj…</p></div>'+
+      '<div id="ankDetaje" style="margin-top:18px;"></div>';
+    try{
+      ankBizneset=await(await fetch('/api/admin/bizneset')).json();
+      ankRenderLista(ankBizneset);
+    }catch(e){ $('ankLista').innerHTML='<p class="small">Gabim.</p>'; }
+  }
+  function ankFiltro(q){
+    q=(q||'').toLowerCase().trim();
+    ankRenderLista(ankBizneset.filter(b=>!q||(b.emri||'').toLowerCase().includes(q)||(b.email||'').toLowerCase().includes(q)));
+  }
+  function ankRenderLista(lista){
+    const el=$('ankLista'); if(!el) return;
+    if(!lista.length){ el.innerHTML='<p class="small">Asnjë biznes.</p>'; return; }
+    el.innerHTML='<div class="ktabela">'+lista.map(b=>
+      '<div class="krow" style="cursor:pointer;" onclick="ankHap('+b.id+')"><span class="kc1">'+
+      (b.emri||'(pa emër)')+'</span><span class="small">'+(b.email||'')+'</span></div>'
+    ).join('')+'</div>';
+  }
+  async function ankHap(id){
+    const d=$('ankDetaje'); if(!d) return;
+    d.innerHTML='<p class="small">Po ngarkoj…</p>';
+    try{
+      const r=await(await fetch('/api/admin/ankandet/'+id)).json();
+      if(r.error){ d.innerHTML='<p class="small">'+r.error+'</p>'; return; }
+      let h='<div class="ktabela" style="margin-top:6px;">'+
+        '<div class="krow khead"><span class="kc1">'+ (r.emri||'') +' — kërkesa për reklamë: '+r.kerkesa+'</span></div>'+
+        '<div class="krow khead"><span class="kc1">Reklamuesi</span><span class="kc2">Peshë</span><span class="kc2">Fitore</span></div>';
+      if(!r.kandidatet.length){
+        h+='<div class="krow"><span class="small">Ende s\'ka ankande të regjistruara për këtë biznes.</span></div>';
+      } else {
+        r.kandidatet.forEach(k=>{
+          h+='<div class="krow"><span class="kc1">'+(k.emri||('#'+k.reklamues_id))+'</span>'+
+             '<span class="kc2">'+(k.pesha==null?'—':k.pesha)+'</span>'+
+             '<span class="kc2">'+k.fitore+'</span></div>';
+        });
+      }
+      h+='</div>';
+      d.innerHTML=h;
+    }catch(e){ d.innerHTML='<p class="small">Gabim.</p>'; }
   }
 
   async function loadBizList(m){
