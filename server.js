@@ -1180,6 +1180,7 @@ app.get('/health', (req, res) => res.json({ ok: true, koha: new Date().toISOStri
 const PORT = process.env.PORT || 3000;
 initDB(pool)
   .then(() => kombinimi.init(pool))
+  .then(() => selector.initGarat(pool))
   .then(() => app.listen(PORT, () => console.log('Imyr po punon ne portin ' + PORT)))
   .catch(e => {
     console.error('Gabim init DB:', e.message);
