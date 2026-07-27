@@ -68,4 +68,30 @@ module.exports = function (app, pool, iAdmin, kombinimi) {
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
+  // --- Ankandet e nje host-i: sa kerkesa, kush garoi, pesha, sa fitore ---
+  app.get('/api/admin/ankandet/:id', iAdmin, async (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    if (!id) return res.status(400).json({ error: 'ID e pavlefshme.' });
+    try {
+      const biz = await pool.query('SELECT emri FROM bizneset WHERE id=$1', [id]);
+      if (!biz.rows.length) return res.status(404).json({ error: 'Biznesi s\'u gjet.' });
+      const kerkesa = await pool.query(
+        `SELECT COUNT(*)::int n FROM garat WHERE host_id=$1 AND fitoi=true`, [id]);
+      const kand = await pool.query(
+        `SELECT g.reklamues_id, b.emri,
+                MAX(g.pesha) AS pesha,
+                COUNT(*) FILTER (WHERE g.fitoi)::int AS fitore,
+                COUNT(*)::int AS pjesemarrje
+         FROM garat g LEFT JOIN bizneset b ON b.id = g.reklamues_id
+         WHERE g.host_id=$1
+         GROUP BY g.reklamues_id, b.emri
+         ORDER BY fitore DESC, pesha DESC`, [id]);
+      res.json({
+        emri: biz.rows[0].emri,
+        kerkesa: kerkesa.rows[0].n,
+        kandidatet: kand.rows
+      });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
 };
