@@ -58,7 +58,7 @@
   .krow.khead{ background:#161b22; color:#8b949e; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
   .kc1{ flex:1; }
   .kc2{ width:70px; text-align:center; font-weight:700; color:#4a9eff; }
-  .kc3{ width:64px; text-align:center; }
+  .kc3{ width:56px; text-align:center; font-size:13px; }
   .khead .kc2{ color:#8b949e; font-weight:600; }
   .kright{ text-align:right; }
 </style>
@@ -333,15 +333,17 @@
       if(r.error){ d.innerHTML='<p class="small">'+r.error+'</p>'; return; }
       let h='<div class="ktabela" style="margin-top:6px;">'+
         '<div class="krow khead"><span class="kc1">'+ (r.emri||'') +' — kërkesa për reklamë: '+r.kerkesa+'</span></div>'+
-        '<div class="krow khead"><span class="kc1">Reklamuesi</span><span class="kc3">AI</span><span class="kc3">Profili</span><span class="kc3">Ndihma</span><span class="kc3">Peshë</span><span class="kc3">Fitore</span></div>';
+        '<div class="krow khead"><span class="kc1">Reklamuesi</span><span class="kc3">AI</span><span class="kc3">Profili</span><span class="kc3">Ndihma</span><span class="kc3">Zbritur</span><span class="kc3">Peshë</span><span class="kc3">Fitore</span></div>';
       if(!r.kandidatet.length){
         h+='<div class="krow"><span class="small">Ende s\'ka ankande të regjistruara për këtë biznes.</span></div>';
       } else {
         r.kandidatet.forEach(k=>{
+          const zbritur = (k.ndihma_bruto!=null && k.ndihma!=null) ? (Math.round((k.ndihma_bruto-k.ndihma)*10)/10) : null;
           h+='<div class="krow"><span class="kc1">'+(k.emri||('#'+k.reklamues_id))+'</span>'+
              '<span class="kc3">'+fmt(k.ai)+'</span>'+
              '<span class="kc3">'+fmt(k.profili)+'</span>'+
              '<span class="kc3">'+fmt(k.ndihma)+'</span>'+
+             '<span class="kc3">'+fmt(zbritur)+'</span>'+
              '<span class="kc3" style="font-weight:600;">'+fmt(k.pesha)+'</span>'+
              '<span class="kc3">'+k.fitore+'</span></div>';
         });
