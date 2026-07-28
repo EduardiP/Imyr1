@@ -58,6 +58,7 @@
   .krow.khead{ background:#161b22; color:#8b949e; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
   .kc1{ flex:1; }
   .kc2{ width:70px; text-align:center; font-weight:700; color:#4a9eff; }
+  .kc3{ width:64px; text-align:center; }
   .khead .kc2{ color:#8b949e; font-weight:600; }
   .kright{ text-align:right; }
 </style>
@@ -323,6 +324,7 @@
       (b.emri||'(pa emër)')+'</span><span class="small">'+(b.email||'')+'</span></div>'
     ).join('')+'</div>';
   }
+  function fmt(n){ if(n==null) return '—'; const x=Math.round(n*10)/10; return x; }
   async function ankHap(id){
     const d=$('ankDetaje'); if(!d) return;
     d.innerHTML='<p class="small">Po ngarkoj…</p>';
@@ -331,14 +333,17 @@
       if(r.error){ d.innerHTML='<p class="small">'+r.error+'</p>'; return; }
       let h='<div class="ktabela" style="margin-top:6px;">'+
         '<div class="krow khead"><span class="kc1">'+ (r.emri||'') +' — kërkesa për reklamë: '+r.kerkesa+'</span></div>'+
-        '<div class="krow khead"><span class="kc1">Reklamuesi</span><span class="kc2">Peshë</span><span class="kc2">Fitore</span></div>';
+        '<div class="krow khead"><span class="kc1">Reklamuesi</span><span class="kc3">AI</span><span class="kc3">Profili</span><span class="kc3">Ndihma</span><span class="kc3">Peshë</span><span class="kc3">Fitore</span></div>';
       if(!r.kandidatet.length){
         h+='<div class="krow"><span class="small">Ende s\'ka ankande të regjistruara për këtë biznes.</span></div>';
       } else {
         r.kandidatet.forEach(k=>{
           h+='<div class="krow"><span class="kc1">'+(k.emri||('#'+k.reklamues_id))+'</span>'+
-             '<span class="kc2">'+(k.pesha==null?'—':k.pesha)+'</span>'+
-             '<span class="kc2">'+k.fitore+'</span></div>';
+             '<span class="kc3">'+fmt(k.ai)+'</span>'+
+             '<span class="kc3">'+fmt(k.profili)+'</span>'+
+             '<span class="kc3">'+fmt(k.ndihma)+'</span>'+
+             '<span class="kc3" style="font-weight:600;">'+fmt(k.pesha)+'</span>'+
+             '<span class="kc3">'+k.fitore+'</span></div>';
         });
       }
       h+='</div>';
