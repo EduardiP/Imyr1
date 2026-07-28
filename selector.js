@@ -53,7 +53,8 @@ async function initGarat(pool) {
   await pool.query(`ALTER TABLE garat ADD COLUMN IF NOT EXISTS ndihma_bruto NUMERIC`);
 }
 
-async function zgjidhReklame(pool, hostId) {
+async function zgjidhReklame(pool, hostId, pare) {
+  pare = Array.isArray(pare) ? pare : [];
   const h = await pool.query('SELECT tipi FROM bizneset WHERE id=$1', [hostId]);
   const hTipi = h.rows[0] && h.rows[0].tipi;
 
@@ -63,9 +64,19 @@ async function zgjidhReklame(pool, hostId) {
      WHERE p.biznes_id <> $1 AND p.aktiv = true
        AND (p.teksti IS NOT NULL OR p.imazh_url IS NOT NULL)`, [hostId]);
 
+  // Filtri i tipit
+  let kandidatet = kand.rows.filter(k => !(hTipi && k.tipi && !tipetPerputhen(k.tipi, hTipi)));
+
+  // Frequency capping: hiq ato qe vizitori i ka pare tashme kete vizite.
+  // Nese pas heqjes s'mbetet asnje (i pa te gjitha), rifillo te gjitha (mos e le bosh).
+  if (pare.length) {
+    const paFiltruar = kandidatet.filter(k => pare.indexOf(k.id) === -1);
+    if (paFiltruar.length) kandidatet = paFiltruar;
+    // ndryshe: mbaji te gjitha (rifillim i rrethit)
+  }
+
   const lista = [];
-  for (const k of kand.rows) {
-    if (hTipi && k.tipi && !tipetPerputhen(k.tipi, hTipi)) continue;
+  for (const k of kandidatet) {
 
     // 1. Vleresimi AI: reklamues→host
     let skorAI = 0;
