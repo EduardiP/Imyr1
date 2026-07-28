@@ -757,7 +757,18 @@ app.get('/imyr.js', (req, res) => {
       }
       return;
     }
-    fetch(base + '/ad?key=' + encodeURIComponent(key) + (preview?'&preview=1':''))
+    // Reklamat e para brenda kesaj vizite (frequency capping per session)
+    function lexoPare(){
+      try { var v = sessionStorage.getItem('imyr_pare'); return v ? JSON.parse(v) : []; } catch(e){ return []; }
+    }
+    function shtoPare(id){
+      try {
+        var l = lexoPare(); if(l.indexOf(id) === -1){ l.push(id); sessionStorage.setItem('imyr_pare', JSON.stringify(l)); }
+      } catch(e){}
+    }
+    var pare = lexoPare();
+    var qpare = pare.length ? ('&pare=' + encodeURIComponent(pare.join(','))) : '';
+    fetch(base + '/ad?key=' + encodeURIComponent(key) + qpare + (preview?'&preview=1':''))
       .then(function(r){ return r.json(); })
       .then(function(d){
         if(!d) return;
@@ -778,6 +789,7 @@ app.get('/imyr.js', (req, res) => {
               + ' style="text-decoration:none;display:inline-block;max-width:100%;cursor:pointer;">' + inner + '</a>';
           }
           slot.innerHTML = inner;
+          if(d.id) shtoPare(d.id);
           if(!preview){ try { var v = base + '/track?key=' + encodeURIComponent(key) + '&event=view' + rid;
             navigator.sendBeacon ? navigator.sendBeacon(v) : fetch(v); } catch(e){} }
         }
@@ -958,7 +970,9 @@ app.get('/ad', async (req, res) => {
     }
 
     // Shperndarja: logjika ndodhet te selector.js (ndryshohet vetem aty).
-    const rek = await selector.zgjidhReklame(pool, bizId);
+    // Reklamat e para nga ky vizitor brenda vizites (frequency capping)
+    const pareRaw = (req.query.pare || '').split(',').map(x => parseInt(x, 10)).filter(Boolean);
+    const rek = await selector.zgjidhReklame(pool, bizId, pareRaw);
     // konv_url = faqja e konvertimit E KETIJ biznesi (snippet-i e perdor per te njohur suksesin)
     res.json(Object.assign({ konv_url: b.rows[0].url_konvertimi || null }, rek || {}));
   } catch (e) {
