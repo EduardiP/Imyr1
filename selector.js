@@ -1,9 +1,9 @@
 // selector.js — LOGJIKA E SHPERNDARJES SE REKLAMAVE
-// Zgjedh reklamen qe shfaqet te nje snippet (host), me peshe:
-//   pesha = vleresimi_AI(reklamues→host, nga `perputhjet`) + piket_e_profilit(reklamues)
+// pesha = vleresimi_AI(reklamues→host) + piket_e_profilit(reklamues) + ndihma_neto
+//   ndihma jepet vetem nese cifti eshte nder 3 kombinimet me te mira te reklamuesit,
+//   AI brenda 20-320, dhe zbritet nga piket e profilit (nje-per-nje). Pa learning phase.
 // Filtri i tipit: b2b me b2b, b2c me b2c, b2b2c me te dyja.
-// Probabiliteti = pesha e ketij ÷ shuma e peshave (weighted-random, pa perqindje fikse).
-// Regjistron ankandin te tabela `garat` (kush garoi, pesha, kush fitoi).
+// Probabiliteti = pesha ÷ shuma (weighted-random). Regjistron ankandin te `garat`.
 
 const pesha = require('./pesha');
 
@@ -12,7 +12,7 @@ function tipetPerputhen(rTipi, hTipi) {
   return rTipi === hTipi;
 }
 
-// Pikët e profilit të reklamuesit — gjithmone aktive, pa learning phase
+// Piket e profilit — nga shfaqjet/konvertimet qe biznesi OFRON si host. Gjithmone aktive.
 async function pikeProfiliBiznesi(pool, bizId, tipi) {
   const r = await pool.query(
     `SELECT COUNT(*) FILTER (WHERE lloji='view')::int      AS shfaqje,
@@ -23,6 +23,15 @@ async function pikeProfiliBiznesi(pool, bizId, tipi) {
   return (shfaqje / rate) + konvertime;
 }
 
+// A eshte host-i nder 3 kombinimet me te mira (AI) te reklamuesit?
+async function eshteNderTop3(pool, reklamuesId, hostId) {
+  const r = await pool.query(
+    `SELECT host_id FROM perputhjet
+     WHERE reklamues_id=$1 AND skori IS NOT NULL
+     ORDER BY skori DESC LIMIT $2`, [reklamuesId, pesha.PARAM.TOP_KOMBINIME]);
+  return r.rows.some(x => x.host_id === hostId);
+}
+
 async function initGarat(pool) {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS garat (
@@ -30,10 +39,17 @@ async function initGarat(pool) {
       host_id      INTEGER NOT NULL,
       reklamues_id INTEGER NOT NULL,
       pesha        NUMERIC,
+      ai           NUMERIC,
+      profili      NUMERIC,
+      ndihma       NUMERIC,
       fitoi        BOOLEAN DEFAULT false,
       created_at   TIMESTAMPTZ DEFAULT now()
     )`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_garat_host ON garat(host_id)`);
+  // Nese tabela ekziston nga me pare pa kolonat e reja, shtoji
+  await pool.query(`ALTER TABLE garat ADD COLUMN IF NOT EXISTS ai NUMERIC`);
+  await pool.query(`ALTER TABLE garat ADD COLUMN IF NOT EXISTS profili NUMERIC`);
+  await pool.query(`ALTER TABLE garat ADD COLUMN IF NOT EXISTS ndihma NUMERIC`);
 }
 
 async function zgjidhReklame(pool, hostId) {
@@ -49,19 +65,30 @@ async function zgjidhReklame(pool, hostId) {
   const lista = [];
   for (const k of kand.rows) {
     if (hTipi && k.tipi && !tipetPerputhen(k.tipi, hTipi)) continue;
+
+    // 1. Vleresimi AI: reklamues→host
     let skorAI = 0;
     try {
       const s = await pool.query(
         'SELECT skori FROM perputhjet WHERE reklamues_id=$1 AND host_id=$2', [k.biznes_id, hostId]);
       if (s.rows.length && s.rows[0].skori != null) skorAI = s.rows[0].skori;
     } catch (e) {}
+
+    // 2. Piket e profilit
     const pikeProf = await pikeProfiliBiznesi(pool, k.biznes_id, k.tipi || hTipi);
-    const w = skorAI + pikeProf;
-    lista.push({ k, pesha: w });
+
+    // 3. Ndihma — vetem nese nder top-3 e reklamuesit; zbritet nga profili
+    let nderTop3 = false;
+    try { nderTop3 = await eshteNderTop3(pool, k.biznes_id, hostId); } catch (e) {}
+    const ndih = pesha.ndihmaNeto(skorAI, pikeProf, nderTop3);
+
+    const w = skorAI + pikeProf + ndih;   // pesha totale
+    lista.push({ k, pesha: w, ai: skorAI, profili: pikeProf, ndihma: ndih });
   }
 
   if (!lista.length) return null;
 
+  // Weighted-random
   const shuma = lista.reduce((a, x) => a + x.pesha, 0);
   let fituesi;
   if (shuma <= 0) {
@@ -80,10 +107,13 @@ async function regjistroAnkandin(pool, hostId, lista, fituesi) {
   try {
     for (const x of lista) {
       await pool.query(
-        'INSERT INTO garat (host_id, reklamues_id, pesha, fitoi) VALUES ($1,$2,$3,$4)',
-        [hostId, x.k.biznes_id, Math.round(x.pesha * 10) / 10, x === fituesi]);
+        `INSERT INTO garat (host_id, reklamues_id, pesha, ai, profili, ndihma, fitoi)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [hostId, x.k.biznes_id,
+         rr(x.pesha), rr(x.ai), rr(x.profili), rr(x.ndihma), x === fituesi]);
     }
   } catch (e) {}
 }
+function rr(n){ return Math.round(n * 10) / 10; }
 
 module.exports = { zgjidhReklame, initGarat, tipetPerputhen };
