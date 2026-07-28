@@ -42,14 +42,15 @@ async function initGarat(pool) {
       ai           NUMERIC,
       profili      NUMERIC,
       ndihma       NUMERIC,
+      ndihma_bruto NUMERIC,
       fitoi        BOOLEAN DEFAULT false,
       created_at   TIMESTAMPTZ DEFAULT now()
     )`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_garat_host ON garat(host_id)`);
-  // Nese tabela ekziston nga me pare pa kolonat e reja, shtoji
   await pool.query(`ALTER TABLE garat ADD COLUMN IF NOT EXISTS ai NUMERIC`);
   await pool.query(`ALTER TABLE garat ADD COLUMN IF NOT EXISTS profili NUMERIC`);
   await pool.query(`ALTER TABLE garat ADD COLUMN IF NOT EXISTS ndihma NUMERIC`);
+  await pool.query(`ALTER TABLE garat ADD COLUMN IF NOT EXISTS ndihma_bruto NUMERIC`);
 }
 
 async function zgjidhReklame(pool, hostId) {
@@ -80,10 +81,11 @@ async function zgjidhReklame(pool, hostId) {
     // 3. Ndihma — vetem nese nder top-3 e reklamuesit; zbritet nga profili
     let nderTop3 = false;
     try { nderTop3 = await eshteNderTop3(pool, k.biznes_id, hostId); } catch (e) {}
-    const ndih = pesha.ndihmaNeto(skorAI, pikeProf, nderTop3);
+    const ndihBruto = nderTop3 ? pesha.ndihma(skorAI) : 0;      // para zbritjes
+    const ndih = pesha.ndihmaNeto(skorAI, pikeProf, nderTop3);  // pas zbritjes
 
     const w = skorAI + pikeProf + ndih;   // pesha totale
-    lista.push({ k, pesha: w, ai: skorAI, profili: pikeProf, ndihma: ndih });
+    lista.push({ k, pesha: w, ai: skorAI, profili: pikeProf, ndihma: ndih, ndihmaBruto: ndihBruto });
   }
 
   if (!lista.length) return null;
@@ -107,10 +109,10 @@ async function regjistroAnkandin(pool, hostId, lista, fituesi) {
   try {
     for (const x of lista) {
       await pool.query(
-        `INSERT INTO garat (host_id, reklamues_id, pesha, ai, profili, ndihma, fitoi)
-         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        `INSERT INTO garat (host_id, reklamues_id, pesha, ai, profili, ndihma, ndihma_bruto, fitoi)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
         [hostId, x.k.biznes_id,
-         rr(x.pesha), rr(x.ai), rr(x.profili), rr(x.ndihma), x === fituesi]);
+         rr(x.pesha), rr(x.ai), rr(x.profili), rr(x.ndihma), rr(x.ndihmaBruto), x === fituesi]);
     }
   } catch (e) {}
 }
