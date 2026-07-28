@@ -79,7 +79,10 @@ module.exports = function (app, pool, iAdmin, kombinimi) {
         `SELECT COUNT(*)::int n FROM garat WHERE host_id=$1 AND fitoi=true`, [id]);
       const kand = await pool.query(
         `SELECT g.reklamues_id, b.emri,
-                MAX(g.pesha) AS pesha,
+                MAX(g.pesha)   AS pesha,
+                MAX(g.ai)      AS ai,
+                MAX(g.profili) AS profili,
+                MAX(g.ndihma)  AS ndihma,
                 COUNT(*) FILTER (WHERE g.fitoi)::int AS fitore,
                 COUNT(*)::int AS pjesemarrje
          FROM garat g LEFT JOIN bizneset b ON b.id = g.reklamues_id
