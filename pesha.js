@@ -32,15 +32,17 @@ function ndihma(ai) {
   return PARAM.NDIHMA_MAX / (1 + Math.exp(PARAM.NDIHMA_PJERRESI * (ai - PARAM.NDIHMA_QENDER)));
 }
 
-function ndihmaNeto(ai, pikeProf, lejohet) {
-  if (!lejohet) return 0;
+// ndihma neto = kurba − piket e profilit (zbritje nje-per-nje), jo nen zero.
+// nderTop3 = a eshte ky cift nder 3 kombinimet me te mira te reklamuesit.
+// PA learning phase — zbritja e ben vete punen.
+function ndihmaNeto(ai, pikeProf, nderTop3) {
+  if (!nderTop3) return 0;
   return Math.max(0, ndihma(ai) - PARAM.KOEF_ZBRITJE * pikeProf);
 }
 
-// k = { ai, pikeProfili, ditet, nderTreTeParat }
+// k = { ai, pikeProfili, nderTop3 }
 function pesha(k) {
-  const lejohet = (k.ditet >= PARAM.DITE_MESIMI) && !!k.nderTreTeParat;
-  return k.ai + k.pikeProfili + ndihmaNeto(k.ai, k.pikeProfili, lejohet);
+  return k.ai + k.pikeProfili + ndihmaNeto(k.ai, k.pikeProfili, !!k.nderTop3);
 }
 
 // A perputhen tipet? b2b2c hyn kudo.
