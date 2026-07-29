@@ -110,6 +110,15 @@ module.exports = function (app, pool, iLoguar, beCeles) {
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
+  // Kontrollo nese nje snippet eshte lidhur (per polling gjate verifikimit)
+  app.get('/api/snippetet/:id/kontrollo', iLoguar, async (req, res) => {
+    try {
+      const r = await pool.query('SELECT snippet_active FROM snippetet WHERE id=$1 AND biznes_id=$2',
+        [req.params.id, req.biznesId]);
+      res.json({ active: r.rows.length ? !!r.rows[0].snippet_active : false });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
   // Ruaj madhesine/pozicionin e nje snippet-i specifik
   app.post('/api/snippetet/:id/madhesia', iLoguar, async (req, res) => {
     const bd = req.body || {};
