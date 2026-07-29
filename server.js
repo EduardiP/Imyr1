@@ -817,8 +817,13 @@ app.get('/imyr.js', (req, res) => {
             inner = '<a href="' + href + '" target="_blank" rel="noopener"'
               + ' style="text-decoration:none;display:block;width:100%;height:100%;cursor:pointer;">' + inner + '</a>';
           }
+          // Pozicioni brenda hapesires: qender / majtas / djathtas
+          var poz = d.pozicioni || 'qender';
+          var align = poz==='majtas' ? 'flex-start' : (poz==='djathtas' ? 'flex-end' : 'center');
           // Kutia me permasen e caktuar (max-width 100% qe te mos dale nga kontejneri i klientit)
-          slot.innerHTML = '<div style="width:' + mw + 'px;height:' + mh + 'px;max-width:100%;">' + inner + '</div>';
+          // sticky: reklama ndjek scroll-in derisa mbaron kontejneri (punon ne shumicen e faqeve)
+          var kutia = '<div style="width:' + mw + 'px;height:' + mh + 'px;max-width:100%;position:sticky;top:10px;">' + inner + '</div>';
+          slot.innerHTML = '<div style="display:flex;justify-content:' + align + ';width:100%;">' + kutia + '</div>';
           if(d.id){ if(d.cikel_ri){ rifilloCikel(d.id); } else { shtoPare(d.id); } }
           if(!preview){ try { var v = base + '/track?key=' + encodeURIComponent(key) + '&event=view' + rid;
             navigator.sendBeacon ? navigator.sendBeacon(v) : fetch(v); } catch(e){} }
@@ -972,7 +977,7 @@ app.get('/ad', async (req, res) => {
   if (!key) return res.json({ teksti: null });
   const preview = req.query.preview === '1';
   try {
-    const b = await pool.query('SELECT id, snippet_active, url_konvertimi, madhesia_desktop, madhesia_mobile FROM bizneset WHERE celes=$1', [key]);
+    const b = await pool.query('SELECT id, snippet_active, url_konvertimi, madhesia_desktop, madhesia_mobile, pozicioni_reklames FROM bizneset WHERE celes=$1', [key]);
     if (!b.rows.length) return res.json({ teksti: null });
     const bizId = b.rows[0].id;
     const origin = req.headers.origin || req.headers.referer || null;
@@ -1004,7 +1009,7 @@ app.get('/ad', async (req, res) => {
     const pareRaw = (req.query.pare || '').split(',').map(x => x.trim()).filter(Boolean);
     const rek = await selector.zgjidhReklame(pool, bizId, pareRaw);
     // konv_url = faqja e konvertimit E KETIJ biznesi (snippet-i e perdor per te njohur suksesin)
-    res.json(Object.assign({ konv_url: b.rows[0].url_konvertimi || null, madhesia: b.rows[0].madhesia_desktop || '188x214', madhesia_mobile: b.rows[0].madhesia_mobile || '290x260' }, rek || {}));
+    res.json(Object.assign({ konv_url: b.rows[0].url_konvertimi || null, madhesia: b.rows[0].madhesia_desktop || '188x214', madhesia_mobile: b.rows[0].madhesia_mobile || '290x260', pozicioni: b.rows[0].pozicioni_reklames || 'qender' }, rek || {}));
   } catch (e) {
     res.json({ teksti: null });
   }
