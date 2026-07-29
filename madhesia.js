@@ -7,7 +7,7 @@
 // Kufijte (desktop)
 const MAX_W = 260, MAX_H = 290;
 const MIN_W = 134, MIN_H = 155;
-const STANDARD = '188x214';
+const STANDARD = '210x261';
 
 // Kufijte (mobile)
 const M_MAX_W = 320, M_MAX_H = 400;
