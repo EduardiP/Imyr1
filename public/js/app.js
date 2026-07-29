@@ -252,19 +252,31 @@ async function snipDetaje(m, id){
   try{
     const sn=await(await fetch('/api/snippetet/'+id)).json();
     if(sn.error){ b.innerHTML='<p class="small err">'+esc(sn.error)+'</p>'; return; }
-    const status = sn.snippet_active
-      ? '<div class="miniStat" style="margin:10px 0 18px;"><span class="vd">✓</span> I lidhur</div>'
-      : '<div class="status wait" style="margin:10px 0 18px;">Pa lidhur ende — vendos kodin te faqja jote.</div>';
-    b.innerHTML=
-      '<div style="margin-bottom:10px;"><a href="#" style="color:#4a9eff;text-decoration:none;font-size:13px;" onclick="event.preventDefault();nav({v:\'profile\',nav:\'snippetet\'})">← Të gjitha snippet-et</a></div>'+
-      '<h2 class="h">'+esc(sn.emri||('Snippet '+id))+'</h2>'+
-      status+
-      '<label class="small">Kodi i snippet-it</label>'+
-      '<div class="kodbox" id="snipKod">'+esc(snipKodi(sn.celes))+'</div>'+
-      '<button class="btn" style="margin-top:8px;" onclick="snipKopjo()">Kopjo kodin</button>'+
-      '<div style="margin-top:22px;"><div id="madhWrap"></div></div>';
-    const w=b.querySelector('#madhWrap');
-    if(w) ndertoMadhesine(w, true, sn.celes, sn);
+    const krye='<div style="margin-bottom:10px;"><a href="#" style="color:#4a9eff;text-decoration:none;font-size:13px;" onclick="event.preventDefault();nav({v:\'profile\',nav:\'snippetet\'})">← Të gjitha snippet-et</a></div>'+
+      '<h2 class="h">'+esc(sn.emri||('Snippet '+id))+'</h2>';
+    if(sn.snippet_active){
+      // I LIDHUR → thjesht "I lidhur" + caktimi i madhesise
+      b.innerHTML=krye+
+        '<div class="miniStat" style="margin:10px 0 18px;"><span class="vd">✓</span> I lidhur</div>'+
+        '<div id="madhWrap"></div>';
+      const w=b.querySelector('#madhWrap');
+      if(w) ndertoMadhesine(w, true, sn.celes, sn);
+    } else {
+      // PA LIDHUR → kodi + kopjo + URL + verifiko
+      b.innerHTML=krye+
+        '<p class="small" style="margin:6px 0 10px;">Vendose këtë rresht aty ku do të shfaqet reklama te faqja jote.</p>'+
+        '<textarea class="kod" id="snipKod" readonly>'+esc(snipKodi(sn.celes))+'</textarea>'+
+        '<div class="rowbtn"><button class="btn cta" id="snipCbtn" onclick="snipKopjo()">Kopjo</button></div>'+
+        '<div style="margin-top:14px;">'+
+          '<label>URL-ja e faqes ku e vendose</label>'+
+          '<input id="snipUrl" value="'+esc((une&&une.website)||'')+'" placeholder="https://faqja-ime.com">'+
+          '<button class="primary" id="snipVbtn" onclick="snipVerifiko('+id+')">Hap faqen dhe konfirmo →</button>'+
+          '<div class="status wait hide" id="snipStatus"></div>'+
+        '</div>'+
+        '<div id="madhWrap" style="margin-top:22px;"></div>';
+      const w=b.querySelector('#madhWrap');
+      if(w) ndertoMadhesine(w, true, sn.celes, sn);
+    }
   }catch(e){ b.innerHTML='<p class="small err">Gabim.</p>'; }
 }
 function snipKodi(celes){
@@ -272,8 +284,28 @@ function snipKodi(celes){
 }
 function snipKopjo(){
   const t=$('snipKod'); if(!t) return;
-  const txt=t.textContent||'';
-  if(navigator.clipboard){ navigator.clipboard.writeText(txt); }
+  t.select && t.select(); t.setSelectionRange && t.setSelectionRange(0,99999);
+  try{ document.execCommand('copy'); }catch(e){}
+  if(navigator.clipboard){ navigator.clipboard.writeText(t.value||t.textContent||''); }
+  const b=$('snipCbtn'); if(b){ b.textContent='U kopjua ✓'; setTimeout(()=>b.textContent='Kopjo',1500); }
+}
+function snipVerifiko(id){
+  let url=($('snipUrl').value||'').trim(); if(!url){ $('snipUrl').focus(); return; }
+  if(!/^https?:\/\//i.test(url)) url='https://'+url;
+  window.open(url,'_blank');
+  const st=$('snipStatus'); if(st){ st.classList.remove('hide'); st.className='status wait'; st.innerHTML='⏳ Po pres sinjalin e lidhjes…'; }
+  if(pollTimer) clearInterval(pollTimer);
+  const tick=async()=>{
+    try{
+      const r=await(await fetch('/api/snippetet/'+id+'/kontrollo')).json();
+      if(r.active){
+        clearInterval(pollTimer); pollTimer=null;
+        // rifresko pamjen → kalon te gjendja "I lidhur"
+        nav({v:'profile',nav:'snippetet',sub:'detail',id:id});
+      }
+    }catch(e){}
+  };
+  tick(); pollTimer=setInterval(tick,6000);
 }
 
 function mainLidhja(m){
