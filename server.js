@@ -799,9 +799,9 @@ app.get('/imyr.js', (req, res) => {
         if(d.imazh_url || d.teksti){
           var rid = d.id ? ('&rid=' + encodeURIComponent(d.id)) : '';
           // Madhesia e caktuar nga host-i (ose standardi 300x380). Kutia merr kete permase; reklama pershtatet brenda.
-          var mw = 188, mh = 214;
+          var mw = 210, mh = 261;
           var eshteMobile = (window.innerWidth || document.documentElement.clientWidth || 9999) <= 600;
-          var madhStr = eshteMobile ? (d.madhesia_mobile || '290x260') : (d.madhesia || '188x214');
+          var madhStr = eshteMobile ? (d.madhesia_mobile || '290x260') : (d.madhesia || '210x261');
           if(eshteMobile){ mw = 290; mh = 260; }
           var pp = String(madhStr).split('x'); var a1=parseInt(pp[0],10), a2=parseInt(pp[1],10); if(a1>0 && a2>0){ mw=a1; mh=a2; }
           var inner;
@@ -1009,7 +1009,7 @@ app.get('/ad', async (req, res) => {
     const pareRaw = (req.query.pare || '').split(',').map(x => x.trim()).filter(Boolean);
     const rek = await selector.zgjidhReklame(pool, bizId, pareRaw);
     // konv_url = faqja e konvertimit E KETIJ biznesi (snippet-i e perdor per te njohur suksesin)
-    res.json(Object.assign({ konv_url: b.rows[0].url_konvertimi || null, madhesia: b.rows[0].madhesia_desktop || '188x214', madhesia_mobile: b.rows[0].madhesia_mobile || '290x260', pozicioni: b.rows[0].pozicioni_reklames || 'qender' }, rek || {}));
+    res.json(Object.assign({ konv_url: b.rows[0].url_konvertimi || null, madhesia: b.rows[0].madhesia_desktop || '210x261', madhesia_mobile: b.rows[0].madhesia_mobile || '290x260', pozicioni: b.rows[0].pozicioni_reklames || 'qender' }, rek || {}));
   } catch (e) {
     res.json({ teksti: null });
   }
