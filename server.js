@@ -797,7 +797,7 @@ app.get('/imyr.js', (req, res) => {
         if(d.imazh_url || d.teksti){
           var rid = d.id ? ('&rid=' + encodeURIComponent(d.id)) : '';
           // Madhesia e caktuar nga host-i (ose standardi 300x380). Kutia merr kete permase; reklama pershtatet brenda.
-          var mw = 300, mh = 380;
+          var mw = 188, mh = 214;
           if(d.madhesia){ var mm = /^(\d+)x(\d+)$/.exec(d.madhesia); if(mm){ mw = parseInt(mm[1],10); mh = parseInt(mm[2],10); } }
           var inner;
           if(d.imazh_url){
@@ -999,7 +999,7 @@ app.get('/ad', async (req, res) => {
     const pareRaw = (req.query.pare || '').split(',').map(x => x.trim()).filter(Boolean);
     const rek = await selector.zgjidhReklame(pool, bizId, pareRaw);
     // konv_url = faqja e konvertimit E KETIJ biznesi (snippet-i e perdor per te njohur suksesin)
-    res.json(Object.assign({ konv_url: b.rows[0].url_konvertimi || null, madhesia: b.rows[0].madhesia_desktop || '300x380' }, rek || {}));
+    res.json(Object.assign({ konv_url: b.rows[0].url_konvertimi || null, madhesia: b.rows[0].madhesia_desktop || '188x214' }, rek || {}));
   } catch (e) {
     res.json({ teksti: null });
   }
