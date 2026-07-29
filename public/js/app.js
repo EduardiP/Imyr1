@@ -209,7 +209,100 @@ function mainLidhja(m){
   window.__pamjeVecante=true;
   m.innerHTML='<div id="pvBody"></div>';
   const b=document.getElementById('pvBody');
-  if(b) stepLidhja(b);
+  if(!b) return;
+  if(prog.lidhja){
+    // Hapi i plotesuar → thjesht "i lidhur" + caktimi i madhesise (i hapur, pa buton) + Ruaj
+    b.innerHTML=
+      '<h2 class="h">Lidhja e snippet-it</h2>'+
+      '<div class="miniStat" style="margin:10px 0 18px;"><span class="vd">✓</span> I lidhur</div>'+
+      '<div id="madhWrap"></div>';
+    ndertoMadhesine($('madhWrap'), true);
+  } else {
+    // I ri → hapi normal + link blu "cakto parametrat" (i fshehur derisa klikohet)
+    stepLidhja(b);
+    const extra=document.createElement('div');
+    extra.innerHTML=
+      '<div style="margin-top:16px;"><a href="#" id="caktoLink" style="color:#4a9eff;text-decoration:none;font-size:14px;" '+
+      'onclick="event.preventDefault();document.getElementById(\'madhBox\').classList.toggle(\'hide\');">Cakto parametrat e hapësirës</a></div>'+
+      '<div id="madhBox" class="hide" style="margin-top:12px;"></div>';
+    b.appendChild(extra);
+    ndertoMadhesine($('madhBox'), false);
+  }
+}
+
+// ===== CAKTIMI I MADHESISE (korniza interaktive) =====
+var _mad = { w:300, h:380, MAXW:728, MAXH:600, MINW:110, MINH:130 };
+async function ndertoMadhesine(cont, ruajVetem){
+  if(!cont) return;
+  cont.innerHTML='<p class="small">Po ngarkoj…</p>';
+  try{
+    const r=await(await fetch('/api/madhesia')).json();
+    const p=(r.desktop||'300x380').split('x');
+    _mad.w=parseInt(p[0],10)||300; _mad.h=parseInt(p[1],10)||380;
+    _mad.MAXW=r.max_w||728; _mad.MAXH=r.max_h||600; _mad.MINW=r.min_w||110; _mad.MINH=r.min_h||130;
+  }catch(e){}
+  cont.innerHTML=
+    '<p class="small" style="margin-bottom:10px;">Hapësira që snippet-i do të zërë në faqen tënde (desktop). Tërhiq cepin ose ndrysho numrat. Reklamat përshtaten brenda kësaj mase.</p>'+
+    '<div id="madhKanavas" style="position:relative;width:'+_mad.MAXW+'px;max-width:100%;height:'+_mad.MAXH+'px;'+
+      'border:1px dashed #2a313c;border-radius:6px;background:#0e1116;overflow:hidden;">'+
+      '<div id="madhKuti" style="position:absolute;top:0;left:0;width:'+_mad.w+'px;height:'+_mad.h+'px;'+
+        'background:#4a9eff22;border:2px solid #4a9eff;box-sizing:border-box;">'+
+        '<div id="madhDore" style="position:absolute;right:-6px;bottom:-6px;width:14px;height:14px;'+
+          'background:#4a9eff;border-radius:3px;cursor:nwse-resize;"></div>'+
+      '</div>'+
+    '</div>'+
+    '<div style="display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap;">'+
+      '<label class="small">Gjerësi <input id="madhW" type="number" value="'+_mad.w+'" min="'+_mad.MINW+'" max="'+_mad.MAXW+'" style="width:70px;"></label>'+
+      '<label class="small">Lartësi <input id="madhH" type="number" value="'+_mad.h+'" min="'+_mad.MINH+'" max="'+_mad.MAXH+'" style="width:70px;"></label>'+
+      '<span class="small" id="madhLive" style="font-weight:600;color:#4a9eff;">'+_mad.w+' × '+_mad.h+' px</span>'+
+    '</div>'+
+    '<button class="primary" id="madhRuaj" onclick="ruajMadhesine()" style="margin-top:14px;">Ruaj</button>'+
+    '<div class="msg" id="madhMsg"></div>';
+  madhLidhTerheqjen();
+  $('madhW').oninput=()=>madhNgaNumrat();
+  $('madhH').oninput=()=>madhNgaNumrat();
+}
+function madhKufizo(w,h){
+  w=Math.max(_mad.MINW,Math.min(_mad.MAXW,Math.round(w)));
+  h=Math.max(_mad.MINH,Math.min(_mad.MAXH,Math.round(h)));
+  return [w,h];
+}
+function madhVendos(w,h){
+  [w,h]=madhKufizo(w,h); _mad.w=w; _mad.h=h;
+  const k=$('madhKuti'); if(k){ k.style.width=w+'px'; k.style.height=h+'px'; }
+  if($('madhW')) $('madhW').value=w;
+  if($('madhH')) $('madhH').value=h;
+  if($('madhLive')) $('madhLive').textContent=w+' × '+h+' px';
+}
+function madhNgaNumrat(){ madhVendos(parseInt($('madhW').value,10)||_mad.w, parseInt($('madhH').value,10)||_mad.h); }
+function madhLidhTerheqjen(){
+  const dore=$('madhDore'), kan=$('madhKanavas'); if(!dore||!kan) return;
+  let duke=false;
+  function nis(e){ duke=true; e.preventDefault(); }
+  function levize(e){
+    if(!duke) return;
+    const rect=kan.getBoundingClientRect();
+    const cx=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
+    const cy=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
+    madhVendos(cx, cy);
+  }
+  function ndal(){ duke=false; }
+  dore.addEventListener('mousedown', nis);
+  dore.addEventListener('touchstart', nis, {passive:false});
+  document.addEventListener('mousemove', levize);
+  document.addEventListener('touchmove', levize, {passive:false});
+  document.addEventListener('mouseup', ndal);
+  document.addEventListener('touchend', ndal);
+}
+async function ruajMadhesine(){
+  const btn=$('madhRuaj'); if(btn) btn.disabled=true;
+  const msg=$('madhMsg'); if(msg){ msg.className='msg'; msg.textContent='Po ruaj…'; }
+  try{
+    const r=await(await fetch('/api/madhesia',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({desktop:_mad.w+'x'+_mad.h})})).json();
+    if(msg){ msg.className=r.error?'msg err':'msg ok'; msg.textContent=r.error?('Gabim: '+r.error):('U ruajt: '+r.desktop); }
+  }catch(e){ if(msg){ msg.className='msg err'; msg.textContent='Gabim.'; } }
+  if(btn) btn.disabled=false;
 }
 function mainReklamat(m, s){
   s = s || {};
