@@ -1,6 +1,6 @@
 // madhesia.js — Caktimi i madhesise se hapesires qe snippet-i nxjerr ne web.
-// Nje madhesi per Desktop (dhe me vone Mobile); te 3 formatet (image/video/zip)
-// pershtaten brenda saj. Standard: 300x380 (desktop).
+// Nje madhesi per Desktop dhe nje per Mobile; te 3 formatet (image/video/zip)
+// pershtaten brenda saj.
 // Server.js e therret: require('./madhesia')(app, pool, iLoguar);
 // Nuk prek asnje logjike ekzistuese.
 
@@ -9,38 +9,53 @@ const MAX_W = 260, MAX_H = 290;
 const MIN_W = 134, MIN_H = 155;
 const STANDARD = '188x214';
 
-function valido(mad) {
-  // pret "GJERESIxLARTESI", p.sh. "300x380"
+// Kufijte (mobile)
+const M_MAX_W = 320, M_MAX_H = 400;
+const M_MIN_W = 260, M_MIN_H = 70;
+const M_STANDARD = '290x260';
+
+function validoMe(mad, maxW, maxH, minW, minH) {
   const m = /^(\d{2,4})x(\d{2,4})$/.exec(String(mad || '').trim());
   if (!m) return null;
   let w = parseInt(m[1], 10), h = parseInt(m[2], 10);
   if (isNaN(w) || isNaN(h)) return null;
-  w = Math.max(MIN_W, Math.min(MAX_W, w));
-  h = Math.max(MIN_H, Math.min(MAX_H, h));
+  w = Math.max(minW, Math.min(maxW, w));
+  h = Math.max(minH, Math.min(maxH, h));
   return w + 'x' + h;
 }
 
 module.exports = function (app, pool, iLoguar) {
 
-  // Lexo madhesine e profilit (desktop). Nese s'eshte caktuar → standardi.
+  // Lexo madhesite e profilit (desktop + mobile). Nese s'jane caktuar → standardet.
   app.get('/api/madhesia', iLoguar, async (req, res) => {
     try {
-      const r = await pool.query('SELECT madhesia_desktop FROM bizneset WHERE id=$1', [req.biznesId]);
+      const r = await pool.query('SELECT madhesia_desktop, madhesia_mobile FROM bizneset WHERE id=$1', [req.biznesId]);
       const d = (r.rows[0] && r.rows[0].madhesia_desktop) || STANDARD;
-      res.json({ desktop: d, standard: STANDARD, max_w: MAX_W, max_h: MAX_H, min_w: MIN_W, min_h: MIN_H });
+      const mob = (r.rows[0] && r.rows[0].madhesia_mobile) || M_STANDARD;
+      res.json({
+        desktop: d, mobile: mob,
+        standard: STANDARD, max_w: MAX_W, max_h: MAX_H, min_w: MIN_W, min_h: MIN_H,
+        m_standard: M_STANDARD, m_max_w: M_MAX_W, m_max_h: M_MAX_H, m_min_w: M_MIN_W, m_min_h: M_MIN_H
+      });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
-  // Ruaj madhesine e re (desktop) vetem per kete profil.
+  // Ruaj madhesine e re. Pranon desktop dhe/ose mobile.
   app.post('/api/madhesia', iLoguar, async (req, res) => {
-    const v = valido(req.body && req.body.desktop);
-    if (!v) return res.status(400).json({ error: 'Madhesi e pavlefshme.' });
+    const bd = req.body || {};
+    const vd = bd.desktop != null ? validoMe(bd.desktop, MAX_W, MAX_H, MIN_W, MIN_H) : null;
+    const vm = bd.mobile  != null ? validoMe(bd.mobile,  M_MAX_W, M_MAX_H, M_MIN_W, M_MIN_H) : null;
+    if (bd.desktop != null && !vd) return res.status(400).json({ error: 'Madhesi desktop e pavlefshme.' });
+    if (bd.mobile  != null && !vm) return res.status(400).json({ error: 'Madhesi mobile e pavlefshme.' });
+    if (!vd && !vm) return res.status(400).json({ error: 'Asnje madhesi per te ruajtur.' });
     try {
-      await pool.query('UPDATE bizneset SET madhesia_desktop=$2 WHERE id=$1', [req.biznesId, v]);
-      res.json({ ok: true, desktop: v });
+      if (vd) await pool.query('UPDATE bizneset SET madhesia_desktop=$2 WHERE id=$1', [req.biznesId, vd]);
+      if (vm) await pool.query('UPDATE bizneset SET madhesia_mobile=$2 WHERE id=$1', [req.biznesId, vm]);
+      res.json({ ok: true, desktop: vd || undefined, mobile: vm || undefined });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
 };
 
 module.exports.STANDARD = STANDARD;
+module.exports.M_STANDARD = M_STANDARD;
