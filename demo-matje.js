@@ -51,7 +51,7 @@ function layout(titulli, trupi){
   <span class="lg">Matje</span>
   <nav><a href="/demo/matje">Ballina</a><a href="/demo/matje/regjistrohu">Regjistrohu</a></nav>
 </header>
-
+<script src="https://imyr-production.up.railway.app/imyr.js" data-key="imyr_fe4184740c715b65d3615a13"></script>
 ${trupi}
 
 <footer>© 2026 Matje — faqe prove per Imyr</footer>
