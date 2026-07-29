@@ -783,6 +783,10 @@ app.get('/imyr.js', (req, res) => {
         var l = lexoPare(); if(l.indexOf(id) === -1){ l.push(id); sessionStorage.setItem('imyr_pare', JSON.stringify(l)); }
       } catch(e){}
     }
+    function rifilloCikel(id){
+      // I pa te gjitha → fillo listen nga e para, vetem me kete te re
+      try { sessionStorage.setItem('imyr_pare', JSON.stringify([String(id)])); } catch(e){}
+    }
     var pare = lexoPare();
     var qpare = pare.length ? ('&pare=' + encodeURIComponent(pare.join(','))) : '';
     fetch(base + '/ad?key=' + encodeURIComponent(key) + qpare + (preview?'&preview=1':''))
@@ -806,7 +810,7 @@ app.get('/imyr.js', (req, res) => {
               + ' style="text-decoration:none;display:inline-block;max-width:100%;cursor:pointer;">' + inner + '</a>';
           }
           slot.innerHTML = inner;
-          if(d.id) shtoPare(d.id);
+          if(d.id){ if(d.cikel_ri){ rifilloCikel(d.id); } else { shtoPare(d.id); } }
           if(!preview){ try { var v = base + '/track?key=' + encodeURIComponent(key) + '&event=view' + rid;
             navigator.sendBeacon ? navigator.sendBeacon(v) : fetch(v); } catch(e){} }
         }
