@@ -11,7 +11,7 @@ const STANDARD = '210x261';
 
 // Kufijte (mobile)
 const M_MAX_W = 320, M_MAX_H = 400;
-const M_MIN_W = 260, M_MIN_H = 70;
+const M_MIN_W = 260, M_MIN_H = 192;
 const M_STANDARD = '290x260';
 
 function validoMe(mad, maxW, maxH, minW, minH) {
