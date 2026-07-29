@@ -68,12 +68,16 @@ async function zgjidhReklame(pool, hostId, pare) {
   let kandidatet = kand.rows.filter(k => !(hTipi && k.tipi && !tipetPerputhen(k.tipi, hTipi)));
 
   // Frequency capping: hiq ato qe vizitori i ka pare tashme kete vizite.
-  // Nese pas heqjes s'mbetet asnje (i pa te gjitha), rifillo te gjitha (mos e le bosh).
+  // Nese pas heqjes s'mbetet asnje (i pa te gjitha), rifillo ciklin nga e para.
+  let cikelRi = false;
   if (pare.length) {
     const pareStr = pare.map(String);
     const paFiltruar = kandidatet.filter(k => pareStr.indexOf(String(k.id)) === -1);
-    if (paFiltruar.length) kandidatet = paFiltruar;
-    // ndryshe: mbaji te gjitha (rifillim i rrethit)
+    if (paFiltruar.length) {
+      kandidatet = paFiltruar;
+    } else {
+      cikelRi = true;   // i pa te gjitha → cikel i ri, snippet-i pastron listen
+    }
   }
 
   const lista = [];
@@ -114,7 +118,7 @@ async function zgjidhReklame(pool, hostId, pare) {
   }
 
   regjistroAnkandin(pool, hostId, lista, fituesi).catch(()=>{});
-  return fituesi.k;
+  return Object.assign({}, fituesi.k, { cikel_ri: cikelRi });
 }
 
 async function regjistroAnkandin(pool, hostId, lista, fituesi) {
