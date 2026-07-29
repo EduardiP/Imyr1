@@ -19,6 +19,21 @@ const multer = require('multer');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 
 const app = express();
+
+// Ridrejto URL-en e Railway te domain-i i vertete (per SEO dhe qartesi).
+// Aktiv vetem nese PRIMARY_HOST eshte vendosur te variablat.
+app.use((req, res, next) => {
+  const primar = process.env.PRIMARY_HOST;   // p.sh. phronexusai.com
+  if (primar && req.headers.host && req.headers.host !== primar) {
+    // mos ridrejto snippet-et/endpoint-et qe klientet i kane vendosur me URL-en e vjeter
+    const perjashto = ['/imyr.js','/imyr-track.js','/tag.js','/lidh','/track-lidh','/ad','/cil','/track','/klik','/konvertim'];
+    if (!perjashto.some(p => req.path.startsWith(p))) {
+      return res.redirect(301, 'https://' + primar + req.originalUrl);
+    }
+  }
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
