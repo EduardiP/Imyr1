@@ -70,7 +70,8 @@ async function zgjidhReklame(pool, hostId, pare) {
   // Frequency capping: hiq ato qe vizitori i ka pare tashme kete vizite.
   // Nese pas heqjes s'mbetet asnje (i pa te gjitha), rifillo te gjitha (mos e le bosh).
   if (pare.length) {
-    const paFiltruar = kandidatet.filter(k => pare.indexOf(k.id) === -1);
+    const pareStr = pare.map(String);
+    const paFiltruar = kandidatet.filter(k => pareStr.indexOf(String(k.id)) === -1);
     if (paFiltruar.length) kandidatet = paFiltruar;
     // ndryshe: mbaji te gjitha (rifillim i rrethit)
   }
