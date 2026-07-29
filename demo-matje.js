@@ -84,7 +84,7 @@ const faqet = {
   <div class="feats">${feats}</div>
 
   <!-- Reklama e Imyr-it shfaqet KETU (ballina) -->
-  <div style="margin-top:30px;"><div id="imyr-slot"></div></div>
+  <div style="margin-top:30px;"></div>
 
   <div class="note"><b>Prove Imyr:</b> perdor pershkrimin lart, tipi <b>B2B</b>,
     website <b>/demo/matje</b>, URL konvertimi <b>/demo/matje/welcome</b>.</div>
