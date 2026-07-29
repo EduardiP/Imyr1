@@ -381,7 +381,8 @@ app.get('/klik', async (req, res) => {
   const rid = parseInt(req.query.rid, 10) || null;
   let dest = null;
   try {
-    const h = await pool.query('SELECT id FROM bizneset WHERE celes=$1', [key]);
+    const snK = await snippetet.ngaCelesi(pool, key);
+    const h = { rows: snK ? [{ id: snK.biznes_id }] : [] };
     if (h.rows.length && rid) {
       const p = await pool.query(
         `SELECT p.id, p.biznes_id, COALESCE(p.link, b.website) AS dest
@@ -670,11 +671,18 @@ app.all('/lidh', async (req, res) => {
   const key = req.query.key;
   if (!key) return res.status(204).end();
   try {
-    const b = await pool.query('SELECT id, snippet_active FROM bizneset WHERE celes=$1', [key]);
-    if (b.rows.length) {
-      const bizId = b.rows[0].id;
+    const snL = await snippetet.ngaCelesi(pool, key);
+    if (snL) {
+      const bizId = snL.biznes_id;
       const faqja = req.headers.referer || req.headers.origin || null;
-      if (!b.rows[0].snippet_active) {
+      // Sheno active-n te snippet-i specifik
+      if (snL.snippet_id) {
+        await pool.query(
+          `UPDATE snippetet SET snippet_active=true,
+                  first_seen_at=COALESCE(first_seen_at, now()), last_seen_at=now()
+           WHERE id=$1`, [snL.snippet_id]);
+      }
+      if (!snL.snippet_active) {
         await pool.query(
           `UPDATE bizneset SET snippet_active=true, first_seen_at=now(), last_seen_at=now(),
              origjina=$2, kandidat_url=COALESCE(kandidat_url,$2) WHERE id=$1`,
@@ -977,9 +985,21 @@ app.get('/ad', async (req, res) => {
   if (!key) return res.json({ teksti: null });
   const preview = req.query.preview === '1';
   try {
-    const b = await pool.query('SELECT id, snippet_active, url_konvertimi, madhesia_desktop, madhesia_mobile, pozicioni_reklames FROM bizneset WHERE celes=$1', [key]);
-    if (!b.rows.length) return res.json({ teksti: null });
-    const bizId = b.rows[0].id;
+    // Gjej snippet-in (ose biznesin per celesa te vjeter) nga celesi
+    const sn = await snippetet.ngaCelesi(pool, key);
+    if (!sn) return res.json({ teksti: null });
+    const bizId = sn.biznes_id;
+    // Merr url_konvertimi te biznesit (konvertimi eshte per biznes)
+    const bkonv = await pool.query('SELECT url_konvertimi, snippet_active FROM bizneset WHERE id=$1', [bizId]);
+    const b = { rows: [{
+      id: bizId,
+      snippet_active: sn.snippet_active,
+      url_konvertimi: bkonv.rows.length ? bkonv.rows[0].url_konvertimi : null,
+      madhesia_desktop: sn.madhesia_desktop,
+      madhesia_mobile: sn.madhesia_mobile,
+      pozicioni_reklames: sn.pozicioni,
+      snippet_id: sn.snippet_id
+    }] };
     const origin = req.headers.origin || req.headers.referer || null;
     // URL e plote e faqes ku u ngarkua widget-i (per te kontrolluar pikerisht ate faqe, jo vetem homepage-in)
     const faqjaPlote = req.headers.referer || req.headers.origin || null;
@@ -992,6 +1012,13 @@ app.get('/ad', async (req, res) => {
 
     // VETEM per kerkesa reale (jo preview i Shopify): sheno lidhjen + heartbeat.
     if (!preview) {
+      // Sheno active-n te snippet-i specifik (nese eshte nga tabela snippetet)
+      if (b.rows[0].snippet_id) {
+        await pool.query(
+          `UPDATE snippetet SET snippet_active=true,
+                  first_seen_at=COALESCE(first_seen_at, now()), last_seen_at=now()
+           WHERE id=$1`, [b.rows[0].snippet_id]);
+      }
       if (!b.rows[0].snippet_active) {
         // ngarkim real (faqe e ruajtur/live): shenim i lidhjes
         await pool.query(
@@ -1023,7 +1050,8 @@ app.all('/track', async (req, res) => {
   const lloji = req.query.event === 'click' ? 'click' : 'view';
   const rid = parseInt(req.query.rid, 10) || null;
   try {
-    const b = await pool.query('SELECT id FROM bizneset WHERE celes=$1', [key]);
+    const snK2 = await snippetet.ngaCelesi(pool, key);
+    const b = { rows: snK2 ? [{ id: snK2.biznes_id }] : [] };
     if (b.rows.length) {
       let reklamuesId = null;
       if (rid) {
@@ -1162,6 +1190,10 @@ require('./admin-routes')(app, pool, iAdmin, kombinimi);
 
 // Caktimi i madhesise se hapesires se reklames (skedar i ndare)
 require('./madhesia')(app, pool, iLoguar);
+
+// Snippet-e te shumta per biznes (skedar i ndare)
+const snippetet = require('./snippetet');
+snippetet(app, pool, iLoguar, beCeles);
 
 // Lista e bizneseve (emer + email)
 app.get('/api/admin/bizneset', iAdmin, async (req, res) => {
