@@ -232,15 +232,15 @@ function mainLidhja(m){
 }
 
 // ===== CAKTIMI I MADHESISE (korniza interaktive) =====
-var _mad = { w:188, h:214, MAXW:260, MAXH:290, MINW:134, MINH:155,
+var _mad = { w:210, h:261, MAXW:260, MAXH:290, MINW:134, MINH:155,
              mw:290, mh:260, mMAXW:320, mMAXH:400, mMINW:260, mMINH:70, pajisje:'desktop', pozicioni:'qender' };
 async function ndertoMadhesine(cont, ruajVetem){
   if(!cont) return;
   cont.innerHTML='<p class="small">Po ngarkoj…</p>';
   try{
     const r=await(await fetch('/api/madhesia')).json();
-    const p=(r.desktop||'188x214').split('x');
-    _mad.w=parseInt(p[0],10)||188; _mad.h=parseInt(p[1],10)||214;
+    const p=(r.desktop||'210x261').split('x');
+    _mad.w=parseInt(p[0],10)||210; _mad.h=parseInt(p[1],10)||261;
     _mad.MAXW=r.max_w||260; _mad.MAXH=r.max_h||290; _mad.MINW=r.min_w||134; _mad.MINH=r.min_h||155;
     const pm=(r.mobile||'290x260').split('x');
     _mad.mw=parseInt(pm[0],10)||290; _mad.mh=parseInt(pm[1],10)||260;
@@ -252,15 +252,7 @@ async function ndertoMadhesine(cont, ruajVetem){
       '<button class="madhPaj active" data-p="desktop" onclick="madhPajisja(\'desktop\')">Desktop</button>'+
       '<button class="madhPaj" data-p="mobile" onclick="madhPajisja(\'mobile\')">Mobile</button>'+
     '</div>'+
-    '<div id="madhDesktop"></div>'+
-    '<div style="margin-top:16px;">'+
-      '<div class="small" style="margin-bottom:6px;">Pozicioni në hapësirë</div>'+
-      '<div style="display:flex;gap:6px;">'+
-        '<button class="madhPoz'+(_mad.pozicioni==='majtas'?' active':'')+'" data-poz="majtas" onclick="madhPozicioni(\'majtas\')">Majtas</button>'+
-        '<button class="madhPoz'+(_mad.pozicioni==='qender'?' active':'')+'" data-poz="qender" onclick="madhPozicioni(\'qender\')">Qendër</button>'+
-        '<button class="madhPoz'+(_mad.pozicioni==='djathtas'?' active':'')+'" data-poz="djathtas" onclick="madhPozicioni(\'djathtas\')">Djathtas</button>'+
-      '</div>'+
-    '</div>';
+    '<div id="madhDesktop"></div>';
   const dd=cont.querySelector('#madhDesktop');
   if(dd) ndertoKanavasin(dd, 'desktop');
 }
@@ -296,6 +288,14 @@ function ndertoKanavasin(cont, pajisje){
       '<label class="small">Gjerësi <input id="madhW" type="number" value="'+W+'" min="'+MINW+'" max="'+MAXW+'" style="width:70px;"></label>'+
       '<label class="small">Lartësi <input id="madhH" type="number" value="'+H+'" min="'+MINH+'" max="'+MAXH+'" style="width:70px;"></label>'+
       '<span class="small" id="madhLive" style="font-weight:600;color:#4a9eff;">'+W+' × '+H+' px</span>'+
+    '</div>'+
+    '<div style="margin-top:16px;">'+
+      '<div class="small" style="margin-bottom:6px;">Pozicioni në hapësirë</div>'+
+      '<div style="display:flex;gap:6px;">'+
+        '<button class="madhPoz'+(_mad.pozicioni==='majtas'?' active':'')+'" data-poz="majtas" onclick="madhPozicioni(\'majtas\')">Majtas</button>'+
+        '<button class="madhPoz'+(_mad.pozicioni==='qender'?' active':'')+'" data-poz="qender" onclick="madhPozicioni(\'qender\')">Qendër</button>'+
+        '<button class="madhPoz'+(_mad.pozicioni==='djathtas'?' active':'')+'" data-poz="djathtas" onclick="madhPozicioni(\'djathtas\')">Djathtas</button>'+
+      '</div>'+
     '</div>'+
     '<button class="primary" id="madhRuaj" onclick="ruajMadhesine()" style="margin-top:14px;">Ruaj</button>'+
     '<div class="msg" id="madhMsg"></div>';
