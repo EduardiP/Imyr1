@@ -233,7 +233,7 @@ function mainLidhja(m){
 
 // ===== CAKTIMI I MADHESISE (korniza interaktive) =====
 var _mad = { w:210, h:261, MAXW:260, MAXH:290, MINW:134, MINH:155,
-             mw:290, mh:260, mMAXW:320, mMAXH:400, mMINW:260, mMINH:70, pajisje:'desktop', pozicioni:'qender' };
+             mw:290, mh:260, mMAXW:320, mMAXH:400, mMINW:260, mMINH:192, pajisje:'desktop', pozicioni:'qender' };
 async function ndertoMadhesine(cont, ruajVetem){
   if(!cont) return;
   cont.innerHTML='<p class="small">Po ngarkoj…</p>';
@@ -244,7 +244,7 @@ async function ndertoMadhesine(cont, ruajVetem){
     _mad.MAXW=r.max_w||260; _mad.MAXH=r.max_h||290; _mad.MINW=r.min_w||134; _mad.MINH=r.min_h||155;
     const pm=(r.mobile||'290x260').split('x');
     _mad.mw=parseInt(pm[0],10)||290; _mad.mh=parseInt(pm[1],10)||260;
-    _mad.mMAXW=r.m_max_w||320; _mad.mMAXH=r.m_max_h||400; _mad.mMINW=r.m_min_w||260; _mad.mMINH=r.m_min_h||70;
+    _mad.mMAXW=r.m_max_w||320; _mad.mMAXH=r.m_max_h||400; _mad.mMINW=r.m_min_w||260; _mad.mMINH=r.m_min_h||192;
     _mad.pozicioni=r.pozicioni||'qender';
   }catch(e){}
   cont.innerHTML=
