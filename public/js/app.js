@@ -233,7 +233,7 @@ function mainLidhja(m){
 
 // ===== CAKTIMI I MADHESISE (korniza interaktive) =====
 var _mad = { w:188, h:214, MAXW:260, MAXH:290, MINW:134, MINH:155,
-             mw:290, mh:260, mMAXW:320, mMAXH:400, mMINW:260, mMINH:70, pajisje:'desktop' };
+             mw:290, mh:260, mMAXW:320, mMAXH:400, mMINW:260, mMINH:70, pajisje:'desktop', pozicioni:'qender' };
 async function ndertoMadhesine(cont, ruajVetem){
   if(!cont) return;
   cont.innerHTML='<p class="small">Po ngarkoj…</p>';
@@ -245,15 +245,28 @@ async function ndertoMadhesine(cont, ruajVetem){
     const pm=(r.mobile||'290x260').split('x');
     _mad.mw=parseInt(pm[0],10)||290; _mad.mh=parseInt(pm[1],10)||260;
     _mad.mMAXW=r.m_max_w||320; _mad.mMAXH=r.m_max_h||400; _mad.mMINW=r.m_min_w||260; _mad.mMINH=r.m_min_h||70;
+    _mad.pozicioni=r.pozicioni||'qender';
   }catch(e){}
   cont.innerHTML=
     '<div style="display:flex;gap:10px;margin-bottom:14px;">'+
       '<button class="madhPaj active" data-p="desktop" onclick="madhPajisja(\'desktop\')">Desktop</button>'+
       '<button class="madhPaj" data-p="mobile" onclick="madhPajisja(\'mobile\')">Mobile</button>'+
     '</div>'+
-    '<div id="madhDesktop"></div>';
+    '<div id="madhDesktop"></div>'+
+    '<div style="margin-top:16px;">'+
+      '<div class="small" style="margin-bottom:6px;">Pozicioni në hapësirë</div>'+
+      '<div style="display:flex;gap:6px;">'+
+        '<button class="madhPoz'+(_mad.pozicioni==='majtas'?' active':'')+'" data-poz="majtas" onclick="madhPozicioni(\'majtas\')">Majtas</button>'+
+        '<button class="madhPoz'+(_mad.pozicioni==='qender'?' active':'')+'" data-poz="qender" onclick="madhPozicioni(\'qender\')">Qendër</button>'+
+        '<button class="madhPoz'+(_mad.pozicioni==='djathtas'?' active':'')+'" data-poz="djathtas" onclick="madhPozicioni(\'djathtas\')">Djathtas</button>'+
+      '</div>'+
+    '</div>';
   const dd=cont.querySelector('#madhDesktop');
   if(dd) ndertoKanavasin(dd, 'desktop');
+}
+function madhPozicioni(p){
+  _mad.pozicioni=p;
+  document.querySelectorAll('.madhPoz').forEach(b=>b.classList.toggle('active', b.getAttribute('data-poz')===p));
 }
 function madhPajisja(p){
   _mad.pajisje=p;
@@ -336,8 +349,8 @@ async function ruajMadhesine(){
   const btn=$('madhRuaj'); if(btn) btn.disabled=true;
   const msg=$('madhMsg'); if(msg){ msg.className='msg'; msg.textContent='Po ruaj…'; }
   const trupi = _mad.pajisje==='mobile'
-    ? { mobile:_mad.mw+'x'+_mad.mh }
-    : { desktop:_mad.w+'x'+_mad.h };
+    ? { mobile:_mad.mw+'x'+_mad.mh, pozicioni:_mad.pozicioni }
+    : { desktop:_mad.w+'x'+_mad.h, pozicioni:_mad.pozicioni };
   try{
     const r=await(await fetch('/api/madhesia',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify(trupi)})).json();
