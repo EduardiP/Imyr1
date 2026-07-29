@@ -689,6 +689,7 @@ app.all('/lidh', async (req, res) => {
 // --- IMYR.JS (gjithcka ne nje rresht: lidhje + hapesire + reklame + gjurmim) ---
 app.get('/imyr.js', (req, res) => {
   res.type('application/javascript');
+  res.set('Cache-Control', 'no-cache, must-revalidate');
   res.send(`(function(){
   var s = document.currentScript;
   var key = s ? s.getAttribute('data-key') : null;
