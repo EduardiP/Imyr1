@@ -5,9 +5,9 @@
 // Nuk prek asnje logjike ekzistuese.
 
 // Kufijte (desktop)
-const MAX_W = 728, MAX_H = 600;
-const MIN_W = 110, MIN_H = 130;
-const STANDARD = '300x380';
+const MAX_W = 260, MAX_H = 290;
+const MIN_W = 134, MIN_H = 155;
+const STANDARD = '188x214';
 
 function valido(mad) {
   // pret "GJERESIxLARTESI", p.sh. "300x380"
