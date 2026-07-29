@@ -29,11 +29,12 @@ module.exports = function (app, pool, iLoguar) {
   // Lexo madhesite e profilit (desktop + mobile). Nese s'jane caktuar → standardet.
   app.get('/api/madhesia', iLoguar, async (req, res) => {
     try {
-      const r = await pool.query('SELECT madhesia_desktop, madhesia_mobile FROM bizneset WHERE id=$1', [req.biznesId]);
+      const r = await pool.query('SELECT madhesia_desktop, madhesia_mobile, pozicioni_reklames FROM bizneset WHERE id=$1', [req.biznesId]);
       const d = (r.rows[0] && r.rows[0].madhesia_desktop) || STANDARD;
       const mob = (r.rows[0] && r.rows[0].madhesia_mobile) || M_STANDARD;
+      const poz = (r.rows[0] && r.rows[0].pozicioni_reklames) || 'qender';
       res.json({
-        desktop: d, mobile: mob,
+        desktop: d, mobile: mob, pozicioni: poz,
         standard: STANDARD, max_w: MAX_W, max_h: MAX_H, min_w: MIN_W, min_h: MIN_H,
         m_standard: M_STANDARD, m_max_w: M_MAX_W, m_max_h: M_MAX_H, m_min_w: M_MIN_W, m_min_h: M_MIN_H
       });
@@ -45,13 +46,16 @@ module.exports = function (app, pool, iLoguar) {
     const bd = req.body || {};
     const vd = bd.desktop != null ? validoMe(bd.desktop, MAX_W, MAX_H, MIN_W, MIN_H) : null;
     const vm = bd.mobile  != null ? validoMe(bd.mobile,  M_MAX_W, M_MAX_H, M_MIN_W, M_MIN_H) : null;
+    const vp = bd.pozicioni != null ? (['qender','majtas','djathtas'].indexOf(bd.pozicioni) > -1 ? bd.pozicioni : null) : null;
     if (bd.desktop != null && !vd) return res.status(400).json({ error: 'Madhesi desktop e pavlefshme.' });
     if (bd.mobile  != null && !vm) return res.status(400).json({ error: 'Madhesi mobile e pavlefshme.' });
-    if (!vd && !vm) return res.status(400).json({ error: 'Asnje madhesi per te ruajtur.' });
+    if (bd.pozicioni != null && !vp) return res.status(400).json({ error: 'Pozicion i pavlefshem.' });
+    if (!vd && !vm && !vp) return res.status(400).json({ error: 'Asgje per te ruajtur.' });
     try {
       if (vd) await pool.query('UPDATE bizneset SET madhesia_desktop=$2 WHERE id=$1', [req.biznesId, vd]);
       if (vm) await pool.query('UPDATE bizneset SET madhesia_mobile=$2 WHERE id=$1', [req.biznesId, vm]);
-      res.json({ ok: true, desktop: vd || undefined, mobile: vm || undefined });
+      if (vp) await pool.query('UPDATE bizneset SET pozicioni_reklames=$2 WHERE id=$1', [req.biznesId, vp]);
+      res.json({ ok: true, desktop: vd || undefined, mobile: vm || undefined, pozicioni: vp || undefined });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
