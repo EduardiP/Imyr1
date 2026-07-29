@@ -65,6 +65,7 @@ function cors(res) {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
 }
 
 // --- Middleware: kontrollo a eshte i loguar ---
