@@ -806,7 +806,7 @@ app.get('/imyr.js', (req, res) => {
           var pp = String(madhStr).split('x'); var a1=parseInt(pp[0],10), a2=parseInt(pp[1],10); if(a1>0 && a2>0){ mw=a1; mh=a2; }
           var inner;
           if(d.imazh_url){
-            inner = '<img src="' + d.imazh_url + '" style="display:block;width:100%;height:100%;object-fit:cover;border-radius:10px;">';
+            inner = '<img src="' + d.imazh_url + '" style="display:block;width:100%;height:100%;object-fit:contain;border-radius:10px;">';
           } else {
             inner = '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;box-sizing:border-box;'
               + 'border:1px solid #e2c68a;background:#fbf6ea;color:#5a4a24;padding:12px 14px;border-radius:10px;'
