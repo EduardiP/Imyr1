@@ -121,6 +121,10 @@ h2.h { font-size:20px; margin:0 0 4px; }
   color:var(--txt); font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:.15s; }
 .madhPaj:hover{ border-color:var(--mut); }
 .madhPaj.active{ border-color:var(--acc); background:#0a1b2e; color:var(--acc); }
+.madhPoz{ flex:1; padding:7px 10px; background:#0e1116; border:1px solid var(--line); border-radius:7px;
+  color:var(--txt); font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; transition:.15s; }
+.madhPoz:hover{ border-color:var(--mut); }
+.madhPoz.active{ border-color:var(--acc); background:#0a1b2e; color:var(--acc); }
 
 /* ===== FAQJA PUBLIKE (landing + legal) — brenda aplikacionit ===== */
 :root{ --dark:#0e1116; --light:#f6f7f9; --light-txt:#1a1f27; --light-mut:#5b636e; --light-line:#e3e7ec; --acc-d:#2f7fd8; }
