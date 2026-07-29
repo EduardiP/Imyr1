@@ -25,10 +25,11 @@ const app = express();
 app.use((req, res, next) => {
   const primar = process.env.PRIMARY_HOST;   // p.sh. phronexusai.com
   if (primar && req.headers.host && req.headers.host !== primar) {
-    // mos ridrejto snippet-et/endpoint-et qe klientet i kane vendosur me URL-en e vjeter
-    const perjashto = ['/imyr.js','/imyr-track.js','/tag.js','/lidh','/track-lidh','/ad','/cil','/track','/klik','/konvertim'];
+    // Mos ridrejto: snippet-et/endpoint-et (klientet i kane vendosur me URL-en e vjeter),
+    // dhe admin/api (qe login-i e cookie-t te mos prishen mes domain-eve).
+    const perjashto = ['/imyr.js','/imyr-track.js','/tag.js','/lidh','/track-lidh','/ad','/cil','/track','/klik','/konvertim','/admin','/api'];
     if (!perjashto.some(p => req.path.startsWith(p))) {
-      return res.redirect(301, 'https://' + primar + req.originalUrl);
+      return res.redirect(302, 'https://' + primar + req.originalUrl);
     }
   }
   next();
@@ -774,10 +775,11 @@ app.get('/imyr.js', (req, res) => {
     }
     // Reklamat e para brenda kesaj vizite (frequency capping per session)
     function lexoPare(){
-      try { var v = sessionStorage.getItem('imyr_pare'); return v ? JSON.parse(v) : []; } catch(e){ return []; }
+      try { var v = sessionStorage.getItem('imyr_pare'); var a = v ? JSON.parse(v) : []; return Array.isArray(a) ? a.map(String) : []; } catch(e){ return []; }
     }
     function shtoPare(id){
       try {
+        id = String(id);
         var l = lexoPare(); if(l.indexOf(id) === -1){ l.push(id); sessionStorage.setItem('imyr_pare', JSON.stringify(l)); }
       } catch(e){}
     }
@@ -986,7 +988,7 @@ app.get('/ad', async (req, res) => {
 
     // Shperndarja: logjika ndodhet te selector.js (ndryshohet vetem aty).
     // Reklamat e para nga ky vizitor brenda vizites (frequency capping)
-    const pareRaw = (req.query.pare || '').split(',').map(x => parseInt(x, 10)).filter(Boolean);
+    const pareRaw = (req.query.pare || '').split(',').map(x => x.trim()).filter(Boolean);
     const rek = await selector.zgjidhReklame(pool, bizId, pareRaw);
     // konv_url = faqja e konvertimit E KETIJ biznesi (snippet-i e perdor per te njohur suksesin)
     res.json(Object.assign({ konv_url: b.rows[0].url_konvertimi || null }, rek || {}));
