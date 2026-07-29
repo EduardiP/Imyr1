@@ -800,7 +800,10 @@ app.get('/imyr.js', (req, res) => {
           var rid = d.id ? ('&rid=' + encodeURIComponent(d.id)) : '';
           // Madhesia e caktuar nga host-i (ose standardi 300x380). Kutia merr kete permase; reklama pershtatet brenda.
           var mw = 188, mh = 214;
-          if(d.madhesia){ var pp = String(d.madhesia).split('x'); var a1=parseInt(pp[0],10), a2=parseInt(pp[1],10); if(a1>0 && a2>0){ mw=a1; mh=a2; } }
+          var eshteMobile = (window.innerWidth || document.documentElement.clientWidth || 9999) <= 600;
+          var madhStr = eshteMobile ? (d.madhesia_mobile || '290x260') : (d.madhesia || '188x214');
+          if(eshteMobile){ mw = 290; mh = 260; }
+          var pp = String(madhStr).split('x'); var a1=parseInt(pp[0],10), a2=parseInt(pp[1],10); if(a1>0 && a2>0){ mw=a1; mh=a2; }
           var inner;
           if(d.imazh_url){
             inner = '<img src="' + d.imazh_url + '" style="display:block;width:100%;height:100%;object-fit:cover;border-radius:10px;">';
@@ -969,7 +972,7 @@ app.get('/ad', async (req, res) => {
   if (!key) return res.json({ teksti: null });
   const preview = req.query.preview === '1';
   try {
-    const b = await pool.query('SELECT id, snippet_active, url_konvertimi, madhesia_desktop FROM bizneset WHERE celes=$1', [key]);
+    const b = await pool.query('SELECT id, snippet_active, url_konvertimi, madhesia_desktop, madhesia_mobile FROM bizneset WHERE celes=$1', [key]);
     if (!b.rows.length) return res.json({ teksti: null });
     const bizId = b.rows[0].id;
     const origin = req.headers.origin || req.headers.referer || null;
@@ -1001,7 +1004,7 @@ app.get('/ad', async (req, res) => {
     const pareRaw = (req.query.pare || '').split(',').map(x => x.trim()).filter(Boolean);
     const rek = await selector.zgjidhReklame(pool, bizId, pareRaw);
     // konv_url = faqja e konvertimit E KETIJ biznesi (snippet-i e perdor per te njohur suksesin)
-    res.json(Object.assign({ konv_url: b.rows[0].url_konvertimi || null, madhesia: b.rows[0].madhesia_desktop || '188x214' }, rek || {}));
+    res.json(Object.assign({ konv_url: b.rows[0].url_konvertimi || null, madhesia: b.rows[0].madhesia_desktop || '188x214', madhesia_mobile: b.rows[0].madhesia_mobile || '290x260' }, rek || {}));
   } catch (e) {
     res.json({ teksti: null });
   }
