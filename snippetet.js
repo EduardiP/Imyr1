@@ -110,7 +110,34 @@ module.exports = function (app, pool, iLoguar, beCeles) {
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
+  // Ruaj madhesine/pozicionin e nje snippet-i specifik
+  app.post('/api/snippetet/:id/madhesia', iLoguar, async (req, res) => {
+    const bd = req.body || {};
+    const cakto = [], vals = [req.params.id, req.biznesId];
+    let n = 2;
+    if (bd.desktop != null) { const v = validoDesktop(bd.desktop); if(!v) return res.status(400).json({error:'Madhesi desktop e pavlefshme.'}); cakto.push('madhesia_desktop=$'+(++n)); vals.push(v); }
+    if (bd.mobile != null)  { const v = validoMobile(bd.mobile);  if(!v) return res.status(400).json({error:'Madhesi mobile e pavlefshme.'});  cakto.push('madhesia_mobile=$'+(++n));  vals.push(v); }
+    if (bd.pozicioni != null){ const v = ['qender','majtas','djathtas'].indexOf(bd.pozicioni)>-1?bd.pozicioni:null; if(!v) return res.status(400).json({error:'Pozicion i pavlefshem.'}); cakto.push('pozicioni=$'+(++n)); vals.push(v); }
+    if (!cakto.length) return res.status(400).json({ error: 'Asgje per te ruajtur.' });
+    try {
+      await pool.query(`UPDATE snippetet SET ${cakto.join(', ')} WHERE id=$1 AND biznes_id=$2`, vals);
+      res.json({ ok: true, desktop: bd.desktop, mobile: bd.mobile, pozicioni: bd.pozicioni });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
 };
+
+// Validim i thjeshte i madhesive (te njejtat kufij si madhesia.js)
+function validoDesktop(m){ return _valido(m, 260, 290, 134, 155); }
+function validoMobile(m){ return _valido(m, 320, 400, 260, 192); }
+function _valido(mad, maxW, maxH, minW, minH){
+  const r = /^(\d{2,4})x(\d{2,4})$/.exec(String(mad||'').trim());
+  if(!r) return null;
+  let w=parseInt(r[1],10), h=parseInt(r[2],10);
+  if(isNaN(w)||isNaN(h)) return null;
+  w=Math.max(minW,Math.min(maxW,w)); h=Math.max(minH,Math.min(maxH,h));
+  return w+'x'+h;
+}
 
 module.exports.ngaCelesi = ngaCelesi;
 module.exports.init = init;
