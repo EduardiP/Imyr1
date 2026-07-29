@@ -800,7 +800,7 @@ app.get('/imyr.js', (req, res) => {
           var rid = d.id ? ('&rid=' + encodeURIComponent(d.id)) : '';
           // Madhesia e caktuar nga host-i (ose standardi 300x380). Kutia merr kete permase; reklama pershtatet brenda.
           var mw = 188, mh = 214;
-          if(d.madhesia){ var mm = /^(\d+)x(\d+)$/.exec(d.madhesia); if(mm){ mw = parseInt(mm[1],10); mh = parseInt(mm[2],10); } }
+          if(d.madhesia){ var pp = String(d.madhesia).split('x'); var a1=parseInt(pp[0],10), a2=parseInt(pp[1],10); if(a1>0 && a2>0){ mw=a1; mh=a2; } }
           var inner;
           if(d.imazh_url){
             inner = '<img src="' + d.imazh_url + '" style="display:block;width:100%;height:100%;object-fit:cover;border-radius:10px;">';
