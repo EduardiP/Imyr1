@@ -232,7 +232,8 @@ function mainLidhja(m){
 }
 
 // ===== CAKTIMI I MADHESISE (korniza interaktive) =====
-var _mad = { w:188, h:214, MAXW:260, MAXH:290, MINW:134, MINH:155, pajisje:'desktop' };
+var _mad = { w:188, h:214, MAXW:260, MAXH:290, MINW:134, MINH:155,
+             mw:290, mh:260, mMAXW:320, mMAXH:400, mMINW:260, mMINH:70, pajisje:'desktop' };
 async function ndertoMadhesine(cont, ruajVetem){
   if(!cont) return;
   cont.innerHTML='<p class="small">Po ngarkoj…</p>';
@@ -241,39 +242,47 @@ async function ndertoMadhesine(cont, ruajVetem){
     const p=(r.desktop||'188x214').split('x');
     _mad.w=parseInt(p[0],10)||188; _mad.h=parseInt(p[1],10)||214;
     _mad.MAXW=r.max_w||260; _mad.MAXH=r.max_h||290; _mad.MINW=r.min_w||134; _mad.MINH=r.min_h||155;
+    const pm=(r.mobile||'290x260').split('x');
+    _mad.mw=parseInt(pm[0],10)||290; _mad.mh=parseInt(pm[1],10)||260;
+    _mad.mMAXW=r.m_max_w||320; _mad.mMAXH=r.m_max_h||400; _mad.mMINW=r.m_min_w||260; _mad.mMINH=r.m_min_h||70;
   }catch(e){}
   cont.innerHTML=
     '<div style="display:flex;gap:10px;margin-bottom:14px;">'+
-      '<button class="gbtn madhPaj active" data-p="desktop" onclick="madhPajisja(\'desktop\')">Desktop</button>'+
-      '<button class="gbtn madhPaj" data-p="mobile" onclick="madhPajisja(\'mobile\')">Mobile</button>'+
+      '<button class="madhPaj active" data-p="desktop" onclick="madhPajisja(\'desktop\')">Desktop</button>'+
+      '<button class="madhPaj" data-p="mobile" onclick="madhPajisja(\'mobile\')">Mobile</button>'+
     '</div>'+
     '<div id="madhDesktop"></div>';
   const dd=cont.querySelector('#madhDesktop');
-  if(dd) ndertoDesktopin(dd);
+  if(dd) ndertoKanavasin(dd, 'desktop');
 }
 function madhPajisja(p){
   _mad.pajisje=p;
   document.querySelectorAll('.madhPaj').forEach(b=>b.classList.toggle('active', b.getAttribute('data-p')===p));
   const d=$('madhDesktop');
-  if(p==='mobile'){ d.innerHTML='<p class="small" style="padding:10px 0;">Mobile — së shpejti.</p>'; }
-  else { ndertoDesktopin(d); }
+  if(d) ndertoKanavasin(d, p);
 }
-function ndertoDesktopin(cont){
+// Ndertuesi i kanavasit — punon per te dyja pajisjet sipas parametrit
+function ndertoKanavasin(cont, pajisje){
   if(!cont) return;
+  const eshteMob = pajisje==='mobile';
+  const MAXW = eshteMob?_mad.mMAXW:_mad.MAXW, MAXH = eshteMob?_mad.mMAXH:_mad.MAXH;
+  const MINW = eshteMob?_mad.mMINW:_mad.MINW, MINH = eshteMob?_mad.mMINH:_mad.MINH;
+  const W = eshteMob?_mad.mw:_mad.w, H = eshteMob?_mad.mh:_mad.h;
+  const etiketa = eshteMob ? 'telefon' : 'desktop';
   cont.innerHTML=
-    '<p class="small" style="margin-bottom:10px;">Hapësira që snippet-i do të zërë në faqen tënde (desktop). Tërhiq cepin ose ndrysho numrat. Reklamat përshtaten brenda kësaj mase.</p>'+
-    '<div id="madhKanavas" style="position:relative;width:'+_mad.MAXW+'px;max-width:100%;height:'+_mad.MAXH+'px;'+
+    '<p class="small" style="margin-bottom:10px;">Hapësira që snippet-i do të zërë në faqen tënde ('+etiketa+'). Tërhiq cepin ose ndrysho numrat. Reklamat përshtaten brenda kësaj mase.</p>'+
+    '<div id="madhKanavas" style="position:relative;width:'+MAXW+'px;max-width:100%;height:'+MAXH+'px;'+
       'border:1px dashed #2a313c;border-radius:6px;background:#0e1116;overflow:hidden;">'+
-      '<div id="madhKuti" style="position:absolute;top:0;left:0;width:'+_mad.w+'px;height:'+_mad.h+'px;'+
+      '<div id="madhKuti" style="position:absolute;top:0;left:0;width:'+W+'px;height:'+H+'px;'+
         'background:#4a9eff22;border:2px solid #4a9eff;box-sizing:border-box;">'+
         '<div id="madhDore" style="position:absolute;right:-6px;bottom:-6px;width:14px;height:14px;'+
           'background:#4a9eff;border-radius:3px;cursor:nwse-resize;"></div>'+
       '</div>'+
     '</div>'+
     '<div style="display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap;">'+
-      '<label class="small">Gjerësi <input id="madhW" type="number" value="'+_mad.w+'" min="'+_mad.MINW+'" max="'+_mad.MAXW+'" style="width:70px;"></label>'+
-      '<label class="small">Lartësi <input id="madhH" type="number" value="'+_mad.h+'" min="'+_mad.MINH+'" max="'+_mad.MAXH+'" style="width:70px;"></label>'+
-      '<span class="small" id="madhLive" style="font-weight:600;color:#4a9eff;">'+_mad.w+' × '+_mad.h+' px</span>'+
+      '<label class="small">Gjerësi <input id="madhW" type="number" value="'+W+'" min="'+MINW+'" max="'+MAXW+'" style="width:70px;"></label>'+
+      '<label class="small">Lartësi <input id="madhH" type="number" value="'+H+'" min="'+MINH+'" max="'+MAXH+'" style="width:70px;"></label>'+
+      '<span class="small" id="madhLive" style="font-weight:600;color:#4a9eff;">'+W+' × '+H+' px</span>'+
     '</div>'+
     '<button class="primary" id="madhRuaj" onclick="ruajMadhesine()" style="margin-top:14px;">Ruaj</button>'+
     '<div class="msg" id="madhMsg"></div>';
@@ -281,19 +290,29 @@ function ndertoDesktopin(cont){
   $('madhW').oninput=()=>madhNgaNumrat();
   $('madhH').oninput=()=>madhNgaNumrat();
 }
+function madhKufiP(){ // kthen kufijte sipas pajisjes aktive
+  return _mad.pajisje==='mobile'
+    ? {MINW:_mad.mMINW,MAXW:_mad.mMAXW,MINH:_mad.mMINH,MAXH:_mad.mMAXH}
+    : {MINW:_mad.MINW,MAXW:_mad.MAXW,MINH:_mad.MINH,MAXH:_mad.MAXH};
+}
 function madhKufizo(w,h){
-  w=Math.max(_mad.MINW,Math.min(_mad.MAXW,Math.round(w)));
-  h=Math.max(_mad.MINH,Math.min(_mad.MAXH,Math.round(h)));
+  const k=madhKufiP();
+  w=Math.max(k.MINW,Math.min(k.MAXW,Math.round(w)));
+  h=Math.max(k.MINH,Math.min(k.MAXH,Math.round(h)));
   return [w,h];
 }
 function madhVendos(w,h){
-  [w,h]=madhKufizo(w,h); _mad.w=w; _mad.h=h;
+  [w,h]=madhKufizo(w,h);
+  if(_mad.pajisje==='mobile'){ _mad.mw=w; _mad.mh=h; } else { _mad.w=w; _mad.h=h; }
   const k=$('madhKuti'); if(k){ k.style.width=w+'px'; k.style.height=h+'px'; }
   if($('madhW')) $('madhW').value=w;
   if($('madhH')) $('madhH').value=h;
   if($('madhLive')) $('madhLive').textContent=w+' × '+h+' px';
 }
-function madhNgaNumrat(){ madhVendos(parseInt($('madhW').value,10)||_mad.w, parseInt($('madhH').value,10)||_mad.h); }
+function madhNgaNumrat(){
+  const cur = _mad.pajisje==='mobile' ? {w:_mad.mw,h:_mad.mh} : {w:_mad.w,h:_mad.h};
+  madhVendos(parseInt($('madhW').value,10)||cur.w, parseInt($('madhH').value,10)||cur.h);
+}
 function madhLidhTerheqjen(){
   const dore=$('madhDore'), kan=$('madhKanavas'); if(!dore||!kan) return;
   let duke=false;
@@ -316,10 +335,13 @@ function madhLidhTerheqjen(){
 async function ruajMadhesine(){
   const btn=$('madhRuaj'); if(btn) btn.disabled=true;
   const msg=$('madhMsg'); if(msg){ msg.className='msg'; msg.textContent='Po ruaj…'; }
+  const trupi = _mad.pajisje==='mobile'
+    ? { mobile:_mad.mw+'x'+_mad.mh }
+    : { desktop:_mad.w+'x'+_mad.h };
   try{
     const r=await(await fetch('/api/madhesia',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({desktop:_mad.w+'x'+_mad.h})})).json();
-    if(msg){ msg.className=r.error?'msg err':'msg ok'; msg.textContent=r.error?('Gabim: '+r.error):('U ruajt: '+r.desktop); }
+      body:JSON.stringify(trupi)})).json();
+    if(msg){ msg.className=r.error?'msg err':'msg ok'; msg.textContent=r.error?('Gabim: '+r.error):('U ruajt: '+(r.desktop||r.mobile)); }
   }catch(e){ if(msg){ msg.className='msg err'; msg.textContent='Gabim.'; } }
   if(btn) btn.disabled=false;
 }
