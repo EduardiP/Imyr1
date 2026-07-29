@@ -92,6 +92,7 @@ function renderMain(s){
   if(curNav==='biznesi')    return mainBiznesi(m);
   if(curNav==='pershkrimi') return mainPershkrimi(m);
   if(curNav==='lidhja')     return mainLidhja(m);
+  if(curNav==='snippetet')  return mainSnippetet(m, s);
   if(curNav==='dashboard')  return mainDashboard(m);
   if(curNav==='reklamat')   return mainReklamat(m, s);
   if(curNav==='analytics')  return mainAnalytics(m);
@@ -170,7 +171,7 @@ function renderDashStatus(){
   const rreshtat=[
     { done: !!prog.llogaria,   label:'Biznesi',             veprim:()=>nav({v:'profile',nav:'biznesi'}) },
     { done: !!prog.pershkrimi, label:'Përshkrimi',          veprim:()=>nav({v:'profile',nav:'pershkrimi'}) },
-    { done: !!prog.lidhja,     label:'Lidhja e snippet-it', veprim:()=>nav({v:'profile',nav:'lidhja'}) },
+    { done: !!prog.lidhja,     label:'Lidhja e snippet-it', veprim:()=>nav({v:'profile',nav:'snippetet'}) },
     { done: !!prog.reklama,    label:'Krijo produkt',       veprim:()=>nav({v:'profile',nav:'reklamat',sub:'create'}) },
     { done: !!prog.konvertimi, label:'Lidh konvertimin',    veprim:()=>nav({v:'profile',nav:'konvertimi'}) }
   ];
@@ -205,8 +206,79 @@ function mainPershkrimi(m){
   const b=document.getElementById('pvBody');
   if(b) stepPershkrimi(b);
 }
+// ═══ SNIPPET-ET (lista + krijim + detaje) ═══
+var _snipAktiv = null;  // id i snippet-it te hapur (per caktimin e madhesise)
+async function mainSnippetet(m, s){
+  window.__pamjeVecante=true;
+  s = s || {};
+  if(s.sub==='detail' && s.id){ return snipDetaje(m, s.id); }
+  // Lista
+  m.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'+
+    '<h2 class="h">Snippet-et</h2>'+
+    '<button class="btn cta" onclick="snipKrijo()">Krijo +</button></div>'+
+    '<p class="small" style="margin-bottom:14px;">Çdo snippet është një vend ku shfaqen reklamat. Krijo disa nëse vendos reklama në më shumë se një vend.</p>'+
+    '<div id="snipLista"><p class="small">Po ngarkoj…</p></div>';
+  ngarkoSnippetet();
+}
+async function ngarkoSnippetet(){
+  const c=$('snipLista'); if(!c) return;
+  try{
+    const r=await(await fetch('/api/snippetet')).json();
+    const lista=r.snippetet||[];
+    if(!lista.length){ c.innerHTML='<p class="small">Ende s\'ka snippet.</p>'; return; }
+    let h='<div class="rektbl">'+
+      '<div class="rekhead" style="grid-template-columns:2fr 1fr 1fr;"><span>Emri</span><span>Statusi</span><span>Madhësia</span></div>';
+    lista.forEach(sn=>{
+      const status = sn.snippet_active ? '<span style="color:var(--good);">● I lidhur</span>' : '<span style="color:var(--mut);">○ Pa lidhur</span>';
+      h+='<div class="rekrow" style="grid-template-columns:2fr 1fr 1fr;" onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})">'+
+         '<span class="nm">'+esc(sn.emri||('Snippet '+sn.id))+'</span>'+
+         '<span>'+status+'</span>'+
+         '<span class="small">'+esc(sn.madhesia_desktop||'—')+'</span></div>';
+    });
+    h+='</div>';
+    c.innerHTML=h;
+  }catch(e){ c.innerHTML='<p class="small err">Gabim në ngarkim.</p>'; }
+}
+async function snipKrijo(){
+  try{
+    const r=await(await fetch('/api/snippetet',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).json();
+    if(r.id){ nav({v:'profile',nav:'snippetet',sub:'detail',id:r.id}); }
+  }catch(e){}
+}
+async function snipDetaje(m, id){
+  _snipAktiv=id;
+  m.innerHTML='<div id="pvBody"><p class="small">Po ngarkoj…</p></div>';
+  const b=$('pvBody');
+  try{
+    const sn=await(await fetch('/api/snippetet/'+id)).json();
+    if(sn.error){ b.innerHTML='<p class="small err">'+esc(sn.error)+'</p>'; return; }
+    const status = sn.snippet_active
+      ? '<div class="miniStat" style="margin:10px 0 18px;"><span class="vd">✓</span> I lidhur</div>'
+      : '<div class="status wait" style="margin:10px 0 18px;">Pa lidhur ende — vendos kodin te faqja jote.</div>';
+    b.innerHTML=
+      '<div style="margin-bottom:10px;"><a href="#" style="color:#4a9eff;text-decoration:none;font-size:13px;" onclick="event.preventDefault();nav({v:\'profile\',nav:\'snippetet\'})">← Të gjitha snippet-et</a></div>'+
+      '<h2 class="h">'+esc(sn.emri||('Snippet '+id))+'</h2>'+
+      status+
+      '<label class="small">Kodi i snippet-it</label>'+
+      '<div class="kodbox" id="snipKod">'+esc(snipKodi(sn.celes))+'</div>'+
+      '<button class="btn" style="margin-top:8px;" onclick="snipKopjo()">Kopjo kodin</button>'+
+      '<div style="margin-top:22px;"><div id="madhWrap"></div></div>';
+    const w=b.querySelector('#madhWrap');
+    if(w) ndertoMadhesine(w, true, sn.celes, sn);
+  }catch(e){ b.innerHTML='<p class="small err">Gabim.</p>'; }
+}
+function snipKodi(celes){
+  return '<script src="'+location.origin+'/imyr.js" data-key="'+celes+'"></scr'+'ipt>';
+}
+function snipKopjo(){
+  const t=$('snipKod'); if(!t) return;
+  const txt=t.textContent||'';
+  if(navigator.clipboard){ navigator.clipboard.writeText(txt); }
+}
+
 function mainLidhja(m){
   window.__pamjeVecante=true;
+  _snipAktiv=null;
   m.innerHTML='<div id="pvBody"></div>';
   const b=document.getElementById('pvBody');
   if(!b) return;
@@ -234,18 +306,22 @@ function mainLidhja(m){
 // ===== CAKTIMI I MADHESISE (korniza interaktive) =====
 var _mad = { w:210, h:261, MAXW:260, MAXH:290, MINW:134, MINH:155,
              mw:290, mh:260, mMAXW:320, mMAXH:400, mMINW:260, mMINH:192, pajisje:'desktop', pozicioni:'qender' };
-async function ndertoMadhesine(cont, ruajVetem){
+async function ndertoMadhesine(cont, ruajVetem, snipCeles, snipData){
   if(!cont) return;
+  _mad.snipId = _snipAktiv || null;   // nese jemi te nje snippet, ruaj per snippet
   cont.innerHTML='<p class="small">Po ngarkoj…</p>';
   try{
+    // Kufijte i marrim gjithmone nga /api/madhesia; vlerat aktuale nga snippet-i nese kemi
     const r=await(await fetch('/api/madhesia')).json();
-    const p=(r.desktop||'210x261').split('x');
-    _mad.w=parseInt(p[0],10)||210; _mad.h=parseInt(p[1],10)||261;
     _mad.MAXW=r.max_w||260; _mad.MAXH=r.max_h||290; _mad.MINW=r.min_w||134; _mad.MINH=r.min_h||155;
-    const pm=(r.mobile||'290x260').split('x');
-    _mad.mw=parseInt(pm[0],10)||290; _mad.mh=parseInt(pm[1],10)||260;
     _mad.mMAXW=r.m_max_w||320; _mad.mMAXH=r.m_max_h||400; _mad.mMINW=r.m_min_w||260; _mad.mMINH=r.m_min_h||192;
-    _mad.pozicioni=r.pozicioni||'qender';
+    // Vlerat aktuale: nga snippet-i (nese dhene) ose nga biznesi (Lidhja e vjeter)
+    const dsk = (snipData && snipData.madhesia_desktop) || r.desktop || '210x261';
+    const mob = (snipData && snipData.madhesia_mobile) || r.mobile || '290x260';
+    const poz = (snipData && snipData.pozicioni) || r.pozicioni || 'qender';
+    const p=dsk.split('x'); _mad.w=parseInt(p[0],10)||210; _mad.h=parseInt(p[1],10)||261;
+    const pm=mob.split('x'); _mad.mw=parseInt(pm[0],10)||290; _mad.mh=parseInt(pm[1],10)||260;
+    _mad.pozicioni=poz;
   }catch(e){}
   cont.innerHTML=
     '<div style="display:flex;gap:10px;margin-bottom:14px;">'+
@@ -351,10 +427,11 @@ async function ruajMadhesine(){
   const trupi = _mad.pajisje==='mobile'
     ? { mobile:_mad.mw+'x'+_mad.mh, pozicioni:_mad.pozicioni }
     : { desktop:_mad.w+'x'+_mad.h, pozicioni:_mad.pozicioni };
+  const url = _mad.snipId ? ('/api/snippetet/'+_mad.snipId+'/madhesia') : '/api/madhesia';
   try{
-    const r=await(await fetch('/api/madhesia',{method:'POST',headers:{'Content-Type':'application/json'},
+    const r=await(await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify(trupi)})).json();
-    if(msg){ msg.className=r.error?'msg err':'msg ok'; msg.textContent=r.error?('Gabim: '+r.error):('U ruajt: '+(r.desktop||r.mobile)); }
+    if(msg){ msg.className=r.error?'msg err':'msg ok'; msg.textContent=r.error?('Gabim: '+r.error):('U ruajt: '+(r.desktop||r.mobile||'')); }
   }catch(e){ if(msg){ msg.className='msg err'; msg.textContent='Gabim.'; } }
   if(btn) btn.disabled=false;
 }
