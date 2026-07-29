@@ -796,20 +796,24 @@ app.get('/imyr.js', (req, res) => {
         kontrolloKonvertim(d.konv_url);
         if(d.imazh_url || d.teksti){
           var rid = d.id ? ('&rid=' + encodeURIComponent(d.id)) : '';
+          // Madhesia e caktuar nga host-i (ose standardi 300x380). Kutia merr kete permase; reklama pershtatet brenda.
+          var mw = 300, mh = 380;
+          if(d.madhesia){ var mm = /^(\d+)x(\d+)$/.exec(d.madhesia); if(mm){ mw = parseInt(mm[1],10); mh = parseInt(mm[2],10); } }
           var inner;
           if(d.imazh_url){
-            inner = '<img src="' + d.imazh_url + '" style="display:block;max-width:100%;height:auto;border-radius:10px;">';
+            inner = '<img src="' + d.imazh_url + '" style="display:block;width:100%;height:100%;object-fit:cover;border-radius:10px;">';
           } else {
-            inner = '<div style="display:inline-block;max-width:100%;box-sizing:border-box;'
+            inner = '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;box-sizing:border-box;'
               + 'border:1px solid #e2c68a;background:#fbf6ea;color:#5a4a24;padding:12px 14px;border-radius:10px;'
-              + 'font:14px/1.5 system-ui,sans-serif;">' + esc(d.teksti) + '</div>';
+              + 'font:14px/1.5 system-ui,sans-serif;text-align:center;">' + esc(d.teksti) + '</div>';
           }
           if(!preview){
             var href = base + '/klik?key=' + encodeURIComponent(key) + rid;
             inner = '<a href="' + href + '" target="_blank" rel="noopener"'
-              + ' style="text-decoration:none;display:inline-block;max-width:100%;cursor:pointer;">' + inner + '</a>';
+              + ' style="text-decoration:none;display:block;width:100%;height:100%;cursor:pointer;">' + inner + '</a>';
           }
-          slot.innerHTML = inner;
+          // Kutia me permasen e caktuar (max-width 100% qe te mos dale nga kontejneri i klientit)
+          slot.innerHTML = '<div style="width:' + mw + 'px;height:' + mh + 'px;max-width:100%;">' + inner + '</div>';
           if(d.id){ if(d.cikel_ri){ rifilloCikel(d.id); } else { shtoPare(d.id); } }
           if(!preview){ try { var v = base + '/track?key=' + encodeURIComponent(key) + '&event=view' + rid;
             navigator.sendBeacon ? navigator.sendBeacon(v) : fetch(v); } catch(e){} }
@@ -963,7 +967,7 @@ app.get('/ad', async (req, res) => {
   if (!key) return res.json({ teksti: null });
   const preview = req.query.preview === '1';
   try {
-    const b = await pool.query('SELECT id, snippet_active, url_konvertimi FROM bizneset WHERE celes=$1', [key]);
+    const b = await pool.query('SELECT id, snippet_active, url_konvertimi, madhesia_desktop FROM bizneset WHERE celes=$1', [key]);
     if (!b.rows.length) return res.json({ teksti: null });
     const bizId = b.rows[0].id;
     const origin = req.headers.origin || req.headers.referer || null;
@@ -995,7 +999,7 @@ app.get('/ad', async (req, res) => {
     const pareRaw = (req.query.pare || '').split(',').map(x => x.trim()).filter(Boolean);
     const rek = await selector.zgjidhReklame(pool, bizId, pareRaw);
     // konv_url = faqja e konvertimit E KETIJ biznesi (snippet-i e perdor per te njohur suksesin)
-    res.json(Object.assign({ konv_url: b.rows[0].url_konvertimi || null }, rek || {}));
+    res.json(Object.assign({ konv_url: b.rows[0].url_konvertimi || null, madhesia: b.rows[0].madhesia_desktop || '300x380' }, rek || {}));
   } catch (e) {
     res.json({ teksti: null });
   }
@@ -1145,6 +1149,9 @@ app.get('/api/admin/une', iAdmin, (req, res) => res.json({ ok:true }));
 
 // Endpoint-e shtese te admin-it (skedar i ndare — nuk prek webin real)
 require('./admin-routes')(app, pool, iAdmin, kombinimi);
+
+// Caktimi i madhesise se hapesires se reklames (skedar i ndare)
+require('./madhesia')(app, pool, iLoguar);
 
 // Lista e bizneseve (emer + email)
 app.get('/api/admin/bizneset', iAdmin, async (req, res) => {
