@@ -216,7 +216,8 @@ function mainLidhja(m){
       '<h2 class="h">Lidhja e snippet-it</h2>'+
       '<div class="miniStat" style="margin:10px 0 18px;"><span class="vd">✓</span> I lidhur</div>'+
       '<div id="madhWrap"></div>';
-    ndertoMadhesine($('madhWrap'), true);
+    const w=b.querySelector('#madhWrap');
+    if(w) ndertoMadhesine(w, true);
   } else {
     // I ri → hapi normal + link blu "cakto parametrat" (i fshehur derisa klikohet)
     stepLidhja(b);
@@ -231,16 +232,34 @@ function mainLidhja(m){
 }
 
 // ===== CAKTIMI I MADHESISE (korniza interaktive) =====
-var _mad = { w:300, h:380, MAXW:728, MAXH:600, MINW:110, MINH:130 };
+var _mad = { w:188, h:214, MAXW:260, MAXH:290, MINW:134, MINH:155, pajisje:'desktop' };
 async function ndertoMadhesine(cont, ruajVetem){
   if(!cont) return;
   cont.innerHTML='<p class="small">Po ngarkoj…</p>';
   try{
     const r=await(await fetch('/api/madhesia')).json();
-    const p=(r.desktop||'300x380').split('x');
-    _mad.w=parseInt(p[0],10)||300; _mad.h=parseInt(p[1],10)||380;
-    _mad.MAXW=r.max_w||728; _mad.MAXH=r.max_h||600; _mad.MINW=r.min_w||110; _mad.MINH=r.min_h||130;
+    const p=(r.desktop||'188x214').split('x');
+    _mad.w=parseInt(p[0],10)||188; _mad.h=parseInt(p[1],10)||214;
+    _mad.MAXW=r.max_w||260; _mad.MAXH=r.max_h||290; _mad.MINW=r.min_w||134; _mad.MINH=r.min_h||155;
   }catch(e){}
+  cont.innerHTML=
+    '<div style="display:flex;gap:10px;margin-bottom:14px;">'+
+      '<button class="gbtn madhPaj active" data-p="desktop" onclick="madhPajisja(\'desktop\')">Desktop</button>'+
+      '<button class="gbtn madhPaj" data-p="mobile" onclick="madhPajisja(\'mobile\')">Mobile</button>'+
+    '</div>'+
+    '<div id="madhDesktop"></div>';
+  const dd=cont.querySelector('#madhDesktop');
+  if(dd) ndertoDesktopin(dd);
+}
+function madhPajisja(p){
+  _mad.pajisje=p;
+  document.querySelectorAll('.madhPaj').forEach(b=>b.classList.toggle('active', b.getAttribute('data-p')===p));
+  const d=$('madhDesktop');
+  if(p==='mobile'){ d.innerHTML='<p class="small" style="padding:10px 0;">Mobile — së shpejti.</p>'; }
+  else { ndertoDesktopin(d); }
+}
+function ndertoDesktopin(cont){
+  if(!cont) return;
   cont.innerHTML=
     '<p class="small" style="margin-bottom:10px;">Hapësira që snippet-i do të zërë në faqen tënde (desktop). Tërhiq cepin ose ndrysho numrat. Reklamat përshtaten brenda kësaj mase.</p>'+
     '<div id="madhKanavas" style="position:relative;width:'+_mad.MAXW+'px;max-width:100%;height:'+_mad.MAXH+'px;'+
