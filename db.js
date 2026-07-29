@@ -58,7 +58,7 @@ async function initDB(pool) {
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS permbledhje TEXT`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS tipi TEXT`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS logo_url TEXT`);
-  await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS madhesia_desktop TEXT DEFAULT '300x380'`);
+  await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS madhesia_desktop TEXT DEFAULT '188x214'`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS madhesia_mobile TEXT`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pranoi_kushtet BOOLEAN DEFAULT false`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pranoi_oferta BOOLEAN DEFAULT false`);
