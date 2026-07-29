@@ -116,6 +116,12 @@ h2.h { font-size:20px; margin:0 0 4px; }
 .fmt .lbl { font-size:13px; font-weight:600; }
 .fmt .dim { font-size:11px; color:var(--mut); }
 
+/* CAKTUESI I MADHESISE — butonat Desktop/Mobile */
+.madhPaj{ flex:1; padding:11px 14px; background:#0e1116; border:1px solid var(--line); border-radius:9px;
+  color:var(--txt); font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:.15s; }
+.madhPaj:hover{ border-color:var(--mut); }
+.madhPaj.active{ border-color:var(--acc); background:#0a1b2e; color:var(--acc); }
+
 /* ===== FAQJA PUBLIKE (landing + legal) — brenda aplikacionit ===== */
 :root{ --dark:#0e1116; --light:#f6f7f9; --light-txt:#1a1f27; --light-mut:#5b636e; --light-line:#e3e7ec; --acc-d:#2f7fd8; }
 .container{max-width:1080px;margin:0 auto;padding:0 24px;}
