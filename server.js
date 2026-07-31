@@ -470,9 +470,12 @@ app.post('/api/ngarko', iLoguar, upload.single('file'), async (req, res) => {
     const base = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '');
     const url = base + '/' + key;
     const titulli = (req.body.titulli || '').trim() || null;
+    let link = (req.body.link || '').trim();
+    if (!link) return res.status(400).json({ error: 'Fut linkun e destinacionit.' });
+    if (!/^https?:\/\//i.test(link)) link = 'https://' + link;
     await pool.query(
-      'INSERT INTO promovimet (biznes_id, titulli, imazh_url, aktiv) VALUES ($1,$2,$3,true)',
-      [req.biznesId, titulli, url]);
+      'INSERT INTO promovimet (biznes_id, titulli, imazh_url, link, aktiv) VALUES ($1,$2,$3,$4,true)',
+      [req.biznesId, titulli, url, link]);
     res.json({ ok: true, url });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
