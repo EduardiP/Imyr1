@@ -3,7 +3,7 @@
 
 const PARAM = {
   // Pike profili: sa shfaqje = 1 pike (1 konvertim = 1 pike gjithmone)
-  RATE: { b2b: 58, b2c: 111, b2b2c: 80 },   // 80 = ende per t'u vendosur
+  RATE: { b2b: 175, b2c: 320, b2b2c: 248 },   // sa shfaqje = 1 pike; b2b2c mes b2b dhe b2c
 
   // Kurba e pikeve ndihmese: 160/(1+e^(0.028*(ai-120)))
   NDIHMA_MAX: 160,
