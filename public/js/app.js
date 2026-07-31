@@ -377,6 +377,7 @@ function madhPajisja(p){
 // Ndertuesi i kanavasit — punon per te dyja pajisjet sipas parametrit
 function ndertoKanavasin(cont, pajisje){
   if(!cont) return;
+  _mad.cont = cont;   // kontejneri aktiv — per te gjetur elementet brenda tij (jo globalisht)
   const eshteMob = pajisje==='mobile';
   const MAXW = eshteMob?_mad.mMAXW:_mad.MAXW, MAXH = eshteMob?_mad.mMAXH:_mad.MAXH;
   const MINW = eshteMob?_mad.mMINW:_mad.MINW, MINH = eshteMob?_mad.mMINH:_mad.MINH;
@@ -408,9 +409,11 @@ function ndertoKanavasin(cont, pajisje){
     '<button class="primary" id="madhRuaj" onclick="ruajMadhesine()" style="margin-top:14px;">Ruaj</button>'+
     '<div class="msg" id="madhMsg"></div>';
   madhLidhTerheqjen();
-  $('madhW').oninput=()=>madhNgaNumrat();
-  $('madhH').oninput=()=>madhNgaNumrat();
+  const iW=_mq('madhW'), iH=_mq('madhH');
+  if(iW) iW.oninput=()=>madhNgaNumrat();
+  if(iH) iH.oninput=()=>madhNgaNumrat();
 }
+function _mq(id){ return _mad.cont ? _mad.cont.querySelector('#'+id) : document.getElementById(id); }
 function madhKufiP(){ // kthen kufijte sipas pajisjes aktive
   return _mad.pajisje==='mobile'
     ? {MINW:_mad.mMINW,MAXW:_mad.mMAXW,MINH:_mad.mMINH,MAXH:_mad.mMAXH}
@@ -425,17 +428,17 @@ function madhKufizo(w,h){
 function madhVendos(w,h){
   [w,h]=madhKufizo(w,h);
   if(_mad.pajisje==='mobile'){ _mad.mw=w; _mad.mh=h; } else { _mad.w=w; _mad.h=h; }
-  const k=$('madhKuti'); if(k){ k.style.width=w+'px'; k.style.height=h+'px'; }
-  if($('madhW')) $('madhW').value=w;
-  if($('madhH')) $('madhH').value=h;
-  if($('madhLive')) $('madhLive').textContent=w+' × '+h+' px';
+  const k=_mq('madhKuti'); if(k){ k.style.width=w+'px'; k.style.height=h+'px'; }
+  if(_mq('madhW')) _mq('madhW').value=w;
+  if(_mq('madhH')) _mq('madhH').value=h;
+  if(_mq('madhLive')) _mq('madhLive').textContent=w+' × '+h+' px';
 }
 function madhNgaNumrat(){
   const cur = _mad.pajisje==='mobile' ? {w:_mad.mw,h:_mad.mh} : {w:_mad.w,h:_mad.h};
-  madhVendos(parseInt($('madhW').value,10)||cur.w, parseInt($('madhH').value,10)||cur.h);
+  madhVendos(parseInt(_mq('madhW').value,10)||cur.w, parseInt(_mq('madhH').value,10)||cur.h);
 }
 function madhLidhTerheqjen(){
-  const dore=$('madhDore'), kan=$('madhKanavas'); if(!dore||!kan) return;
+  const dore=_mq('madhDore'), kan=_mq('madhKanavas'); if(!dore||!kan) return;
   let duke=false;
   function nis(e){ duke=true; e.preventDefault(); }
   function levize(e){
