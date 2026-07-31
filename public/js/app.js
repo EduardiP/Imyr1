@@ -823,7 +823,7 @@ function stepLidhja(b){
       'onclick="event.preventDefault();var x=document.getElementById(\'madhBox\');x.classList.toggle(\'hide\');if(!x.dataset.ngarkuar){x.dataset.ngarkuar=1;ndertoMadhesine(x,false);}">Cakto madhësinë e hapësirës</a></div>'+
     '<div id="madhBox" class="hide" style="margin-top:12px;"></div>'+
     '<button class="primary hide" id="lidhNext" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">Krijo reklamën →</button>';
-  window.__onLidhur = ()=>{ renderHStep(); $('lidhNext').classList.remove('hide'); setTimeout(()=>nav({v:'profile',nav:'reklamat',sub:'create'}),900); };
+  window.__onLidhur = ()=>{ renderHStep(); $('lidhNext').classList.remove('hide'); };
   connectUI($('connectWrap'));
   _snipAktiv=null;   // te wizard-i, madhesia ruhet per-biznes
   if(prog.lidhja){ $('lidhNext').classList.remove('hide'); }
