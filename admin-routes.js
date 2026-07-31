@@ -74,34 +74,46 @@ module.exports = function (app, pool, iAdmin, kombinimi) {
     if (!id) return res.status(400).json({ error: 'ID e pavlefshme.' });
     try {
       const biz = await pool.query('SELECT emri FROM bizneset WHERE id=$1', [id]);
-      if (!biz.rows.length) return res.status(404).json({ error: 'Biznesi s\'u gjet.' });
-      const kerkesa = await pool.query(
-        `SELECT COUNT(*)::int n FROM garat WHERE host_id=$1 AND fitoi=true`, [id]);
-      // Vlerat E ANKANDIT TE FUNDIT per secilin reklamues (jo MAX) + fitoret e plota
-      const kand = await pool.query(
-        `SELECT s.reklamues_id, b.emri,
-                s.pesha, s.ai, s.profili, s.ndihma, s.ndihma_bruto,
-                COALESCE(f.fitore,0) AS fitore,
-                COALESCE(f.pjesemarrje,0) AS pjesemarrje
-         FROM (
-           SELECT DISTINCT ON (reklamues_id)
-                  reklamues_id, pesha, ai, profili, ndihma, ndihma_bruto
-           FROM garat WHERE host_id=$1
-           ORDER BY reklamues_id, created_at DESC
-         ) s
-         LEFT JOIN (
-           SELECT reklamues_id,
-                  COUNT(*) FILTER (WHERE fitoi)::int AS fitore,
-                  COUNT(*)::int AS pjesemarrje
-           FROM garat WHERE host_id=$1 GROUP BY reklamues_id
-         ) f ON f.reklamues_id = s.reklamues_id
-         LEFT JOIN bizneset b ON b.id = s.reklamues_id
-         ORDER BY fitore DESC, s.pesha DESC`, [id]);
-      res.json({
-        emri: biz.rows[0].emri,
-        kerkesa: kerkesa.rows[0].n,
-        kandidatet: kand.rows
-      });
+      if (!biz.rows.length) return res.status(404).json({ error: 'Biznesi nuk u gjet.' });
+
+      // Snippet-et e ketij biznesi qe kane ankande
+      const snipRows = await pool.query(
+        `SELECT DISTINCT g.snippet_id, s.emri
+         FROM garat g LEFT JOIN snippetet s ON s.id = g.snippet_id
+         WHERE g.host_id=$1
+         ORDER BY g.snippet_id NULLS FIRST`, [id]);
+
+      const snippetet = [];
+      for (const sr of snipRows.rows) {
+        const snId = sr.snippet_id;
+        const kushtSnip = snId == null ? 'g.snippet_id IS NULL' : 'g.snippet_id = ' + parseInt(snId,10);
+        const kerkesa = await pool.query(
+          `SELECT COUNT(*)::int n FROM garat g WHERE g.host_id=$1 AND g.fitoi=true AND ${kushtSnip}`, [id]);
+        const kand = await pool.query(
+          `SELECT s.reklamues_id, b.emri,
+                  s.pesha, s.ai, s.profili, s.ndihma, s.ndihma_bruto,
+                  COALESCE(f.fitore,0) AS fitore
+           FROM (
+             SELECT DISTINCT ON (reklamues_id)
+                    reklamues_id, pesha, ai, profili, ndihma, ndihma_bruto
+             FROM garat g WHERE g.host_id=$1 AND ${kushtSnip}
+             ORDER BY reklamues_id, created_at DESC
+           ) s
+           LEFT JOIN (
+             SELECT reklamues_id, COUNT(*) FILTER (WHERE fitoi)::int AS fitore
+             FROM garat g WHERE g.host_id=$1 AND ${kushtSnip} GROUP BY reklamues_id
+           ) f ON f.reklamues_id = s.reklamues_id
+           LEFT JOIN bizneset b ON b.id = s.reklamues_id
+           ORDER BY fitore DESC, s.pesha DESC`, [id]);
+        snippetet.push({
+          snippet_id: snId,
+          emri: sr.emri || (snId == null ? 'Pa snippet (te vjetra)' : ('Snippet #' + snId)),
+          kerkesa: kerkesa.rows[0].n,
+          kandidatet: kand.rows
+        });
+      }
+
+      res.json({ emri: biz.rows[0].emri, snippetet: snippetet });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
