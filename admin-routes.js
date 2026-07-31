@@ -113,7 +113,31 @@ module.exports = function (app, pool, iAdmin, kombinimi) {
         });
       }
 
-      res.json({ emri: biz.rows[0].emri, snippetet: snippetet });
+      // TREGUESI I PERGJITHSHEM: te gjithe snippet-et bashke (cikli i ankandit si pamje e vetme)
+      const kerkGjith = await pool.query(
+        `SELECT COUNT(*)::int n FROM garat WHERE host_id=$1 AND fitoi=true`, [id]);
+      const kandGjith = await pool.query(
+        `SELECT s.reklamues_id, b.emri,
+                s.pesha, s.ai, s.profili, s.ndihma, s.ndihma_bruto,
+                COALESCE(f.fitore,0) AS fitore
+         FROM (
+           SELECT DISTINCT ON (reklamues_id)
+                  reklamues_id, pesha, ai, profili, ndihma, ndihma_bruto
+           FROM garat WHERE host_id=$1
+           ORDER BY reklamues_id, created_at DESC
+         ) s
+         LEFT JOIN (
+           SELECT reklamues_id, COUNT(*) FILTER (WHERE fitoi)::int AS fitore
+           FROM garat WHERE host_id=$1 GROUP BY reklamues_id
+         ) f ON f.reklamues_id = s.reklamues_id
+         LEFT JOIN bizneset b ON b.id = s.reklamues_id
+         ORDER BY fitore DESC, s.pesha DESC`, [id]);
+
+      res.json({
+        emri: biz.rows[0].emri,
+        pergjithshem: { kerkesa: kerkGjith.rows[0].n, kandidatet: kandGjith.rows },
+        snippetet: snippetet
+      });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
