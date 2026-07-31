@@ -870,9 +870,19 @@ app.get('/imyr.js', (req, res) => {
 app.all('/track-lidh', async (req, res) => {
   cors(res);
   try {
+    const faqja = req.headers.referer || req.headers.origin || null;
     await pool.query(
       `UPDATE bizneset SET track_active=true, track_seen_at=now(), track_url=$2 WHERE celes=$1`,
-      [req.query.key, req.headers.referer || req.headers.origin || null]);
+      [req.query.key, faqja]);
+    // Shëno URL-në specifike të konvertimit nëse faqja aktuale përputhet me ndonjërën
+    const b = await pool.query('SELECT id FROM bizneset WHERE celes=$1', [req.query.key]);
+    if (b.rows.length && faqja) {
+      let shteg = faqja;
+      try { const p = new URL(faqja); shteg = p.pathname + p.search; } catch (e) {}
+      await pool.query(
+        `UPDATE konvertimet SET track_active=true, track_seen_at=now()
+         WHERE biznes_id=$1 AND $2 LIKE url || '%'`, [b.rows[0].id, shteg]);
+    }
   } catch (e) {}
   res.status(204).end();
 });
@@ -890,9 +900,12 @@ app.get('/api/track-status', iLoguar, async (req, res) => {
 app.get('/cil', async (req, res) => {
   cors(res);
   try {
-    const b = await pool.query('SELECT url_konvertimi FROM bizneset WHERE celes=$1', [req.query.key]);
-    res.json({ konv_url: b.rows.length ? (b.rows[0].url_konvertimi || null) : null });
-  } catch (e) { res.json({ konv_url: null }); }
+    const b = await pool.query('SELECT id, url_konvertimi FROM bizneset WHERE celes=$1', [req.query.key]);
+    if (!b.rows.length) return res.json({ konv_url: null, konv_urls: [] });
+    const urls = await konvertimet.urletPerBiznes(pool, b.rows[0].id);
+    // konv_url: e para (perputhshmeri me snippet-in e vjeter); konv_urls: te gjitha
+    res.json({ konv_url: urls.length ? urls[0] : (b.rows[0].url_konvertimi || null), konv_urls: urls });
+  } catch (e) { res.json({ konv_url: null, konv_urls: [] }); }
 });
 
 // --- IMYR-TRACK.JS (vetem gjurmim: vendoset ne CDO faqe, s'shfaq asgje) ---
@@ -949,12 +962,16 @@ app.get('/imyr-track.js', (req, res) => {
   fetch(base + '/cil?key=' + encodeURIComponent(key))
     .then(function(r){ return r.json(); })
     .then(function(c){
-      var konvUrl = c && c.konv_url; if(!konvUrl) return;
+      var lista = (c && c.konv_urls && c.konv_urls.length) ? c.konv_urls : ((c && c.konv_url) ? [c.konv_url] : []);
+      if(!lista.length) return;
       var tani = location.pathname + location.search;
-      var pos = tani.indexOf(konvUrl); if(pos === -1) return;
-      var pas = tani.charAt(pos + konvUrl.length);
-      if(pas !== '' && pas !== '?' && pas !== '#' && pas !== '/' && pas !== '&') return;
-      dergo();
+      for(var i=0;i<lista.length;i++){
+        var konvUrl = lista[i]; if(!konvUrl) continue;
+        var pos = tani.indexOf(konvUrl); if(pos === -1) continue;
+        var pas = tani.charAt(pos + konvUrl.length);
+        if(pas !== '' && pas !== '?' && pas !== '#' && pas !== '/' && pas !== '&') continue;
+        dergo(); return;  // perputhet me nje URL → konvertim
+      }
     })
     .catch(function(){});
 })();`);
@@ -1216,6 +1233,10 @@ require('./madhesia')(app, pool, iLoguar);
 // Snippet-e te shumta per biznes (skedar i ndare)
 const snippetet = require('./snippetet');
 snippetet(app, pool, iLoguar, beCeles);
+
+// URL-e te shumta konvertimi per biznes (skedar i ndare)
+const konvertimet = require('./konvertimet');
+konvertimet(app, pool, iLoguar, iAdmin);
 
 // Lista e bizneseve (emer + email)
 app.get('/api/admin/bizneset', iAdmin, async (req, res) => {
