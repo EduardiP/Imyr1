@@ -332,18 +332,20 @@
       const r=await(await fetch('/api/admin/ankandet/'+id)).json();
       if(r.error){ d.innerHTML='<p class="small">'+r.error+'</p>'; return; }
       const snips = r.snippetet || [];
-      if(!snips.length){ d.innerHTML='<p class="small">Ende s\'ka ankande të regjistruara për këtë biznes.</p>'; return; }
+      const pg = r.pergjithshem || null;
+      if(!snips.length && !pg){ d.innerHTML='<p class="small">Ende s\'ka ankande të regjistruara për këtë biznes.</p>'; return; }
       let h='<div style="font-weight:600;margin:6px 0 12px;">'+(r.emri||'')+'</div>';
-      snips.forEach(sn=>{
-        h+='<div class="ktabela" style="margin-bottom:16px;">'+
-          '<div class="krow khead"><span class="kc1">'+esc(sn.emri)+' — kërkesa për reklamë: '+sn.kerkesa+'</span></div>'+
+      // Treguesi i pergjithshem (te gjithe snippet-et bashke)
+      function tabela(titull, kerkesa, kandidatet){
+        let t='<div class="ktabela" style="margin-bottom:16px;">'+
+          '<div class="krow khead"><span class="kc1">'+esc(titull)+' — kërkesa për reklamë: '+kerkesa+'</span></div>'+
           '<div class="krow khead"><span class="kc1">Reklamuesi</span><span class="kc3">AI</span><span class="kc3">Profili</span><span class="kc3">Ndihma</span><span class="kc3">Zbritur</span><span class="kc3">Peshë</span><span class="kc3">Fitore</span></div>';
-        if(!sn.kandidatet.length){
-          h+='<div class="krow"><span class="small">Ende s\'ka ankande për këtë snippet.</span></div>';
+        if(!kandidatet.length){
+          t+='<div class="krow"><span class="small">Ende s\'ka ankande.</span></div>';
         } else {
-          sn.kandidatet.forEach(k=>{
+          kandidatet.forEach(k=>{
             const zbritur = (k.ndihma_bruto!=null && k.ndihma!=null) ? (Math.round((k.ndihma_bruto-k.ndihma)*10)/10) : null;
-            h+='<div class="krow"><span class="kc1">'+(k.emri||('#'+k.reklamues_id))+'</span>'+
+            t+='<div class="krow"><span class="kc1">'+(k.emri||('#'+k.reklamues_id))+'</span>'+
                '<span class="kc3">'+fmt(k.ai)+'</span>'+
                '<span class="kc3">'+fmt(k.profili)+'</span>'+
                '<span class="kc3">'+fmt(k.ndihma)+'</span>'+
@@ -352,8 +354,12 @@
                '<span class="kc3">'+k.fitore+'</span></div>';
           });
         }
-        h+='</div>';
-      });
+        t+='</div>';
+        return t;
+      }
+      if(pg){ h+='<div style="color:#4a9eff;font-size:13px;font-weight:600;margin-bottom:6px;">CIKLI I PËRGJITHSHËM (të gjithë snippet-et)</div>'+tabela('Të gjithë', pg.kerkesa, pg.kandidatet); }
+      if(snips.length){ h+='<div style="color:var(--mut);font-size:13px;font-weight:600;margin:18px 0 6px;">SIPAS SNIPPET-IT</div>'; }
+      snips.forEach(sn=>{ h+=tabela(sn.emri, sn.kerkesa, sn.kandidatet); });
       d.innerHTML=h;
     }catch(e){ d.innerHTML='<p class="small">Gabim.</p>'; }
   }
