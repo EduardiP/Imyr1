@@ -757,17 +757,20 @@ app.get('/imyr.js', (req, res) => {
   }
 
   // ---------- HAPESIRA E REKLAMES ----------
-  // 1) Nese ekziston <div id="imyr-slot"> => reklama shfaqet aty.
-  // 2) Perndryshe krijohet menjehere pas skriptit — POR vetem nese skripti
-  //    s'eshte vendosur direkt te <body>/<head> (d.m.th. te layout-i).
-  //    Keshtu, i njejti rresht te layout-i gjurmon kudo pa nxjerre reklama kudo.
+  // 1) Nese ekziston <div id="imyr-slot"> => reklama shfaqet aty (i pari qe s'eshte zene).
+  // 2) Perndryshe krijohet menjehere pas skriptit — cdo snippet ka slot-in e vet unik,
+  //    keshtu disa snippet-e ne te njejten faqe shfaqin secili reklamen e vet.
+  var _slotImyr = null;
   function gjejSlot(){
-    var el = document.getElementById('imyr-slot');
-    if(el) return el;
+    if(_slotImyr) return _slotImyr;
+    // slot i vendosur nga klienti qe s'eshte zene ende nga nje snippet tjeter
+    var lista = document.querySelectorAll('#imyr-slot, .imyr-slot');
+    for(var i=0;i<lista.length;i++){ if(!lista[i].getAttribute('data-imyr-zene')){ lista[i].setAttribute('data-imyr-zene','1'); _slotImyr=lista[i]; return _slotImyr; } }
     if(!s || !s.parentNode) return null;
-    // Reklama del pikerisht aty ku ndodhet ky rresht (pa kerkuar imyr-slot).
-    el = document.createElement('div'); el.id = 'imyr-slot';
+    // Reklama del pikerisht aty ku ndodhet ky rresht — slot i vetin, pa ID fikse.
+    var el = document.createElement('div'); el.className = 'imyr-slot'; el.setAttribute('data-imyr-zene','1');
     s.parentNode.insertBefore(el, s.nextSibling);
+    _slotImyr = el;
     return el;
   }
 
