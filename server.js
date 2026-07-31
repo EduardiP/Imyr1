@@ -804,46 +804,57 @@ app.get('/imyr.js', (req, res) => {
       try { sessionStorage.setItem(_parKey, JSON.stringify([String(id)])); } catch(e){}
     }
     var pare = lexoPare();
-    var qpare = pare.length ? ('&pare=' + encodeURIComponent(pare.join(','))) : '';
-    fetch(base + '/ad?key=' + encodeURIComponent(key) + qpare + (preview?'&preview=1':''))
-      .then(function(r){ return r.json(); })
-      .then(function(d){
-        if(!d) return;
-        kontrolloKonvertim(d.konv_url);
-        if(d.imazh_url || d.teksti){
-          var rid = d.id ? ('&rid=' + encodeURIComponent(d.id)) : '';
-          // Madhesia e caktuar nga host-i (ose standardi 300x380). Kutia merr kete permase; reklama pershtatet brenda.
-          var mw = 210, mh = 261;
-          var eshteMobile = (window.innerWidth || document.documentElement.clientWidth || 9999) <= 600;
-          var madhStr = eshteMobile ? (d.madhesia_mobile || '290x260') : (d.madhesia || '210x261');
-          if(eshteMobile){ mw = 290; mh = 260; }
-          var pp = String(madhStr).split('x'); var a1=parseInt(pp[0],10), a2=parseInt(pp[1],10); if(a1>0 && a2>0){ mw=a1; mh=a2; }
-          var inner;
-          if(d.imazh_url){
-            inner = '<img src="' + d.imazh_url + '" style="display:block;width:100%;height:100%;object-fit:contain;border-radius:10px;">';
-          } else {
-            inner = '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;box-sizing:border-box;'
-              + 'border:1px solid #e2c68a;background:#fbf6ea;color:#5a4a24;padding:12px 14px;border-radius:10px;'
-              + 'font:14px/1.5 system-ui,sans-serif;text-align:center;">' + esc(d.teksti) + '</div>';
-          }
-          if(!preview){
-            var href = base + '/klik?key=' + encodeURIComponent(key) + rid;
-            inner = '<a href="' + href + '" target="_blank" rel="noopener"'
-              + ' style="text-decoration:none;display:block;width:100%;height:100%;cursor:pointer;">' + inner + '</a>';
-          }
-          // Pozicioni brenda hapesires: qender / majtas / djathtas
-          var poz = d.pozicioni || 'qender';
-          var align = poz==='majtas' ? 'flex-start' : (poz==='djathtas' ? 'flex-end' : 'center');
-          // Kutia me permasen e caktuar (max-width 100% qe te mos dale nga kontejneri i klientit)
-          // sticky: reklama ndjek scroll-in derisa mbaron kontejneri (punon ne shumicen e faqeve)
-          var kutia = '<div style="width:' + mw + 'px;height:' + mh + 'px;max-width:100%;position:sticky;top:10px;">' + inner + '</div>';
-          slot.innerHTML = '<div style="display:flex;justify-content:' + align + ';width:100%;">' + kutia + '</div>';
-          if(d.id){ if(d.cikel_ri){ rifilloCikel(d.id); } else { shtoPare(d.id); } }
-          if(!preview){ try { var v = base + '/track?key=' + encodeURIComponent(key) + '&event=view' + rid;
-            navigator.sendBeacon ? navigator.sendBeacon(v) : fetch(v); } catch(e){} }
+
+    function trajtoReklame(d){
+      if(!d) return;
+      kontrolloKonvertim(d.konv_url);
+      if(d.imazh_url || d.teksti){
+        var rid = d.id ? ('&rid=' + encodeURIComponent(d.id)) : '';
+        var mw = 210, mh = 261;
+        var eshteMobile = (window.innerWidth || document.documentElement.clientWidth || 9999) <= 600;
+        var madhStr = eshteMobile ? (d.madhesia_mobile || '290x260') : (d.madhesia || '210x261');
+        if(eshteMobile){ mw = 290; mh = 260; }
+        var pp = String(madhStr).split('x'); var a1=parseInt(pp[0],10), a2=parseInt(pp[1],10); if(a1>0 && a2>0){ mw=a1; mh=a2; }
+        var inner;
+        if(d.imazh_url){
+          inner = '<img src="' + d.imazh_url + '" style="display:block;width:100%;height:100%;object-fit:contain;border-radius:10px;">';
+        } else {
+          inner = '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;box-sizing:border-box;'
+            + 'border:1px solid #e2c68a;background:#fbf6ea;color:#5a4a24;padding:12px 14px;border-radius:10px;'
+            + 'font:14px/1.5 system-ui,sans-serif;text-align:center;">' + esc(d.teksti) + '</div>';
         }
-      })
-      .catch(function(){});
+        if(!preview){
+          var href = base + '/klik?key=' + encodeURIComponent(key) + rid;
+          inner = '<a href="' + href + '" target="_blank" rel="noopener"'
+            + ' style="text-decoration:none;display:block;width:100%;height:100%;cursor:pointer;">' + inner + '</a>';
+        }
+        var poz = d.pozicioni || 'qender';
+        var align = poz==='majtas' ? 'flex-start' : (poz==='djathtas' ? 'flex-end' : 'center');
+        var kutia = '<div style="width:' + mw + 'px;height:' + mh + 'px;max-width:100%;position:sticky;top:10px;">' + inner + '</div>';
+        slot.innerHTML = '<div style="display:flex;justify-content:' + align + ';width:100%;">' + kutia + '</div>';
+        if(d.id){ if(d.cikel_ri){ rifilloCikel(d.id); } else { shtoPare(d.id); } }
+        if(!preview){ try { var v = base + '/track?key=' + encodeURIComponent(key) + '&event=view' + rid;
+          navigator.sendBeacon ? navigator.sendBeacon(v) : fetch(v); } catch(e){} }
+      }
+    }
+
+    // Koordinim ndër-snippet: reklamat e shfaqura nga snippet-et e tjera NE KETE NGARKIM
+    // perjashtohen vetem per kete shfaqje (jo per ciklin/capping-un), qe dy snippet-e
+    // te mos nxjerrin te njejten. Radhe sekuenciale me nje zinxhir global;
+    // vonesat prej milisekondash jane te padukshme per vizitorin.
+    window.__imyrTani = window.__imyrTani || [];
+    window.__imyrZinxhir = window.__imyrZinxhir || Promise.resolve();
+    window.__imyrZinxhir = window.__imyrZinxhir.then(function(){
+      var perjashto = pare.concat(window.__imyrTani);
+      var qp = perjashto.length ? ('&pare=' + encodeURIComponent(perjashto.join(','))) : '';
+      return fetch(base + '/ad?key=' + encodeURIComponent(key) + qp + (preview?'&preview=1':''))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if(d && d.id){ window.__imyrTani.push(String(d.id)); }
+          trajtoReklame(d);
+        })
+        .catch(function(){});
+    });
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
   else run();
