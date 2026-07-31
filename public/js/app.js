@@ -39,6 +39,9 @@ function ngarkoImazhUI(){
     '<h2 class="h">Ngarko imazhin</h2>'+
     '<p class="small" style="margin:2px 0 14px;">Zgjidh një imazh nga laptopi (JPG / PNG / GIF).</p>'+
     '<label>Titulli (opsional)</label><input id="up_title" placeholder="Emri i reklamës">'+
+    '<label style="margin-top:12px;">Linku i destinacionit *</label>'+
+    '<input id="up_link" placeholder="https://faqja-ime.com/oferta" inputmode="url">'+
+    '<div class="small mut" style="margin-top:3px;">Ku çohet vizitori kur klikon reklamën (dhe ku matet konvertimi).</div>'+
     '<label style="margin-top:12px;">Imazhi</label><input type="file" id="up_file" accept="image/*">'+
     '<div id="up_prev" style="margin-top:12px;"></div>'+
     '<button class="primary" id="up_btn" onclick="ngarkoImazh()">Ngarko →</button>'+
@@ -51,9 +54,12 @@ function ngarkoImazhUI(){
 async function ngarkoImazh(){
   const f=$('up_file').files[0];
   if(!f){ $('up_msg').className='msg err'; $('up_msg').textContent='Zgjidh një imazh.'; return; }
+  let link=($('up_link').value||'').trim();
+  if(!link){ $('up_msg').className='msg err'; $('up_msg').textContent='Fut linkun e destinacionit.'; $('up_link').focus(); return; }
+  if(!/^https?:\/\//i.test(link)) link='https://'+link;
   $('up_btn').disabled=true; $('up_msg').className='msg'; $('up_msg').innerHTML='<span class="spin"></span> Po ngarkoj…';
   try{
-    const fd=new FormData(); fd.append('file', f); fd.append('titulli', ($('up_title').value||'').trim());
+    const fd=new FormData(); fd.append('file', f); fd.append('titulli', ($('up_title').value||'').trim()); fd.append('link', link);
     const r=await(await fetch('/api/ngarko',{method:'POST',body:fd})).json();
     if(r.error){ $('up_msg').className='msg err'; $('up_msg').textContent=r.error; $('up_btn').disabled=false; return; }
     window.__reklamat=null;
