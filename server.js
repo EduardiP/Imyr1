@@ -786,19 +786,22 @@ app.get('/imyr.js', (req, res) => {
       }
       return;
     }
-    // Reklamat e para brenda kesaj vizite (frequency capping per session)
+    // Reklamat e para brenda kesaj vizite (frequency capping per session).
+    // Çelës i veçantë për çdo snippet (sipas key-t), që dy snippet-e në të njëjtën
+    // faqe të mos ndajnë të njëjtën listë dhe të mos ngatërrojnë njëri-tjetrin.
+    var _parKey = 'imyr_pare_' + key;
     function lexoPare(){
-      try { var v = sessionStorage.getItem('imyr_pare'); var a = v ? JSON.parse(v) : []; return Array.isArray(a) ? a.map(String) : []; } catch(e){ return []; }
+      try { var v = sessionStorage.getItem(_parKey); var a = v ? JSON.parse(v) : []; return Array.isArray(a) ? a.map(String) : []; } catch(e){ return []; }
     }
     function shtoPare(id){
       try {
         id = String(id);
-        var l = lexoPare(); if(l.indexOf(id) === -1){ l.push(id); sessionStorage.setItem('imyr_pare', JSON.stringify(l)); }
+        var l = lexoPare(); if(l.indexOf(id) === -1){ l.push(id); sessionStorage.setItem(_parKey, JSON.stringify(l)); }
       } catch(e){}
     }
     function rifilloCikel(id){
       // I pa te gjitha → fillo listen nga e para, vetem me kete te re
-      try { sessionStorage.setItem('imyr_pare', JSON.stringify([String(id)])); } catch(e){}
+      try { sessionStorage.setItem(_parKey, JSON.stringify([String(id)])); } catch(e){}
     }
     var pare = lexoPare();
     var qpare = pare.length ? ('&pare=' + encodeURIComponent(pare.join(','))) : '';
