@@ -786,10 +786,10 @@ app.get('/imyr.js', (req, res) => {
       }
       return;
     }
-    // Reklamat e para brenda kesaj vizite (frequency capping per session).
-    // Çelës i veçantë për çdo snippet (sipas key-t), që dy snippet-e në të njëjtën
-    // faqe të mos ndajnë të njëjtën listë dhe të mos ngatërrojnë njëri-tjetrin.
-    var _parKey = 'imyr_pare_' + key;
+    // Frequency capping per session — NJE cikel i vetem i perbashket per te gjithe
+    // snippet-et e kesaj faqeje (i njejti host). Kur nje reklame shfaqet nga cilido
+    // snippet, hiqet nga cikli; kur te gjitha jane shfaqur, cikli rifillon per te gjithe.
+    var _parKey = 'imyr_pare';
     function lexoPare(){
       try { var v = sessionStorage.getItem(_parKey); var a = v ? JSON.parse(v) : []; return Array.isArray(a) ? a.map(String) : []; } catch(e){ return []; }
     }
@@ -803,7 +803,6 @@ app.get('/imyr.js', (req, res) => {
       // I pa te gjitha → fillo listen nga e para, vetem me kete te re
       try { sessionStorage.setItem(_parKey, JSON.stringify([String(id)])); } catch(e){}
     }
-    var pare = lexoPare();
 
     function trajtoReklame(d){
       if(!d) return;
@@ -845,6 +844,9 @@ app.get('/imyr.js', (req, res) => {
     window.__imyrTani = window.__imyrTani || [];
     window.__imyrZinxhir = window.__imyrZinxhir || Promise.resolve();
     window.__imyrZinxhir = window.__imyrZinxhir.then(function(){
+      // Lexo ciklin e perbashket TANI (pasi snippet-et e meparshme kane shkruar),
+      // qe cikli i vetem te respektohet nga te gjithe snippet-et.
+      var pare = lexoPare();
       var perjashto = pare.concat(window.__imyrTani);
       var qp = perjashto.length ? ('&pare=' + encodeURIComponent(perjashto.join(','))) : '';
       return fetch(base + '/ad?key=' + encodeURIComponent(key) + qp + (preview?'&preview=1':''))
