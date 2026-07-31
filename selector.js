@@ -50,10 +50,11 @@ async function initGarat(pool) {
   await pool.query(`ALTER TABLE garat ADD COLUMN IF NOT EXISTS ai NUMERIC`);
   await pool.query(`ALTER TABLE garat ADD COLUMN IF NOT EXISTS profili NUMERIC`);
   await pool.query(`ALTER TABLE garat ADD COLUMN IF NOT EXISTS ndihma NUMERIC`);
+  await pool.query(`ALTER TABLE garat ADD COLUMN IF NOT EXISTS snippet_id INTEGER`);
   await pool.query(`ALTER TABLE garat ADD COLUMN IF NOT EXISTS ndihma_bruto NUMERIC`);
 }
 
-async function zgjidhReklame(pool, hostId, pare) {
+async function zgjidhReklame(pool, hostId, pare, snippetId) {
   pare = Array.isArray(pare) ? pare : [];
   const h = await pool.query('SELECT tipi FROM bizneset WHERE id=$1', [hostId]);
   const hTipi = h.rows[0] && h.rows[0].tipi;
@@ -117,18 +118,18 @@ async function zgjidhReklame(pool, hostId, pare) {
     if (!fituesi) fituesi = lista[lista.length - 1];
   }
 
-  regjistroAnkandin(pool, hostId, lista, fituesi).catch(()=>{});
+  regjistroAnkandin(pool, hostId, lista, fituesi, snippetId).catch(()=>{});
   return Object.assign({}, fituesi.k, { cikel_ri: cikelRi });
 }
 
-async function regjistroAnkandin(pool, hostId, lista, fituesi) {
+async function regjistroAnkandin(pool, hostId, lista, fituesi, snippetId) {
   try {
     for (const x of lista) {
       await pool.query(
-        `INSERT INTO garat (host_id, reklamues_id, pesha, ai, profili, ndihma, ndihma_bruto, fitoi)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        `INSERT INTO garat (host_id, reklamues_id, pesha, ai, profili, ndihma, ndihma_bruto, fitoi, snippet_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
         [hostId, x.k.biznes_id,
-         rr(x.pesha), rr(x.ai), rr(x.profili), rr(x.ndihma), rr(x.ndihmaBruto), x === fituesi]);
+         rr(x.pesha), rr(x.ai), rr(x.profili), rr(x.ndihma), rr(x.ndihmaBruto), x === fituesi, snippetId || null]);
     }
   } catch (e) {}
 }
