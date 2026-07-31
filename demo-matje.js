@@ -46,7 +46,7 @@ function layout(titulli, trupi){
 <style>${CSS}</style>
 </head>
 <body>
-<script src="https://phronexusai.com/imyr.js" data-key="imyr_4f210452ce2b25809305d5a7"></script>
+
 <header>
   <span class="lg">Matje</span>
   <nav><a href="/demo/matje">Ballina</a><a href="/demo/matje/regjistrohu">Regjistrohu</a></nav>
@@ -57,8 +57,8 @@ ${trupi}
 <footer>© 2026 Matje — faqe prove per Imyr</footer>
 
 <!-- ═══ NGJIT KETU rreshtin e Imyr-it (copy-paste nga wizard-i) — vlen per TE GJITHA faqet e Matje -->
-<script src="https://phronexusai.com/imyr.js" data-key="imyr_6b4111c6117814b76acf0b70"></script>
-<script src="https://phronexusai.com/imyr-track.js" data-key="imyr_6b4111c6117814b76acf0b70"></script>
+<script src="https://phronexusai.com/imyr.js" data-key="imyr_a22d76425ebc98cfd6059919"></script>
+
 <!-- ═══ deri ketu ═══ -->
 </body>
 </html>`;
