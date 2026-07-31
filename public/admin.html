@@ -329,12 +329,26 @@
     const d=$('ankDetaje'); if(!d) return;
     d.innerHTML='<p class="small">Po ngarkoj…</p>';
     try{
+      // Treguesi i URL-ve te konvertimit (numri i fresket + statusi)
+      let konvHtml='';
+      try{
+        const kv=await(await fetch('/api/admin/konvertimet/'+id)).json();
+        if(kv && kv.total!=null){
+          konvHtml='<div class="ktabela" style="margin-bottom:16px;">'+
+            '<div class="krow khead"><span class="kc1">URL-t e konvertimit: '+kv.total+' — të lidhura: '+kv.lidhur+'/'+kv.total+'</span></div>';
+          (kv.urlat||[]).forEach(u=>{
+            const st = u.track_active ? '<span style="color:var(--good);">● I lidhur</span>' : '<span style="color:var(--mut);">○ Pa lidhur</span>';
+            konvHtml+='<div class="krow"><span class="kc1">'+esc(u.url)+'</span><span class="kc3">'+st+'</span></div>';
+          });
+          konvHtml+='</div>';
+        }
+      }catch(e){}
       const r=await(await fetch('/api/admin/ankandet/'+id)).json();
-      if(r.error){ d.innerHTML='<p class="small">'+r.error+'</p>'; return; }
+      if(r.error){ d.innerHTML=konvHtml+'<p class="small">'+r.error+'</p>'; return; }
       const snips = r.snippetet || [];
       const pg = r.pergjithshem || null;
-      if(!snips.length && !pg){ d.innerHTML='<p class="small">Ende s\'ka ankande të regjistruara për këtë biznes.</p>'; return; }
-      let h='<div style="font-weight:600;margin:6px 0 12px;">'+(r.emri||'')+'</div>';
+      if(!snips.length && !pg){ d.innerHTML=konvHtml+'<div style="font-weight:600;margin:6px 0 12px;">'+(r.emri||'')+'</div><p class="small">Ende s\'ka ankande të regjistruara për këtë biznes.</p>'; return; }
+      let h=konvHtml+'<div style="font-weight:600;margin:6px 0 12px;">'+(r.emri||'')+'</div>';
       // Treguesi i pergjithshem (te gjithe snippet-et bashke)
       function tabela(titull, kerkesa, kandidatet){
         let t='<div class="ktabela" style="margin-bottom:16px;">'+
