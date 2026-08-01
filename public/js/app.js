@@ -646,7 +646,6 @@ async function kontrolloSnippetFresket(){
   try{
     const r=await(await fetch('/api/track-fresket')).json();
     if(!nj) return;
-    if(r.pakontrolluar){ nj.innerHTML=''; return; }  // s'e arritem faqen — mos trego asgje
     if(r.aktiv){ nj.innerHTML=''; }
     else{
       nj.innerHTML='<div style="background:#3d1418;border:1px solid var(--err);color:#ffb3b3;'+
