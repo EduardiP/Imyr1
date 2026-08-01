@@ -26,14 +26,21 @@ async function init(pool) {
   `);
 }
 
-// Normalizo nje URL konvertimi ne nje shteg (path) — si logjika ekzistuese.
+// Normalizo nje URL konvertimi — klienti fut URL-en E PLOTE (https://...).
 function normalizo(u) {
   u = (u || '').trim();
   if (!u) return null;
-  try { if (/^https?:\/\//i.test(u)) { const p = new URL(u); u = p.pathname + p.search; } } catch (e) {}
-  if (u[0] !== '/') u = '/' + u;
-  if (u === '/') return { error: "Ballina s'mund të jetë faqe konvertimi — jep një adresë që hapet vetëm pas konvertimit." };
-  return { url: u };
+  if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+  try {
+    const p = new URL(u);
+    // ballina e plote pa shteg s'mund te jete faqe konvertimi
+    if ((p.pathname === '/' || p.pathname === '') && !p.search) {
+      return { error: "Ballina s'mund të jetë faqe konvertimi — jep adresën e plotë të faqes që hapet vetëm pas konvertimit." };
+    }
+    return { url: u.replace(/\/+$/, '') };
+  } catch (e) {
+    return { error: 'Adresë e pavlefshme.' };
+  }
 }
 
 // Kthen te gjitha URL-te e konvertimit te nje biznesi (per snippet-in gjurmues).
