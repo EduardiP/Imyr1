@@ -55,6 +55,45 @@ module.exports = function (app, pool, iLoguar, iAdmin) {
 
   init(pool).catch(e => console.error('konvertimet init:', e.message));
 
+  // Kontroll i fresket: a eshte ende snippet-i i gjurmimit (imyr-track.js) te faqja?
+  // Serveri viziton nje faqe PUBLIKE ku u pa (track_url ose origjina/website) dhe kerkon celesin.
+  app.get('/api/track-fresket', iLoguar, async (req, res) => {
+    try {
+      const b = await pool.query(
+        'SELECT celes, track_url, origjina, website, track_active FROM bizneset WHERE id=$1', [req.biznesId]);
+      if (!b.rows.length) return res.json({ aktiv: false });
+      const row = b.rows[0];
+      const celes = row.celes;
+      // Faqja per te kontrolluar: track_url (ku u pa gjurmuesi), pastaj origjina, pastaj website
+      let faqja = row.track_url || row.origjina || row.website || null;
+      if (!faqja) return res.json({ aktiv: !!row.track_active, pakontrolluar: true });
+      if (!/^https?:\/\//i.test(faqja)) faqja = 'https://' + faqja;
+
+      let gjetur = false;
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 6000);
+        const resp = await fetch(faqja, { signal: ctrl.signal, redirect: 'follow',
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ImyrBot/1.0)' } });
+        clearTimeout(t);
+        const html = await resp.text();
+        // Snippet-i eshte i pranishem nese HTML permban celesin (data-key) ose imyr-track.js
+        if (html.indexOf(celes) !== -1 || html.indexOf('imyr-track.js') !== -1) gjetur = true;
+      } catch (e) {
+        // S'e arritem faqen (login/gabim rrjeti) → s'mund ta konfirmojme; mos e shuaj statusin
+        return res.json({ aktiv: !!row.track_active, pakontrolluar: true });
+      }
+
+      // Perditeso statusin te databaza
+      if (gjetur) {
+        await pool.query('UPDATE bizneset SET track_active=true, track_seen_at=now() WHERE id=$1', [req.biznesId]);
+      } else {
+        await pool.query('UPDATE bizneset SET track_active=false WHERE id=$1', [req.biznesId]);
+      }
+      res.json({ aktiv: gjetur });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
   // ADMIN: numri i freskët i URL-ve të një biznesi + statusi i secilës
   if (iAdmin) {
     app.get('/api/admin/konvertimet/:id', iAdmin, async (req, res) => {
