@@ -74,17 +74,11 @@ module.exports = function (app, pool, iLoguar, iAdmin) {
         const ctrl = new AbortController();
         const t = setTimeout(() => ctrl.abort(), 6000);
         const resp = await fetch(faqja, { signal: ctrl.signal, redirect: 'follow',
-          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ImyrBot/1.0)' } });
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36' } });
         clearTimeout(t);
-        // Nese faqja s'kthen 200 (403/401/bllokim boti/login) → s'mund ta konfirmojme
-        if (!resp.ok) return res.json({ aktiv: !!row.track_active, pakontrolluar: true });
         const html = await resp.text();
-        // Snippet-i eshte i pranishem nese HTML permban celesin (data-key) ose imyr-track.js
         if (html.indexOf(celes) !== -1 || html.indexOf('imyr-track.js') !== -1) gjetur = true;
-      } catch (e) {
-        // S'e arritem faqen (login/gabim rrjeti) → s'mund ta konfirmojme; mos e shuaj statusin
-        return res.json({ aktiv: !!row.track_active, pakontrolluar: true });
-      }
+      } catch (e) { gjetur = false; }
 
       // Perditeso statusin te databaza
       if (gjetur) {
