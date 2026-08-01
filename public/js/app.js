@@ -641,6 +641,14 @@ function ndertoKonvertim(b, ngaWizard){
 }
 // Kontroll i fresket i snippet-it te gjurmimit kur hapet seksioni.
 // Serveri viziton faqen publike dhe sheh nese kodi eshte ende aty.
+async function riverifikoSnippet(){
+  // Hap faqen (qe kodi te ngarkohet) dhe rikontrollo snippet-in
+  let faqja=(une && une.website) || '';
+  if(faqja && !/^https?:\/\//i.test(faqja)) faqja='https://'+faqja;
+  if(faqja){ try{ window.open(faqja,'_blank','noopener'); }catch(e){} }
+  const nj=$('k_snipStat'); if(nj) nj.innerHTML='<span class="spin"></span> Po kontrolloj sërish…';
+  setTimeout(()=>{ kontrolloSnippetFresket(); }, 2500);
+}
 async function kontrolloSnippetFresket(){
   const nj=$('k_snipStat'); if(nj) nj.innerHTML='<span class="spin"></span> Po kontrolloj nëse snippet-i është ende te faqja…';
   try{
@@ -650,7 +658,12 @@ async function kontrolloSnippetFresket(){
     else{
       nj.innerHTML='<div style="background:#3d1418;border:1px solid var(--err);color:#ffb3b3;'+
         'padding:10px 12px;border-radius:8px;font-size:13px;">⚠ Snippet-i i gjurmimit nuk u gjet te faqja jote. '+
-        'Vendose përsëri kodin te çdo faqe që gjurmimi të punojë.</div>';
+        'Vendose përsëri kodin lart te çdo faqe, pastaj kliko butonin poshtë.'+
+        '<div style="margin-top:10px;"><button class="btn" onclick="riverifikoSnippet()">Kam vendosur kodin — kontrollo sërish</button></div></div>';
+      // snippet-i i palidhur → URL-t u shkeputen te serveri; rifresko listen, progresin, njoftimet
+      try{ await ngarkoKonvertimet(); }catch(e){}
+      try{ await refreshProg(); }catch(e){}
+      try{ ngarkoNjoftimet(); }catch(e){}
     }
   }catch(e){ if(nj) nj.innerHTML=''; }
 }
