@@ -614,6 +614,7 @@ function ndertoKonvertim(b, ngaWizard){
         '<div class="kodbox" id="k_kod"></div>'+
         '<button class="btn" style="margin-top:8px;" onclick="kopjoTrack()">Kopjo</button>'+
       '</div>'+
+      '<div id="k_snipStat" style="margin-bottom:14px;"></div>'+
       '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'+
         '<span style="color:var(--acc);font-weight:700;">*</span>'+
         '<label style="margin:0;">2. Adresat e faqeve te konvertimit</label>'+
@@ -636,6 +637,23 @@ function ndertoKonvertim(b, ngaWizard){
   }
   mbushTrack();
   ngarkoKonvertimet();
+  kontrolloSnippetFresket();
+}
+// Kontroll i fresket i snippet-it te gjurmimit kur hapet seksioni.
+// Serveri viziton faqen publike dhe sheh nese kodi eshte ende aty.
+async function kontrolloSnippetFresket(){
+  const nj=$('k_snipStat'); if(nj) nj.innerHTML='<span class="spin"></span> Po kontrolloj nëse snippet-i është ende te faqja…';
+  try{
+    const r=await(await fetch('/api/track-fresket')).json();
+    if(!nj) return;
+    if(r.pakontrolluar){ nj.innerHTML=''; return; }  // s'e arritem faqen — mos trego asgje
+    if(r.aktiv){ nj.innerHTML=''; }
+    else{
+      nj.innerHTML='<div style="background:#3d1418;border:1px solid var(--err);color:#ffb3b3;'+
+        'padding:10px 12px;border-radius:8px;font-size:13px;">⚠ Snippet-i i gjurmimit nuk u gjet te faqja jote. '+
+        'Vendose përsëri kodin te çdo faqe që gjurmimi të punojë.</div>';
+    }
+  }catch(e){ if(nj) nj.innerHTML=''; }
 }
 // ── Disa URL konvertimi ──
 var _konvUrls = [];   // {id?, url, track_active}
