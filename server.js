@@ -276,12 +276,14 @@ app.get('/api/progres', iLoguar, async (req, res) => {
     const b = await pool.query(
       'SELECT permbledhje, pershkrimi, snippet_active, url_konvertimi, website, tipi FROM bizneset WHERE id=$1', [req.biznesId]);
     const p = await pool.query('SELECT 1 FROM promovimet WHERE biznes_id=$1 AND aktiv=true LIMIT 1', [req.biznesId]);
+    // Konvertimi konsiderohet i plote vetem nese ka te pakten nje URL TE LIDHUR
+    const kv = await pool.query('SELECT 1 FROM konvertimet WHERE biznes_id=$1 AND track_active=true LIMIT 1', [req.biznesId]);
     const row = b.rows[0] || {};
     res.json({
       llogaria: !!(row.website && row.tipi),            // gati kur ka website + tipi
       pershkrimi: !!(row.permbledhje || row.pershkrimi),// pershkrimi/AI u dha
       lidhja: !!row.snippet_active,                     // snippet-i u lidh
-      konvertimi: !!row.url_konvertimi,                 // url-ja e konvertimit u dha
+      konvertimi: kv.rows.length > 0,                   // te pakten nje URL konvertimi e LIDHUR
       reklama: p.rows.length > 0                         // reklama u krijua
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -331,9 +333,11 @@ app.get('/api/njoftimet', iLoguar, async (req, res) => {
     const b = await pool.query(
       'SELECT created_at, snippet_active, url_konvertimi FROM bizneset WHERE id=$1', [req.biznesId]);
     const p = await pool.query('SELECT COUNT(*)::int n FROM promovimet WHERE biznes_id=$1 AND aktiv=true', [req.biznesId]);
+    const kv = await pool.query('SELECT 1 FROM konvertimet WHERE biznes_id=$1 AND track_active=true LIMIT 1', [req.biznesId]);
     const row = b.rows[0] || {};
     const ditet = Math.floor((Date.now() - new Date(row.created_at).getTime()) / 86400000);
     const kaReklame = p.rows[0].n > 0;
+    const kaKonvertimTeLidhur = kv.rows.length > 0;
     const njf = [];
 
     if (!row.snippet_active) {
@@ -344,11 +348,11 @@ app.get('/api/njoftimet', iLoguar, async (req, res) => {
       njf.push({ tip: 'reklama', titull: 'Krijo reklamën tënde të parë',
         teksti: "Ende s'ke një reklamë aktive. Krijo një te Creatives që të fillosh të shfaqesh te rrjeti.", veprim: 'creatives' });
     }
-    if (!row.url_konvertimi) {
+    if (!kaKonvertimTeLidhur) {
       njf.push({ tip: 'konvertim', titull: 'Aktivizo gjurmimin e konvertimeve',
         teksti: "Gjurmimi i leads-ave s'është aktiv. Aktivizoje — konvertimet rrisin pikët e tua të profilit, që rrisin sa shpesh shfaqet reklama jote.", veprim: 'konvertimi' });
     }
-    if (ditet >= 3 && !row.url_konvertimi) {
+    if (ditet >= 3 && !kaKonvertimTeLidhur) {
       njf.push({ tip: 'kujtese', titull: 'Kanë kaluar disa ditë',
         teksti: "Lidhja e konvertimit ende s'është bërë. Është mënyra kryesore për të mbledhur pikë nëse ke pak trafik.", veprim: 'konvertimi' });
     }
