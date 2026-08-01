@@ -730,6 +730,8 @@ async function kStatus(){
       if(u.track_active) ndonjeLidhur=true; else teGjitha=false;
     });
     vizatoKonvertimet();
+    // Nese ndonje URL u lidh → rifresko progresin/njoftimet (pika e konvertimit + njoftimi)
+    if(ndonjeLidhur){ try{ await refreshProg(); }catch(e){} try{ ngarkoNjoftimet(); }catch(e){} }
     if(st){
       if(ka && teGjitha){ st.innerHTML='<span style="color:var(--good)">✓ Të gjitha adresat u lidhën.</span>';
         if(kTimer){ clearInterval(kTimer); kTimer=null; } return true; }
