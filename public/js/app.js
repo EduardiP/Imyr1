@@ -608,20 +608,24 @@ function ndertoKonvertim(b, ngaWizard){
       '<button type="button" data-v="jo" onclick="segPick(this);kSwitch()">Jo, s\'kam</button>'+
     '</div>'+
     '<div id="k_po" class="hide" style="margin-top:14px;">'+
-      '<label>Adresa e asaj faqeje</label>'+
-      '<input id="k_url" placeholder="/welcome">'+
-      '<p class="small" style="margin:6px 0 0;">Shkruaj vetëm pjesën pas adresës së faqes, p.sh. <b>/welcome</b> ose <b>/faleminderit</b>. Ajo faqe s\'duhet të hapet nga menuja — vetëm pas regjistrimit.</p>'+
+      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'+
+        '<span style="color:var(--acc);font-weight:700;">*</span>'+
+        '<label style="margin:0;">Adresat e faqeve te konvertimit</label>'+
+      '</div>'+
+      '<p class="small" style="margin:0 0 10px;">Shkruaj vetem pjesen pas adreses, p.sh. <b>/welcome</b>. Kliko <b>+</b> per te shtuar nje tjeter. Secila duhet te lidhet vec.</p>'+
+      '<div id="k_lista"></div>'+
+      '<button class="btn" style="margin-top:8px;" onclick="konvShto()">+ Shto adrese</button>'+
       '<div style="margin-top:18px;padding:14px;border:1px solid var(--line);border-radius:10px;background:#0e1116;">'+
-        '<b style="font-size:14px;">Rreshti i gjurmimit — te çdo faqe</b>'+
-        '<p class="small" style="margin:6px 0 10px;">Ky rresht <b>nuk shfaq asgjë</b> — vetëm gjurmon konvertimin. Vendose para <code>&lt;/body&gt;</code> te skedari që ngarkohet në <b>çdo</b> faqe (te Shopify: <i>Online Store → Themes → Edit code → Layout → theme.liquid</i>), që të mbulojë edhe faqen e suksesit. Ndryshe nga rreshti i reklamës, ky s\'del në faqe.</p>'+
+        '<b style="font-size:14px;">Rreshti i gjurmimit — te cdo faqe</b>'+
+        '<p class="small" style="margin:6px 0 10px;">Ky rresht <b>nuk shfaq asgje</b> — vetem gjurmon konvertimin. Vendose para <code>&lt;/body&gt;</code> te skedari qe ngarkohet ne <b>cdo</b> faqe (te Shopify: <i>Online Store → Themes → Edit code → Layout → theme.liquid</i>).</p>'+
         '<div class="kodbox" id="k_kod"></div>'+
         '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">'+
           '<button class="btn" onclick="kopjoTrack()">Kopjo</button>'+
-          '<button class="btn" id="k_ver" onclick="verifikoTrack()">Verifiko lidhjen</button>'+
+          '<button class="btn" id="k_ver" onclick="verifikoKonvertimet()">Verifiko lidhjen</button>'+
         '</div>'+
         '<div id="k_stat" class="small" style="margin-top:10px;"></div>'+
       '</div>'+
-      '<button class="primary" id="k_btn" onclick="ruajKonvertim(\''+pasRuajtjes.replace(/'/g,"\\'")+'\')" disabled>Ruaj →</button>'+
+      '<button class="primary" id="k_btn" onclick="mbyllKonvertim(\''+pasRuajtjes.replace(/'/g,"\\'")+'\')" disabled>Ruaj →</button>'+
     '</div>'+
     '<div id="k_jo" class="hide" style="margin-top:14px;">'+
       '<p class="small">Atëherë do të të duhet një rresht kod te faqja jote. Këtë do ta shtojmë së shpejti — mund ta konfigurosh më vonë nga këtu.</p>'+
@@ -631,9 +635,52 @@ function ndertoKonvertim(b, ngaWizard){
     '<div class="msg" id="k_msg"></div>';
   if(une && une.url_konvertimi){
     const btn=document.querySelector('#k_ka button[data-v="po"]');
-    if(btn){ segPick(btn); kSwitch(); $('k_url').value=une.url_konvertimi; }
+    if(btn){ segPick(btn); kSwitch(); }
   }
   mbushTrack();
+  ngarkoKonvertimet();
+}
+// ── Disa URL konvertimi ──
+var _konvUrls = [];   // {id?, url, track_active}
+async function ngarkoKonvertimet(){
+  try{
+    const r=await(await fetch('/api/konvertimet')).json();
+    _konvUrls = (r.konvertimet||[]).map(x=>({id:x.id, url:x.url, track_active:x.track_active}));
+  }catch(e){ _konvUrls=[]; }
+  if(!_konvUrls.length) _konvUrls=[{url:'', track_active:false}];  // nje fushe bosh per fillim
+  vizatoKonvertimet();
+}
+function vizatoKonvertimet(){
+  const c=$('k_lista'); if(!c) return;
+  let h='';
+  _konvUrls.forEach((u,i)=>{
+    const status = u.id ? (u.track_active
+        ? '<span style="color:var(--good);font-size:12px;">✓ E lidhur</span>'
+        : '<span style="color:var(--mut);font-size:12px;">○ Pa lidhur</span>')
+      : '<span style="color:var(--mut);font-size:12px;">Pa ruajtur</span>';
+    h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'+
+       '<input value="'+esc(u.url)+'" placeholder="/welcome" oninput="konvNdrysho('+i+',this.value)" style="flex:1;">'+
+       '<span style="min-width:78px;text-align:right;">'+status+'</span>'+
+       (_konvUrls.length>1 ? '<button class="btn" style="padding:6px 10px;" onclick="konvFshi('+i+')">✕</button>' : '')+
+       '</div>';
+  });
+  c.innerHTML=h;
+  perditesoKonvBtn();
+}
+function konvNdrysho(i,v){ if(_konvUrls[i]){ _konvUrls[i].url=v; _konvUrls[i].track_active=false; _konvUrls[i].id=null; } perditesoKonvBtn(); }
+function konvShto(){ _konvUrls.push({url:'', track_active:false}); vizatoKonvertimet(); }
+async function konvFshi(i){
+  const u=_konvUrls[i];
+  if(u && u.id){ try{ await fetch('/api/konvertimet/'+u.id,{method:'DELETE'}); }catch(e){} }
+  _konvUrls.splice(i,1);
+  if(!_konvUrls.length) _konvUrls=[{url:'', track_active:false}];
+  vizatoKonvertimet();
+}
+function perditesoKonvBtn(){
+  // Butoni Ruaj aktiv vetem nese TE GJITHA url-t (jo bosh) jane te lidhura
+  const plot = _konvUrls.filter(u=>u.url.trim());
+  const teGjithaLidhur = plot.length>0 && plot.every(u=>u.track_active);
+  const b=$('k_btn'); if(b) b.disabled = !teGjithaLidhur;
 }
 function trackKod(){
   return '<script src="'+location.origin+'/imyr-track.js" data-key="'+((une&&une.celes)||'')+'"><\/script>';
@@ -645,36 +692,54 @@ function kopjoTrack(){
   }).catch(()=>{});
 }
 async function kStatus(){
-  const st=$('k_stat'); if(!st) return false;
+  // Rifresko statuset e te gjitha URL-ve nga tabela e konvertimeve
+  const st=$('k_stat');
   try{
-    const r=await(await fetch('/api/track-status')).json();
-    if(r.track_active){
-      st.innerHTML='<span style="color:var(--good)">✓ Kodi u gjet te faqja jote'+(r.track_url?' ('+esc(r.track_url)+')':'')+'</span>';
-      const b=$('k_btn'); if(b) b.disabled=false;
-      if(kTimer){ clearInterval(kTimer); kTimer=null; }
-      return true;
+    const r=await(await fetch('/api/konvertimet')).json();
+    const nga=(r.konvertimet||[]);
+    // perputh statuset me _konvUrls sipas url-se
+    let ndonjeLidhur=false, teGjitha=true, ka=false;
+    _konvUrls.forEach(u=>{
+      if(!u.url.trim()) return;
+      ka=true;
+      const gjet=nga.find(x=>x.url===u.url);
+      if(gjet){ u.id=gjet.id; u.track_active=gjet.track_active; }
+      if(u.track_active) ndonjeLidhur=true; else teGjitha=false;
+    });
+    vizatoKonvertimet();
+    if(st){
+      if(ka && teGjitha){ st.innerHTML='<span style="color:var(--good)">✓ Të gjitha adresat u lidhën.</span>';
+        if(kTimer){ clearInterval(kTimer); kTimer=null; } return true; }
+      else if(ndonjeLidhur){ st.innerHTML='<span class="mut">Disa u lidhën, të tjerat jo ende. Hap secilën faqe dhe prit…</span>'; }
+      else { st.innerHTML='<span class="mut">Ende s\'i kemi parë. Vendos kodin te faqja jote dhe hap secilën adresë.</span>'; }
     }
-    st.innerHTML='<span class="mut">Ende s\'e kemi parë kodin. Vendose te faqja jote dhe kliko “Verifiko lidhjen”.</span>';
   }catch(e){}
   return false;
 }
 let kTimer=null;
-async function verifikoTrack(){
-  const st=$('k_stat'), btn=$('k_ver');
-  if(kTimer){ clearInterval(kTimer); kTimer=null; }   // rifillo pastër sa herë klikohet
-  let faqja = (une && une.website) || '';
-  if(faqja && !/^https?:\/\//i.test(faqja)) faqja = 'https://' + faqja;
-  if(faqja){ try{ window.open(faqja, '_blank', 'noopener'); }catch(e){} }
-  if(st) st.innerHTML='<span class="spin"></span> '+(faqja
-    ? 'Hapëm faqen tënde në një skedë tjetër. Po kontrolloj…'
-    : 'Po kontrolloj… hap faqen tënde në një skedë tjetër.');
+async function verifikoKonvertimet(){
+  const st=$('k_stat');
+  if(kTimer){ clearInterval(kTimer); kTimer=null; }
+  // Ruaj fillimisht URL-t e reja (qe te kene id dhe te fillojne gjurmimin)
+  for(const u of _konvUrls){
+    if(u.url.trim() && !u.id){
+      try{
+        const r=await(await fetch('/api/konvertimet',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({url:u.url.trim()})})).json();
+        if(r.id){ u.id=r.id; u.track_active=!!r.track_active; }
+        else if(r.error){ if(st){ st.className='small'; st.innerHTML='<span style="color:var(--err)">'+esc(r.error)+'</span>'; } return; }
+      }catch(e){}
+    }
+  }
+  // Hap website-in qe kodi te ngarkohet
+  let faqja=(une && une.website) || '';
+  if(faqja && !/^https?:\/\//i.test(faqja)) faqja='https://'+faqja;
+  if(faqja){ try{ window.open(faqja,'_blank','noopener'); }catch(e){} }
+  if(st) st.innerHTML='<span class="spin"></span> Po kontrolloj… hap secilën faqe konvertimi në një skedë tjetër.';
   const gjetur=await kStatus();
   if(!gjetur){
     let here=0;
-    kTimer=setInterval(async ()=>{
-      here++;
-      if(await kStatus() || here>20){ clearInterval(kTimer); kTimer=null; }
-    },3000);
+    kTimer=setInterval(async ()=>{ here++; if(await kStatus() || here>20){ clearInterval(kTimer); kTimer=null; } },3000);
   }
 }
 function kSwitch(){
@@ -682,15 +747,11 @@ function kSwitch(){
   $('k_po').classList.toggle('hide', v!=='po');
   $('k_jo').classList.toggle('hide', v!=='jo');
 }
-async function ruajKonvertim(pasRuajtjes){
-  const url=($('k_url').value||'').trim();
-  if(!url){ $('k_msg').className='msg err'; $('k_msg').textContent='Shkruaj adresën e faqes.'; return; }
+async function mbyllKonvertim(pasRuajtjes){
+  // URL-t jane ruajtur tashme gjate verifikimit; ky vetem perfundon dhe rifreskon progresin.
   $('k_btn').disabled=true; $('k_msg').className='msg'; $('k_msg').textContent='';
   try{
-    const r=await(await fetch('/api/url-konvertimi',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({url})})).json();
-    if(r.error){ $('k_msg').className='msg err'; $('k_msg').textContent=r.error; $('k_btn').disabled=false; return; }
-    if(une) une.url_konvertimi=r.url;
+    if(une){ const plot=_konvUrls.filter(u=>u.url.trim()); une.url_konvertimi = plot.length ? plot[0].url : null; }
     await refreshProg();
     ngarkoNjoftimet();
     if(pasRuajtjes){ try{ eval(pasRuajtjes); return; }catch(e){} }
