@@ -91,6 +91,11 @@ function renderNav(){
 }
 function renderMain(s){
   s = s || {};
+  // Nese po largohemi nga konvertimi pa Ruaj → pastro URL-t e pakonfirmuara
+  if(typeof _navMeParshem!=='undefined' && _navMeParshem==='konvertimi' && curNav!=='konvertimi'){
+    try{ pastroKonvTePparuajtura(); }catch(e){}
+  }
+  _navMeParshem = curNav;
   const m=$('mainPanel');
   if(curNav==='profili')    return mainProfili(m);
   if(curNav==='njoftimet')  return mainNjoftimet(m);
@@ -618,7 +623,7 @@ function ndertoKonvertim(b, ngaWizard){
         '<span style="color:var(--acc);font-weight:700;">*</span>'+
         '<label style="margin:0;">2. Adresat e faqeve te konvertimit</label>'+
       '</div>'+
-      '<p class="small" style="margin:0 0 10px;">Shkruaj vetem pjesen pas adreses, p.sh. <b>/welcome</b>. Pasi te vendosesh kodin lart, kliko <b>Verifiko</b> te secila adrese. Kliko <b>+</b> per te shtuar nje tjeter.</p>'+
+      '<p class="small" style="margin:0 0 10px;">Fut adresën e plotë të faqes, p.sh. <b>https://faqja-ime.com/welcome</b>. Pasi të vendosësh kodin lart, kliko <b>Verifiko</b> te secila adrese. Kliko <b>+</b> per te shtuar nje tjeter.</p>'+
       '<div id="k_lista"></div>'+
       '<button class="btn" style="margin-top:8px;" onclick="konvShto()">+ Shto adrese</button>'+
       '<div id="k_stat" class="small" style="margin-top:12px;"></div>'+
@@ -639,13 +644,26 @@ function ndertoKonvertim(b, ngaWizard){
 }
 // ── Disa URL konvertimi ──
 var _konvUrls = [];   // {id?, url, track_active}
+var _navMeParshem = null;  // nav i meparshem (per pastrim ne largim)
+var _konvIdFillestare = [];  // ID-t qe ekzistonin kur u hap (te konfirmuara me pare)
+var _konvRuajtur = false;    // a u klikua Ruaj
 async function ngarkoKonvertimet(){
+  _konvRuajtur = false;
   try{
     const r=await(await fetch('/api/konvertimet')).json();
     _konvUrls = (r.konvertimet||[]).map(x=>({id:x.id, url:x.url, track_active:x.track_active}));
-  }catch(e){ _konvUrls=[]; }
+    _konvIdFillestare = _konvUrls.filter(u=>u.id).map(u=>u.id);
+  }catch(e){ _konvUrls=[]; _konvIdFillestare=[]; }
   if(!_konvUrls.length) _konvUrls=[{url:'', track_active:false}];  // nje fushe bosh per fillim
   vizatoKonvertimet();
+}
+// Fshi URL-t e shtuara ne kete sesion nese klienti largohet pa Ruaj.
+async function pastroKonvTePparuajtura(){
+  if(_konvRuajtur) return;  // u ruajt → mos prek
+  const tePparuajtura = _konvUrls.filter(u=>u.id && _konvIdFillestare.indexOf(u.id)===-1);
+  for(const u of tePparuajtura){
+    try{ await fetch('/api/konvertimet/'+u.id,{method:'DELETE'}); }catch(e){}
+  }
 }
 function vizatoKonvertimet(){
   const c=$('k_lista'); if(!c) return;
@@ -656,7 +674,7 @@ function vizatoKonvertimet(){
         : '<span style="color:var(--mut);font-size:12px;white-space:nowrap;">○ Pa lidhur</span>')
       : '<span style="color:var(--mut);font-size:12px;white-space:nowrap;">Pa ruajtur</span>';
     h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">'+
-       '<input value="'+esc(u.url)+'" placeholder="/welcome" oninput="konvNdrysho('+i+',this.value)" style="flex:1;min-width:140px;">'+
+       '<input value="'+esc(u.url)+'" placeholder="https://faqja-ime.com/welcome" oninput="konvNdrysho('+i+',this.value)" style="flex:1;min-width:140px;">'+
        '<button class="btn" style="padding:7px 12px;" onclick="verifikoNje('+i+')">Verifiko</button>'+
        (_konvUrls.length>1 ? '<button class="btn" style="padding:7px 10px;" onclick="konvFshi('+i+')">✕</button>' : '')+
        '<span style="min-width:74px;text-align:right;">'+status+'</span>'+
@@ -727,12 +745,11 @@ async function verifikoNje(i){
       else if(r.error){ if(st){ st.innerHTML='<span style="color:var(--err)">'+esc(r.error)+'</span>'; } return; }
     }catch(e){}
   }
-  // Hap ATE faqe specifike (website + shtegu) qe kodi te ngarkohet aty
-  let faqja=(une && une.website) || '';
-  if(faqja && !/^https?:\/\//i.test(faqja)) faqja='https://'+faqja;
-  const origjina = faqja ? faqja.replace(/\/+$/,'') : '';
-  if(origjina){ try{ window.open(origjina + u.url, '_blank', 'noopener'); }catch(e){} }
-  if(st) st.innerHTML='<span class="spin"></span> Hapëm faqen '+esc(u.url)+' në një skedë. Po kontrolloj…';
+  // Hap pikërisht atë URL (klienti fut URL të plotë)
+  let hapUrl = u.url.trim();
+  if(!/^https?:\/\//i.test(hapUrl)) hapUrl='https://'+hapUrl;
+  try{ window.open(hapUrl, '_blank', 'noopener'); }catch(e){}
+  if(st) st.innerHTML='<span class="spin"></span> Hapëm faqen në një skedë. Po kontrolloj…';
   vizatoKonvertimet();
   if(kTimer){ clearInterval(kTimer); kTimer=null; }
   const kontrollo=async()=>{
@@ -749,7 +766,8 @@ function kSwitch(){
   $('k_jo').classList.toggle('hide', v!=='jo');
 }
 async function mbyllKonvertim(pasRuajtjes){
-  // URL-t jane ruajtur tashme gjate verifikimit; ky vetem perfundon dhe rifreskon progresin.
+  // URL-t jane ruajtur tashme gjate verifikimit; ky vetem konfirmon (Ruaj) dhe rifreskon.
+  _konvRuajtur = true;   // konfirmuar → mos i fshi ne largim
   $('k_btn').disabled=true; $('k_msg').className='msg'; $('k_msg').textContent='';
   try{
     if(une){ const plot=_konvUrls.filter(u=>u.url.trim()); une.url_konvertimi = plot.length ? plot[0].url : null; }
