@@ -274,16 +274,14 @@ app.get('/api/une', iLoguar, async (req, res) => {
 app.get('/api/progres', iLoguar, async (req, res) => {
   try {
     const b = await pool.query(
-      'SELECT permbledhje, pershkrimi, snippet_active, url_konvertimi, website, tipi FROM bizneset WHERE id=$1', [req.biznesId]);
+      'SELECT permbledhje, pershkrimi, snippet_active, track_active, url_konvertimi, website, tipi FROM bizneset WHERE id=$1', [req.biznesId]);
     const p = await pool.query('SELECT 1 FROM promovimet WHERE biznes_id=$1 AND aktiv=true LIMIT 1', [req.biznesId]);
-    // Konvertimi konsiderohet i plote vetem nese ka te pakten nje URL TE LIDHUR
-    const kv = await pool.query('SELECT 1 FROM konvertimet WHERE biznes_id=$1 AND track_active=true LIMIT 1', [req.biznesId]);
     const row = b.rows[0] || {};
     res.json({
       llogaria: !!(row.website && row.tipi),            // gati kur ka website + tipi
       pershkrimi: !!(row.permbledhje || row.pershkrimi),// pershkrimi/AI u dha
       lidhja: !!row.snippet_active,                     // snippet-i u lidh
-      konvertimi: kv.rows.length > 0,                   // te pakten nje URL konvertimi e LIDHUR
+      konvertimi: !!row.track_active,                   // snippet-i i gjurmimit u lidh
       reklama: p.rows.length > 0                         // reklama u krijua
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -331,13 +329,12 @@ app.get('/api/profili', iLoguar, async (req, res) => {
 app.get('/api/njoftimet', iLoguar, async (req, res) => {
   try {
     const b = await pool.query(
-      'SELECT created_at, snippet_active, url_konvertimi FROM bizneset WHERE id=$1', [req.biznesId]);
+      'SELECT created_at, snippet_active, track_active, url_konvertimi FROM bizneset WHERE id=$1', [req.biznesId]);
     const p = await pool.query('SELECT COUNT(*)::int n FROM promovimet WHERE biznes_id=$1 AND aktiv=true', [req.biznesId]);
-    const kv = await pool.query('SELECT 1 FROM konvertimet WHERE biznes_id=$1 AND track_active=true LIMIT 1', [req.biznesId]);
     const row = b.rows[0] || {};
     const ditet = Math.floor((Date.now() - new Date(row.created_at).getTime()) / 86400000);
     const kaReklame = p.rows[0].n > 0;
-    const kaKonvertimTeLidhur = kv.rows.length > 0;
+    const kaKonvertimTeLidhur = !!row.track_active;
     const njf = [];
 
     if (!row.snippet_active) {
