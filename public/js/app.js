@@ -753,7 +753,7 @@ async function verifikoNje(i){
     try{
       const r=await(await fetch('/api/konvertimet',{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({url:u.url.trim()})})).json();
-      if(r.id){ u.id=r.id; u.track_active=!!r.track_active; }
+      if(r.id){ u.id=r.id; u.track_active=!!r.track_active; if(r.url){ u.url=r.url; } }
       else if(r.error){ if(st){ st.innerHTML='<span style="color:var(--err)">'+esc(r.error)+'</span>'; } return; }
     }catch(e){}
   }
