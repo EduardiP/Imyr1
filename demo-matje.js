@@ -58,7 +58,7 @@ ${trupi}
 
 <!-- ═══ NGJIT KETU rreshtin e Imyr-it (copy-paste nga wizard-i) — vlen per TE GJITHA faqet e Matje -->
 <script src="https://phronexusai.com/imyr.js" data-key="imyr_a22d76425ebc98cfd6059919"></script>
-<script src="https://phronexusai.com/imyr-track.js" data-key="imyr_a22d76425ebc98cfd6059919"></script>
+
 <!-- ═══ deri ketu ═══ -->
 </body>
 </html>`;
