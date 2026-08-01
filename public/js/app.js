@@ -731,11 +731,20 @@ async function verifikoKonvertimet(){
       }catch(e){}
     }
   }
-  // Hap website-in qe kodi te ngarkohet
+  // Hap website-in + faqet e konvertimit qe s'jane lidhur ende (qe kodi t'i shenoje)
   let faqja=(une && une.website) || '';
   if(faqja && !/^https?:\/\//i.test(faqja)) faqja='https://'+faqja;
+  const origjina = faqja ? faqja.replace(/\/+$/,'') : '';
   if(faqja){ try{ window.open(faqja,'_blank','noopener'); }catch(e){} }
-  if(st) st.innerHTML='<span class="spin"></span> Po kontrolloj… hap secilën faqe konvertimi në një skedë tjetër.';
+  // hap secilen URL konvertimi te palidhur si faqe e plote
+  if(origjina){
+    _konvUrls.forEach(u=>{
+      if(u.url.trim() && !u.track_active){
+        try{ window.open(origjina + u.url, '_blank', 'noopener'); }catch(e){}
+      }
+    });
+  }
+  if(st) st.innerHTML='<span class="spin"></span> Po kontrolloj… hapëm faqet në skeda të reja. Prit pak.';
   const gjetur=await kStatus();
   if(!gjetur){
     let here=0;
