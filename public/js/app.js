@@ -730,11 +730,6 @@ async function kStatus(){
       if(u.track_active) ndonjeLidhur=true; else teGjitha=false;
     });
     vizatoKonvertimet();
-    // Nese ndonje URL u lidh → rifresko progresin/njoftimet (pika e konvertimit + njoftimi)
-    if(ndonjeLidhur){
-      try{ await refreshProg(); }catch(e){}
-      try{ await ngarkoNjoftimet(); }catch(e){}
-    }
     if(st){
       if(ka && teGjitha){ st.innerHTML='<span style="color:var(--good)">✓ Të gjitha adresat u lidhën.</span>';
         if(kTimer){ clearInterval(kTimer); kTimer=null; } return true; }
@@ -766,6 +761,13 @@ async function verifikoNje(i){
   if(kTimer){ clearInterval(kTimer); kTimer=null; }
   const kontrollo=async()=>{
     const gj_te=await kStatus();
+    // sa here nje URL eshte e lidhur, rifresko sinjalet menjehere
+    if(_konvUrls.some(x=>x.track_active)){
+      try{ await refreshProg(); }catch(e){}
+      try{ await ngarkoNjoftimet(); }catch(e){}
+      // nese Dashboard-i eshte i hapur, rivizatoje piken
+      if(typeof renderDashStatus==='function' && document.getElementById('vstep')){ try{ renderDashStatus(); }catch(e){} }
+    }
     return gj_te;
   };
   await kontrollo();
