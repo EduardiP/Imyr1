@@ -91,11 +91,6 @@ function renderNav(){
 }
 function renderMain(s){
   s = s || {};
-  // Nese po largohemi nga konvertimi pa Ruaj → pastro URL-t e pakonfirmuara
-  if(typeof _navMeParshem!=='undefined' && _navMeParshem==='konvertimi' && curNav!=='konvertimi'){
-    try{ pastroKonvTePparuajtura(); }catch(e){}
-  }
-  _navMeParshem = curNav;
   const m=$('mainPanel');
   if(curNav==='profili')    return mainProfili(m);
   if(curNav==='njoftimet')  return mainNjoftimet(m);
@@ -627,7 +622,7 @@ function ndertoKonvertim(b, ngaWizard){
       '<div id="k_lista"></div>'+
       '<button class="btn" style="margin-top:8px;" onclick="konvShto()">+ Shto adrese</button>'+
       '<div id="k_stat" class="small" style="margin-top:12px;"></div>'+
-      '<button class="primary" id="k_btn" onclick="mbyllKonvertim(\''+pasRuajtjes.replace(/'/g,"\\'")+'\')" disabled>Ruaj →</button>'+
+      '<button class="primary" id="k_btn" onclick="mbyllKonvertim(\''+pasRuajtjes.replace(/'/g,"\\'")+'\')">Dil →</button>'+
     '</div>'+
     '<div id="k_jo" class="hide" style="margin-top:14px;">'+
       '<p class="small">Atëherë do të të duhet një rresht kod te faqja jote. Këtë do ta shtojmë së shpejti — mund ta konfigurosh më vonë nga këtu.</p>'+
@@ -644,26 +639,13 @@ function ndertoKonvertim(b, ngaWizard){
 }
 // ── Disa URL konvertimi ──
 var _konvUrls = [];   // {id?, url, track_active}
-var _navMeParshem = null;  // nav i meparshem (per pastrim ne largim)
-var _konvIdFillestare = [];  // ID-t qe ekzistonin kur u hap (te konfirmuara me pare)
-var _konvRuajtur = false;    // a u klikua Ruaj
 async function ngarkoKonvertimet(){
-  _konvRuajtur = false;
   try{
     const r=await(await fetch('/api/konvertimet')).json();
     _konvUrls = (r.konvertimet||[]).map(x=>({id:x.id, url:x.url, track_active:x.track_active}));
-    _konvIdFillestare = _konvUrls.filter(u=>u.id).map(u=>u.id);
-  }catch(e){ _konvUrls=[]; _konvIdFillestare=[]; }
+  }catch(e){ _konvUrls=[]; }
   if(!_konvUrls.length) _konvUrls=[{url:'', track_active:false}];  // nje fushe bosh per fillim
   vizatoKonvertimet();
-}
-// Fshi URL-t e shtuara ne kete sesion nese klienti largohet pa Ruaj.
-async function pastroKonvTePparuajtura(){
-  if(_konvRuajtur) return;  // u ruajt → mos prek
-  const tePparuajtura = _konvUrls.filter(u=>u.id && _konvIdFillestare.indexOf(u.id)===-1);
-  for(const u of tePparuajtura){
-    try{ await fetch('/api/konvertimet/'+u.id,{method:'DELETE'}); }catch(e){}
-  }
 }
 function vizatoKonvertimet(){
   const c=$('k_lista'); if(!c) return;
@@ -692,12 +674,7 @@ async function konvFshi(i){
   if(!_konvUrls.length) _konvUrls=[{url:'', track_active:false}];
   vizatoKonvertimet();
 }
-function perditesoKonvBtn(){
-  // Butoni Ruaj aktiv vetem nese TE GJITHA url-t (jo bosh) jane te lidhura
-  const plot = _konvUrls.filter(u=>u.url.trim());
-  const teGjithaLidhur = plot.length>0 && plot.every(u=>u.track_active);
-  const b=$('k_btn'); if(b) b.disabled = !teGjithaLidhur;
-}
+function perditesoKonvBtn(){ /* butoni Dil eshte gjithmone aktiv */ }
 function trackKod(){
   return '<script src="'+location.origin+'/imyr-track.js" data-key="'+((une&&une.celes)||'')+'"><\/script>';
 }
@@ -766,16 +743,14 @@ function kSwitch(){
   $('k_jo').classList.toggle('hide', v!=='jo');
 }
 async function mbyllKonvertim(pasRuajtjes){
-  // URL-t jane ruajtur tashme gjate verifikimit; ky vetem konfirmon (Ruaj) dhe rifreskon.
-  _konvRuajtur = true;   // konfirmuar → mos i fshi ne largim
-  $('k_btn').disabled=true; $('k_msg').className='msg'; $('k_msg').textContent='';
+  // Gjithcka ruhet/fshihet menjehere (verifikim=ruaj, ✕=fshi). Ky vetem kthehet.
   try{
     if(une){ const plot=_konvUrls.filter(u=>u.url.trim()); une.url_konvertimi = plot.length ? plot[0].url : null; }
     await refreshProg();
     ngarkoNjoftimet();
     if(pasRuajtjes){ try{ eval(pasRuajtjes); return; }catch(e){} }
     nav({v:'profile',nav:'dashboard'});
-  }catch(e){ $('k_msg').className='msg err'; $('k_msg').textContent='Gabim: '+e.message; $('k_btn').disabled=false; }
+  }catch(e){ nav({v:'profile',nav:'dashboard'}); }
 }
 
 // STEP 0 — Llogaria
