@@ -877,11 +877,14 @@ app.all('/track-lidh', async (req, res) => {
     // Shëno URL-në specifike të konvertimit nëse faqja aktuale përputhet me ndonjërën
     const b = await pool.query('SELECT id FROM bizneset WHERE celes=$1', [req.query.key]);
     if (b.rows.length && faqja) {
+      const faqjaPlote = faqja.replace(/\/+$/, '');
       let shteg = faqja;
       try { const p = new URL(faqja); shteg = p.pathname + p.search; } catch (e) {}
+      // perputh URL-en e plote OSE shtegun (per te dhena te vjetra)
       await pool.query(
         `UPDATE konvertimet SET track_active=true, track_seen_at=now()
-         WHERE biznes_id=$1 AND $2 LIKE url || '%'`, [b.rows[0].id, shteg]);
+         WHERE biznes_id=$1 AND ($2 LIKE rtrim(url,'/') || '%' OR $3 LIKE url || '%')`,
+        [b.rows[0].id, faqjaPlote, shteg]);
     }
   } catch (e) {}
   res.status(204).end();
@@ -964,11 +967,16 @@ app.get('/imyr-track.js', (req, res) => {
     .then(function(c){
       var lista = (c && c.konv_urls && c.konv_urls.length) ? c.konv_urls : ((c && c.konv_url) ? [c.konv_url] : []);
       if(!lista.length) return;
-      var tani = location.pathname + location.search;
+      var tani = (location.origin + location.pathname + location.search).replace(/\\/+$/,'');
+      var taniShteg = location.pathname + location.search;
       for(var i=0;i<lista.length;i++){
         var konvUrl = lista[i]; if(!konvUrl) continue;
-        var pos = tani.indexOf(konvUrl); if(pos === -1) continue;
-        var pas = tani.charAt(pos + konvUrl.length);
+        // Perputh URL-en e plote OSE shtegun (per perputhshmeri me te dhena te vjetra si "/welcome")
+        var full = /^https?:\\/\\//i.test(konvUrl);
+        var baze = full ? tani : taniShteg;
+        var kU = konvUrl.replace(/\\/+$/,'');
+        var pos = baze.indexOf(kU); if(pos === -1) continue;
+        var pas = baze.charAt(pos + kU.length);
         if(pas !== '' && pas !== '?' && pas !== '#' && pas !== '/' && pas !== '&') continue;
         dergo(); return;  // perputhet me nje URL → konvertim
       }
