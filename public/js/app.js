@@ -608,23 +608,20 @@ function ndertoKonvertim(b, ngaWizard){
       '<button type="button" data-v="jo" onclick="segPick(this);kSwitch()">Jo, s\'kam</button>'+
     '</div>'+
     '<div id="k_po" class="hide" style="margin-top:14px;">'+
-      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'+
-        '<span style="color:var(--acc);font-weight:700;">*</span>'+
-        '<label style="margin:0;">Adresat e faqeve te konvertimit</label>'+
-      '</div>'+
-      '<p class="small" style="margin:0 0 10px;">Shkruaj vetem pjesen pas adreses, p.sh. <b>/welcome</b>. Kliko <b>+</b> per te shtuar nje tjeter. Secila duhet te lidhet vec.</p>'+
-      '<div id="k_lista"></div>'+
-      '<button class="btn" style="margin-top:8px;" onclick="konvShto()">+ Shto adrese</button>'+
-      '<div style="margin-top:18px;padding:14px;border:1px solid var(--line);border-radius:10px;background:#0e1116;">'+
-        '<b style="font-size:14px;">Rreshti i gjurmimit — te cdo faqe</b>'+
+      '<div style="padding:14px;border:1px solid var(--line);border-radius:10px;background:#0e1116;margin-bottom:18px;">'+
+        '<b style="font-size:14px;">1. Rreshti i gjurmimit — te cdo faqe</b>'+
         '<p class="small" style="margin:6px 0 10px;">Ky rresht <b>nuk shfaq asgje</b> — vetem gjurmon konvertimin. Vendose para <code>&lt;/body&gt;</code> te skedari qe ngarkohet ne <b>cdo</b> faqe (te Shopify: <i>Online Store → Themes → Edit code → Layout → theme.liquid</i>).</p>'+
         '<div class="kodbox" id="k_kod"></div>'+
-        '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">'+
-          '<button class="btn" onclick="kopjoTrack()">Kopjo</button>'+
-          '<button class="btn" id="k_ver" onclick="verifikoKonvertimet()">Verifiko lidhjen</button>'+
-        '</div>'+
-        '<div id="k_stat" class="small" style="margin-top:10px;"></div>'+
+        '<button class="btn" style="margin-top:8px;" onclick="kopjoTrack()">Kopjo</button>'+
       '</div>'+
+      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'+
+        '<span style="color:var(--acc);font-weight:700;">*</span>'+
+        '<label style="margin:0;">2. Adresat e faqeve te konvertimit</label>'+
+      '</div>'+
+      '<p class="small" style="margin:0 0 10px;">Shkruaj vetem pjesen pas adreses, p.sh. <b>/welcome</b>. Pasi te vendosesh kodin lart, kliko <b>Verifiko</b> te secila adrese. Kliko <b>+</b> per te shtuar nje tjeter.</p>'+
+      '<div id="k_lista"></div>'+
+      '<button class="btn" style="margin-top:8px;" onclick="konvShto()">+ Shto adrese</button>'+
+      '<div id="k_stat" class="small" style="margin-top:12px;"></div>'+
       '<button class="primary" id="k_btn" onclick="mbyllKonvertim(\''+pasRuajtjes.replace(/'/g,"\\'")+'\')" disabled>Ruaj →</button>'+
     '</div>'+
     '<div id="k_jo" class="hide" style="margin-top:14px;">'+
@@ -655,13 +652,14 @@ function vizatoKonvertimet(){
   let h='';
   _konvUrls.forEach((u,i)=>{
     const status = u.id ? (u.track_active
-        ? '<span style="color:var(--good);font-size:12px;">✓ E lidhur</span>'
-        : '<span style="color:var(--mut);font-size:12px;">○ Pa lidhur</span>')
-      : '<span style="color:var(--mut);font-size:12px;">Pa ruajtur</span>';
-    h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'+
-       '<input value="'+esc(u.url)+'" placeholder="/welcome" oninput="konvNdrysho('+i+',this.value)" style="flex:1;">'+
-       '<span style="min-width:78px;text-align:right;">'+status+'</span>'+
-       (_konvUrls.length>1 ? '<button class="btn" style="padding:6px 10px;" onclick="konvFshi('+i+')">✕</button>' : '')+
+        ? '<span style="color:var(--good);font-size:12px;white-space:nowrap;">✓ E lidhur</span>'
+        : '<span style="color:var(--mut);font-size:12px;white-space:nowrap;">○ Pa lidhur</span>')
+      : '<span style="color:var(--mut);font-size:12px;white-space:nowrap;">Pa ruajtur</span>';
+    h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">'+
+       '<input value="'+esc(u.url)+'" placeholder="/welcome" oninput="konvNdrysho('+i+',this.value)" style="flex:1;min-width:140px;">'+
+       '<button class="btn" style="padding:7px 12px;" onclick="verifikoNje('+i+')">Verifiko</button>'+
+       (_konvUrls.length>1 ? '<button class="btn" style="padding:7px 10px;" onclick="konvFshi('+i+')">✕</button>' : '')+
+       '<span style="min-width:74px;text-align:right;">'+status+'</span>'+
        '</div>';
   });
   c.innerHTML=h;
@@ -717,39 +715,33 @@ async function kStatus(){
   return false;
 }
 let kTimer=null;
-async function verifikoKonvertimet(){
+async function verifikoNje(i){
   const st=$('k_stat');
-  if(kTimer){ clearInterval(kTimer); kTimer=null; }
-  // Ruaj fillimisht URL-t e reja (qe te kene id dhe te fillojne gjurmimin)
-  for(const u of _konvUrls){
-    if(u.url.trim() && !u.id){
-      try{
-        const r=await(await fetch('/api/konvertimet',{method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({url:u.url.trim()})})).json();
-        if(r.id){ u.id=r.id; u.track_active=!!r.track_active; }
-        else if(r.error){ if(st){ st.className='small'; st.innerHTML='<span style="color:var(--err)">'+esc(r.error)+'</span>'; } return; }
-      }catch(e){}
-    }
+  const u=_konvUrls[i]; if(!u || !u.url.trim()){ if(st){ st.innerHTML='<span style="color:var(--err)">Shkruaj adresën.</span>'; } return; }
+  // Ruaj kete URL nese s'eshte ruajtur ende
+  if(!u.id){
+    try{
+      const r=await(await fetch('/api/konvertimet',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({url:u.url.trim()})})).json();
+      if(r.id){ u.id=r.id; u.track_active=!!r.track_active; }
+      else if(r.error){ if(st){ st.innerHTML='<span style="color:var(--err)">'+esc(r.error)+'</span>'; } return; }
+    }catch(e){}
   }
-  // Hap website-in + faqet e konvertimit qe s'jane lidhur ende (qe kodi t'i shenoje)
+  // Hap ATE faqe specifike (website + shtegu) qe kodi te ngarkohet aty
   let faqja=(une && une.website) || '';
   if(faqja && !/^https?:\/\//i.test(faqja)) faqja='https://'+faqja;
   const origjina = faqja ? faqja.replace(/\/+$/,'') : '';
-  if(faqja){ try{ window.open(faqja,'_blank','noopener'); }catch(e){} }
-  // hap secilen URL konvertimi te palidhur si faqe e plote
-  if(origjina){
-    _konvUrls.forEach(u=>{
-      if(u.url.trim() && !u.track_active){
-        try{ window.open(origjina + u.url, '_blank', 'noopener'); }catch(e){}
-      }
-    });
-  }
-  if(st) st.innerHTML='<span class="spin"></span> Po kontrolloj… hapëm faqet në skeda të reja. Prit pak.';
-  const gjetur=await kStatus();
-  if(!gjetur){
-    let here=0;
-    kTimer=setInterval(async ()=>{ here++; if(await kStatus() || here>20){ clearInterval(kTimer); kTimer=null; } },3000);
-  }
+  if(origjina){ try{ window.open(origjina + u.url, '_blank', 'noopener'); }catch(e){} }
+  if(st) st.innerHTML='<span class="spin"></span> Hapëm faqen '+esc(u.url)+' në një skedë. Po kontrolloj…';
+  vizatoKonvertimet();
+  if(kTimer){ clearInterval(kTimer); kTimer=null; }
+  const kontrollo=async()=>{
+    const gj_te=await kStatus();
+    return gj_te;
+  };
+  await kontrollo();
+  let here=0;
+  kTimer=setInterval(async ()=>{ here++; if(await kontrollo() || here>20){ clearInterval(kTimer); kTimer=null; } },3000);
 }
 function kSwitch(){
   const v=segVal('k_ka');
