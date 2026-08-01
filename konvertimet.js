@@ -76,6 +76,8 @@ module.exports = function (app, pool, iLoguar, iAdmin) {
         const resp = await fetch(faqja, { signal: ctrl.signal, redirect: 'follow',
           headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ImyrBot/1.0)' } });
         clearTimeout(t);
+        // Nese faqja s'kthen 200 (403/401/bllokim boti/login) → s'mund ta konfirmojme
+        if (!resp.ok) return res.json({ aktiv: !!row.track_active, pakontrolluar: true });
         const html = await resp.text();
         // Snippet-i eshte i pranishem nese HTML permban celesin (data-key) ose imyr-track.js
         if (html.indexOf(celes) !== -1 || html.indexOf('imyr-track.js') !== -1) gjetur = true;
