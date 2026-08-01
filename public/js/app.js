@@ -654,7 +654,20 @@ async function kontrolloSnippetFresket(){
   try{
     const r=await(await fetch('/api/track-fresket')).json();
     if(!nj) return;
-    if(r.aktiv){ nj.innerHTML=''; }
+    if(r.aktiv){
+      nj.innerHTML='';
+      // Snippet-i u verifikua → hiq DIREKT njoftimin e konvertimit + plotëso piken (pa varësi)
+      if(prog) prog.konvertimi=true;
+      if(window.__njoftimet){ window.__njoftimet = window.__njoftimet.filter(x=>x.tip!=='konvertim' && x.tip!=='kujtese'); }
+      // perdito badge-in e ziles
+      const badge=$('zileBadge');
+      if(badge){ const n=(window.__njoftimet||[]).length; badge.textContent=n; badge.classList.toggle('hide', n===0); }
+      if(typeof renderNjBox==='function'){ try{ renderNjBox(); }catch(e){} }
+      if(typeof renderDashStatus==='function' && document.getElementById('vstep')){ try{ renderDashStatus(); }catch(e){} }
+      // rifresko edhe nga serveri (per konsistence)
+      try{ await refreshProg(); }catch(e){}
+      try{ await ngarkoNjoftimet(); }catch(e){}
+    }
     else{
       nj.innerHTML='<div style="background:#3d1418;border:1px solid var(--err);color:#ffb3b3;'+
         'padding:10px 12px;border-radius:8px;font-size:13px;">⚠ Snippet-i i gjurmimit nuk u gjet te faqja jote. '+
