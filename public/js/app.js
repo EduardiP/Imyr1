@@ -662,6 +662,7 @@ async function kontrolloSnippetFresket(){
         '<div style="margin-top:10px;"><button class="btn" onclick="riverifikoSnippet()">Kam vendosur kodin — kontrollo sërish</button></div></div>';
       // snippet-i i palidhur → URL-t u shkeputen te serveri; rifresko listen, progresin, njoftimet
       try{ await ngarkoKonvertimet(); }catch(e){}
+      const kst=$('k_stat'); if(kst) kst.innerHTML='';  // pastro mesazhin "u lidhen"
       try{ await refreshProg(); }catch(e){}
       try{ ngarkoNjoftimet(); }catch(e){}
     }
@@ -715,27 +716,34 @@ function kopjoTrack(){
   }).catch(()=>{});
 }
 async function kStatus(){
-  // Rifresko statuset e te gjitha URL-ve nga tabela e konvertimeve
   const st=$('k_stat');
   try{
     const r=await(await fetch('/api/konvertimet')).json();
     const nga=(r.konvertimet||[]);
-    // perputh statuset me _konvUrls sipas url-se
-    let ndonjeLidhur=false, teGjitha=true, ka=false;
+    // Burimi i vertete = pergjigja e fresket nga serveri
     _konvUrls.forEach(u=>{
-      if(!u.url.trim()) return;
-      ka=true;
       const gjet=nga.find(x=>x.url===u.url);
-      if(gjet){ u.id=gjet.id; u.track_active=gjet.track_active; }
-      if(u.track_active) ndonjeLidhur=true; else teGjitha=false;
+      if(gjet){ u.id=gjet.id; u.track_active=!!gjet.track_active; }
+      else if(u.id){ u.track_active=false; }
     });
+    const urletMia = _konvUrls.filter(u=>u.url.trim());
+    const ka = urletMia.length>0;
+    const teGjitha = ka && urletMia.every(u=>{ const g=nga.find(x=>x.id===u.id || x.url===u.url); return g && g.track_active; });
+    const ndonjeLidhur = urletMia.some(u=>{ const g=nga.find(x=>x.id===u.id || x.url===u.url); return g && g.track_active; });
+
     vizatoKonvertimet();
+    if(ndonjeLidhur){
+      try{ await refreshProg(); }catch(e){}
+      try{ await ngarkoNjoftimet(); }catch(e){}
+      if(typeof renderDashStatus==='function' && document.getElementById('vstep')){ try{ renderDashStatus(); }catch(e){} }
+    }
     if(st){
       if(ka && teGjitha){ st.innerHTML='<span style="color:var(--good)">✓ Të gjitha adresat u lidhën.</span>';
         if(kTimer){ clearInterval(kTimer); kTimer=null; } return true; }
       else if(ndonjeLidhur){ st.innerHTML='<span class="mut">Disa u lidhën, të tjerat jo ende. Hap secilën faqe dhe prit…</span>'; }
       else { st.innerHTML='<span class="mut">Ende s\'i kemi parë. Vendos kodin te faqja jote dhe hap secilën adresë.</span>'; }
     }
+    return (ka && teGjitha);
   }catch(e){}
   return false;
 }
@@ -759,17 +767,7 @@ async function verifikoNje(i){
   if(st) st.innerHTML='<span class="spin"></span> Hapëm faqen në një skedë. Po kontrolloj…';
   vizatoKonvertimet();
   if(kTimer){ clearInterval(kTimer); kTimer=null; }
-  const kontrollo=async()=>{
-    const gj_te=await kStatus();
-    // sa here nje URL eshte e lidhur, rifresko sinjalet menjehere
-    if(_konvUrls.some(x=>x.track_active)){
-      try{ await refreshProg(); }catch(e){}
-      try{ await ngarkoNjoftimet(); }catch(e){}
-      // nese Dashboard-i eshte i hapur, rivizatoje piken
-      if(typeof renderDashStatus==='function' && document.getElementById('vstep')){ try{ renderDashStatus(); }catch(e){} }
-    }
-    return gj_te;
-  };
+  const kontrollo=async()=>{ return await kStatus(); };
   await kontrollo();
   let here=0;
   kTimer=setInterval(async ()=>{ here++; if(await kontrollo() || here>20){ clearInterval(kTimer); kTimer=null; } },3000);
