@@ -82,6 +82,19 @@ module.exports = function (app, pool, iLoguar, iAdmin) {
       const r = await pool.query(
         `INSERT INTO konvertimet (biznes_id, url) VALUES ($1,$2)
          RETURNING id, url, track_active, track_seen_at`, [req.biznesId, n.url]);
+      // Nese kjo URL eshte pare tashme nga kodi gjurmues (biznesi ka track_url qe perputhet),
+      // shenoje menjehere si aktive — qe fshirja + rikrijimi te mos e humbase statusin.
+      try {
+        const bz = await pool.query('SELECT track_url, track_active FROM bizneset WHERE id=$1', [req.biznesId]);
+        if (bz.rows.length && bz.rows[0].track_active && bz.rows[0].track_url) {
+          let shteg = bz.rows[0].track_url;
+          try { const p = new URL(shteg); shteg = p.pathname + p.search; } catch (e) {}
+          if (shteg.indexOf(n.url) === 0) {
+            await pool.query('UPDATE konvertimet SET track_active=true, track_seen_at=now() WHERE id=$1', [r.rows[0].id]);
+            r.rows[0].track_active = true;
+          }
+        }
+      } catch (e) {}
       // Perputhshmeri: nese eshte URL-ja e pare, vendose edhe te bizneset.url_konvertimi
       await sinkronizoTeBizneset(pool, req.biznesId);
       res.json(r.rows[0]);
