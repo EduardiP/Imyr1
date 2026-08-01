@@ -11,15 +11,17 @@ async function init(pool) {
       url           TEXT NOT NULL,
       track_active  BOOLEAN DEFAULT false,
       track_seen_at TIMESTAMPTZ,
+      ruajtur       BOOLEAN DEFAULT false,
       krijuar_at    TIMESTAMPTZ DEFAULT now()
     )`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_konvertimet_biz ON konvertimet(biznes_id)`);
+  await pool.query(`ALTER TABLE konvertimet ADD COLUMN IF NOT EXISTS ruajtur BOOLEAN DEFAULT false`);
 
   // MIGRIMI: cdo biznes qe ka url_konvertimi por s'ka ende rresht te tabela e re →
   // krijo URL-en e pare me statusin ekzistues (track_active nga bizneset).
   await pool.query(`
-    INSERT INTO konvertimet (biznes_id, url, track_active, track_seen_at)
-    SELECT b.id, b.url_konvertimi, COALESCE(b.track_active,false), b.track_seen_at
+    INSERT INTO konvertimet (biznes_id, url, track_active, track_seen_at, ruajtur)
+    SELECT b.id, b.url_konvertimi, COALESCE(b.track_active,false), b.track_seen_at, true
     FROM bizneset b
     WHERE b.url_konvertimi IS NOT NULL AND b.url_konvertimi <> ''
       AND NOT EXISTS (SELECT 1 FROM konvertimet k WHERE k.biznes_id = b.id)
