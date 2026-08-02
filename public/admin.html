@@ -444,18 +444,24 @@
       const r=await(await fetch('/api/admin/platforma?bizId='+encodeURIComponent(bizId))).json();
       if(!box) return;
       if(!r.arritur){
-        box.innerHTML='<div style="border:1px solid #c8ccdb;border-radius:8px;padding:10px;font-size:12px;color:#a55;">'+esc(r.mesazh||'S\'u arrit faqja.')+'</div>';
+        box.innerHTML='<div style="border:1px solid #d0d4e0;border-radius:8px;padding:10px;font-size:12px;color:#a33;background:#fff;">'+esc(r.mesazh||'S\'u arrit faqja.')+'</div>';
         return;
       }
-      let h='<div style="border:1px solid #e6e8f0;border-radius:8px;padding:12px;font-size:12px;background:#fafbff;">';
-      h+='<div><b>Platforma:</b> '+esc(r.platforma)+' <span style="color:#889;">(siguria '+r.siguria+'%)</span></div>';
-      if(r.server) h+='<div style="color:#889;margin-top:2px;">Server: '+esc(r.server)+'</div>';
+      let h='<div style="border:1px solid #d0d4e0;border-radius:8px;padding:12px;font-size:12px;background:#fff;color:#1a1a2e;">';
+      h+='<div style="font-size:13px;"><b>Platforma:</b> '+esc(r.platforma)+' <span style="color:#667;">(siguria '+r.siguria+'%)</span></div>';
+      // Detajet teknike (primaret)
+      if(r.detaje && r.detaje.length){
+        h+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid #eee;"><b>Detaje teknike:</b></div>';
+        h+='<table style="width:100%;margin-top:4px;border-collapse:collapse;">';
+        r.detaje.forEach(d=>{ h+='<tr><td style="color:#556;padding:2px 8px 2px 0;white-space:nowrap;vertical-align:top;">'+esc(d.etiketa)+'</td><td style="color:#1a1a2e;padding:2px 0;">'+esc(d.vlera)+'</td></tr>'; });
+        h+='</table>';
+      }
       if(r.udhezime){
-        h+='<div style="margin-top:8px;"><b>Udhëzime:</b></div>';
-        h+='<div style="margin-top:4px;"><u>Gjurmimi:</u> '+esc(r.udhezime.tracking)+'</div>';
-        h+='<div style="margin-top:4px;"><u>Reklama:</u> '+esc(r.udhezime.reklama)+'</div>';
-        h+='<div style="margin-top:4px;"><u>Konvertim (URL):</u> '+esc(r.udhezime.konvertim_url)+'</div>';
-        h+='<div style="margin-top:4px;"><u>Konvertim (kod):</u> '+esc(r.udhezime.konvertim_kod)+'</div>';
+        h+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid #eee;"><b>Udhëzime për vendosjen e kodit:</b></div>';
+        h+='<div style="margin-top:4px;color:#1a1a2e;"><b style="color:#3552d6;">Gjurmimi:</b> '+esc(r.udhezime.tracking)+'</div>';
+        h+='<div style="margin-top:4px;color:#1a1a2e;"><b style="color:#3552d6;">Reklama:</b> '+esc(r.udhezime.reklama)+'</div>';
+        h+='<div style="margin-top:4px;color:#1a1a2e;"><b style="color:#3552d6;">Konvertim (URL):</b> '+esc(r.udhezime.konvertim_url)+'</div>';
+        h+='<div style="margin-top:4px;color:#1a1a2e;"><b style="color:#3552d6;">Konvertim (kod):</b> '+esc(r.udhezime.konvertim_kod)+'</div>';
       }
       h+='</div>';
       box.innerHTML=h;
