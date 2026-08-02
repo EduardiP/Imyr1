@@ -25,9 +25,11 @@ async function init(pool) {
       emri          TEXT DEFAULT '',
       track_active  BOOLEAN DEFAULT false,
       track_seen_at TIMESTAMPTZ,
+      fshire        BOOLEAN DEFAULT false,
       krijuar_at    TIMESTAMPTZ DEFAULT now()
     )`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_zonat_biz ON zonat(biznes_id)`);
+  await pool.query(`ALTER TABLE zonat ADD COLUMN IF NOT EXISTS fshire BOOLEAN DEFAULT false`);
 
   // MIGRIMI: cdo biznes qe ka url_konvertimi por s'ka ende rresht te tabela e re →
   // krijo URL-en e pare me statusin ekzistues (track_active nga bizneset).
@@ -172,7 +174,7 @@ module.exports = function (app, pool, iLoguar, iAdmin) {
   app.get('/api/zonat', iLoguar, async (req, res) => {
     try {
       const r = await pool.query(
-        'SELECT id, emri, track_active FROM zonat WHERE biznes_id=$1 ORDER BY id ASC', [req.biznesId]);
+        'SELECT id, emri, track_active FROM zonat WHERE biznes_id=$1 AND fshire=false ORDER BY id ASC', [req.biznesId]);
       res.json({ zonat: r.rows });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
@@ -180,8 +182,14 @@ module.exports = function (app, pool, iLoguar, iAdmin) {
   app.post('/api/zonat', iLoguar, async (req, res) => {
     const emri = ((req.body && req.body.emri) || '').trim();
     try {
-      const ek = await pool.query('SELECT id, emri, track_active FROM zonat WHERE biznes_id=$1 AND emri=$2', [req.biznesId, emri]);
-      if (ek.rows.length) return res.json(ek.rows[0]);
+      const ek = await pool.query('SELECT id, emri, track_active, fshire FROM zonat WHERE biznes_id=$1 AND emri=$2', [req.biznesId, emri]);
+      if (ek.rows.length) {
+        // nese ishte e fshire, rikthe (klienti e shtoi serish)
+        if (ek.rows[0].fshire) {
+          await pool.query('UPDATE zonat SET fshire=false WHERE id=$1', [ek.rows[0].id]);
+        }
+        return res.json({ id: ek.rows[0].id, emri: ek.rows[0].emri, track_active: ek.rows[0].track_active });
+      }
       const r = await pool.query(
         'INSERT INTO zonat (biznes_id, emri) VALUES ($1,$2) RETURNING id, emri, track_active', [req.biznesId, emri]);
       res.json(r.rows[0]);
@@ -190,7 +198,8 @@ module.exports = function (app, pool, iLoguar, iAdmin) {
 
   app.delete('/api/zonat/:id', iLoguar, async (req, res) => {
     try {
-      await pool.query('DELETE FROM zonat WHERE id=$1 AND biznes_id=$2', [req.params.id, req.biznesId]);
+      // Soft-delete: sheno si e fshire (qe konvertimet e ardhshme te injorohen, mos rikrijohet)
+      await pool.query('UPDATE zonat SET fshire=true, track_active=false WHERE id=$1 AND biznes_id=$2', [req.params.id, req.biznesId]);
       res.json({ ok: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
