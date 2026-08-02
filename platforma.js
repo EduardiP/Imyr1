@@ -119,7 +119,6 @@ const I_PANJOHUR = {
 };
 
 async function zbulo(url) {
-  // Normalizo URL-në
   if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
 
   let headers = {};
@@ -134,62 +133,121 @@ async function zbulo(url) {
     });
     clearTimeout(t);
     resp.headers.forEach((v, k) => { headers[k.toLowerCase()] = v; });
-    html = (await resp.text()).slice(0, 200000);
+    html = (await resp.text()).slice(0, 300000);
     arritur = true;
   } catch (e) { arritur = false; }
 
   if (!arritur) {
     return { arritur: false, platforma: null, siguria: 0, detaje: [],
-      mesazh: 'S\'e arritëm dot faqen automatikisht (mund të jetë e mbrojtur ose pas login-it). Do të vazhdojmë me pyetje.' };
+      mesazh: 'S\'e arritEm dot faqen automatikisht (mund tE jetE e mbrojtur ose pas login-it). Do tE vazhdojmE me pyetje.' };
   }
 
-  // Mblidh FAKTE teknike (primaret) — çdo gjurmë e dobishme
+  const setCookie = headers['set-cookie'] || '';
+
+  // ── Identifiko platformEn kryesore (per emrin + udhezimet) ──
+  let platEmri = I_PANJOHUR.emri, platId = 'i_panjohur', siguria = 0, udhezime = I_PANJOHUR.udhezime;
+  for (const r of RREGULLAT) {
+    let pikE = 0;
+    (r.html || []).forEach(rx => { if (rx.test(html)) pikE++; });
+    (r.headers || []).forEach(([h, rx]) => { if (headers[h] && rx.test(headers[h])) pikE += 2; });
+    if (pikE > 0) { platEmri = r.emri; platId = r.id; siguria = Math.min(99, 60 + pikE * 15); udhezime = r.udhezime; break; }
+  }
+
+  // ── Mblidh DETAJE teknike (aq sa mundet; nese s'ofrohet → nuk shtohet) ──
   const detaje = [];
   const shto = (etiketa, vlera) => { if (vlera) detaje.push({ etiketa, vlera }); };
 
-  // Serveri / hosting
+  // 1. Platforma (gjithmone)
+  shto('Platforma', platEmri === I_PANJOHUR.emri ? null : platEmri);
+
+  // 2. Versioni / Generator (CMS + versioni)
+  let mg = html.match(/<meta[^>]+name=["']generator["'][^>]+content=["']([^"']+)["']/i);
+  if (mg) shto('Generator/Versioni', mg[1]);
+
+  // 3. Tema/template aktive (WordPress lE rrugEn e temEs)
+  let tema = html.match(/\/wp-content\/themes\/([a-z0-9_-]+)/i);
+  if (tema) shto('Tema aktive (WordPress)', tema[1]);
+  // Shopify tema (nga Shopify.theme)
+  let shTema = html.match(/Shopify\.theme\s*=\s*{[^}]*"name":"([^"]+)"/i);
+  if (shTema) shto('Tema aktive (Shopify)', shTema[1]);
+
+  // 4. Framework
+  let framework = null;
+  if (/\/_next\//i.test(html) || headers['x-powered-by'] && /next/i.test(headers['x-powered-by'])) framework = 'Next.js (React)';
+  else if (/nuxt/i.test(html)) framework = 'Nuxt (Vue)';
+  else if (/ng-version/i.test(html)) framework = 'Angular';
+  else if (/data-svelte|__SVELTEKIT/i.test(html)) framework = 'Svelte/SvelteKit';
+  else if (/data-reactroot|<div id=["']root["']|\/static\/js\/main\.[a-z0-9]+\.js/i.test(html)) framework = 'React';
+  else if (/<div id=["']app["']|__VUE__|data-v-app/i.test(html)) framework = 'Vue';
+  else if (/_astro\//i.test(html)) framework = 'Astro';
+  shto('Framework', framework);
+
+  // 5. Gjuha
+  let gjuha = null;
+  if (/PHPSESSID/i.test(setCookie) || /\.php(\?|["'\s>])/i.test(html)) gjuha = 'PHP';
+  else if (headers['x-powered-by'] && /express|next/i.test(headers['x-powered-by'])) gjuha = 'Node.js';
+  else if (/csrftoken|django/i.test(setCookie)) gjuha = 'Python (Django)';
+  else if (/laravel_session/i.test(setCookie)) gjuha = 'PHP (Laravel)';
+  else if (/_rails|rack\.session/i.test(setCookie)) gjuha = 'Ruby on Rails';
+  else if (/asp\.net|ASPXAUTH/i.test(setCookie) || headers['x-powered-by'] && /asp\.net/i.test(headers['x-powered-by'])) gjuha = 'ASP.NET (C#)';
+  shto('Gjuha/Backend', gjuha);
+
+  // 6. Serveri
   shto('Server', headers['server']);
   shto('Powered-By', headers['x-powered-by']);
-  shto('Hosting/CDN', headers['x-served-by'] || headers['cf-ray'] ? (headers['cf-ray'] ? 'Cloudflare' : headers['x-served-by']) : null);
-  if (headers['x-vercel-id']) shto('Hosting', 'Vercel');
-  if (headers['x-nf-request-id']) shto('Hosting', 'Netlify');
 
-  // Meta generator (shpesh tregon CMS-in dhe versionin)
-  let mg = html.match(/<meta[^>]+name=["']generator["'][^>]+content=["']([^"']+)["']/i);
-  if (mg) shto('Generator', mg[1]);
+  // 7. Hosting / ku eshte ruajtur
+  let hosting = null;
+  if (headers['x-vercel-id'] || /vercel/i.test(headers['server'] || '')) hosting = 'Vercel';
+  else if (headers['x-nf-request-id']) hosting = 'Netlify';
+  else if (/railway/i.test(headers['server'] || '')) hosting = 'Railway';
+  else if (headers['x-render-origin-server']) hosting = 'Render';
+  else if (/heroku/i.test(headers['via'] || '')) hosting = 'Heroku';
+  else if (headers['x-served-by'] && /fastly/i.test(headers['x-served-by'])) hosting = 'Fastly CDN';
+  shto('Hosting', hosting);
 
-  // Gjuha/teknologjia nga gjurmë të njohura
-  if (/\.php(\?|["'\s>])/i.test(html) || /PHPSESSID/i.test(headers['set-cookie'] || '')) shto('Gjuha', 'PHP');
-  if (/\/_next\//i.test(html)) shto('Framework', 'Next.js (React)');
-  else if (/<div id=["']root["']/i.test(html) || /\/static\/js\/main\.[a-z0-9]+\.js/i.test(html)) shto('Framework', 'React');
-  else if (/<div id=["']app["']/i.test(html) || /__VUE__/i.test(html)) shto('Framework', 'Vue');
-  if (/nuxt/i.test(html)) shto('Framework', 'Nuxt (Vue)');
-  if (/ng-version/i.test(html)) shto('Framework', 'Angular');
-  if (/data-svelte/i.test(html) || /__SVELTEKIT/i.test(html)) shto('Framework', 'Svelte/SvelteKit');
+  // 8. CDN
+  let cdn = null;
+  if (headers['cf-ray'] || /cloudflare/i.test(headers['server'] || '')) cdn = 'Cloudflare';
+  else if (headers['x-served-by'] && /fastly/i.test(headers['x-served-by'])) cdn = 'Fastly';
+  else if (/akamai/i.test(headers['server'] || '')) cdn = 'Akamai';
+  shto('CDN', cdn);
 
-  // A eshte SPA (ndertohet me JS) apo faqe klasike?
-  const spa = /<div id=["'](root|app|__next)["'][^>]*>\s*<\/div>/i.test(html) || /\/_next\//i.test(html);
-  shto('Tipi', spa ? 'SPA (ndërtohet me JavaScript)' : 'HTML klasik (serveri jep përmbajtjen)');
+  // 9. Tipi (SPA apo HTML klasik)
+  const spa = /<div id=["'](root|app|__next)["'][^>]*>\s*<\/div>/i.test(html) || /\/_next\//i.test(html) || framework === 'React' || framework === 'Vue' || framework === 'Angular';
+  shto('Tipi', spa ? 'SPA (ndErtohet me JavaScript)' : 'HTML klasik (serveri jep pErmbajtjen)');
 
-  // Analitika/tag manager qe mund te ekzistoje (e dobishme: mund te vendoset snippet-i aty)
-  if (/googletagmanager\.com\/gtm/i.test(html)) shto('Ka', 'Google Tag Manager (mund të vendosësh snippet-in këtu lehtë)');
-  if (/google-analytics\.com|gtag\/js/i.test(html)) shto('Ka', 'Google Analytics');
+  // 10. E-commerce (dyqan?)
+  let ecom = null;
+  if (/woocommerce/i.test(html)) ecom = 'WooCommerce';
+  else if (platId === 'shopify') ecom = 'Shopify checkout';
+  else if (/magento/i.test(html)) ecom = 'Magento';
+  else if (/bigcommerce/i.test(html)) ecom = 'BigCommerce';
+  shto('E-commerce', ecom);
 
-  // Ku eshte <head> dhe </body> — e dobishme per udhezimin
+  // 11. Ka Google Tag Manager (vendi me i lehte per snippet-in)
+  if (/googletagmanager\.com\/gtm/i.test(html)) shto('Google Tag Manager', 'PO — snippet-i mund tE vendoset kEtu lehtE');
+
+  // 12. Ka Google Analytics
+  if (/google-analytics\.com|gtag\/js|googletagmanager\.com\/gtag/i.test(html)) shto('Google Analytics', 'PO');
+
+  // 13. Ku vendoset kodi (nga platforma)
+  const kuKodi = {
+    shopify: 'theme.liquid (Edit code)',
+    wordpress: 'header.php i temEs, ose plugin GTM/WPCode',
+    woocommerce: 'header.php i temEs, ose plugin',
+    wix: 'Settings → Custom Code (panel)',
+    squarespace: 'Settings → Code Injection (panel)',
+    webflow: 'Project Settings → Custom Code (panel)',
+    nextjs: 'app/layout.tsx ose pages/_app.js',
+    react: 'public/index.html',
+    vue: 'public/index.html'
+  };
+  shto('Ku vendoset kodi', kuKodi[platId] || null);
+
+  // 14. Ka <head> / </body>
   shto('Ka <head>', /<head[\s>]/i.test(html) ? 'po' : 'jo');
   shto('Ka </body>', /<\/body>/i.test(html) ? 'po' : 'jo');
-
-  // Provo secilën platformë (per emrin kryesor + udhezimet)
-  let platEmri = I_PANJOHUR.emri, platId = 'i_panjohur', siguria = 0, udhezime = I_PANJOHUR.udhezime;
-  for (const r of RREGULLAT) {
-    let pikë = 0;
-    (r.html || []).forEach(rx => { if (rx.test(html)) pikë++; });
-    (r.headers || []).forEach(([h, rx]) => { if (headers[h] && rx.test(headers[h])) pikë += 2; });
-    if (pikë > 0) {
-      platEmri = r.emri; platId = r.id; siguria = Math.min(99, 60 + pikë * 15); udhezime = r.udhezime;
-      break;
-    }
-  }
 
   return { arritur: true, platforma: platEmri, id: platId, siguria, udhezime, detaje,
     server: headers['server'] || null };
@@ -222,26 +280,21 @@ module.exports = function (app, pool, iLoguar, iAdmin) {
       const bizId = req.query.bizId;
       const url = (req.query.url || '').trim();
       try {
-        if (bizId) {
-          const b = await pool.query('SELECT website, platforma, platforma_siguria, platforma_detaje, platforma_at FROM bizneset WHERE id=$1', [bizId]);
-          if (b.rows.length) {
-            const row = b.rows[0];
-            if (row.platforma_at) {
-              const udh = udhezimetPer(row.platforma);
-              let detaje = [];
-              try { detaje = JSON.parse(row.platforma_detaje || '[]'); } catch (e) {}
-              return res.json({ arritur: true, platforma: row.platforma, siguria: row.platforma_siguria || 0,
-                detaje, udhezime: udh, ekantshem: true, at: row.platforma_at });
-            }
-            if (row.website) {
-              const r = await ruajPlatformen(pool, bizId, row.website);
-              if (r) return res.json(r);
-            }
-          }
+        // Merr website-in nga biznesi (ose url direkt)
+        let faqja = url;
+        if (!faqja && bizId) {
+          const b = await pool.query('SELECT website FROM bizneset WHERE id=$1', [bizId]);
+          if (b.rows.length) faqja = b.rows[0].website;
         }
-        // Fallback: studim direkt nga url (pa ruajtur)
-        if (url) { const r = await zbulo(url); return res.json(r); }
-        res.status(400).json({ error: 'Mungon bizId ose url.' });
+        if (!faqja) return res.status(400).json({ error: 'Mungon website/url.' });
+        // Studjo LIVE (qe te shohesh menjehere te dhenat e freskEta) dhe ruaj nese ka bizId
+        const r = await zbulo(faqja);
+        if (bizId) {
+          await pool.query(
+            `UPDATE bizneset SET platforma=$1, platforma_siguria=$2, platforma_detaje=$3, platforma_at=now() WHERE id=$4`,
+            [r.platforma || null, r.siguria || 0, JSON.stringify(r.detaje || []), bizId]);
+        }
+        res.json(r);
       } catch (e) { res.status(500).json({ error: e.message }); }
     });
   }
