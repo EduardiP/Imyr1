@@ -160,7 +160,7 @@ async function zbulo(url) {
     udhezime: I_PANJOHUR.udhezime, server: headers['server'] || null };
 }
 
-module.exports = function (app, pool, iLoguar) {
+module.exports = function (app, pool, iLoguar, iAdmin) {
   app.get('/api/platforma', iLoguar, async (req, res) => {
     const url = (req.query.url || '').trim();
     if (!url) return res.status(400).json({ error: 'Mungon url.' });
@@ -169,6 +169,18 @@ module.exports = function (app, pool, iLoguar) {
       res.json(r);
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
+
+  // Version admin (per panelin e administratorit)
+  if (iAdmin) {
+    app.get('/api/admin/platforma', iAdmin, async (req, res) => {
+      const url = (req.query.url || '').trim();
+      if (!url) return res.status(400).json({ error: 'Mungon url.' });
+      try {
+        const r = await zbulo(url);
+        res.json(r);
+      } catch (e) { res.status(500).json({ error: e.message }); }
+    });
+  }
 };
 
 module.exports.zbulo = zbulo;  // që ta përdorë edhe asistenti AI më vonë
