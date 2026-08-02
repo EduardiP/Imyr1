@@ -160,6 +160,17 @@ async function zbulo(url) {
     udhezime: I_PANJOHUR.udhezime, server: headers['server'] || null };
 }
 
+// Ruan rezultatin e zbulimit te bizneset (qe te mos ristudiohet çdo here)
+async function ruajPlatformen(pool, bizId, url) {
+  try {
+    const r = await zbulo(url);
+    await pool.query(
+      `UPDATE bizneset SET platforma=$1, platforma_siguria=$2, platforma_at=now() WHERE id=$3`,
+      [r.platforma || null, r.siguria || 0, bizId]);
+    return r;
+  } catch (e) { return null; }
+}
+
 module.exports = function (app, pool, iLoguar, iAdmin) {
   app.get('/api/platforma', iLoguar, async (req, res) => {
     const url = (req.query.url || '').trim();
@@ -170,17 +181,62 @@ module.exports = function (app, pool, iLoguar, iAdmin) {
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
-  // Version admin (per panelin e administratorit)
+  // Version admin: shfaq te ruajturin nga databaza (ristudion vetem nese s'eshte studiuar ende)
   if (iAdmin) {
     app.get('/api/admin/platforma', iAdmin, async (req, res) => {
+      const bizId = req.query.bizId;
       const url = (req.query.url || '').trim();
-      if (!url) return res.status(400).json({ error: 'Mungon url.' });
       try {
-        const r = await zbulo(url);
-        res.json(r);
+        if (bizId) {
+          const b = await pool.query('SELECT website, platforma, platforma_siguria, platforma_at FROM bizneset WHERE id=$1', [bizId]);
+          if (b.rows.length) {
+            const row = b.rows[0];
+            // E studiuar tashme → ktheje te ruajturin
+            if (row.platforma_at) {
+              const udh = udhezimetPer(row.platforma);
+              return res.json({ arritur: true, platforma: row.platforma, siguria: row.platforma_siguria || 0,
+                udhezime: udh, ekantshem: true, at: row.platforma_at });
+            }
+            // S'eshte studiuar → studjo tani, ruaj, ktheje
+            if (row.website) {
+              const r = await ruajPlatformen(pool, bizId, row.website);
+              if (r) return res.json(r);
+            }
+          }
+        }
+        // Fallback: studim direkt nga url (pa ruajtur)
+        if (url) { const r = await zbulo(url); return res.json(r); }
+        res.status(400).json({ error: 'Mungon bizId ose url.' });
       } catch (e) { res.status(500).json({ error: e.message }); }
     });
   }
 };
 
+// Kthen udhezimet per nje platforme te ruajtur (sipas emrit)
+function udhezimetPer(emri) {
+  const r = RREGULLAT.find(x => x.emri === emri);
+  if (r) return r.udhezime;
+  return I_PANJOHUR.udhezime;
+}
+
 module.exports.zbulo = zbulo;  // që ta përdorë edhe asistenti AI më vonë
+module.exports.ruajPlatformen = ruajPlatformen;
+
+// Migrim + studim i bizneseve ekzistuese (nje here, ne radhe, jo paralel).
+module.exports.init = async function (pool) {
+  await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS platforma TEXT`);
+  await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS platforma_siguria INTEGER`);
+  await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS platforma_at TIMESTAMPTZ`);
+
+  // Studjo ne radhe bizneset qe kane URL (website) POR s'jane studiuar ende (platforma_at NULL).
+  // Ne radhe (nje nga nje) qe te mos ngarkohet serveri me fetch paralel.
+  try {
+    const r = await pool.query(
+      `SELECT id, website FROM bizneset
+       WHERE website IS NOT NULL AND website <> '' AND platforma_at IS NULL`);
+    for (const b of r.rows) {
+      await ruajPlatformen(pool, b.id, b.website);
+      await new Promise(res => setTimeout(res, 1500));  // pauze e vogel mes studimeve
+    }
+  } catch (e) {}
+};
