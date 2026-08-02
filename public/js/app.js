@@ -234,20 +234,34 @@ async function ngarkoSnippetet(){
       '<div class="rekhead" style="grid-template-columns:2fr 1fr 1fr auto;"><span>Emri</span><span>Statusi</span><span>Madhësia</span><span></span></div>';
     lista.forEach(sn=>{
       const status = sn.snippet_active ? '<span style="color:var(--good);">● I lidhur</span>' : '<span style="color:var(--mut);">○ Pa lidhur</span>';
-      h+='<div class="rekrow" style="grid-template-columns:2fr 1fr 1fr auto;align-items:center;">'+
-         '<span class="nm" onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})" style="cursor:pointer;">'+esc(sn.emri||('Hapësira '+sn.id))+'</span>'+
+      h+='<div class="rekrow" style="grid-template-columns:2fr 1fr 1fr auto;align-items:center;" id="snipRow'+sn.id+'">'+
+         '<span class="nm" id="snipEmri'+sn.id+'" onclick="snipEmriEdito('+sn.id+',\''+esc((sn.emri||'').replace(/\x27/g,""))+'\')" style="cursor:pointer;" title="Kliko për të ndryshuar emrin">'+esc(sn.emri||('Hapësira '+sn.id))+' <span style="opacity:.4;font-size:11px;">✎</span></span>'+
          '<span onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})" style="cursor:pointer;">'+status+'</span>'+
          '<span class="small" onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})" style="cursor:pointer;">'+esc(sn.madhesia_desktop||'—')+'</span>'+
-         (lista.length>1 ? '<button class="btn" style="padding:5px 9px;" onclick="snipKonfirmoFshi('+sn.id+',\''+esc((sn.emri||'').replace(/\x27/g,""))+'\','+(sn.snippet_active?1:0)+')">✕</button>' : '<span></span>')+
+         '<button class="btn" style="padding:5px 9px;" onclick="snipKonfirmoFshi('+sn.id+',\''+esc((sn.emri||'').replace(/\x27/g,""))+'\','+(sn.snippet_active?1:0)+')">✕</button>'+
          '</div>';
     });
     h+='</div>';
     c.innerHTML=h;
   }catch(e){ c.innerHTML='<p class="small err">Gabim në ngarkim.</p>'; }
 }
-async function snipKrijo(){
-  const emri=(prompt('Vendos një emër për këtë hapësirë reklame (p.sh. "Fund faqe", "Anash blogu"):')||'').trim();
-  if(!emri) return;  // s'krijon pa emer
+function snipKrijo(){
+  // Shfaq nje fushe emri (jo popup) te lista
+  const c=$('snipLista'); if(!c) return;
+  const box=document.createElement('div');
+  box.style.cssText='border:1px solid var(--acc);border-radius:10px;padding:14px;margin-bottom:12px;';
+  box.innerHTML='<label style="display:block;margin-bottom:6px;">Emri i hapësirës së re</label>'+
+    '<div style="display:flex;gap:8px;">'+
+      '<input id="snipEmriRi" placeholder="p.sh. Fund faqe, Anash blogu" style="flex:1;">'+
+      '<button class="btn cta" onclick="snipRuajTeRe()">Krijo</button>'+
+      '<button class="btn" onclick="ngarkoSnippetet()">Anulo</button>'+
+    '</div>';
+  c.insertBefore(box, c.firstChild);
+  const inp=$('snipEmriRi'); if(inp){ inp.focus(); inp.onkeydown=(e)=>{ if(e.key==='Enter') snipRuajTeRe(); }; }
+}
+async function snipRuajTeRe(){
+  const emri=(($('snipEmriRi')||{}).value||'').trim();
+  if(!emri){ const i=$('snipEmriRi'); if(i) i.focus(); return; }
   try{
     const r=await(await fetch('/api/snippetet',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({emri})})).json();
     if(r.id){ nav({v:'profile',nav:'snippetet',sub:'detail',id:r.id}); }
@@ -288,6 +302,18 @@ function fshiDialogThjesht(mesazhi){
     '<div style="font-weight:600;font-size:16px;margin-bottom:10px;">Hiq kodin së pari</div>'+
     '<p class="small" style="margin:0 0 18px;">'+mesazhi+'</p>'+
     '<div style="display:flex;justify-content:flex-end;"><button class="btn" onclick="fshiMbyll()">E kuptova</button></div></div>';
+}
+function snipEmriEdito(id, emriAktual){
+  const span=$('snipEmri'+id); if(!span) return;
+  span.innerHTML='<input id="snipEmriEdit'+id+'" value="'+esc(emriAktual)+'" style="width:70%;"> '+
+    '<button class="btn" style="padding:3px 8px;" onclick="snipEmriRuaj('+id+')">✓</button>';
+  const inp=$('snipEmriEdit'+id); if(inp){ inp.focus(); inp.onkeydown=(e)=>{ if(e.key==='Enter') snipEmriRuaj(id); if(e.key==='Escape') ngarkoSnippetet(); }; }
+}
+async function snipEmriRuaj(id){
+  const emri=(($('snipEmriEdit'+id)||{}).value||'').trim();
+  if(!emri){ ngarkoSnippetet(); return; }
+  try{ await fetch('/api/snippetet/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({emri})}); }catch(e){}
+  ngarkoSnippetet();
 }
 async function snipDetaje(m, id){
   _snipAktiv=id;
