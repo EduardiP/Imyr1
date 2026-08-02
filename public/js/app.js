@@ -704,7 +704,7 @@ function vizatoKonvertimet(){
     h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">'+
        '<input value="'+esc(u.url)+'" placeholder="https://faqja-ime.com/welcome" oninput="konvNdrysho('+i+',this.value)" style="flex:1;min-width:140px;">'+
        '<button class="btn" style="padding:7px 12px;" onclick="verifikoNje('+i+')">Verifiko</button>'+
-       (_konvUrls.length>1 ? '<button class="btn" style="padding:7px 10px;" onclick="konvFshi('+i+')">✕</button>' : '')+
+       (_konvUrls.length>1 ? '<button class="btn" style="padding:7px 10px;" onclick="konvKonfirmoFshi('+i+')">✕</button>' : '')+
        '<span style="min-width:74px;text-align:right;">'+status+'</span>'+
        '</div>';
   });
@@ -713,6 +713,30 @@ function vizatoKonvertimet(){
 }
 function konvNdrysho(i,v){ if(_konvUrls[i]){ _konvUrls[i].url=v; _konvUrls[i].track_active=false; _konvUrls[i].id=null; } perditesoKonvBtn(); }
 function konvShto(){ _konvUrls.push({url:'', track_active:false}); vizatoKonvertimet(); }
+// Dialog konfirmimi para fshirjes (siguri — fshirja shkeput gjurmimin)
+function fshiDialog(mesazhi, onFshi){
+  let d=$('fshiModal');
+  if(!d){ d=document.createElement('div'); d.id='fshiModal'; document.body.appendChild(d); }
+  d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999;';
+  d.innerHTML='<div style="background:var(--bg2,#161a22);border:1px solid var(--line);border-radius:12px;padding:22px;max-width:420px;margin:16px;">'+
+    '<div style="font-weight:600;font-size:16px;margin-bottom:10px;">A je i sigurt?</div>'+
+    '<p class="small" style="margin:0 0 8px;">'+mesazhi+'</p>'+
+    '<p class="small" style="margin:0 0 18px;color:var(--mut);">Mos harro të heqësh edhe kodin/adresën përkatëse nga skedari i faqes tënde — përndryshe do të vazhdojë të dërgojë sinjale që s\'do të numërohen.</p>'+
+    '<div style="display:flex;gap:10px;justify-content:flex-end;">'+
+      '<button class="btn" onclick="fshiMbyll()">Anulo</button>'+
+      '<button class="primary" id="fshiPo" style="background:var(--err);border-color:var(--err);">Po, hiqe</button>'+
+    '</div></div>';
+  $('fshiPo').onclick=()=>{ fshiMbyll(); onFshi(); };
+}
+function fshiMbyll(){ const d=$('fshiModal'); if(d){ d.style.display='none'; d.innerHTML=''; } }
+function konvKonfirmoFshi(i){
+  const u=_konvUrls[i]; const emri=(u&&u.url)?u.url:'këtë adresë';
+  fshiDialog('Do të heqësh <b>'+esc(emri)+'</b>. Lidhja për gjurmim do të shkëputet dhe konvertimet e saj s\'do të numërohen më.', ()=>konvFshi(i));
+}
+function zonaKonfirmoFshi(i){
+  const z=_konvZona[i]; const emri=(z&&z.emri)?('"'+z.emri+'"'):'këtë kod';
+  fshiDialog('Do të heqësh kodin <b>'+esc(emri)+'</b>. Lidhja për gjurmim do të shkëputet dhe konvertimet e tij s\'do të numërohen më.', ()=>zonaFshi(i));
+}
 async function konvFshi(i){
   const u=_konvUrls[i];
   if(u && u.id){ try{ await fetch('/api/konvertimet/'+u.id,{method:'DELETE'}); }catch(e){} }
@@ -796,7 +820,7 @@ function vizatoZonat(){
     h+='<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;">'+
        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'+
          '<input value="'+esc(z.emri)+'" placeholder="emri i llojit (p.sh. blerje) — ose lëre bosh" oninput="zonaNdrysho('+i+',this.value)" style="flex:1;">'+
-         (_konvZona.length>1 ? '<button class="btn" style="padding:7px 10px;" onclick="zonaFshi('+i+')">✕</button>' : '')+
+         (_konvZona.length>1 ? '<button class="btn" style="padding:7px 10px;" onclick="zonaKonfirmoFshi('+i+')">✕</button>' : '')+
        '</div>'+
        '<div class="kodbox" id="k_zonaKod'+i+'">'+esc(kodiZones(z.emri))+'</div>'+
        '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;">'+
