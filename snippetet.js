@@ -104,11 +104,19 @@ module.exports = function (app, pool, iLoguar, beCeles) {
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
-  // Fshi nje snippet (jo lejohet fshirja e te fundit — biznesi duhet te kete te pakten nje)
+  // Ndrysho emrin e nje snippet-i
+  app.patch('/api/snippetet/:id', iLoguar, async (req, res) => {
+    const emri = ((req.body && req.body.emri) || '').trim();
+    if (!emri) return res.status(400).json({ error: 'Emri bosh.' });
+    try {
+      await pool.query('UPDATE snippetet SET emri=$1 WHERE id=$2 AND biznes_id=$3', [emri, req.params.id, req.biznesId]);
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // Fshi nje snippet (lejohet edhe i fundit — reklamat stopojne derisa te kete nje aktiv)
   app.delete('/api/snippetet/:id', iLoguar, async (req, res) => {
     try {
-      const c = await pool.query('SELECT COUNT(*)::int AS n FROM snippetet WHERE biznes_id=$1', [req.biznesId]);
-      if (c.rows[0].n <= 1) return res.status(400).json({ error: 'S\'mund të fshihet snippet-i i fundit.' });
       await pool.query('DELETE FROM snippetet WHERE id=$1 AND biznes_id=$2', [req.params.id, req.biznesId]);
       res.json({ ok: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
