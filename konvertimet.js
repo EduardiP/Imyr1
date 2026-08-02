@@ -17,6 +17,18 @@ async function init(pool) {
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_konvertimet_biz ON konvertimet(biznes_id)`);
   await pool.query(`ALTER TABLE konvertimet ADD COLUMN IF NOT EXISTS ruajtur BOOLEAN DEFAULT false`);
 
+  // Zonat e konvertimit me KOD (imyr.konvertim("emri")) — ruhen qe klienti t'i shohe/gjurmoje vec
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS zonat (
+      id SERIAL PRIMARY KEY,
+      biznes_id     INTEGER NOT NULL REFERENCES bizneset(id) ON DELETE CASCADE,
+      emri          TEXT DEFAULT '',
+      track_active  BOOLEAN DEFAULT false,
+      track_seen_at TIMESTAMPTZ,
+      krijuar_at    TIMESTAMPTZ DEFAULT now()
+    )`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_zonat_biz ON zonat(biznes_id)`);
+
   // MIGRIMI: cdo biznes qe ka url_konvertimi por s'ka ende rresht te tabela e re →
   // krijo URL-en e pare me statusin ekzistues (track_active nga bizneset).
   await pool.query(`
@@ -152,6 +164,33 @@ module.exports = function (app, pool, iLoguar, iAdmin) {
     try {
       await pool.query('DELETE FROM konvertimet WHERE id=$1 AND biznes_id=$2', [req.params.id, req.biznesId]);
       await sinkronizoTeBizneset(pool, req.biznesId);
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ── ZONAT E KONVERTIMIT ME KOD ──
+  app.get('/api/zonat', iLoguar, async (req, res) => {
+    try {
+      const r = await pool.query(
+        'SELECT id, emri, track_active FROM zonat WHERE biznes_id=$1 ORDER BY id ASC', [req.biznesId]);
+      res.json({ zonat: r.rows });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.post('/api/zonat', iLoguar, async (req, res) => {
+    const emri = ((req.body && req.body.emri) || '').trim();
+    try {
+      const ek = await pool.query('SELECT id, emri, track_active FROM zonat WHERE biznes_id=$1 AND emri=$2', [req.biznesId, emri]);
+      if (ek.rows.length) return res.json(ek.rows[0]);
+      const r = await pool.query(
+        'INSERT INTO zonat (biznes_id, emri) VALUES ($1,$2) RETURNING id, emri, track_active', [req.biznesId, emri]);
+      res.json(r.rows[0]);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.delete('/api/zonat/:id', iLoguar, async (req, res) => {
+    try {
+      await pool.query('DELETE FROM zonat WHERE id=$1 AND biznes_id=$2', [req.params.id, req.biznesId]);
       res.json({ ok: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
