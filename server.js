@@ -27,7 +27,7 @@ app.use((req, res, next) => {
   if (primar && req.headers.host && req.headers.host !== primar) {
     // Mos ridrejto: snippet-et/endpoint-et (klientet i kane vendosur me URL-en e vjeter),
     // dhe admin/api (qe login-i e cookie-t te mos prishen mes domain-eve).
-    const perjashto = ['/imyr.js','/imyr-track.js','/tag.js','/lidh','/track-lidh','/ad','/cil','/track','/klik','/konvertim','/konvertim-verifiko','/diag','/admin','/api'];
+    const perjashto = ['/imyr.js','/imyr-track.js','/tag.js','/lidh','/track-lidh','/ad','/cil','/track','/klik','/konvertim','/konvertim-verifiko','/diag','/diag-zonat','/admin','/api'];
     if (!perjashto.some(p => req.path.startsWith(p))) {
       return res.redirect(302, 'https://' + primar + req.originalUrl);
     }
@@ -415,6 +415,14 @@ app.get('/diag/:kod', async (req, res) => {
       `SELECT lloji, origjina, reklama_id, reklamues_id, created_at
        FROM ngjarjet WHERE klik_kod=$1 ORDER BY created_at ASC`, [req.params.kod]);
     res.json({ kod: req.params.kod, ngjarje: r.rows });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- DIAGNOSTIK: shiko zonat e nje biznesi (p.sh. /diag-zonat/55) ---
+app.get('/diag-zonat/:bizId', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT id, emri, track_active FROM zonat WHERE biznes_id=$1 ORDER BY id', [req.params.bizId]);
+    res.json({ biznes_id: req.params.bizId, zonat: r.rows });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
