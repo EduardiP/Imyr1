@@ -134,30 +134,65 @@ async function zbulo(url) {
     });
     clearTimeout(t);
     resp.headers.forEach((v, k) => { headers[k.toLowerCase()] = v; });
-    html = (await resp.text()).slice(0, 200000);  // mjafton koka + fillimi
+    html = (await resp.text()).slice(0, 200000);
     arritur = true;
   } catch (e) { arritur = false; }
 
   if (!arritur) {
-    return { arritur: false, platforma: null, siguria: 0,
+    return { arritur: false, platforma: null, siguria: 0, detaje: [],
       mesazh: 'S\'e arritëm dot faqen automatikisht (mund të jetë e mbrojtur ose pas login-it). Do të vazhdojmë me pyetje.' };
   }
 
-  // Provo secilën rregull
+  // Mblidh FAKTE teknike (primaret) — çdo gjurmë e dobishme
+  const detaje = [];
+  const shto = (etiketa, vlera) => { if (vlera) detaje.push({ etiketa, vlera }); };
+
+  // Serveri / hosting
+  shto('Server', headers['server']);
+  shto('Powered-By', headers['x-powered-by']);
+  shto('Hosting/CDN', headers['x-served-by'] || headers['cf-ray'] ? (headers['cf-ray'] ? 'Cloudflare' : headers['x-served-by']) : null);
+  if (headers['x-vercel-id']) shto('Hosting', 'Vercel');
+  if (headers['x-nf-request-id']) shto('Hosting', 'Netlify');
+
+  // Meta generator (shpesh tregon CMS-in dhe versionin)
+  let mg = html.match(/<meta[^>]+name=["']generator["'][^>]+content=["']([^"']+)["']/i);
+  if (mg) shto('Generator', mg[1]);
+
+  // Gjuha/teknologjia nga gjurmë të njohura
+  if (/\.php(\?|["'\s>])/i.test(html) || /PHPSESSID/i.test(headers['set-cookie'] || '')) shto('Gjuha', 'PHP');
+  if (/\/_next\//i.test(html)) shto('Framework', 'Next.js (React)');
+  else if (/<div id=["']root["']/i.test(html) || /\/static\/js\/main\.[a-z0-9]+\.js/i.test(html)) shto('Framework', 'React');
+  else if (/<div id=["']app["']/i.test(html) || /__VUE__/i.test(html)) shto('Framework', 'Vue');
+  if (/nuxt/i.test(html)) shto('Framework', 'Nuxt (Vue)');
+  if (/ng-version/i.test(html)) shto('Framework', 'Angular');
+  if (/data-svelte/i.test(html) || /__SVELTEKIT/i.test(html)) shto('Framework', 'Svelte/SvelteKit');
+
+  // A eshte SPA (ndertohet me JS) apo faqe klasike?
+  const spa = /<div id=["'](root|app|__next)["'][^>]*>\s*<\/div>/i.test(html) || /\/_next\//i.test(html);
+  shto('Tipi', spa ? 'SPA (ndërtohet me JavaScript)' : 'HTML klasik (serveri jep përmbajtjen)');
+
+  // Analitika/tag manager qe mund te ekzistoje (e dobishme: mund te vendoset snippet-i aty)
+  if (/googletagmanager\.com\/gtm/i.test(html)) shto('Ka', 'Google Tag Manager (mund të vendosësh snippet-in këtu lehtë)');
+  if (/google-analytics\.com|gtag\/js/i.test(html)) shto('Ka', 'Google Analytics');
+
+  // Ku eshte <head> dhe </body> — e dobishme per udhezimin
+  shto('Ka <head>', /<head[\s>]/i.test(html) ? 'po' : 'jo');
+  shto('Ka </body>', /<\/body>/i.test(html) ? 'po' : 'jo');
+
+  // Provo secilën platformë (per emrin kryesor + udhezimet)
+  let platEmri = I_PANJOHUR.emri, platId = 'i_panjohur', siguria = 0, udhezime = I_PANJOHUR.udhezime;
   for (const r of RREGULLAT) {
-    let pikë = 0, gjurmë = [];
-    (r.html || []).forEach(rx => { if (rx.test(html)) { pikë++; gjurmë.push('html'); } });
-    (r.headers || []).forEach(([h, rx]) => { if (headers[h] && rx.test(headers[h])) { pikë += 2; gjurmë.push('header:' + h); } });
+    let pikë = 0;
+    (r.html || []).forEach(rx => { if (rx.test(html)) pikë++; });
+    (r.headers || []).forEach(([h, rx]) => { if (headers[h] && rx.test(headers[h])) pikë += 2; });
     if (pikë > 0) {
-      const siguria = Math.min(99, 60 + pikë * 15);  // sa më shumë gjurmë, aq më e sigurt
-      return { arritur: true, platforma: r.emri, id: r.id, siguria, udhezime: r.udhezime,
-        server: headers['server'] || null };
+      platEmri = r.emri; platId = r.id; siguria = Math.min(99, 60 + pikë * 15); udhezime = r.udhezime;
+      break;
     }
   }
 
-  // S'u njoh
-  return { arritur: true, platforma: I_PANJOHUR.emri, id: 'i_panjohur', siguria: 0,
-    udhezime: I_PANJOHUR.udhezime, server: headers['server'] || null };
+  return { arritur: true, platforma: platEmri, id: platId, siguria, udhezime, detaje,
+    server: headers['server'] || null };
 }
 
 // Ruan rezultatin e zbulimit te bizneset (qe te mos ristudiohet çdo here)
@@ -165,8 +200,8 @@ async function ruajPlatformen(pool, bizId, url) {
   try {
     const r = await zbulo(url);
     await pool.query(
-      `UPDATE bizneset SET platforma=$1, platforma_siguria=$2, platforma_at=now() WHERE id=$3`,
-      [r.platforma || null, r.siguria || 0, bizId]);
+      `UPDATE bizneset SET platforma=$1, platforma_siguria=$2, platforma_detaje=$3, platforma_at=now() WHERE id=$4`,
+      [r.platforma || null, r.siguria || 0, JSON.stringify(r.detaje || []), bizId]);
     return r;
   } catch (e) { return null; }
 }
@@ -188,16 +223,16 @@ module.exports = function (app, pool, iLoguar, iAdmin) {
       const url = (req.query.url || '').trim();
       try {
         if (bizId) {
-          const b = await pool.query('SELECT website, platforma, platforma_siguria, platforma_at FROM bizneset WHERE id=$1', [bizId]);
+          const b = await pool.query('SELECT website, platforma, platforma_siguria, platforma_detaje, platforma_at FROM bizneset WHERE id=$1', [bizId]);
           if (b.rows.length) {
             const row = b.rows[0];
-            // E studiuar tashme → ktheje te ruajturin
             if (row.platforma_at) {
               const udh = udhezimetPer(row.platforma);
+              let detaje = [];
+              try { detaje = JSON.parse(row.platforma_detaje || '[]'); } catch (e) {}
               return res.json({ arritur: true, platforma: row.platforma, siguria: row.platforma_siguria || 0,
-                udhezime: udh, ekantshem: true, at: row.platforma_at });
+                detaje, udhezime: udh, ekantshem: true, at: row.platforma_at });
             }
-            // S'eshte studiuar → studjo tani, ruaj, ktheje
             if (row.website) {
               const r = await ruajPlatformen(pool, bizId, row.website);
               if (r) return res.json(r);
@@ -226,6 +261,7 @@ module.exports.ruajPlatformen = ruajPlatformen;
 module.exports.init = async function (pool) {
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS platforma TEXT`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS platforma_siguria INTEGER`);
+  await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS platforma_detaje TEXT`);
   await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS platforma_at TIMESTAMPTZ`);
 
   // Studjo ne radhe bizneset qe kane URL (website) POR s'jane studiuar ende (platforma_at NULL).
