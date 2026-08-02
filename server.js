@@ -139,6 +139,39 @@ app.post('/api/hyr', async (req, res) => {
 const googlePending = {};
 setInterval(() => { const tani = Date.now(); for (const k in googlePending) { if (tani - googlePending[k].koha > 15*60*1000) delete googlePending[k]; } }, 5*60*1000);
 
+// Kontroll çdo 24 orë: verifikon nëse snippet-et aktive janë ende te faqja.
+// Nëse kodi u hoq (s'gjendet me celes+imyr.js), snippet_active → false.
+// Kur biznesi s'ka asnjë snippet aktiv, reklamat e tij ndalen automatikisht (selektori i filtron).
+async function kontrolloSnippetet24h() {
+  try {
+    const r = await pool.query(
+      `SELECT s.id, s.celes, b.website
+       FROM snippetet s JOIN bizneset b ON b.id = s.biznes_id
+       WHERE s.snippet_active = true AND b.website IS NOT NULL AND b.website <> ''`);
+    for (const s of r.rows) {
+      let faqja = s.website;
+      if (!/^https?:\/\//i.test(faqja)) faqja = 'https://' + faqja;
+      let gjendet = false, arritur = false;
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 6000);
+        const resp = await fetch(faqja, { signal: ctrl.signal, redirect: 'follow',
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36' } });
+        clearTimeout(t);
+        const html = await resp.text();
+        arritur = true;
+        if (html.indexOf('imyr.js') !== -1 && html.indexOf(s.celes) !== -1) gjendet = true;
+      } catch (e) { arritur = false; }
+      // Vetem nese e arritEm faqen POR s'e gjetEm kodin → çaktivizo (mos çaktivizo nEse s'u arrit)
+      if (arritur && !gjendet) {
+        await pool.query('UPDATE snippetet SET snippet_active=false WHERE id=$1', [s.id]);
+      }
+      await new Promise(res => setTimeout(res, 1000));  // pauze mes kontrolleve
+    }
+  } catch (e) {}
+}
+setInterval(kontrolloSnippetet24h, 24 * 3600 * 1000);  // çdo 24 orë
+
 // --- LOGIN ME GOOGLE ---
 app.get('/auth/google', (req, res) => {
   const cid = process.env.GOOGLE_CLIENT_ID;
