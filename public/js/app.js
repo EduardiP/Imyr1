@@ -306,34 +306,54 @@ async function snipEmriRuaj(id){
 // Butoni i suportit Claude (implementimi i kodit) — hapesire qe hapet mes Kopjo dhe URL
 function vizatoClaudeSuport(id){
   const box=$('claudeSuport'+id); if(!box) return;
-  box.innerHTML='<button class="btn" onclick="claudeHap('+id+')" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;border:1px dashed var(--acc);color:var(--acc);padding:10px;">'+
+  const idArg = isNaN(id) ? "'"+id+"'" : id;
+  box.innerHTML='<button class="btn" onclick="claudeHap('+idArg+')" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;border:1px dashed var(--acc);color:var(--acc);padding:10px;">'+
     '<span style="font-size:16px;">✨</span> Nuk di ku ta vendosësh kodin? Pyet asistentin</button>';
 }
+var _claudeHist = {};
 function claudeHap(id){
   const box=$('claudeSuport'+id); if(!box) return;
+  if(!_claudeHist[id]) _claudeHist[id]=[];
   box.innerHTML='<div style="border:1px solid var(--acc);border-radius:12px;overflow:hidden;">'+
     '<div style="background:var(--acc);color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">'+
       '<span style="font-weight:600;">✨ Asistenti i kodit</span>'+
-      '<button onclick="vizatoClaudeSuport('+id+')" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;">✕</button>'+
+      '<button onclick="vizatoClaudeSuport('+(isNaN(id)?"'"+id+"'":id)+')" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;">✕</button>'+
     '</div>'+
-    '<div id="claudeChat'+id+'" style="padding:14px;max-height:320px;overflow-y:auto;min-height:80px;">'+
-      '<div class="small" style="color:var(--mut);">Përshëndetje! Të ndihmoj të vendosësh kodin te faqja jote. Po e përgatis...</div>'+
+    '<div id="claudeChat'+id+'" style="padding:14px;max-height:340px;overflow-y:auto;min-height:80px;">'+
+      '<div class="small" style="color:var(--mut);">Përshëndetje! Të ndihmoj të vendosësh kodin te faqja jote. Më trego me çfarë e ke ndërtuar faqen, ose çfarë të pengon — dhe të udhëzoj hap-pas-hapi.</div>'+
     '</div>'+
     '<div style="padding:10px 14px;border-top:1px solid var(--line);display:flex;gap:8px;">'+
-      '<input id="claudeInput'+id+'" placeholder="Shkruaj pyetjen tënde..." style="flex:1;" onkeydown="if(event.key===\'Enter\')claudeDergo('+id+')">'+
-      '<button class="btn cta" onclick="claudeDergo('+id+')">Dërgo</button>'+
+      '<input id="claudeInput'+id+'" placeholder="Shkruaj pyetjen tënde..." style="flex:1;" onkeydown="if(event.key===\'Enter\')claudeDergo('+(isNaN(id)?"'"+id+"'":id)+')">'+
+      '<button class="btn cta" id="claudeBtn'+id+'" onclick="claudeDergo('+(isNaN(id)?"'"+id+"'":id)+')">Dërgo</button>'+
     '</div>'+
   '</div>';
-  // Placeholder — ketu do te lidhet API me Claude (hapi tjeter)
 }
-function claudeDergo(id){
-  const inp=$('claudeInput'+id); const chat=$('claudeChat'+id);
+async function claudeDergo(id){
+  const inp=$('claudeInput'+id); const chat=$('claudeChat'+id); const btn=$('claudeBtn'+id);
   if(!inp||!chat) return;
   const teksti=(inp.value||'').trim(); if(!teksti) return;
-  chat.innerHTML+='<div style="text-align:right;margin:8px 0;"><span style="background:var(--acc);color:#fff;padding:6px 10px;border-radius:10px;display:inline-block;">'+esc(teksti)+'</span></div>';
-  inp.value='';
-  // Placeholder — pergjigja do te vije nga Claude API kur ta lidhim
-  chat.innerHTML+='<div style="margin:8px 0;"><span style="background:var(--bg2,#222);padding:6px 10px;border-radius:10px;display:inline-block;color:var(--mut);">Asistenti do të lidhet së shpejti me AI-në...</span></div>';
+  if(!_claudeHist[id]) _claudeHist[id]=[];
+  // Shfaq mesazhin e klientit
+  chat.innerHTML+='<div style="text-align:right;margin:8px 0;"><span style="background:var(--acc);color:#fff;padding:6px 10px;border-radius:10px;display:inline-block;max-width:85%;text-align:left;">'+esc(teksti)+'</span></div>';
+  _claudeHist[id].push({role:'user',content:teksti});
+  inp.value=''; if(btn){ btn.disabled=true; btn.textContent='...'; }
+  const pritId='claudePrit'+Date.now();
+  chat.innerHTML+='<div id="'+pritId+'" style="margin:8px 0;"><span style="background:var(--bg2,#222);padding:6px 10px;border-radius:10px;display:inline-block;color:var(--mut);"><span class="spin"></span> Po mendoj...</span></div>';
+  chat.scrollTop=chat.scrollHeight;
+  try{
+    const r=await(await fetch('/api/asistenti',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mesazhet:_claudeHist[id]})})).json();
+    const p=document.getElementById(pritId); if(p) p.remove();
+    if(r.pergjigje){
+      _claudeHist[id].push({role:'assistant',content:r.pergjigje});
+      chat.innerHTML+='<div style="margin:8px 0;"><span style="background:var(--bg2,#1a1f28);padding:8px 12px;border-radius:10px;display:inline-block;max-width:90%;white-space:pre-wrap;">'+esc(r.pergjigje)+'</span></div>';
+    } else {
+      chat.innerHTML+='<div style="margin:8px 0;color:var(--err);font-size:13px;">'+esc(r.error||'Gabim në përgjigje.')+'</div>';
+    }
+  }catch(e){
+    const p=document.getElementById(pritId); if(p) p.remove();
+    chat.innerHTML+='<div style="margin:8px 0;color:var(--err);font-size:13px;">Gabim në lidhje.</div>';
+  }
+  if(btn){ btn.disabled=false; btn.textContent='Dërgo'; }
   chat.scrollTop=chat.scrollHeight;
 }
 async function snipEmriRuajFush(id){
