@@ -664,17 +664,11 @@ async function kontrolloSnippetFresket(){
     if(!nj) return;
     if(r.aktiv){
       nj.innerHTML='';
-      // Snippet-i u verifikua → hiq DIREKT njoftimin e konvertimit + plotëso piken (pa varësi)
-      if(prog) prog.konvertimi=true;
-      if(window.__njoftimet){ window.__njoftimet = window.__njoftimet.filter(x=>x.tip!=='konvertim' && x.tip!=='kujtese'); }
-      // perdito badge-in e ziles
-      const badge=$('zileBadge');
-      if(badge){ const n=(window.__njoftimet||[]).length; badge.textContent=n; badge.classList.toggle('hide', n===0); }
-      if(typeof renderNjBox==='function'){ try{ renderNjBox(); }catch(e){} }
-      if(typeof renderDashStatus==='function' && document.getElementById('vstep')){ try{ renderDashStatus(); }catch(e){} }
-      // rifresko edhe nga serveri (per konsistence)
+      // Snippet-i u verifikua. Pika/njoftimi plotesohen VETEM nese ka edhe nje URL ose kod te lidhur —
+      // ndaj e leme serverin te vendose (refreshProg/ngarkoNjoftimet lexojne gjendjen e plote).
       try{ await refreshProg(); }catch(e){}
       try{ await ngarkoNjoftimet(); }catch(e){}
+      if(typeof renderDashStatus==='function' && document.getElementById('vstep')){ try{ renderDashStatus(); }catch(e){} }
     }
     else{
       nj.innerHTML='<div style="background:#3d1418;border:1px solid var(--err);color:#ffb3b3;'+
@@ -777,7 +771,14 @@ async function zonaRifreskoStatus(){
     });
     // shto zona te reja qe u krijuan nga konvertime reale (s'ishin te lista)
     nga.forEach(g=>{ if(!_konvZona.some(z=>z.id===g.id)){ _konvZona.push({id:g.id, emri:g.emri||'', track_active:g.track_active}); ndryshoi=true; } });
-    if(ndryshoi) vizatoZonat();
+    if(ndryshoi){ vizatoZonat();
+      // nese ndonje zone eshte e lidhur → rifresko piken/njoftimin live
+      if(_konvZona.some(z=>z.track_active)){
+        try{ await refreshProg(); }catch(e){}
+        try{ await ngarkoNjoftimet(); }catch(e){}
+        if(typeof renderDashStatus==='function' && document.getElementById('vstep')){ try{ renderDashStatus(); }catch(e){} }
+      }
+    }
   }catch(e){}
 }
 function vizatoZonat(){
@@ -856,7 +857,13 @@ async function zonaStatus(){
     let ndonje=false;
     _konvZona.forEach(z=>{ const g=nga.find(x=>x.id===z.id); if(g){ z.track_active=g.track_active; if(g.track_active) ndonje=true; } });
     vizatoZonat();
-    if(ndonje){ const m=$('k_msg'); if(m){ m.className='msg ok'; m.textContent='Zona u verifikua.'; setTimeout(()=>{m.textContent='';},3000); } }
+    if(ndonje){
+      const m=$('k_msg'); if(m){ m.className='msg ok'; m.textContent='Zona u verifikua.'; setTimeout(()=>{m.textContent='';},3000); }
+      // Zona u lidh → rifresko piken e Dashboard + njoftimin e ziles menjehere
+      try{ await refreshProg(); }catch(e){}
+      try{ await ngarkoNjoftimet(); }catch(e){}
+      if(typeof renderDashStatus==='function' && document.getElementById('vstep')){ try{ renderDashStatus(); }catch(e){} }
+    }
     return ndonje;
   }catch(e){ return false; }
 }
