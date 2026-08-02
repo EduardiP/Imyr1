@@ -515,6 +515,8 @@ app.all('/konvertim', async (req, res) => {
        VALUES ($1,'konvertim',$2,$3,$4,$5)`,
       [kl.reklamues_id, zona ? ('zona:' + zona) : (req.headers.origin || req.headers.referer || null),
        kl.reklama_id, kl.reklamues_id, kod]);
+    // Nje konvertim REAL eshte prova qe snippet-i i gjurmimit eshte aktiv → rivendos track_active.
+    await pool.query('UPDATE bizneset SET track_active=true, track_seen_at=now() WHERE id=$1', [kl.reklamues_id]);
     // Nje konvertim REAL me zone → lidhe. Nese s'ekziston, krijoje si te lidhur (por jo e fshire).
     if (zona) {
       const z = await pool.query('SELECT id FROM zonat WHERE biznes_id=$1 AND emri=$2', [kl.reklamues_id, zona]);
@@ -825,30 +827,8 @@ app.get('/imyr.js', (req, res) => {
   }
   try { var qp = new URLSearchParams(location.search).get('imyr'); if(qp) ruajKod(qp); } catch(e){}
 
-  // ---------- KONVERTIMI ----------
-  function dergoKonv(){
-    var kod = lexoKod(); if(!kod || preview) return;
-    try { if(localStorage.getItem('imyr_konv_' + kod)) return; } catch(e){}
-    try {
-      var u = base + '/konvertim?kod=' + encodeURIComponent(kod);
-      navigator.sendBeacon ? navigator.sendBeacon(u) : fetch(u, {mode:'no-cors'});
-      localStorage.setItem('imyr_konv_' + kod, '1');
-    } catch(e){}
-  }
-  window.imyr = window.imyr || {};
-  window.imyr.konvertim = dergoKonv;
+  // Konvertimi menaxhohet nga snippet-i i gjurmimit (imyr-track.js), jo nga ky i reklamave.
 
-  function kontrolloKonvertim(konvUrl){
-    if(!konvUrl || preview) return;
-    if(!lexoKod()) return;
-    var tani = location.pathname + location.search;
-    var pos = tani.indexOf(konvUrl); if(pos === -1) return;
-    var pas = tani.charAt(pos + konvUrl.length);
-    if(pas !== '' && pas !== '?' && pas !== '#' && pas !== '/' && pas !== '&') return;
-    dergoKonv();
-  }
-
-  // ---------- NJOFTO LIDHJEN ----------
   // ---------- NJOFTO LIDHJEN E REKLAMES ----------
   if(!preview){
     try {
@@ -878,13 +858,8 @@ app.get('/imyr.js', (req, res) => {
   function run(){
     var slot = gjejSlot();
     if(!slot){
-      // Vetem gjurmim (skripti eshte te layout-i, pa hapesire reklame ketu)
-      if(!preview && lexoKod()){
-        fetch(base + '/cil?key=' + encodeURIComponent(key))
-          .then(function(r){ return r.json(); })
-          .then(function(c){ kontrolloKonvertim(c && c.konv_url); })
-          .catch(function(){});
-      }
+      // Vetem gjurmim shfaqjeje (skripti eshte te layout-i, pa hapesire reklame ketu).
+      // Konvertimin e menaxhon snippet-i i gjurmimit (imyr-track.js), jo ky.
       return;
     }
     // Frequency capping per session — NJE cikel i vetem i perbashket per te gjithe
@@ -907,7 +882,6 @@ app.get('/imyr.js', (req, res) => {
 
     function trajtoReklame(d){
       if(!d) return;
-      kontrolloKonvertim(d.konv_url);
       if(d.imazh_url || d.teksti){
         var rid = d.id ? ('&rid=' + encodeURIComponent(d.id)) : '';
         var mw = 210, mh = 261;
