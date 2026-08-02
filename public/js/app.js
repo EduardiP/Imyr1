@@ -232,14 +232,15 @@ async function ngarkoSnippetet(){
     const lista=r.snippetet||[];
     if(!lista.length){ c.innerHTML='<p class="small">Ende s\'ka snippet.</p>'; return; }
     let h='<div class="rektbl">'+
-      '<div class="rekhead" style="grid-template-columns:2fr 1fr 1fr auto;"><span>Emri</span><span>Statusi</span><span>Madhësia</span><span></span></div>';
+      '<div class="rekhead" style="grid-template-columns:2fr 1fr 1fr auto auto;"><span>Emri</span><span>Statusi</span><span>Madhësia</span><span></span><span></span></div>';
     lista.forEach(sn=>{
       const status = sn.snippet_active ? '<span style="color:var(--good);">● I lidhur</span>' : '<span style="color:var(--mut);">○ Pa lidhur</span>';
-      h+='<div class="rekrow" style="grid-template-columns:2fr 1fr 1fr auto;align-items:center;" id="snipRow'+sn.id+'">'+
-         '<span class="nm" id="snipEmri'+sn.id+'" onclick="snipEmriEdito('+sn.id+',\''+esc((sn.emri||'').replace(/\x27/g,""))+'\')" style="cursor:pointer;" title="Kliko për të ndryshuar emrin">'+esc(sn.emri||('Hapësira '+sn.id))+' <span style="opacity:.4;font-size:11px;">✎</span></span>'+
+      h+='<div class="rekrow" style="grid-template-columns:2fr 1fr 1fr auto auto;align-items:center;" id="snipRow'+sn.id+'">'+
+         '<span class="nm" id="snipEmri'+sn.id+'" onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})" style="cursor:pointer;">'+esc(sn.emri||('Hapësira '+sn.id))+'</span>'+
          '<span onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})" style="cursor:pointer;">'+status+'</span>'+
          '<span class="small" onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})" style="cursor:pointer;">'+esc(sn.madhesia_desktop||'—')+'</span>'+
-         '<button class="btn" style="padding:5px 9px;" onclick="snipKonfirmoFshi('+sn.id+',\''+esc((sn.emri||'').replace(/\x27/g,""))+'\','+(sn.snippet_active?1:0)+')">✕</button>'+
+         '<button class="btn" style="padding:5px 9px;" title="Ndrysho emrin" onclick="snipEmriEdito('+sn.id+',\''+esc((sn.emri||'').replace(/\x27/g,""))+'\')">✎</button>'+
+         '<button class="btn" style="padding:5px 9px;" title="Fshi" onclick="snipKonfirmoFshi('+sn.id+',\''+esc((sn.emri||'').replace(/\x27/g,""))+'\','+(sn.snippet_active?1:0)+')">✕</button>'+
          '</div>';
     });
     h+='</div>';
@@ -302,6 +303,39 @@ async function snipEmriRuaj(id){
   try{ await fetch('/api/snippetet/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({emri})}); }catch(e){}
   ngarkoSnippetet();
 }
+// Butoni i suportit Claude (implementimi i kodit) — hapesire qe hapet mes Kopjo dhe URL
+function vizatoClaudeSuport(id){
+  const box=$('claudeSuport'+id); if(!box) return;
+  box.innerHTML='<button class="btn" onclick="claudeHap('+id+')" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;border:1px dashed var(--acc);color:var(--acc);padding:10px;">'+
+    '<span style="font-size:16px;">✨</span> Nuk di ku ta vendosësh kodin? Pyet asistentin</button>';
+}
+function claudeHap(id){
+  const box=$('claudeSuport'+id); if(!box) return;
+  box.innerHTML='<div style="border:1px solid var(--acc);border-radius:12px;overflow:hidden;">'+
+    '<div style="background:var(--acc);color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">'+
+      '<span style="font-weight:600;">✨ Asistenti i kodit</span>'+
+      '<button onclick="vizatoClaudeSuport('+id+')" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;">✕</button>'+
+    '</div>'+
+    '<div id="claudeChat'+id+'" style="padding:14px;max-height:320px;overflow-y:auto;min-height:80px;">'+
+      '<div class="small" style="color:var(--mut);">Përshëndetje! Të ndihmoj të vendosësh kodin te faqja jote. Po e përgatis...</div>'+
+    '</div>'+
+    '<div style="padding:10px 14px;border-top:1px solid var(--line);display:flex;gap:8px;">'+
+      '<input id="claudeInput'+id+'" placeholder="Shkruaj pyetjen tënde..." style="flex:1;" onkeydown="if(event.key===\'Enter\')claudeDergo('+id+')">'+
+      '<button class="btn cta" onclick="claudeDergo('+id+')">Dërgo</button>'+
+    '</div>'+
+  '</div>';
+  // Placeholder — ketu do te lidhet API me Claude (hapi tjeter)
+}
+function claudeDergo(id){
+  const inp=$('claudeInput'+id); const chat=$('claudeChat'+id);
+  if(!inp||!chat) return;
+  const teksti=(inp.value||'').trim(); if(!teksti) return;
+  chat.innerHTML+='<div style="text-align:right;margin:8px 0;"><span style="background:var(--acc);color:#fff;padding:6px 10px;border-radius:10px;display:inline-block;">'+esc(teksti)+'</span></div>';
+  inp.value='';
+  // Placeholder — pergjigja do te vije nga Claude API kur ta lidhim
+  chat.innerHTML+='<div style="margin:8px 0;"><span style="background:var(--bg2,#222);padding:6px 10px;border-radius:10px;display:inline-block;color:var(--mut);">Asistenti do të lidhet së shpejti me AI-në...</span></div>';
+  chat.scrollTop=chat.scrollHeight;
+}
 async function snipEmriRuajFush(id){
   const emri=(($('snipEmriFush')||{}).value||'').trim();
   if(!emri) return;
@@ -333,6 +367,7 @@ async function snipDetaje(m, id){
         '<p class="small" style="margin:6px 0 10px;">Vendose këtë rresht aty ku do të shfaqet reklama te faqja jote.</p>'+
         '<textarea class="kod" id="snipKod" readonly>'+esc(snipKodi(sn.celes))+'</textarea>'+
         '<div class="rowbtn"><button class="btn cta" id="snipCbtn" onclick="snipKopjo()">Kopjo</button></div>'+
+        '<div id="claudeSuport'+id+'" style="margin:14px 0;"></div>'+
         '<div style="margin-top:14px;">'+
           '<label>URL-ja e faqes ku e vendose</label>'+
           '<input id="snipUrl" value="'+esc((une&&une.website)||'')+'" placeholder="https://faqja-ime.com">'+
@@ -342,6 +377,7 @@ async function snipDetaje(m, id){
         '<div id="madhWrap" style="margin-top:22px;"></div>';
       const w=b.querySelector('#madhWrap');
       if(w) ndertoMadhesine(w, true, sn.celes, sn);
+      vizatoClaudeSuport(id);
     }
   }catch(e){ b.innerHTML='<p class="small err">Gabim.</p>'; }
 }
@@ -1206,12 +1242,14 @@ function stepLidhja(b){
     '<h2 class="h">Lidh Imyr-in te faqja jote</h2>'+
     '<p class="small">Kopjo këtë rresht dhe vendose kudo te faqja jote (p.sh. te footer-i).</p>'+
     '<div id="connectWrap"></div>'+
+    '<div id="claudeSuportWiz" style="margin:14px 0;"></div>'+
     '<div style="margin-top:14px;"><a href="#" id="caktoLink" style="color:#4a9eff;text-decoration:none;font-size:14px;" '+
       'onclick="event.preventDefault();var x=document.getElementById(\'madhBox\');x.classList.toggle(\'hide\');if(!x.dataset.ngarkuar){x.dataset.ngarkuar=1;ndertoMadhesine(x,false);}">Cakto madhësinë e hapësirës</a></div>'+
     '<div id="madhBox" class="hide" style="margin-top:12px;"></div>'+
     '<button class="primary hide" id="lidhNext" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">Krijo reklamën →</button>';
   window.__onLidhur = ()=>{ renderHStep(); $('lidhNext').classList.remove('hide'); };
   connectUI($('connectWrap'));
+  vizatoClaudeSuport('Wiz');
   _snipAktiv=null;   // te wizard-i, madhesia ruhet per-biznes
   if(prog.lidhja){ $('lidhNext').classList.remove('hide'); }
 }
