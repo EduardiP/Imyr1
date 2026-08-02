@@ -632,12 +632,11 @@ function ndertoKonvertim(b, ngaWizard){
       '<button class="primary" id="k_btn" onclick="mbyllKonvertim(\''+pasRuajtjes.replace(/'/g,"\\'")+'\')">Dil →</button>'+
     '</div>'+
     '<div id="k_jo" class="hide" style="margin-top:14px;">'+
-      '<p class="small" style="margin:0 0 10px;">Thirre këtë rresht pikërisht aty ku ndodh konvertimi — te veprimi që quan konvertim (klik butoni, dërgim forme, ose çdo veprim me sukses). Kërkon që rreshti i gjurmimit lart të jetë vendosur — ai krijon funksionin <code>imyr.konvertim()</code>.</p>'+
-      '<div class="kodbox" id="k_kodKonv">imyr.konvertim();</div>'+
-      '<button class="btn" style="margin-top:8px;" onclick="kopjoKodKonv()">Kopjo</button>'+
-      '<p class="small" style="margin:16px 0 6px;">Nëse ke <b>disa zona</b> konvertimi, jepi secilës një emër që t\'i dallosh më vonë:</p>'+
-      '<div class="kodbox" style="margin-bottom:8px;">imyr.konvertim("regjistrim");\nimyr.konvertim("blerje");\nimyr.konvertim("prove-falas");</div>'+
-      '<button class="primary" onclick="mbyllKonvertim(\''+pasRuajtjes.replace(/'/g,"\\'")+'\')" style="margin-top:16px;">'+(ngaWizard?'Vazhdo →':'Dil →')+'</button>'+
+      '<p class="small" style="margin:0 0 12px;">Thirre kodin poshtë pikërisht aty ku ndodh <b>konvertimi i vërtetë</b> — te veprimi që ka vlerë për ty (regjistrim i përfunduar, blerje e kryer, formë e dërguar me sukses). Konvertimi gjurmohet vetëm kur ky veprim ndodh vërtet nga një vizitor real. Kërkon që rreshti i gjurmimit lart të jetë vendosur — ai krijon funksionin <code>imyr.konvertim()</code>.</p>'+
+      '<p class="small" style="margin:0 0 6px;">Nëse ke <b>disa lloje konvertimi</b> (p.sh. regjistrim dhe blerje), jepi secilit një emër që t\'i dallosh më vonë. Për secilin merr kodin e vet:</p>'+
+      '<div id="k_zonaLista"></div>'+
+      '<button class="btn" style="margin-top:8px;" onclick="zonaShto()">+ Shto lloj</button>'+
+      '<button class="primary" onclick="mbyllKonvertim(\''+pasRuajtjes.replace(/'/g,"\\'")+'\')" style="margin-top:18px;display:block;">'+(ngaWizard?'Vazhdo →':'Dil →')+'</button>'+
     '</div>'+
     '<div class="msg" id="k_msg"></div>';
   if(une && une.url_konvertimi){
@@ -742,6 +741,38 @@ function kopjoKodKonv(){
     const m=$('k_msg'); if(m){ m.className='msg ok'; m.textContent='U kopjua.'; setTimeout(()=>{m.textContent='';},2000); }
   }).catch(()=>{});
 }
+// ── Zonat e konvertimit me kod ──
+var _konvZona = [{emri:''}];  // te pakten nje zone (pa emer = kodi baze)
+function kodiZones(emri){
+  emri=(emri||'').trim();
+  return emri ? ('imyr.konvertim("'+emri+'");') : 'imyr.konvertim();';
+}
+function vizatoZonat(){
+  const c=$('k_zonaLista'); if(!c) return;
+  let h='';
+  _konvZona.forEach((z,i)=>{
+    h+='<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;">'+
+       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'+
+         '<input value="'+esc(z.emri)+'" placeholder="emri i llojit (p.sh. blerje)" oninput="zonaNdrysho('+i+',this.value)" style="flex:1;">'+
+         (_konvZona.length>1 ? '<button class="btn" style="padding:7px 10px;" onclick="zonaFshi('+i+')">✕</button>' : '')+
+       '</div>'+
+       '<div class="kodbox" id="k_zonaKod'+i+'">'+esc(kodiZones(z.emri))+'</div>'+
+       '<button class="btn" style="margin-top:6px;" onclick="zonaKopjo('+i+')">Kopjo</button>'+
+       '</div>';
+  });
+  c.innerHTML=h;
+}
+function zonaNdrysho(i,v){
+  if(_konvZona[i]){ _konvZona[i].emri=v; const k=$('k_zonaKod'+i); if(k) k.textContent=kodiZones(v); }
+}
+function zonaShto(){ _konvZona.push({emri:''}); vizatoZonat(); }
+function zonaFshi(i){ _konvZona.splice(i,1); if(!_konvZona.length) _konvZona=[{emri:''}]; vizatoZonat(); }
+function zonaKopjo(i){
+  const z=_konvZona[i]; if(!z) return;
+  navigator.clipboard.writeText(kodiZones(z.emri)).then(()=>{
+    const m=$('k_msg'); if(m){ m.className='msg ok'; m.textContent='U kopjua.'; setTimeout(()=>{m.textContent='';},2000); }
+  }).catch(()=>{});
+}
 async function kStatus(){
   const st=$('k_stat');
   try{
@@ -803,6 +834,7 @@ function kSwitch(){
   const v=segVal('k_ka');
   $('k_po').classList.toggle('hide', v!=='po');
   $('k_jo').classList.toggle('hide', v!=='jo');
+  if(v==='jo'){ vizatoZonat(); }
 }
 async function mbyllKonvertim(pasRuajtjes){
   // Gjithcka ruhet/fshihet menjehere (verifikim=ruaj, ✕=fshi). Ky vetem kthehet.
