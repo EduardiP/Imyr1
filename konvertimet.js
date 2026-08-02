@@ -91,7 +91,9 @@ module.exports = function (app, pool, iLoguar, iAdmin) {
           headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36' } });
         clearTimeout(t);
         const html = await resp.text();
-        if (html.indexOf(celes) !== -1 || html.indexOf('imyr-track.js') !== -1) gjetur = true;
+        // Duhet te kete TE DYJA: skedarin imyr-track.js DHE celesin unik te ketij biznesi.
+        // Keshtu snippet-i i nje biznesi tjeter (celes tjeter) nuk e verifikon kete profil.
+        if (html.indexOf('imyr-track.js') !== -1 && html.indexOf(celes) !== -1) gjetur = true;
       } catch (e) { gjetur = false; }
 
       // Perditeso statusin te databaza
