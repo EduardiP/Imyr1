@@ -147,7 +147,7 @@ async function kontrolloSnippetet24h() {
     const r = await pool.query(
       `SELECT s.id, s.celes, b.website
        FROM snippetet s JOIN bizneset b ON b.id = s.biznes_id
-       WHERE s.snippet_active = true AND b.website IS NOT NULL AND b.website <> ''`);
+       WHERE b.website IS NOT NULL AND b.website <> ''`);
     for (const s of r.rows) {
       let faqja = s.website;
       if (!/^https?:\/\//i.test(faqja)) faqja = 'https://' + faqja;
@@ -162,9 +162,10 @@ async function kontrolloSnippetet24h() {
         arritur = true;
         if (html.indexOf('imyr.js') !== -1 && html.indexOf(s.celes) !== -1) gjendet = true;
       } catch (e) { arritur = false; }
-      // Vetem nese e arritEm faqen POR s'e gjetEm kodin → çaktivizo (mos çaktivizo nEse s'u arrit)
-      if (arritur && !gjendet) {
-        await pool.query('UPDATE snippetet SET snippet_active=false WHERE id=$1', [s.id]);
+      // Vendos statusin AKTUAL: nese e arritEm faqen, statusi pasqyron gjendjen reale.
+      // (NEse s'e arritEm faqen, s'e prekim — mund tE jetE bllokim i pErkohshEm.)
+      if (arritur) {
+        await pool.query('UPDATE snippetet SET snippet_active=$1 WHERE id=$2', [gjendet, s.id]);
       }
       await new Promise(res => setTimeout(res, 1000));  // pauze mes kontrolleve
     }
@@ -312,16 +313,17 @@ app.get('/api/progres', iLoguar, async (req, res) => {
     const b = await pool.query(
       'SELECT permbledhje, pershkrimi, snippet_active, track_active, url_konvertimi, website, tipi FROM bizneset WHERE id=$1', [req.biznesId]);
     const p = await pool.query('SELECT 1 FROM promovimet WHERE biznes_id=$1 AND aktiv=true LIMIT 1', [req.biznesId]);
-    // A ka te pakten nje URL OSE nje zone (kod) te lidhur?
     const uLidhur = await pool.query('SELECT 1 FROM konvertimet WHERE biznes_id=$1 AND track_active=true LIMIT 1', [req.biznesId]);
     const zLidhur = await pool.query('SELECT 1 FROM zonat WHERE biznes_id=$1 AND track_active=true AND fshire=false LIMIT 1', [req.biznesId]);
+    // A ka te pakten nje snippet reklame aktiv?
+    const snLidhur = await pool.query('SELECT 1 FROM snippetet WHERE biznes_id=$1 AND snippet_active=true LIMIT 1', [req.biznesId]);
     const row = b.rows[0] || {};
     // Konvertimi i plote: snippet-i i gjurmimit aktiv DHE (nje URL ose nje zone e lidhur)
     const konvertimIPlote = !!row.track_active && (uLidhur.rows.length > 0 || zLidhur.rows.length > 0);
     res.json({
       llogaria: !!(row.website && row.tipi),            // gati kur ka website + tipi
       pershkrimi: !!(row.permbledhje || row.pershkrimi),// pershkrimi/AI u dha
-      lidhja: !!row.snippet_active,                     // snippet-i u lidh
+      lidhja: snLidhur.rows.length > 0,                 // te pakten nje snippet reklame aktiv
       konvertimi: konvertimIPlote,                       // snippet + (URL ose kod) i lidhur
       reklama: p.rows.length > 0                         // reklama u krijua
     });
@@ -376,16 +378,17 @@ app.get('/api/njoftimet', iLoguar, async (req, res) => {
     const p = await pool.query('SELECT COUNT(*)::int n FROM promovimet WHERE biznes_id=$1 AND aktiv=true', [req.biznesId]);
     const uLidhur = await pool.query('SELECT 1 FROM konvertimet WHERE biznes_id=$1 AND track_active=true LIMIT 1', [req.biznesId]);
     const zLidhur = await pool.query('SELECT 1 FROM zonat WHERE biznes_id=$1 AND track_active=true AND fshire=false LIMIT 1', [req.biznesId]);
+    const snLidhur = await pool.query('SELECT 1 FROM snippetet WHERE biznes_id=$1 AND snippet_active=true LIMIT 1', [req.biznesId]);
+    const kaSnippetAktiv = snLidhur.rows.length > 0;
     const row = b.rows[0] || {};
     const ditet = Math.floor((Date.now() - new Date(row.created_at).getTime()) / 86400000);
     const kaReklame = p.rows[0].n > 0;
-    // Konvertimi i lidhur: snippet-i i gjurmimit aktiv DHE (nje URL ose nje zone e lidhur)
     const kaKonvertimTeLidhur = !!row.track_active && (uLidhur.rows.length > 0 || zLidhur.rows.length > 0);
     const njf = [];
 
-    if (!row.snippet_active) {
-      njf.push({ tip: 'snippet', titull: 'Lidh snippet-in',
-        teksti: "Vendos snippet-in te faqja jote që të marrësh dhe të japësh shfaqje.", veprim: 'lidhja' });
+    if (!kaSnippetAktiv) {
+      njf.push({ tip: 'snippet', titull: 'Reklamat e tua nuk po shfaqen',
+        teksti: "S'ke asnjë hapësirë reklame aktive. Meqë s'po shfaq reklamat e të tjerëve, as reklamat e tua s'po marrin shfaqje te rrjeti. Lidh një hapësirë që të kthehet gjithçka në normalitet.", veprim: 'lidhja' });
     }
     if (!kaReklame) {
       njf.push({ tip: 'reklama', titull: 'Krijo reklamën tënde të parë',
