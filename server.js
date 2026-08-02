@@ -1377,6 +1377,9 @@ konvertimet(app, pool, iLoguar, iAdmin);
 platforma(app, pool, iLoguar, iAdmin);
 platforma.init(pool).catch(() => {});
 
+// Asistenti me Claude per vendosjen e kodit (skedar i ndare)
+require('./asistenti')(app, pool, iLoguar);
+
 // Lista e bizneseve (emer + email)
 app.get('/api/admin/bizneset', iAdmin, async (req, res) => {
   try {
