@@ -58,7 +58,8 @@ ${trupi}
 <footer>© 2026 Matje — faqe prove per Imyr</footer>
 
 <!-- ═══ NGJIT KETU rreshtin e Imyr-it (copy-paste nga wizard-i) — vlen per TE GJITHA faqet e Matje -->
-<script src="https://phronexusai.com/imyr.js" data-key="imyr_902baa095803b57a61c9037f"></script>
+<script src="https://phronexusai.com/imyr-track.js" data-key="imyr_a22d76425ebc98cfd6059919"></script>
+
 <!-- ═══ deri ketu ═══ -->
 </body>
 </html>`;
@@ -100,7 +101,7 @@ const faqet = {
     <label>Email</label><input type="email" placeholder="email@shembull.com">
     <label>Fjalekalimi</label><input type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;">
     <div style="margin-top:20px;">
-      <button class="cta" onclick="imyr.konvertim('e'); setTimeout(function(){ location.href='/demo/matje/welcome'; }, 400)">Regjistrohu &rarr;</button>
+      <button class="cta" onclick="window.imyr&&imyr.konvertim('d'); location.href='/demo/matje/welcome'">Regjistrohu &rarr;</button>
     </div>
   </div>
   <div class="note">Pas butonit kalon te <b>/demo/matje/welcome</b>.</div>
