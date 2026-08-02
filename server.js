@@ -416,6 +416,22 @@ app.get('/diag/:kod', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// --- KRIJO NJE KLIK PROVE (per verifikimin e zones me kod) ---
+app.post('/api/zona-prove', iLoguar, async (req, res) => {
+  try {
+    const kod = crypto.randomBytes(9).toString('hex');
+    // klik "prove" — origjina e shenon si test qe te mos ndotet statistika
+    await pool.query(
+      `INSERT INTO ngjarjet (biznes_id, lloji, origjina, reklama_id, reklamues_id, klik_kod)
+       VALUES ($1,'click','PROVE',NULL,$1,$2)`, [req.biznesId, kod]);
+    let faqja = req.biznesId ? null : null;
+    const b = await pool.query('SELECT website FROM bizneset WHERE id=$1', [req.biznesId]);
+    faqja = b.rows.length ? b.rows[0].website : null;
+    if (faqja && !/^https?:\/\//i.test(faqja)) faqja = 'https://' + faqja;
+    res.json({ kod, faqja });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // --- KONVERTIMI: numerohet vetem nese ekziston nje klikim i vlefshem ---
 // --- VERIFIKIMI I ZONES ME KOD (provë, s'numërohet si konvertim) ---
 app.all('/konvertim-verifiko', async (req, res) => {
@@ -441,12 +457,27 @@ app.all('/konvertim', async (req, res) => {
   if (!kod) return res.status(204).end();
   try {
     const k = await pool.query(
-      `SELECT reklama_id, reklamues_id, created_at FROM ngjarjet
+      `SELECT reklama_id, reklamues_id, created_at, origjina FROM ngjarjet
        WHERE klik_kod=$1 AND lloji='click' LIMIT 1`, [kod]);
     if (!k.rows.length) return res.status(204).end();           // kod i panjohur
     const kl = k.rows[0];
     const DITE = 30 * 24 * 3600 * 1000;
     if (Date.now() - new Date(kl.created_at).getTime() > DITE) return res.status(204).end();
+
+    // KLIK PROVE (verifikim): lidh zonen POR mos regjistro konvertim te vertete
+    if (kl.origjina === 'PROVE') {
+      if (zona) {
+        const z = await pool.query('SELECT id FROM zonat WHERE biznes_id=$1 AND emri=$2', [kl.reklamues_id, zona]);
+        if (z.rows.length) await pool.query('UPDATE zonat SET track_active=true, track_seen_at=now() WHERE id=$1', [z.rows[0].id]);
+        else await pool.query('INSERT INTO zonat (biznes_id, emri, track_active, track_seen_at) VALUES ($1,$2,true,now())', [kl.reklamues_id, zona]);
+      } else {
+        // zona pa emer (imyr.konvertim() bosh) — lidh zonen boshe
+        const z = await pool.query("SELECT id FROM zonat WHERE biznes_id=$1 AND emri=''", [kl.reklamues_id]);
+        if (z.rows.length) await pool.query('UPDATE zonat SET track_active=true, track_seen_at=now() WHERE id=$1', [z.rows[0].id]);
+      }
+      return res.status(204).end();
+    }
+
     // nje konvertim per klikim PER ZONE (zona te ndryshme numerohen veç)
     const ekz = await pool.query(
       `SELECT 1 FROM ngjarjet WHERE klik_kod=$1 AND lloji='konvertim'
