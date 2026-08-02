@@ -476,6 +476,13 @@ app.all('/konvertim', async (req, res) => {
       return res.status(204).end();
     }
 
+    // Nese konvertimi vjen me KOD ME EMER (zona jo bosh), lidhja vlen vetem nese zona ekziston te profili.
+    // Nese klienti e ka fshire zonen me ✕ → lidhja shkeputet → mos e regjistro.
+    // (Konvertimet me URL ose me kod pa emer s'kane 'zona' → nuk preken ketu.)
+    if (zona) {
+      const ekziston = await pool.query('SELECT 1 FROM zonat WHERE biznes_id=$1 AND emri=$2 LIMIT 1', [kl.reklamues_id, zona]);
+      if (!ekziston.rows.length) return res.status(204).end();  // zona u fshi → injoro
+    }
     // nje konvertim per klikim PER ZONE (zona te ndryshme numerohen veç)
     const ekz = await pool.query(
       `SELECT 1 FROM ngjarjet WHERE klik_kod=$1 AND lloji='konvertim'
@@ -486,7 +493,7 @@ app.all('/konvertim', async (req, res) => {
        VALUES ($1,'konvertim',$2,$3,$4,$5)`,
       [kl.reklamues_id, zona ? ('zona:' + zona) : (req.headers.origin || req.headers.referer || null),
        kl.reklama_id, kl.reklamues_id, kod]);
-    // Nje konvertim REAL me zone → lidh ate zone NESE ekziston te profili (mos e rikrijo nese u fshi).
+    // Nje konvertim REAL me zone → lidh ate zone (ekziston, e verifikuam lart).
     if (zona) {
       await pool.query('UPDATE zonat SET track_active=true, track_seen_at=now() WHERE biznes_id=$1 AND emri=$2', [kl.reklamues_id, zona]);
     }
