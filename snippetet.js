@@ -89,8 +89,12 @@ module.exports = function (app, pool, iLoguar, beCeles) {
   app.post('/api/snippetet', iLoguar, async (req, res) => {
     try {
       const celes = beCeles();
-      const numri = await pool.query('SELECT COUNT(*)::int AS n FROM snippetet WHERE biznes_id=$1', [req.biznesId]);
-      const emri = 'Snippet ' + (numri.rows[0].n + 1);
+      let emri = ((req.body && req.body.emri) || '').trim();
+      if (!emri) {
+        // fallback: emer automatik nese s'u dha
+        const numri = await pool.query('SELECT COUNT(*)::int AS n FROM snippetet WHERE biznes_id=$1', [req.biznesId]);
+        emri = 'Hapësira ' + (numri.rows[0].n + 1);
+      }
       const r = await pool.query(
         `INSERT INTO snippetet (biznes_id, celes, emri, madhesia_desktop, madhesia_mobile, pozicioni)
          VALUES ($1,$2,$3,$4,$5,'qender')
@@ -110,7 +114,33 @@ module.exports = function (app, pool, iLoguar, beCeles) {
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
-  // Kontrollo nese nje snippet eshte lidhur (per polling gjate verifikimit)
+  // Kontrollo nese snippet-i i reklames eshte ende te faqja (imyr.js + celesi, TE DYJA).
+  // Perdoret nga butoni ✕: fshihet vetem nese s'gjendet me te faqja.
+  app.get('/api/snippetet/:id/gjurmo', iLoguar, async (req, res) => {
+    try {
+      const s = await pool.query('SELECT celes FROM snippetet WHERE id=$1 AND biznes_id=$2', [req.params.id, req.biznesId]);
+      if (!s.rows.length) return res.json({ gjendet: false });
+      const celes = s.rows[0].celes;
+      // Faqja per te kontrolluar: website i biznesit
+      const b = await pool.query('SELECT website FROM bizneset WHERE id=$1', [req.biznesId]);
+      let faqja = b.rows.length ? b.rows[0].website : null;
+      if (!faqja) return res.json({ gjendet: false, skontrolluar: true });
+      if (!/^https?:\/\//i.test(faqja)) faqja = 'https://' + faqja;
+      let gjendet = false, arritur = false;
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 6000);
+        const resp = await fetch(faqja, { signal: ctrl.signal, redirect: 'follow',
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36' } });
+        clearTimeout(t);
+        const html = await resp.text();
+        arritur = true;
+        // TE DYJA: imyr.js DHE celesi i sakte
+        if (html.indexOf('imyr.js') !== -1 && html.indexOf(celes) !== -1) gjendet = true;
+      } catch (e) { arritur = false; }
+      res.json({ gjendet, arritur });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
   app.get('/api/snippetet/:id/kontrollo', iLoguar, async (req, res) => {
     try {
       const r = await pool.query('SELECT snippet_active FROM snippetet WHERE id=$1 AND biznes_id=$2',
