@@ -1,172 +1,228 @@
-// kombinimi.js — Logjika e kombinimit me AI (e ndare nga server.js)
-// Server.js e therret: const kombinimi = require('./kombinimi'); kombinimi.init(pool);
-// dhe: kombinimi.kombinoBiznesin(bizId)  — kur nje biznes kalon piken e 3-te.
-//
-// Cfare mat: vleresim 0-1000 = sa gati jane klientet/vizitoret e njerit biznes
-// per te perdorur sherbimin e tjetrit (potenciali i konvertimit). Nje cift jep
-// DY vleresime (A→B dhe B→A). Ruhet nje here te tabela `perputhjet`, s'rillogaritet.
-//
-// Rregulli i tipit: b2b vetem me b2b, b2c vetem me b2c, b2b2c me te gjitha.
+// konvertimet.js — Lejon disa URL konvertimi per biznes (te ndara: ruajtje, gjurmim, verifikim).
+// Migron url_konvertimi ekzistuese si URL-en e pare (pa prekur 5 bizneset ekzistuese, pa kosto).
+// Server.js e therret: require('./konvertimet')(app, pool, iLoguar);
+// Nuk prek gjurmimin ekzistues (url_konvertimi te bizneset mbetet per perputhshmeri).
 
-let _pool = null;
-
-function init(pool) {
-  _pool = pool;
-  return krijoTabelen();
-}
-
-async function krijoTabelen() {
-  await _pool.query(`
-    CREATE TABLE IF NOT EXISTS perputhjet (
-      reklamues_id INTEGER NOT NULL,
-      host_id      INTEGER NOT NULL,
-      skori        INTEGER,
-      created_at   TIMESTAMPTZ DEFAULT now(),
-      PRIMARY KEY (reklamues_id, host_id)
+async function init(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS konvertimet (
+      id SERIAL PRIMARY KEY,
+      biznes_id     INTEGER NOT NULL REFERENCES bizneset(id) ON DELETE CASCADE,
+      url           TEXT NOT NULL,
+      track_active  BOOLEAN DEFAULT false,
+      track_seen_at TIMESTAMPTZ,
+      ruajtur       BOOLEAN DEFAULT false,
+      krijuar_at    TIMESTAMPTZ DEFAULT now()
     )`);
-  await _pool.query(`CREATE INDEX IF NOT EXISTS idx_perputhjet_host ON perputhjet(host_id)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_konvertimet_biz ON konvertimet(biznes_id)`);
+  await pool.query(`ALTER TABLE konvertimet ADD COLUMN IF NOT EXISTS ruajtur BOOLEAN DEFAULT false`);
+
+  // Zonat e konvertimit me KOD (imyr.konvertim("emri")) — ruhen qe klienti t'i shohe/gjurmoje vec
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS zonat (
+      id SERIAL PRIMARY KEY,
+      biznes_id     INTEGER NOT NULL REFERENCES bizneset(id) ON DELETE CASCADE,
+      emri          TEXT DEFAULT '',
+      track_active  BOOLEAN DEFAULT false,
+      track_seen_at TIMESTAMPTZ,
+      fshire        BOOLEAN DEFAULT false,
+      krijuar_at    TIMESTAMPTZ DEFAULT now()
+    )`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_zonat_biz ON zonat(biznes_id)`);
+  await pool.query(`ALTER TABLE zonat ADD COLUMN IF NOT EXISTS fshire BOOLEAN DEFAULT false`);
+
+  // MIGRIMI: cdo biznes qe ka url_konvertimi por s'ka ende rresht te tabela e re →
+  // krijo URL-en e pare me statusin ekzistues (track_active nga bizneset).
+  await pool.query(`
+    INSERT INTO konvertimet (biznes_id, url, track_active, track_seen_at, ruajtur)
+    SELECT b.id, b.url_konvertimi, COALESCE(b.track_active,false), b.track_seen_at, true
+    FROM bizneset b
+    WHERE b.url_konvertimi IS NOT NULL AND b.url_konvertimi <> ''
+      AND NOT EXISTS (SELECT 1 FROM konvertimet k WHERE k.biznes_id = b.id)
+  `);
 }
 
-// A perputhen dy tipe per t'u kombinuar
-function tipetPerputhen(a, b) {
-  if (a === 'b2b2c' || b === 'b2b2c') return true;   // b2b2c me te gjitha
-  return a === b;                                     // b2b↔b2b, b2c↔b2c
-}
-
-// --- Thirrja te AI per nje cift: kthen {ab, ba} ose null nese deshton ---
-async function skoroCiftin(a, b) {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) return null;
-  const model = process.env.OPENAI_MODEL_SKORI || 'gpt-5.6-sol';
-
-  const sys =
-    'Je nje sistem qe vlereson potencialin e konvertimit mes dy sherbimeve per nje rrjet cross-promotion. ' +
-    'Kthe VETEM JSON, pa asnje tekst tjeter.';
-
-  const user =
-    'Ke dy biznese. Per secilin, logjiko KUSH jane klientet/vizitoret e tij nga pershkrimi dhe audienca, ' +
-    'dhe vlereso sa GATI do te ishin ata per te perdorur sherbimin e biznesit tjeter (potenciali i konvertimit).\n\n' +
-    'BIZNESI A:\n' + pershkrimBiznesi(a) + '\n\n' +
-    'BIZNESI B:\n' + pershkrimBiznesi(b) + '\n\n' +
-    'Mendo keshtu: kur nje biznes eshte B2B, klientet e tij jane BIZNESE. Nese biznesi tjeter gjithashtu ' +
-    'i sherben bizneseve me dicka qe atyre mund t\'u duhet, potenciali eshte i LARTE — mos e nenvleroso. ' +
-    'Nje pronar biznesi qe perdor nje mjet, shpesh ka nevoje edhe per mjete te tjera plotesuese.\n\n' +
-    'SHKALLA (perdore te gjithe, mos u mbaj poshte pa arsye):\n' +
-    '- 800-1000: perputhje shume e forte — audienca e njerit ka gati gjithmone nevoje per tjetrin.\n' +
-    '- 550-799: perputhje e mire — shume nga audienca do ta perdornin.\n' +
-    '- 300-549: perputhje e moderuar — disa do ta perdornin.\n' +
-    '- 100-299: perputhje e dobet — pak gjasa.\n' +
-    '- 0-99: pa lidhje, ose konkurrente (i njejti sherbim → ul deri ne zero).\n\n' +
-    'Jep DY vleresime 0-1000:\n' +
-    '- "ab": sa gati jane klientet/vizitoret e B per te perdorur sherbimin e A.\n' +
-    '- "ba": sa gati jane klientet/vizitoret e A per te perdorur sherbimin e B.\n\n' +
-    'Vetem konkurrentet direkte (i njejti sherbim) marrin pike shume te ulet. ' +
-    'Sherbime te ndryshme por qe i sherbejne te njejtes audience jane KOMPLEMENTARE — pike te larta.\n\n' +
-    'Kthe JSON: {"ab": numer 0-1000, "ba": numer 0-1000}';
-
+// Normalizo nje URL konvertimi — klienti fut URL-en E PLOTE (https://...).
+function normalizo(u) {
+  u = (u || '').trim();
+  if (!u) return null;
+  if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
   try {
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-      body: JSON.stringify({
-        model,
-        response_format: { type: 'json_object' },
-        messages: [{ role: 'system', content: sys }, { role: 'user', content: user }]
-      })
-    });
-    const data = await r.json();
-    if (data.error) { console.error('Skori AI gabim:', data.error.message); return null; }
-    const p = JSON.parse(data.choices[0].message.content);
-    const ab = kufizo(p.ab), ba = kufizo(p.ba);
-    if (ab === null || ba === null) return null;
-    return { ab, ba };
-  } catch (e) {
-    console.error('Skori AI deshtoi:', e.message);
-    return null;
-  }
-}
-
-function kufizo(n) {
-  n = parseInt(n, 10);
-  if (isNaN(n)) return null;
-  return Math.max(0, Math.min(1000, n));
-}
-
-function pershkrimBiznesi(b) {
-  const p = b.permbledhje || b.pershkrimi || '(pa pershkrim)';
-  const audienca = b.tipi === 'b2b' ? 'Biznese (klientet jane kompani/biznese)'
-                 : b.tipi === 'b2c' ? 'Individe (klientet jane konsumatore/individe)'
-                 : b.tipi === 'b2b2c' ? 'Te dyja (biznese dhe individe)'
-                 : '(e papercaktuar)';
-  const kat = b.kategoria_kryesore ? ('\nKategoria: ' + b.kategoria_kryesore) : '';
-  const nk = b.nenkategorite ? ('\nNenkategorite: ' + b.nenkategorite) : '';
-  return p + '\nAudienca/klientet: ' + audienca + kat + nk;
-}
-
-// --- Merr te dhenat e nevojshme te nje biznesi ---
-async function merrBiznesin(id) {
-  const r = await _pool.query(
-    `SELECT id, emri, tipi, permbledhje, pershkrimi, kategoria_kryesore, nenkategorite
-     FROM bizneset WHERE id=$1`, [id]);
-  return r.rows[0] || null;
-}
-
-// --- A eshte biznesi "gati" (3 pikat: biznesi + pershkrimi + lidhja) ---
-function eshteGati(b) {
-  return b && b.tipi && (b.permbledhje || b.pershkrimi);
-  // snippet_active kontrollohet nga thirresi (server e di gjendjen)
-}
-
-// --- Bizneset e tjera gati te po asaj pishine (per t'u kombinuar) ---
-async function biznesetPerKombinim(vetja) {
-  const r = await _pool.query(
-    `SELECT id, emri, tipi, permbledhje, pershkrimi, kategoria_kryesore, nenkategorite
-     FROM bizneset
-     WHERE id <> $1
-       AND tipi IS NOT NULL
-       AND (permbledhje IS NOT NULL OR pershkrimi IS NOT NULL)
-       AND snippet_active = true`, [vetja.id]);
-  return r.rows.filter(b => tipetPerputhen(vetja.tipi, b.tipi));
-}
-
-// --- A ekziston tashme cifti (ne cfaredo drejtimi) ---
-async function ekzistonCifti(a, b) {
-  const r = await _pool.query(
-    'SELECT 1 FROM perputhjet WHERE reklamues_id=$1 AND host_id=$2 LIMIT 1', [a, b]);
-  return r.rows.length > 0;
-}
-
-// --- Ruaj te dy drejtimet e nje cifti ---
-async function ruajCiftin(aId, bId, ab, ba) {
-  // ab = sa A plotesues per B  => reklamues=A, host=B
-  // ba = sa B plotesues per A  => reklamues=B, host=A
-  await _pool.query(
-    `INSERT INTO perputhjet (reklamues_id, host_id, skori) VALUES ($1,$2,$3)
-     ON CONFLICT (reklamues_id, host_id) DO UPDATE SET skori=EXCLUDED.skori`,
-    [aId, bId, ab]);
-  await _pool.query(
-    `INSERT INTO perputhjet (reklamues_id, host_id, skori) VALUES ($1,$2,$3)
-     ON CONFLICT (reklamues_id, host_id) DO UPDATE SET skori=EXCLUDED.skori`,
-    [bId, aId, ba]);
-}
-
-// --- FUNKSIONI KRYESOR: kombino nje biznes me pishinen e vet ---
-// Thirret kur biznesi kalon piken e 3-te. Punon ne sfond (pa e bllokuar pergjigjen).
-async function kombinoBiznesin(bizId) {
-  if (!_pool) return;
-  try {
-    const vetja = await merrBiznesin(bizId);
-    if (!eshteGati(vetja)) return;
-    const tetjeret = await biznesetPerKombinim(vetja);
-    if (!tetjeret.length) return;
-    for (const tjetri of tetjeret) {
-      if (await ekzistonCifti(vetja.id, tjetri.id)) continue;   // llogaritur tashme
-      const skor = await skoroCiftin(vetja, tjetri);
-      if (skor) await ruajCiftin(vetja.id, tjetri.id, skor.ab, skor.ba);
+    const p = new URL(u);
+    // ballina e plote pa shteg s'mund te jete faqe konvertimi
+    if ((p.pathname === '/' || p.pathname === '') && !p.search) {
+      return { error: "Ballina s'mund të jetë faqe konvertimi — jep adresën e plotë të faqes që hapet vetëm pas konvertimit." };
     }
+    return { url: u.replace(/\/+$/, '') };
   } catch (e) {
-    console.error('kombinoBiznesin deshtoi:', e.message);
+    return { error: 'Adresë e pavlefshme.' };
   }
 }
 
-module.exports = { init, kombinoBiznesin, tipetPerputhen };
+// Kthen te gjitha URL-te e konvertimit te nje biznesi (per snippet-in gjurmues).
+async function urletPerBiznes(pool, bizId) {
+  const r = await pool.query('SELECT url FROM konvertimet WHERE biznes_id=$1 ORDER BY id ASC', [bizId]);
+  return r.rows.map(x => x.url);
+}
+
+module.exports = function (app, pool, iLoguar, iAdmin) {
+
+  init(pool).catch(e => console.error('konvertimet init:', e.message));
+
+  // Kontroll i fresket: a eshte ende snippet-i i gjurmimit (imyr-track.js) te faqja?
+  // Serveri viziton nje faqe PUBLIKE ku u pa (track_url ose origjina/website) dhe kerkon celesin.
+  app.get('/api/track-fresket', iLoguar, async (req, res) => {
+    try {
+      const b = await pool.query(
+        'SELECT celes, track_url, origjina, website, track_active FROM bizneset WHERE id=$1', [req.biznesId]);
+      if (!b.rows.length) return res.json({ aktiv: false });
+      const row = b.rows[0];
+      const celes = row.celes;
+      // Faqja per te kontrolluar: track_url (ku u pa gjurmuesi), pastaj origjina, pastaj website
+      let faqja = row.track_url || row.origjina || row.website || null;
+      if (!faqja) return res.json({ aktiv: !!row.track_active, pakontrolluar: true });
+      if (!/^https?:\/\//i.test(faqja)) faqja = 'https://' + faqja;
+
+      let gjetur = false;
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 6000);
+        const resp = await fetch(faqja, { signal: ctrl.signal, redirect: 'follow',
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36' } });
+        clearTimeout(t);
+        const html = await resp.text();
+        if (html.indexOf(celes) !== -1 || html.indexOf('imyr-track.js') !== -1) gjetur = true;
+      } catch (e) { gjetur = false; }
+
+      // Perditeso statusin te databaza
+      if (gjetur) {
+        await pool.query('UPDATE bizneset SET track_active=true, track_seen_at=now() WHERE id=$1', [req.biznesId]);
+      } else {
+        await pool.query('UPDATE bizneset SET track_active=false WHERE id=$1', [req.biznesId]);
+        // Snippet-i s'eshte me → prish lidhjen e URL-ve DHE zonave (riverifikohen manualisht)
+        await pool.query('UPDATE konvertimet SET track_active=false WHERE biznes_id=$1', [req.biznesId]);
+        await pool.query('UPDATE zonat SET track_active=false WHERE biznes_id=$1', [req.biznesId]);
+      }
+      res.json({ aktiv: gjetur, faqja: faqja });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ADMIN: numri i freskët i URL-ve të një biznesi + statusi i secilës
+  if (iAdmin) {
+    app.get('/api/admin/konvertimet/:id', iAdmin, async (req, res) => {
+      try {
+        const r = await pool.query(
+          `SELECT id, url, track_active, track_seen_at FROM konvertimet WHERE biznes_id=$1 ORDER BY id ASC`,
+          [req.params.id]);
+        const total = r.rows.length;
+        const lidhur = r.rows.filter(x => x.track_active).length;
+        res.json({ total, lidhur, urlat: r.rows });
+      } catch (e) { res.status(500).json({ error: e.message }); }
+    });
+  }
+
+  // Listo URL-te e konvertimit te biznesit (te loguar) me statusin e secilit
+  app.get('/api/konvertimet', iLoguar, async (req, res) => {
+    try {
+      const r = await pool.query(
+        `SELECT id, url, track_active, track_seen_at FROM konvertimet WHERE biznes_id=$1 ORDER BY id ASC`,
+        [req.biznesId]);
+      res.json({ konvertimet: r.rows });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // Shto nje URL te re konvertimi (pa lidhur ende)
+  app.post('/api/konvertimet', iLoguar, async (req, res) => {
+    const n = normalizo(req.body && req.body.url);
+    if (!n) return res.status(400).json({ error: 'Fut një adresë.' });
+    if (n.error) return res.status(400).json({ error: n.error });
+    try {
+      // mos lejo dublikate per te njejtin biznes
+      const ek = await pool.query('SELECT id FROM konvertimet WHERE biznes_id=$1 AND url=$2', [req.biznesId, n.url]);
+      if (ek.rows.length) return res.json({ id: ek.rows[0].id, url: n.url, track_active: false });
+      const r = await pool.query(
+        `INSERT INTO konvertimet (biznes_id, url) VALUES ($1,$2)
+         RETURNING id, url, track_active, track_seen_at`, [req.biznesId, n.url]);
+      // Nese kjo URL eshte pare tashme nga kodi gjurmues (biznesi ka track_url qe perputhet),
+      // shenoje menjehere si aktive — qe fshirja + rikrijimi te mos e humbase statusin.
+      try {
+        const bz = await pool.query('SELECT track_url, track_active FROM bizneset WHERE id=$1', [req.biznesId]);
+        if (bz.rows.length && bz.rows[0].track_active && bz.rows[0].track_url) {
+          let shteg = bz.rows[0].track_url;
+          try { const p = new URL(shteg); shteg = p.pathname + p.search; } catch (e) {}
+          if (shteg.indexOf(n.url) === 0) {
+            await pool.query('UPDATE konvertimet SET track_active=true, track_seen_at=now() WHERE id=$1', [r.rows[0].id]);
+            r.rows[0].track_active = true;
+          }
+        }
+      } catch (e) {}
+      // Perputhshmeri: nese eshte URL-ja e pare, vendose edhe te bizneset.url_konvertimi
+      await sinkronizoTeBizneset(pool, req.biznesId);
+      res.json(r.rows[0]);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // Fshi nje URL konvertimi
+  app.delete('/api/konvertimet/:id', iLoguar, async (req, res) => {
+    try {
+      await pool.query('DELETE FROM konvertimet WHERE id=$1 AND biznes_id=$2', [req.params.id, req.biznesId]);
+      await sinkronizoTeBizneset(pool, req.biznesId);
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ── ZONAT E KONVERTIMIT ME KOD ──
+  app.get('/api/zonat', iLoguar, async (req, res) => {
+    try {
+      const r = await pool.query(
+        'SELECT id, emri, track_active FROM zonat WHERE biznes_id=$1 AND fshire=false ORDER BY id ASC', [req.biznesId]);
+      res.json({ zonat: r.rows });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.post('/api/zonat', iLoguar, async (req, res) => {
+    const emri = ((req.body && req.body.emri) || '').trim();
+    try {
+      const ek = await pool.query('SELECT id, emri, track_active, fshire FROM zonat WHERE biznes_id=$1 AND emri=$2', [req.biznesId, emri]);
+      if (ek.rows.length) {
+        // nese ishte e fshire, rikthe (klienti e shtoi serish)
+        if (ek.rows[0].fshire) {
+          await pool.query('UPDATE zonat SET fshire=false WHERE id=$1', [ek.rows[0].id]);
+        }
+        return res.json({ id: ek.rows[0].id, emri: ek.rows[0].emri, track_active: ek.rows[0].track_active });
+      }
+      const r = await pool.query(
+        'INSERT INTO zonat (biznes_id, emri) VALUES ($1,$2) RETURNING id, emri, track_active', [req.biznesId, emri]);
+      res.json(r.rows[0]);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.delete('/api/zonat/:id', iLoguar, async (req, res) => {
+    try {
+      // Merr emrin e zones per te fshire edhe konvertimet e saj te vjetra
+      const z = await pool.query('SELECT emri FROM zonat WHERE id=$1 AND biznes_id=$2', [req.params.id, req.biznesId]);
+      // Soft-delete: sheno si e fshire (konvertimet e ardhshme injorohen)
+      await pool.query('UPDATE zonat SET fshire=true, track_active=false WHERE id=$1 AND biznes_id=$2', [req.params.id, req.biznesId]);
+      // Hiq konvertimet e vjetra te kesaj zone qe te mos numerohen me te piket/statistikat
+      if (z.rows.length) {
+        await pool.query(
+          "DELETE FROM ngjarjet WHERE biznes_id=$1 AND lloji='konvertim' AND origjina=$2",
+          [req.biznesId, 'zona:' + z.rows[0].emri]);
+      }
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+};
+
+// Mban bizneset.url_konvertimi = URL-ja e pare (perputhshmeri me kodin ekzistues).
+async function sinkronizoTeBizneset(pool, bizId) {
+  const r = await pool.query('SELECT url FROM konvertimet WHERE biznes_id=$1 ORDER BY id ASC LIMIT 1', [bizId]);
+  const u = r.rows.length ? r.rows[0].url : null;
+  await pool.query('UPDATE bizneset SET url_konvertimi=$2 WHERE id=$1', [bizId, u]);
+}
+
+module.exports.init = init;
+module.exports.urletPerBiznes = urletPerBiznes;
+module.exports.normalizo = normalizo;
+module.exports.sinkronizoTeBizneset = sinkronizoTeBizneset;
