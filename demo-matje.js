@@ -101,7 +101,7 @@ const faqet = {
     <label>Email</label><input type="email" placeholder="email@shembull.com">
     <label>Fjalekalimi</label><input type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;">
     <div style="margin-top:20px;">
-      <button class="cta" onclick="imyr.konvertim('d4'); setTimeout(function(){ location.href='/demo/matje/welcome'; }, 400)">Regjistrohu &rarr;</button>
+      <button class="cta" onclick="imyr.konvertim('d5'); setTimeout(function(){ location.href='/demo/matje/welcome'; }, 400)">Regjistrohu &rarr;</button>
     </div>
   </div>
   <div class="note">Pas butonit kalon te <b>/demo/matje/welcome</b>.</div>
