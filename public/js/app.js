@@ -742,36 +742,95 @@ function kopjoKodKonv(){
   }).catch(()=>{});
 }
 // ── Zonat e konvertimit me kod ──
-var _konvZona = [{emri:''}];  // te pakten nje zone (pa emer = kodi baze)
+var _konvZona = [{emri:'', id:null, track_active:false}];
 function kodiZones(emri){
   emri=(emri||'').trim();
   return emri ? ('imyr.konvertim("'+emri+'");') : 'imyr.konvertim();';
+}
+async function ngarkoZonat(){
+  try{
+    const r=await(await fetch('/api/zonat')).json();
+    _konvZona=(r.zonat||[]).map(z=>({id:z.id, emri:z.emri||'', track_active:z.track_active}));
+  }catch(e){ _konvZona=[]; }
+  if(!_konvZona.length) _konvZona=[{emri:'', id:null, track_active:false}];
+  vizatoZonat();
 }
 function vizatoZonat(){
   const c=$('k_zonaLista'); if(!c) return;
   let h='';
   _konvZona.forEach((z,i)=>{
+    const status = z.id ? (z.track_active
+        ? '<span style="color:var(--good);font-size:12px;">✓ E verifikuar</span>'
+        : '<span style="color:var(--mut);font-size:12px;">○ Pa verifikuar</span>')
+      : '<span style="color:var(--mut);font-size:12px;">Pa ruajtur</span>';
     h+='<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;">'+
        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'+
-         '<input value="'+esc(z.emri)+'" placeholder="emri i llojit (p.sh. blerje)" oninput="zonaNdrysho('+i+',this.value)" style="flex:1;">'+
+         '<input value="'+esc(z.emri)+'" placeholder="emri i llojit (p.sh. blerje) — ose lëre bosh" oninput="zonaNdrysho('+i+',this.value)" style="flex:1;">'+
          (_konvZona.length>1 ? '<button class="btn" style="padding:7px 10px;" onclick="zonaFshi('+i+')">✕</button>' : '')+
        '</div>'+
        '<div class="kodbox" id="k_zonaKod'+i+'">'+esc(kodiZones(z.emri))+'</div>'+
-       '<button class="btn" style="margin-top:6px;" onclick="zonaKopjo('+i+')">Kopjo</button>'+
+       '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;">'+
+         '<button class="btn" onclick="zonaKopjo('+i+')">Kopjo</button>'+
+         '<button class="btn" onclick="zonaVerifiko('+i+')">Verifiko</button>'+
+         '<span style="margin-left:auto;">'+status+'</span>'+
+       '</div>'+
        '</div>';
   });
   c.innerHTML=h;
 }
 function zonaNdrysho(i,v){
-  if(_konvZona[i]){ _konvZona[i].emri=v; const k=$('k_zonaKod'+i); if(k) k.textContent=kodiZones(v); }
+  if(_konvZona[i]){ _konvZona[i].emri=v; _konvZona[i].id=null; _konvZona[i].track_active=false;
+    const k=$('k_zonaKod'+i); if(k) k.textContent=kodiZones(v); }
 }
-function zonaShto(){ _konvZona.push({emri:''}); vizatoZonat(); }
-function zonaFshi(i){ _konvZona.splice(i,1); if(!_konvZona.length) _konvZona=[{emri:''}]; vizatoZonat(); }
+function zonaShto(){ _konvZona.push({emri:'', id:null, track_active:false}); vizatoZonat(); }
+async function zonaFshi(i){
+  const z=_konvZona[i];
+  if(z && z.id){ try{ await fetch('/api/zonat/'+z.id,{method:'DELETE'}); }catch(e){} }
+  _konvZona.splice(i,1);
+  if(!_konvZona.length) _konvZona=[{emri:'', id:null, track_active:false}];
+  vizatoZonat();
+}
 function zonaKopjo(i){
   const z=_konvZona[i]; if(!z) return;
   navigator.clipboard.writeText(kodiZones(z.emri)).then(()=>{
     const m=$('k_msg'); if(m){ m.className='msg ok'; m.textContent='U kopjua.'; setTimeout(()=>{m.textContent='';},2000); }
   }).catch(()=>{});
+}
+async function zonaVerifiko(i){
+  const z=_konvZona[i]; if(!z) return;
+  // Ruaj zonen nese s'eshte ruajtur
+  if(!z.id){
+    try{
+      const r=await(await fetch('/api/zonat',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({emri:z.emri.trim()})})).json();
+      if(r.id){ z.id=r.id; z.track_active=!!r.track_active; }
+    }catch(e){}
+  }
+  // Hap faqen e klientit me ?imyr_test=1 qe konvertimi provë të mos numërohet si i vërtetë
+  let faqja=(une && une.website) || '';
+  if(faqja && !/^https?:\/\//i.test(faqja)) faqja='https://'+faqja;
+  if(faqja){
+    const sep = faqja.indexOf('?')>-1 ? '&' : '?';
+    try{ window.open(faqja + sep + 'imyr_test=1', '_blank', 'noopener'); }catch(e){}
+  }
+  const m=$('k_msg'); if(m){ m.className='msg'; m.innerHTML='<span class="spin"></span> Hapëm faqen me modalitet prove. Kryej veprimin (kliko butonin ku vendose kodin) — konvertimi provë s\'numërohet.'; }
+  vizatoZonat();
+  // polling per te pare kur zona verifikohet
+  if(_zonaTimer){ clearInterval(_zonaTimer); }
+  let here=0;
+  _zonaTimer=setInterval(async ()=>{ here++; const ok=await zonaStatus(); if(ok||here>20){ clearInterval(_zonaTimer); _zonaTimer=null; } },3000);
+}
+var _zonaTimer=null;
+async function zonaStatus(){
+  try{
+    const r=await(await fetch('/api/zonat')).json();
+    const nga=(r.zonat||[]);
+    let ndonje=false;
+    _konvZona.forEach(z=>{ const g=nga.find(x=>x.id===z.id); if(g){ z.track_active=g.track_active; if(g.track_active) ndonje=true; } });
+    vizatoZonat();
+    if(ndonje){ const m=$('k_msg'); if(m){ m.className='msg ok'; m.textContent='Zona u verifikua.'; setTimeout(()=>{m.textContent='';},3000); } }
+    return ndonje;
+  }catch(e){ return false; }
 }
 async function kStatus(){
   const st=$('k_stat');
@@ -834,7 +893,7 @@ function kSwitch(){
   const v=segVal('k_ka');
   $('k_po').classList.toggle('hide', v!=='po');
   $('k_jo').classList.toggle('hide', v!=='jo');
-  if(v==='jo'){ vizatoZonat(); }
+  if(v==='jo'){ ngarkoZonat(); }
 }
 async function mbyllKonvertim(pasRuajtjes){
   // Gjithcka ruhet/fshihet menjehere (verifikim=ruaj, ✕=fshi). Ky vetem kthehet.
