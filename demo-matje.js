@@ -46,7 +46,6 @@ function layout(titulli, trupi){
 <style>${CSS}</style>
 </head>
 <body>
-<script src="https://phronexusai.com/imyr.js" data-key="imyr_ae30b0b3c4dd2a9154fc9ab4"></script>
 
 <header>
   <span class="lg">Matje</span>
