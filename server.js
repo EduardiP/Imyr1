@@ -474,22 +474,28 @@ app.all('/konvertim', async (req, res) => {
     const DITE = 30 * 24 * 3600 * 1000;
     if (Date.now() - new Date(kl.created_at).getTime() > DITE) return res.status(204).end();
 
-    // KLIK PROVE (verifikim): lidh zonen NESE ekziston POR mos regjistro konvertim te vertete
+    // KLIK PROVE (verifikim): lidh zonen (krijo nese s'ekziston) POR mos regjistro konvertim te vertete
     if (kl.origjina === 'PROVE') {
       if (zona) {
-        await pool.query('UPDATE zonat SET track_active=true, track_seen_at=now() WHERE biznes_id=$1 AND emri=$2', [kl.reklamues_id, zona]);
+        const z = await pool.query('SELECT id, fshire FROM zonat WHERE biznes_id=$1 AND emri=$2', [kl.reklamues_id, zona]);
+        if (z.rows.length) {
+          await pool.query('UPDATE zonat SET track_active=true, track_seen_at=now(), fshire=false WHERE id=$1', [z.rows[0].id]);
+        } else {
+          await pool.query('INSERT INTO zonat (biznes_id, emri, track_active, track_seen_at) VALUES ($1,$2,true,now())', [kl.reklamues_id, zona]);
+        }
       } else {
         await pool.query("UPDATE zonat SET track_active=true, track_seen_at=now() WHERE biznes_id=$1 AND emri=''", [kl.reklamues_id]);
       }
       return res.status(204).end();
     }
 
-    // Nese konvertimi vjen me KOD ME EMER (zona jo bosh), lidhja vlen vetem nese zona ekziston te profili.
-    // Nese klienti e ka fshire zonen me ✕ → lidhja shkeputet → mos e regjistro.
-    // (Konvertimet me URL ose me kod pa emer s'kane 'zona' → nuk preken ketu.)
+    // Nese konvertimi vjen me KOD ME EMER (zona jo bosh):
+    //  - nese zona eshte shenuar E FSHIRE → lidhja shkeputet → injoro konvertimin
+    //  - nese ekziston (jo e fshire) → vazhdo dhe lidhe
+    //  - nese s'ekziston fare → krijohet me poshte dhe lidhet (sjellja qe punonte)
     if (zona) {
-      const ekziston = await pool.query('SELECT 1 FROM zonat WHERE biznes_id=$1 AND emri=$2 LIMIT 1', [kl.reklamues_id, zona]);
-      if (!ekziston.rows.length) return res.status(204).end();  // zona u fshi → injoro
+      const zr = await pool.query('SELECT id, fshire FROM zonat WHERE biznes_id=$1 AND emri=$2 LIMIT 1', [kl.reklamues_id, zona]);
+      if (zr.rows.length && zr.rows[0].fshire) return res.status(204).end();  // e fshire → injoro
     }
     // nje konvertim per klikim PER ZONE (zona te ndryshme numerohen veç)
     const ekz = await pool.query(
@@ -501,9 +507,14 @@ app.all('/konvertim', async (req, res) => {
        VALUES ($1,'konvertim',$2,$3,$4,$5)`,
       [kl.reklamues_id, zona ? ('zona:' + zona) : (req.headers.origin || req.headers.referer || null),
        kl.reklama_id, kl.reklamues_id, kod]);
-    // Nje konvertim REAL me zone → lidh ate zone (ekziston, e verifikuam lart).
+    // Nje konvertim REAL me zone → lidhe. Nese s'ekziston, krijoje si te lidhur (por jo e fshire).
     if (zona) {
-      await pool.query('UPDATE zonat SET track_active=true, track_seen_at=now() WHERE biznes_id=$1 AND emri=$2', [kl.reklamues_id, zona]);
+      const z = await pool.query('SELECT id FROM zonat WHERE biznes_id=$1 AND emri=$2', [kl.reklamues_id, zona]);
+      if (z.rows.length) {
+        await pool.query('UPDATE zonat SET track_active=true, track_seen_at=now() WHERE id=$1', [z.rows[0].id]);
+      } else {
+        await pool.query('INSERT INTO zonat (biznes_id, emri, track_active, track_seen_at) VALUES ($1,$2,true,now())', [kl.reklamues_id, zona]);
+      }
     }
   } catch (e) {}
   res.status(204).end();
