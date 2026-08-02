@@ -601,34 +601,48 @@ function ndertoKonvertim(b, ngaWizard){
     : 'nav({v:\'profile\',nav:\'dashboard\'})';
   b.innerHTML=
     '<h2 class="h">Gjurmo konvertimet</h2>'+
-    '<p class="small" style="margin:2px 0 16px;">Që të dimë kur një klikim sjell një regjistrim të vërtetë, na duhet adresa e faqes që shfaqet <b>vetëm pasi dikush regjistrohet</b>. Konvertimet rrisin pikët e tua të profilit.</p>'+
-    '<label>A ke një faqe të tillë?</label>'+
+    '<p class="small" style="margin:2px 0 16px;">Kur dikush klikon reklamën tënde dhe pastaj kryen një veprim që ka vlerë — regjistrohet, blen, ose lë të dhënat — kjo quhet <b>konvertim</b>. Gjurmimi i konvertimeve rrit pikët e tua të profilit, që rrisin sa shpesh shfaqet reklama jote.</p>'+
+    // KODI I SNIPPET-IT — gjithmone i dukshem (vlen per te dyja rruget)
+    '<div style="padding:14px;border:1px solid var(--line);border-radius:10px;background:#0e1116;margin-bottom:16px;">'+
+      '<b style="font-size:14px;">Rreshti i gjurmimit</b>'+
+      '<p class="small" style="margin:6px 0 10px;">Ky rresht <b>nuk shfaq asgjë</b> — vetëm gjurmon konvertimet (nga adresa ose nga kodi, sipas zgjedhjes poshtë). Vendose para <code>&lt;/body&gt;</code> te <b>skedari kryesor</b> që ngarkohet në çdo faqe të sajtit tënd. Varet nga si është ndërtuar sajti — p.sh. <i>theme.liquid</i> (Shopify), <i>layout.html / base.html</i> (shabllon i përbashkët), <i>index.html</i>, ose <i>_app.js / App.jsx</i> (React/Next). Nëse ke disa shabllone, vendose te secili.</p>'+
+      '<div class="kodbox" id="k_kod"></div>'+
+      '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">'+
+        '<button class="btn" onclick="kopjoTrack()">Kopjo</button>'+
+        '<button class="btn" id="k_ver" onclick="riverifikoSnippet()">Verifiko lidhjen</button>'+
+      '</div>'+
+      '<div id="k_snipStat" style="margin-top:10px;"></div>'+
+    '</div>'+
+    // ZGJEDHJA: me URL ose me kod
+    '<label>Si e shënon konvertimin?</label>'+
+    '<p class="small" style="margin:2px 0 8px;">Dy mënyra: <b>Me adresë</b> — nëse pas konvertimit hapet një faqe e veçantë (p.sh. një faqe "faleminderit" ose "mirë se erdhe"), na jep atë adresë. <b>Me kod</b> — nëse konvertimi ndodh pa ndryshuar faqe (p.sh. klikimi i një butoni, dërgimi i një forme), vendos një rresht te ai veprim.</p>'+
     '<div class="seg" id="k_ka">'+
-      '<button type="button" data-v="po" onclick="segPick(this);kSwitch()">Po, kam</button>'+
-      '<button type="button" data-v="jo" onclick="segPick(this);kSwitch()">Jo, s\'kam</button>'+
+      '<button type="button" data-v="po" onclick="segPick(this);kSwitch()">Me adresë</button>'+
+      '<button type="button" data-v="jo" onclick="segPick(this);kSwitch()">Me kod</button>'+
     '</div>'+
     '<div id="k_po" class="hide" style="margin-top:14px;">'+
-      '<div style="padding:14px;border:1px solid var(--line);border-radius:10px;background:#0e1116;margin-bottom:18px;">'+
-        '<b style="font-size:14px;">1. Rreshti i gjurmimit — te cdo faqe</b>'+
-        '<p class="small" style="margin:6px 0 10px;">Ky rresht <b>nuk shfaq asgje</b> — vetem gjurmon konvertimin. Vendose para <code>&lt;/body&gt;</code> te skedari qe ngarkohet ne <b>cdo</b> faqe (te Shopify: <i>Online Store → Themes → Edit code → Layout → theme.liquid</i>).</p>'+
-        '<div class="kodbox" id="k_kod"></div>'+
-        '<button class="btn" style="margin-top:8px;" onclick="kopjoTrack()">Kopjo</button>'+
-      '</div>'+
-      '<div id="k_snipStat" style="margin-bottom:14px;"></div>'+
       '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'+
         '<span style="color:var(--acc);font-weight:700;">*</span>'+
-        '<label style="margin:0;">2. Adresat e faqeve te konvertimit</label>'+
+        '<label style="margin:0;">Adresat e faqeve te konvertimit</label>'+
       '</div>'+
-      '<p class="small" style="margin:0 0 10px;">Fut adresën e plotë të faqes, p.sh. <b>https://faqja-ime.com/welcome</b>. Pasi të vendosësh kodin lart, kliko <b>Verifiko</b> te secila adrese. Kliko <b>+</b> per te shtuar nje tjeter.</p>'+
+      '<p class="small" style="margin:0 0 10px;">Fut adresën e plotë të faqes që hapet pas konvertimit, p.sh. <b>https://faqja-ime.com/welcome</b>. Pasi të vendosësh kodin lart, kliko <b>Verifiko</b> te secila adresë. Kliko <b>+</b> për të shtuar një tjetër.</p>'+
       '<div id="k_lista"></div>'+
       '<button class="btn" style="margin-top:8px;" onclick="konvShto()">+ Shto adrese</button>'+
       '<div id="k_stat" class="small" style="margin-top:12px;"></div>'+
       '<button class="primary" id="k_btn" onclick="mbyllKonvertim(\''+pasRuajtjes.replace(/'/g,"\\'")+'\')">Dil →</button>'+
     '</div>'+
     '<div id="k_jo" class="hide" style="margin-top:14px;">'+
-      '<p class="small">Atëherë do të të duhet një rresht kod te faqja jote. Këtë do ta shtojmë së shpejti — mund ta konfigurosh më vonë nga këtu.</p>'+
-      (ngaWizard ? '<button class="primary" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">Vazhdo →</button>'
-                 : '<button class="primary" onclick="nav({v:\'profile\',nav:\'dashboard\'})">Kthehu →</button>')+
+      '<p class="small" style="margin:0 0 10px;">Thirre këtë rresht pikërisht aty ku ndodh konvertimi — kur klienti klikon butonin ose kur veprimi kryhet me sukses:</p>'+
+      '<div class="kodbox" id="k_kodKonv">imyr.konvertim();</div>'+
+      '<button class="btn" style="margin-top:8px;" onclick="kopjoKodKonv()">Kopjo</button>'+
+      '<p class="small" style="margin:14px 0 6px;"><b>Shembuj</b> sipas si është ndërtuar sajti yt:</p>'+
+      '<div class="kodbox" style="margin-bottom:8px;">&lt;button onclick="regjistrohu(); imyr.konvertim()"&gt;Regjistrohu&lt;/button&gt;</div>'+
+      '<div class="kodbox" style="margin-bottom:8px;">// pas nje forme qe dergohet me JavaScript\nfetch("/api/regjistro", ...).then(function(){ imyr.konvertim(); });</div>'+
+      '<div class="kodbox" style="margin-bottom:8px;">// React / Next — te funksioni qe trajton veprimin\nasync function onRegjistrim(){ await regjistro(); imyr.konvertim(); }</div>'+
+      '<p class="small" style="margin:12px 0 6px;">Nëse ke <b>disa zona</b> konvertimi, jepi secilës një emër që t\'i dallosh më vonë:</p>'+
+      '<div class="kodbox" style="margin-bottom:8px;">imyr.konvertim("regjistrim");\nimyr.konvertim("blerje");\nimyr.konvertim("prove-falas");</div>'+
+      '<p class="small" style="margin:12px 0 0;">Rreshti i gjurmimit lart duhet të jetë vendosur që kjo të punojë — ai krijon funksionin <code>imyr.konvertim()</code>.</p>'+
+      '<button class="primary" onclick="mbyllKonvertim(\''+pasRuajtjes.replace(/'/g,"\\'")+'\')" style="margin-top:16px;">'+(ngaWizard?'Vazhdo →':'Dil →')+'</button>'+
     '</div>'+
     '<div class="msg" id="k_msg"></div>';
   if(une && une.url_konvertimi){
@@ -725,6 +739,11 @@ function trackKod(){
 function mbushTrack(){ const el=$('k_kod'); if(el) el.textContent=trackKod(); kStatus(); }
 function kopjoTrack(){
   navigator.clipboard.writeText(trackKod()).then(()=>{
+    const m=$('k_msg'); if(m){ m.className='msg ok'; m.textContent='U kopjua.'; setTimeout(()=>{m.textContent='';},2000); }
+  }).catch(()=>{});
+}
+function kopjoKodKonv(){
+  navigator.clipboard.writeText('imyr.konvertim();').then(()=>{
     const m=$('k_msg'); if(m){ m.className='msg ok'; m.textContent='U kopjua.'; setTimeout(()=>{m.textContent='';},2000); }
   }).catch(()=>{});
 }
