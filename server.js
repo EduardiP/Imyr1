@@ -1334,6 +1334,9 @@ snippetet(app, pool, iLoguar, beCeles);
 const konvertimet = require('./konvertimet');
 konvertimet(app, pool, iLoguar, iAdmin);
 
+// Zbulimi i platformes se klientit nga URL-ja (skedar i ndare, pa AI)
+require('./platforma')(app, pool, iLoguar);
+
 // Lista e bizneseve (emer + email)
 app.get('/api/admin/bizneset', iAdmin, async (req, res) => {
   try {
