@@ -27,7 +27,7 @@ app.use((req, res, next) => {
   if (primar && req.headers.host && req.headers.host !== primar) {
     // Mos ridrejto: snippet-et/endpoint-et (klientet i kane vendosur me URL-en e vjeter),
     // dhe admin/api (qe login-i e cookie-t te mos prishen mes domain-eve).
-    const perjashto = ['/imyr.js','/imyr-track.js','/tag.js','/lidh','/track-lidh','/ad','/cil','/track','/klik','/konvertim','/konvertim-verifiko','/admin','/api'];
+    const perjashto = ['/imyr.js','/imyr-track.js','/tag.js','/lidh','/track-lidh','/ad','/cil','/track','/klik','/konvertim','/konvertim-verifiko','/diag','/admin','/api'];
     if (!perjashto.some(p => req.path.startsWith(p))) {
       return res.redirect(302, 'https://' + primar + req.originalUrl);
     }
@@ -404,6 +404,16 @@ app.get('/klik', async (req, res) => {
     }
   } catch (e) {}
   res.redirect(302, dest || '/');
+});
+
+// --- DIAGNOSTIK I PERKOHSHEM: shiko klikun/konvertimin per nje kod (fshije me pas) ---
+app.get('/diag/:kod', async (req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT lloji, origjina, reklama_id, reklamues_id, created_at
+       FROM ngjarjet WHERE klik_kod=$1 ORDER BY created_at ASC`, [req.params.kod]);
+    res.json({ kod: req.params.kod, ngjarje: r.rows });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // --- KONVERTIMI: numerohet vetem nese ekziston nje klikim i vlefshem ---
