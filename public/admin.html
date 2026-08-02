@@ -420,7 +420,7 @@
         '<div class="sect"><h3>Të dhënat e regjistrimit</h3>'+
           row2('Emri', esc(b.emri))+
           row2('Email', esc(b.email))+
-          row2('Faqja', b.website||'—')+
+          row2('Faqja', (b.website ? esc(b.website)+' <button onclick="zbuloPlatformen(\''+esc(b.website)+'\')" style="margin-left:8px;font-size:11px;padding:2px 8px;cursor:pointer;">Zbulo platformën</button><div id="platRez" style="margin-top:8px;"></div>' : '—'))+
           row2('Plani', b.plani||'—')+
           row2('Regjistruar', dt(b.created_at))+
           row2('Çelësi', b.celes||'—')+
@@ -436,6 +436,31 @@
 
   function stat(v,l){ return '<div class="stat"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>'; }
   function row2(k,v){ return '<div class="drow"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>'; }
+
+  async function zbuloPlatformen(url){
+    const box=document.getElementById('platRez');
+    if(box) box.innerHTML='<span style="color:#889;font-size:12px;">Po studioj faqen…</span>';
+    try{
+      const r=await(await fetch('/api/admin/platforma?url='+encodeURIComponent(url))).json();
+      if(!box) return;
+      if(!r.arritur){
+        box.innerHTML='<div style="border:1px solid #c8ccdb;border-radius:8px;padding:10px;font-size:12px;color:#a55;">'+esc(r.mesazh||'S\'u arrit faqja.')+'</div>';
+        return;
+      }
+      let h='<div style="border:1px solid #e6e8f0;border-radius:8px;padding:12px;font-size:12px;background:#fafbff;">';
+      h+='<div><b>Platforma:</b> '+esc(r.platforma)+' <span style="color:#889;">(siguria '+r.siguria+'%)</span></div>';
+      if(r.server) h+='<div style="color:#889;margin-top:2px;">Server: '+esc(r.server)+'</div>';
+      if(r.udhezime){
+        h+='<div style="margin-top:8px;"><b>Udhëzime:</b></div>';
+        h+='<div style="margin-top:4px;"><u>Gjurmimi:</u> '+esc(r.udhezime.tracking)+'</div>';
+        h+='<div style="margin-top:4px;"><u>Reklama:</u> '+esc(r.udhezime.reklama)+'</div>';
+        h+='<div style="margin-top:4px;"><u>Konvertim (URL):</u> '+esc(r.udhezime.konvertim_url)+'</div>';
+        h+='<div style="margin-top:4px;"><u>Konvertim (kod):</u> '+esc(r.udhezime.konvertim_kod)+'</div>';
+      }
+      h+='</div>';
+      box.innerHTML=h;
+    }catch(e){ if(box) box.innerHTML='<span style="color:#a55;font-size:12px;">Gabim: '+esc(e.message)+'</span>'; }
+  }
   function esc(t){ const d=document.createElement('div'); d.textContent=(t==null?'':t); return d.innerHTML; }
   function dt(x){ if(!x) return '—'; try{ return new Date(x).toLocaleString('sq'); }catch(e){ return x; } }
 
