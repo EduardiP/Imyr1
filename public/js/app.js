@@ -292,6 +292,7 @@ async function snipFshi(id){
   try{ await fetch('/api/snippetet/'+id,{method:'DELETE'}); }catch(e){}
   ngarkoSnippetet();
   try{ await refreshProg(); }catch(e){}
+  try{ await ngarkoNjoftimet(); }catch(e){}
 }
 // Dialog vetem-informues (nje buton OK)
 function fshiDialogThjesht(mesazhi){
@@ -546,9 +547,23 @@ function mainReklamat(m, s){
   if(s.sub==='create'){ return krijoReklame(m); }
   m.innerHTML=
     '<h2 class="h">Creatives</h2>'+
+    '<div id="rekShiritSnippet"></div>'+
     '<div style="margin:12px 0 14px;"><button class="btn cta" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">+ Create</button></div>'+
     '<div id="reklamaList"><p class="small">Po ngarkoj…</p></div>';
   loadReklamat();
+  rekKontrolloSnippet();
+}
+async function rekKontrolloSnippet(){
+  const el=$('rekShiritSnippet'); if(!el) return;
+  try{
+    const pr=await(await fetch('/api/progres')).json();
+    if(!pr.lidhja){
+      el.innerHTML='<div onclick="nav({v:\'profile\',nav:\'snippetet\'})" style="cursor:pointer;background:#3a1212;border:1px solid var(--err);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;">'+
+        '<div style="flex:1;"><div style="color:var(--err);font-weight:600;">Reklamat e tua nuk po shfaqen</div>'+
+        '<div class="small" style="margin-top:2px;">S\'ke asnjë hapësirë reklame aktive. Meqë s\'po shfaq reklamat e të tjerëve, as reklamat e tua s\'po marrin shfaqje. Lidh një hapësirë →</div></div>'+
+        '<button class="btn cta" style="white-space:nowrap;" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'snippetet\'})">Lidh hapësirë</button></div>';
+    } else { el.innerHTML=''; }
+  }catch(e){}
 }
 async function loadReklamat(){
   const el=$('reklamaList'); if(!el) return;
