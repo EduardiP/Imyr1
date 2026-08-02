@@ -758,6 +758,27 @@ async function ngarkoZonat(){
   }catch(e){ _konvZona=[]; }
   if(!_konvZona.length) _konvZona=[{emri:'', id:null, track_active:false}];
   vizatoZonat();
+  // Polling i lehte: rifresko statuset (nese vjen konvertim real, zona behet e verifikuar live)
+  if(_zonaPoll){ clearInterval(_zonaPoll); }
+  _zonaPoll=setInterval(zonaRifreskoStatus, 5000);
+}
+var _zonaPoll=null;
+async function zonaRifreskoStatus(){
+  // Ndalo nese s'jemi me te seksioni "Me kod"
+  if(!$('k_zonaLista') || segVal('k_ka')!=='jo'){ if(_zonaPoll){ clearInterval(_zonaPoll); _zonaPoll=null; } return; }
+  try{
+    const r=await(await fetch('/api/zonat')).json();
+    const nga=(r.zonat||[]);
+    let ndryshoi=false;
+    _konvZona.forEach(z=>{
+      if(!z.id) return;
+      const g=nga.find(x=>x.id===z.id);
+      if(g && g.track_active!==z.track_active){ z.track_active=g.track_active; ndryshoi=true; }
+    });
+    // shto zona te reja qe u krijuan nga konvertime reale (s'ishin te lista)
+    nga.forEach(g=>{ if(!_konvZona.some(z=>z.id===g.id)){ _konvZona.push({id:g.id, emri:g.emri||'', track_active:g.track_active}); ndryshoi=true; } });
+    if(ndryshoi) vizatoZonat();
+  }catch(e){}
 }
 function vizatoZonat(){
   const c=$('k_zonaLista'); if(!c) return;
@@ -810,19 +831,22 @@ async function zonaVerifiko(i){
       if(r.id){ z.id=r.id; z.track_active=!!r.track_active; }
     }catch(e){}
   }
-  // Hap faqen e klientit me ?imyr_test=1 qe konvertimi provë të mos numërohet si i vërtetë
-  let faqja=(une && une.website) || '';
-  if(faqja && !/^https?:\/\//i.test(faqja)) faqja='https://'+faqja;
-  if(faqja){
-    const sep = faqja.indexOf('?')>-1 ? '&' : '?';
-    try{ window.open(faqja + sep + 'imyr_test=1', '_blank', 'noopener'); }catch(e){}
-  }
-  const m=$('k_msg'); if(m){ m.className='msg'; m.innerHTML='<span class="spin"></span> Hapëm faqen me modalitet prove. Kryej veprimin (kliko butonin ku vendose kodin) — konvertimi provë s\'numërohet.'; }
+  // Krijo nje klik PROVE dhe hap faqen me ate kod — klienti navigon te faqja e butonit dhe kryen veprimin.
+  // Konvertimi prove lidh zonen POR s'numerohet si i vertete.
+  try{
+    const r=await(await fetch('/api/zona-prove',{method:'POST'})).json();
+    let faqja=r.faqja || (une && une.website) || '';
+    if(faqja && !/^https?:\/\//i.test(faqja)) faqja='https://'+faqja;
+    if(faqja && r.kod){
+      const sep = faqja.indexOf('?')>-1 ? '&' : '?';
+      window.open(faqja + sep + 'imyr=' + encodeURIComponent(r.kod), '_blank', 'noopener');
+    }
+  }catch(e){}
+  const m=$('k_msg'); if(m){ m.className='msg'; m.innerHTML='<span class="spin"></span> Hapëm faqen tënde. Shko te vendi ku vendose kodin dhe kryej veprimin (kliko butonin) — kjo provë s\'numërohet si konvertim.'; }
   vizatoZonat();
-  // polling per te pare kur zona verifikohet
   if(_zonaTimer){ clearInterval(_zonaTimer); }
   let here=0;
-  _zonaTimer=setInterval(async ()=>{ here++; const ok=await zonaStatus(); if(ok||here>20){ clearInterval(_zonaTimer); _zonaTimer=null; } },3000);
+  _zonaTimer=setInterval(async ()=>{ here++; const ok=await zonaStatus(); if(ok||here>30){ clearInterval(_zonaTimer); _zonaTimer=null; } },3000);
 }
 var _zonaTimer=null;
 async function zonaStatus(){
