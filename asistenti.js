@@ -40,6 +40,21 @@ ${platTekst}
 Perdor kEto tE dhEna pEr tE dhEnE udhEzim specifik pEr platformEn e tij.`;
 }
 
+// Nxjerr VETEM kodin e vendosur + vendin nga biseda (nje thirrje e shkurter Claude).
+// Biseda vete NUK ruhet — vetem esenca.
+async function nxirrKodinVendin(apiKey, biseda) {
+  const teksti = biseda.map(m => (m.role === 'user' ? 'Klienti: ' : 'Asistenti: ') + m.content).join('\n');
+  const system = `Nga biseda mE poshtE, nxirr VETEM: (1) kodin qE klienti vendosi te faqja, (2) vendin ku e vendosi (skedari/paneli + pozicioni).
+Kthe VETEM njE objekt JSON, pa asgjE tjetEr, ne formEn: {"kodi":"...","vendi":"..."}
+Nese s'ka informacion tE mjaftueshEm, kthe {"kodi":"","vendi":""}.`;
+  try {
+    const p = await pyetClaude(apiKey, system, [{ role: 'user', content: teksti.slice(0, 8000) }]);
+    const m = p.match(/\{[\s\S]*\}/);
+    if (m) return JSON.parse(m[0]);
+  } catch (e) {}
+  return { kodi: '', vendi: '' };
+}
+
 async function pyetClaude(apiKey, system, mesazhet) {
   const resp = await fetch(API_URL, {
     method: 'POST',
@@ -98,15 +113,25 @@ module.exports = function (app, pool, iLoguar) {
     }
   });
 
-  // Ruaj vetem kodin e vendosur + vendin (nje here, per lidhje). Perdoret per heqje me vone.
+  // Kur lidhja konfirmohet e suksesshme: nxirr kodin+vendin NGA biseda, ruaj VETEM ato.
   app.post('/api/asistenti/ruaj-vendin', iLoguar, async (req, res) => {
-    const kodi = ((req.body && req.body.kodi) || '').slice(0, 2000);
-    const vendi = ((req.body && req.body.vendi) || '').slice(0, 1000);
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const biseda = (req.body && req.body.mesazhet) || [];
     try {
+      let kodi = '', vendi = '';
+      if (apiKey && Array.isArray(biseda) && biseda.length) {
+        const nx = await nxirrKodinVendin(apiKey, biseda);
+        kodi = (nx.kodi || '').slice(0, 2000);
+        vendi = (nx.vendi || '').slice(0, 1000);
+      }
+      // fallback: nese u dha direkt
+      if (!kodi && req.body && req.body.kodi) kodi = String(req.body.kodi).slice(0, 2000);
+      if (!vendi && req.body && req.body.vendi) vendi = String(req.body.vendi).slice(0, 1000);
+
       await pool.query(
         'UPDATE bizneset SET kodi_vendosur=$1, kodi_vendi=$2, kodi_vendosur_at=now() WHERE id=$3',
         [kodi, vendi, req.biznesId]);
-      res.json({ ok: true });
+      res.json({ ok: true, kodi, vendi });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 };
