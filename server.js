@@ -276,12 +276,17 @@ app.get('/api/progres', iLoguar, async (req, res) => {
     const b = await pool.query(
       'SELECT permbledhje, pershkrimi, snippet_active, track_active, url_konvertimi, website, tipi FROM bizneset WHERE id=$1', [req.biznesId]);
     const p = await pool.query('SELECT 1 FROM promovimet WHERE biznes_id=$1 AND aktiv=true LIMIT 1', [req.biznesId]);
+    // A ka te pakten nje URL OSE nje zone (kod) te lidhur?
+    const uLidhur = await pool.query('SELECT 1 FROM konvertimet WHERE biznes_id=$1 AND track_active=true LIMIT 1', [req.biznesId]);
+    const zLidhur = await pool.query('SELECT 1 FROM zonat WHERE biznes_id=$1 AND track_active=true AND fshire=false LIMIT 1', [req.biznesId]);
     const row = b.rows[0] || {};
+    // Konvertimi i plote: snippet-i i gjurmimit aktiv DHE (nje URL ose nje zone e lidhur)
+    const konvertimIPlote = !!row.track_active && (uLidhur.rows.length > 0 || zLidhur.rows.length > 0);
     res.json({
       llogaria: !!(row.website && row.tipi),            // gati kur ka website + tipi
       pershkrimi: !!(row.permbledhje || row.pershkrimi),// pershkrimi/AI u dha
       lidhja: !!row.snippet_active,                     // snippet-i u lidh
-      konvertimi: !!row.track_active,                   // snippet-i i gjurmimit u lidh
+      konvertimi: konvertimIPlote,                       // snippet + (URL ose kod) i lidhur
       reklama: p.rows.length > 0                         // reklama u krijua
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -333,10 +338,13 @@ app.get('/api/njoftimet', iLoguar, async (req, res) => {
     const b = await pool.query(
       'SELECT created_at, snippet_active, track_active, url_konvertimi FROM bizneset WHERE id=$1', [req.biznesId]);
     const p = await pool.query('SELECT COUNT(*)::int n FROM promovimet WHERE biznes_id=$1 AND aktiv=true', [req.biznesId]);
+    const uLidhur = await pool.query('SELECT 1 FROM konvertimet WHERE biznes_id=$1 AND track_active=true LIMIT 1', [req.biznesId]);
+    const zLidhur = await pool.query('SELECT 1 FROM zonat WHERE biznes_id=$1 AND track_active=true AND fshire=false LIMIT 1', [req.biznesId]);
     const row = b.rows[0] || {};
     const ditet = Math.floor((Date.now() - new Date(row.created_at).getTime()) / 86400000);
     const kaReklame = p.rows[0].n > 0;
-    const kaKonvertimTeLidhur = !!row.track_active;
+    // Konvertimi i lidhur: snippet-i i gjurmimit aktiv DHE (nje URL ose nje zone e lidhur)
+    const kaKonvertimTeLidhur = !!row.track_active && (uLidhur.rows.length > 0 || zLidhur.rows.length > 0);
     const njf = [];
 
     if (!row.snippet_active) {
