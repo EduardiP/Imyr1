@@ -95,6 +95,7 @@ function renderMain(s){
   if(curNav==='profili')    return mainProfili(m);
   if(curNav==='njoftimet')  return mainNjoftimet(m);
   if(curNav==='konvertimi') return mainKonvertimi(m);
+  if(curNav==='konvertimet') return mainKonvertimi(m);
   if(curNav==='biznesi')    return mainBiznesi(m);
   if(curNav==='pershkrimi') return mainPershkrimi(m);
   if(curNav==='lidhja')     return mainLidhja(m);
@@ -220,9 +221,9 @@ async function mainSnippetet(m, s){
   if(s.sub==='detail' && s.id){ return snipDetaje(m, s.id); }
   // Lista
   m.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'+
-    '<h2 class="h">Snippet-et</h2>'+
+    '<h2 class="h">Hapësira e reklamave</h2>'+
     '<button class="btn cta" onclick="snipKrijo()">Krijo +</button></div>'+
-    '<p class="small" style="margin-bottom:14px;">Çdo snippet është një vend ku shfaqen reklamat. Krijo disa nëse vendos reklama në më shumë se një vend.</p>'+
+    '<p class="small" style="margin-bottom:14px;">Çdo hapësirë është një vend te faqja jote ku shfaqen reklamat. Krijo disa nëse vendos reklama në më shumë se një vend.</p>'+
     '<div id="snipLista"><p class="small">Po ngarkoj…</p></div>';
   ngarkoSnippetet();
 }
