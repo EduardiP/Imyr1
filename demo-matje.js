@@ -46,6 +46,7 @@ function layout(titulli, trupi){
 <style>${CSS}</style>
 </head>
 <body>
+<script src="https://phronexusai.com/imyr.js" data-key="imyr_ae30b0b3c4dd2a9154fc9ab4"></script>
 
 <header>
   <span class="lg">Matje</span>
@@ -100,7 +101,7 @@ const faqet = {
     <label>Email</label><input type="email" placeholder="email@shembull.com">
     <label>Fjalekalimi</label><input type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;">
     <div style="margin-top:20px;">
-      <button class="cta" onclick="imyr.konvertim('d'); location.href='/demo/matje/welcome'">Regjistrohu &rarr;</button>
+      <button class="cta" onclick="imyr.konvertim('d'); setTimeout(function(){ location.href='/demo/matje/welcome'; }, 400)">Regjistrohu &rarr;</button>
     </div>
   </div>
   <div class="note">Pas butonit kalon te <b>/demo/matje/welcome</b>.</div>
