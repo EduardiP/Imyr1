@@ -632,16 +632,11 @@ function ndertoKonvertim(b, ngaWizard){
       '<button class="primary" id="k_btn" onclick="mbyllKonvertim(\''+pasRuajtjes.replace(/'/g,"\\'")+'\')">Dil →</button>'+
     '</div>'+
     '<div id="k_jo" class="hide" style="margin-top:14px;">'+
-      '<p class="small" style="margin:0 0 10px;">Thirre këtë rresht pikërisht aty ku ndodh konvertimi — kur klienti klikon butonin ose kur veprimi kryhet me sukses:</p>'+
+      '<p class="small" style="margin:0 0 10px;">Thirre këtë rresht pikërisht aty ku ndodh konvertimi — te veprimi që quan konvertim (klik butoni, dërgim forme, ose çdo veprim me sukses). Kërkon që rreshti i gjurmimit lart të jetë vendosur — ai krijon funksionin <code>imyr.konvertim()</code>.</p>'+
       '<div class="kodbox" id="k_kodKonv">imyr.konvertim();</div>'+
       '<button class="btn" style="margin-top:8px;" onclick="kopjoKodKonv()">Kopjo</button>'+
-      '<p class="small" style="margin:14px 0 6px;"><b>Shembuj</b> sipas si është ndërtuar sajti yt:</p>'+
-      '<div class="kodbox" style="margin-bottom:8px;">&lt;button onclick="regjistrohu(); imyr.konvertim()"&gt;Regjistrohu&lt;/button&gt;</div>'+
-      '<div class="kodbox" style="margin-bottom:8px;">// pas nje forme qe dergohet me JavaScript\nfetch("/api/regjistro", ...).then(function(){ imyr.konvertim(); });</div>'+
-      '<div class="kodbox" style="margin-bottom:8px;">// React / Next — te funksioni qe trajton veprimin\nasync function onRegjistrim(){ await regjistro(); imyr.konvertim(); }</div>'+
-      '<p class="small" style="margin:12px 0 6px;">Nëse ke <b>disa zona</b> konvertimi, jepi secilës një emër që t\'i dallosh më vonë:</p>'+
+      '<p class="small" style="margin:16px 0 6px;">Nëse ke <b>disa zona</b> konvertimi, jepi secilës një emër që t\'i dallosh më vonë:</p>'+
       '<div class="kodbox" style="margin-bottom:8px;">imyr.konvertim("regjistrim");\nimyr.konvertim("blerje");\nimyr.konvertim("prove-falas");</div>'+
-      '<p class="small" style="margin:12px 0 0;">Rreshti i gjurmimit lart duhet të jetë vendosur që kjo të punojë — ai krijon funksionin <code>imyr.konvertim()</code>.</p>'+
       '<button class="primary" onclick="mbyllKonvertim(\''+pasRuajtjes.replace(/'/g,"\\'")+'\')" style="margin-top:16px;">'+(ngaWizard?'Vazhdo →':'Dil →')+'</button>'+
     '</div>'+
     '<div class="msg" id="k_msg"></div>';
