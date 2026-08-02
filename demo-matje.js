@@ -58,7 +58,7 @@ ${trupi}
 <footer>© 2026 Matje — faqe prove per Imyr</footer>
 
 <!-- ═══ NGJIT KETU rreshtin e Imyr-it (copy-paste nga wizard-i) — vlen per TE GJITHA faqet e Matje -->
-<script src="https://phronexusai.com/imyr.js" data-key="imyr_e1d1234fe97a8d0c60f6cde1"></script>
+
 <!-- ═══ deri ketu ═══ -->
 </body>
 </html>`;
