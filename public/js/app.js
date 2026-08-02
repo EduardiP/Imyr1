@@ -664,9 +664,9 @@ async function kontrolloSnippetFresket(){
     const r=await(await fetch('/api/track-fresket')).json();
     if(!nj) return;
     if(r.aktiv){
-      nj.innerHTML='';
-      // Snippet-i u verifikua. Pika/njoftimi plotesohen VETEM nese ka edhe nje URL ose kod te lidhur —
-      // ndaj e leme serverin te vendose (refreshProg/ngarkoNjoftimet lexojne gjendjen e plote).
+      nj.innerHTML='<div style="background:#123a1e;border:1px solid var(--good);color:#b6f5c8;padding:10px 12px;border-radius:8px;font-size:13px;">✓ Snippet-i u lidh me sukses.</div>';
+      setTimeout(()=>{ const x=$('k_snipStat'); if(x && x.innerHTML.indexOf('u lidh me sukses')>-1) x.innerHTML=''; }, 5000);
+      // Pika/njoftimi plotesohen VETEM nese ka edhe nje URL ose kod te lidhur — e leme serverin te vendose.
       try{ await refreshProg(); }catch(e){}
       try{ await ngarkoNjoftimet(); }catch(e){}
       if(typeof renderDashStatus==='function' && document.getElementById('vstep')){ try{ renderDashStatus(); }catch(e){} }
@@ -772,7 +772,7 @@ function pastroEmer(emri){
 }
 function kodiZones(emri){
   emri=pastroEmer(emri);
-  return emri ? ("imyr.konvertim('"+emri+"');") : 'imyr.konvertim();';
+  return emri ? ("window.imyr&&imyr.konvertim('"+emri+"');") : "window.imyr&&imyr.konvertim();";
 }
 async function ngarkoZonat(){
   try{
