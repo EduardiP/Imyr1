@@ -9,8 +9,9 @@ const STEPS = [
 ];
 const NAV = [
   { k:'dashboard', l:'Dashboard' },
-  { k:'snippetet', l:'Snippet-et' },
+  { k:'snippetet', l:'Hapësira e reklamave' },
   { k:'reklamat',  l:'Creatives' },
+  { k:'konvertimet', l:'Konvertimet' },
   { k:'analytics', l:'Analytics' }
 ];
 
