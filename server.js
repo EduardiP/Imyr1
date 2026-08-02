@@ -457,6 +457,16 @@ app.all('/konvertim', async (req, res) => {
        VALUES ($1,'konvertim',$2,$3,$4,$5)`,
       [kl.reklamues_id, zona ? ('zona:' + zona) : (req.headers.origin || req.headers.referer || null),
        kl.reklama_id, kl.reklamues_id, kod]);
+    // Nje konvertim REAL me zone → lidh automatikisht ate zone te profili (edhe pa Verifiko).
+    // Nese zona s'ekziston ende te tabela, krijoje si te lidhur.
+    if (zona) {
+      const z = await pool.query('SELECT id FROM zonat WHERE biznes_id=$1 AND emri=$2', [kl.reklamues_id, zona]);
+      if (z.rows.length) {
+        await pool.query('UPDATE zonat SET track_active=true, track_seen_at=now() WHERE id=$1', [z.rows[0].id]);
+      } else {
+        await pool.query('INSERT INTO zonat (biznes_id, emri, track_active, track_seen_at) VALUES ($1,$2,true,now())', [kl.reklamues_id, zona]);
+      }
+    }
   } catch (e) {}
   res.status(204).end();
 });
