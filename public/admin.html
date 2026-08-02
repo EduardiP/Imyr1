@@ -420,7 +420,7 @@
         '<div class="sect"><h3>Të dhënat e regjistrimit</h3>'+
           row2('Emri', esc(b.emri))+
           row2('Email', esc(b.email))+
-          row2('Faqja', (b.website ? esc(b.website)+' <button onclick="zbuloPlatformen(\''+esc(b.website)+'\')" style="margin-left:8px;font-size:11px;padding:2px 8px;cursor:pointer;">Zbulo platformën</button><div id="platRez" style="margin-top:8px;"></div>' : '—'))+
+          row2('Faqja', (b.website ? esc(b.website)+' <button onclick="zbuloPlatformen('+b.id+')" style="margin-left:8px;font-size:11px;padding:2px 8px;cursor:pointer;">Shfaq platformën</button><div id="platRez" style="margin-top:8px;"></div>' : '—'))+
           row2('Plani', b.plani||'—')+
           row2('Regjistruar', dt(b.created_at))+
           row2('Çelësi', b.celes||'—')+
@@ -437,11 +437,11 @@
   function stat(v,l){ return '<div class="stat"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>'; }
   function row2(k,v){ return '<div class="drow"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>'; }
 
-  async function zbuloPlatformen(url){
+  async function zbuloPlatformen(bizId){
     const box=document.getElementById('platRez');
-    if(box) box.innerHTML='<span style="color:#889;font-size:12px;">Po studioj faqen…</span>';
+    if(box) box.innerHTML='<span style="color:#889;font-size:12px;">Po marr të dhënat…</span>';
     try{
-      const r=await(await fetch('/api/admin/platforma?url='+encodeURIComponent(url))).json();
+      const r=await(await fetch('/api/admin/platforma?bizId='+encodeURIComponent(bizId))).json();
       if(!box) return;
       if(!r.arritur){
         box.innerHTML='<div style="border:1px solid #c8ccdb;border-radius:8px;padding:10px;font-size:12px;color:#a55;">'+esc(r.mesazh||'S\'u arrit faqja.')+'</div>';
