@@ -118,9 +118,7 @@ async function mainProfili(m){
   if(d.snippets && d.snippets.length){
     snip='<div class="rektbl" style="margin-top:10px;"><div class="rekhead"><span>Faqja (snippet)</span><span>Shfaqje</span><span>Klikime</span><span>Konvertime</span></div>';
     d.snippets.forEach(x=>{
-      const konvQel = konvLidhur
-        ? '<span>'+x.konvertime+'</span>'
-        : '<span onclick="nav({v:\'profile\',nav:\'konvertimi\'})" style="color:var(--err);cursor:pointer;font-size:12px;">Lidh →</span>';
+      const konvQel = '<span>'+x.konvertime+'</span>';
       snip+='<div class="rekrow" style="cursor:default;"><span class="rekname"><span class="nm">'+esc(x.origjina)+'</span></span>'+
             '<span>'+x.shfaqje+'</span><span>'+x.klikime+'</span>'+konvQel+'</div>';
     });
@@ -128,9 +126,8 @@ async function mainProfili(m){
   } else {
     snip='<p class="small" style="margin-top:8px;">Ende s\'ka të dhëna nga asnjë snippet.</p>';
   }
-  const konvMini = konvLidhur
-    ? '<div class="miniStat"><div class="mv">'+(d.pike?d.pike.konvertime:0)+'</div><div class="small">konvertime → '+(d.pike?d.pike.pike_nga_konvertimet:0)+' pikë</div><div class="small mut">(1 konvertim = 1 pikë)</div></div>'
-    : '<div class="miniStat" onclick="nav({v:\'profile\',nav:\'konvertimi\'})" style="cursor:pointer;border-color:var(--err);"><div class="mv" style="font-size:15px;color:var(--err);">I palidhur</div><div class="small">konvertime</div><div class="small" style="color:var(--acc);margin-top:2px;">Lidh →</div></div>';
+  const konvMini =
+    '<div class="miniStat"><div class="mv">'+(d.pike?d.pike.konvertime:0)+'</div><div class="small">konvertime → '+(d.pike?d.pike.pike_nga_konvertimet:0)+' pikë</div><div class="small mut">(1 konvertim = 1 pikë)</div></div>';
   m.innerHTML=
     '<div style="display:flex;align-items:center;gap:16px;margin-bottom:6px;">'+
       avatarHTML+
@@ -510,9 +507,7 @@ async function hapReklame(id, m){
   if(!rows){ try{ rows=await(await fetch('/api/reklamat')).json(); window.__reklamat=rows; }catch(e){ rows=[]; } }
   const r=(rows||[]).find(x=>x.id===id)||{};
   const konvLidhur = !!(une && une.url_konvertimi);
-  const konvKuti = konvLidhur
-    ? '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.konvertime||0)+'</div><div class="small">Konvertime</div></div>'
-    : '<div onclick="nav({v:\'profile\',nav:\'konvertimi\'})" style="flex:1;background:#0e1116;border:1px dashed var(--err);border-radius:10px;padding:12px 14px;cursor:pointer;"><div style="font-size:13px;font-weight:700;color:var(--err);">E palidhur</div><div class="small">Konvertime</div><div class="small" style="color:var(--acc);margin-top:4px;">Aktivizo →</div></div>';
+  const konvKuti = '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.konvertime||0)+'</div><div class="small">Konvertime</div></div>';
   m.innerHTML=
     '<h2 class="h">'+esc(r.emri||'Reklama')+'</h2>'+
     '<div style="display:flex;gap:10px;margin:14px 0;">'+
@@ -520,7 +515,6 @@ async function hapReklame(id, m){
       '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.klikime||0)+'</div><div class="small">Klikime</div></div>'+
       konvKuti+
     '</div>'+
-    (konvLidhur ? '' : '<p class="small mut" style="margin-bottom:10px;">Gjurmimi i konvertimeve s\'është aktiv. Aktivizoje — konvertimet rrisin pikët e tua të profilit dhe sa shpesh shfaqet reklama.</p>')+
     '<p class="small">Variantet e krijuara (Image / Video / HTML5) do të shfaqen këtu — për të parë cili performon më mirë në testim.</p>';
 }
 function krijoReklame(m){
