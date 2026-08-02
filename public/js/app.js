@@ -1055,9 +1055,10 @@ async function wizKrijo(){
 function stepPershkrimi(b){
   b.innerHTML=
     '<h2 class="h">Përshkruaj biznesin</h2>'+
-    '<p class="small">AI e pastron përshkrimin; ti mund ta rregullosh para se të vazhdosh.</p>'+
-    '<label>Çfarë ofron biznesi yt?</label>'+
-    '<textarea id="d_persh" placeholder="p.sh. Mjet email-marketing për dyqane të vogla online...">'+(une.pershkrimi||'')+'</textarea>'+
+    '<p class="small" style="margin-bottom:6px;">Ky përshkrim është <b>vendimtar</b>: AI-ja e përdor për të kuptuar me cilat biznese të tjera je më <b>plotësues</b> — pra kujt do t\'i interesonte vërtet oferta jote. Sa më i qartë dhe specifik të jetë, aq më mirë të çiftëzon me partnerët e duhur, gjë që <b>rrit pikët e tua dhe të shfaqet reklama më shpesh</b>. Përshkrim i paqartë → çiftëzime të dobëta → më pak shfaqje.</p>'+
+    '<p class="small" style="margin-bottom:14px;color:var(--mut);">Shkruaj saktë çfarë ofron, për kë, dhe problemin që zgjidh. AI-ja e pastron pastaj; ti mund ta rregullosh para se të vazhdosh.</p>'+
+    '<label>Çfarë ofron biznesi yt? Për kë?</label>'+
+    '<textarea id="d_persh" placeholder="p.sh. Mjet email-marketing për dyqane të vogla online (Shopify, WooCommerce). Ndihmon pronarët të dërgojnë fushata automatike dhe të rikthejnë blerës. Ideal për dyqane 1–10 persona që s\'kanë ekip marketingu.">'+(une.pershkrimi||'')+'</textarea>'+
     '<label class="chk"><input type="checkbox" id="d_lejo" checked><span>Lejo që linku i SaaS-it të studiohet automatikisht për saktësi më të madhe.</span></label>'+
     '<button class="btn" id="d_btn" onclick="wizAnalizo()">Analizo me AI</button>'+
     '<div class="msg" id="d_msg"></div>'+
