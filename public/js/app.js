@@ -246,25 +246,10 @@ async function ngarkoSnippetet(){
     c.innerHTML=h;
   }catch(e){ c.innerHTML='<p class="small err">Gabim në ngarkim.</p>'; }
 }
-function snipKrijo(){
-  // Shfaq nje fushe emri (jo popup) te lista
-  const c=$('snipLista'); if(!c) return;
-  const box=document.createElement('div');
-  box.style.cssText='border:1px solid var(--acc);border-radius:10px;padding:14px;margin-bottom:12px;';
-  box.innerHTML='<label style="display:block;margin-bottom:6px;">Emri i hapësirës së re</label>'+
-    '<div style="display:flex;gap:8px;">'+
-      '<input id="snipEmriRi" placeholder="p.sh. Fund faqe, Anash blogu" style="flex:1;">'+
-      '<button class="btn cta" onclick="snipRuajTeRe()">Krijo</button>'+
-      '<button class="btn" onclick="ngarkoSnippetet()">Anulo</button>'+
-    '</div>';
-  c.insertBefore(box, c.firstChild);
-  const inp=$('snipEmriRi'); if(inp){ inp.focus(); inp.onkeydown=(e)=>{ if(e.key==='Enter') snipRuajTeRe(); }; }
-}
-async function snipRuajTeRe(){
-  const emri=(($('snipEmriRi')||{}).value||'').trim();
-  if(!emri){ const i=$('snipEmriRi'); if(i) i.focus(); return; }
+async function snipKrijo(){
+  // Krijo menjEhere (pa emer) dhe hap detajet — emri vihet ne krye te asaj faqeje
   try{
-    const r=await(await fetch('/api/snippetet',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({emri})})).json();
+    const r=await(await fetch('/api/snippetet',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).json();
     if(r.id){ nav({v:'profile',nav:'snippetet',sub:'detail',id:r.id}); }
   }catch(e){}
 }
@@ -317,6 +302,11 @@ async function snipEmriRuaj(id){
   try{ await fetch('/api/snippetet/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({emri})}); }catch(e){}
   ngarkoSnippetet();
 }
+async function snipEmriRuajFush(id){
+  const emri=(($('snipEmriFush')||{}).value||'').trim();
+  if(!emri) return;
+  try{ await fetch('/api/snippetet/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({emri})}); }catch(e){}
+}
 async function snipDetaje(m, id){
   _snipAktiv=id;
   m.innerHTML='<div id="pvBody"><p class="small">Po ngarkoj…</p></div>';
@@ -336,6 +326,10 @@ async function snipDetaje(m, id){
     } else {
       // PA LIDHUR → kodi + kopjo + URL + verifiko
       b.innerHTML=krye+
+        '<div style="margin:6px 0 14px;">'+
+          '<label>Emri i kësaj hapësire</label>'+
+          '<input id="snipEmriFush" value="'+esc(sn.emri||'')+'" placeholder="p.sh. Fund faqe, Anash blogu" onblur="snipEmriRuajFush('+id+')">'+
+        '</div>'+
         '<p class="small" style="margin:6px 0 10px;">Vendose këtë rresht aty ku do të shfaqet reklama te faqja jote.</p>'+
         '<textarea class="kod" id="snipKod" readonly>'+esc(snipKodi(sn.celes))+'</textarea>'+
         '<div class="rowbtn"><button class="btn cta" id="snipCbtn" onclick="snipKopjo()">Kopjo</button></div>'+
@@ -555,7 +549,16 @@ function mainLidhjaSnippet(m){
       '<p>2. Vendos kodin e saj te faqja jote, aty ku do të shfaqet reklama.</p>'+
       '<p>3. Verifiko lidhjen. Sapo një hapësirë bëhet aktive, reklamat e tua kthehen në rrjet menjëherë.</p>'+
     '</div>'+
-    '<button class="btn cta" onclick="nav({v:\'profile\',nav:\'snippetet\'})">Lidh hapësirën e reklamave →</button>';
+    '<button class="btn cta" onclick="lidhHapesiren()">Lidh hapësirën e reklamave →</button>';
+}
+async function lidhHapesiren(){
+  // Nese ka snippet-e ekzistuese → te lista; nese s'ka → krijo te re direkt
+  try{
+    const r=await(await fetch('/api/snippetet')).json();
+    const lista=r.snippetet||[];
+    if(lista.length){ nav({v:'profile',nav:'snippetet'}); }
+    else { snipKrijo(); }
+  }catch(e){ nav({v:'profile',nav:'snippetet'}); }
 }
 function mainReklamat(m, s){
   s = s || {};
