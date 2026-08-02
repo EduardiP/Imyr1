@@ -422,6 +422,13 @@ function snipVerifiko(id){
       const r=await(await fetch('/api/snippetet/'+id+'/kontrollo')).json();
       if(r.active){
         clearInterval(pollTimer); pollTimer=null;
+        // Nese pati bisedE me asistentin, nxirr kodin+vendin prej saj dhe ruaje (biseda s'ruhet)
+        try{
+          if(_claudeHist[id] && _claudeHist[id].length){
+            fetch('/api/asistenti/ruaj-vendin',{method:'POST',headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({mesazhet:_claudeHist[id]})}).catch(()=>{});
+          }
+        }catch(e){}
         // Snippet-i u lidh → rifresko piken/njoftimin live, pastaj pamjen
         try{ await refreshProg(); }catch(e){}
         try{ await ngarkoNjoftimet(); }catch(e){}
