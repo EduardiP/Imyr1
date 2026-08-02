@@ -719,6 +719,10 @@ async function konvFshi(i){
   _konvUrls.splice(i,1);
   if(!_konvUrls.length) _konvUrls=[{url:'', track_active:false}];
   vizatoKonvertimet();
+  // Fshirja mund te heqe te vetmen URL te lidhur → rifresko piken/njoftimin live
+  try{ await refreshProg(); }catch(e){}
+  try{ await ngarkoNjoftimet(); }catch(e){}
+  if(typeof renderDashStatus==='function' && document.getElementById('vstep')){ try{ renderDashStatus(); }catch(e){} }
 }
 function perditesoKonvBtn(){ /* butoni Dil eshte gjithmone aktiv */ }
 function trackKod(){
@@ -815,6 +819,10 @@ async function zonaFshi(i){
   _konvZona.splice(i,1);
   if(!_konvZona.length) _konvZona=[{emri:'', id:null, track_active:false}];
   vizatoZonat();
+  // Fshirja mund te heqe te vetmen zone te lidhur → rifresko piken/njoftimin live
+  try{ await refreshProg(); }catch(e){}
+  try{ await ngarkoNjoftimet(); }catch(e){}
+  if(typeof renderDashStatus==='function' && document.getElementById('vstep')){ try{ renderDashStatus(); }catch(e){} }
 }
 function zonaKopjo(i){
   const z=_konvZona[i]; if(!z) return;
