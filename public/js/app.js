@@ -743,9 +743,13 @@ function kopjoKodKonv(){
 }
 // ── Zonat e konvertimit me kod ──
 var _konvZona = [{emri:'', id:null, track_active:false}];
+function pastroEmer(emri){
+  // Lejo vetem shkronja (perfshire Ö Ä etj.), numra, vize dhe nenvize — heq thonjeza/simbole qe prishin kodin
+  return (emri||'').trim().replace(/[^\p{L}\p{N}_-]/gu, '');
+}
 function kodiZones(emri){
-  emri=(emri||'').trim();
-  return emri ? ('imyr.konvertim("'+emri+'");') : 'imyr.konvertim();';
+  emri=pastroEmer(emri);
+  return emri ? ("imyr.konvertim('"+emri+"');") : 'imyr.konvertim();';
 }
 async function ngarkoZonat(){
   try{
@@ -802,7 +806,7 @@ async function zonaVerifiko(i){
   if(!z.id){
     try{
       const r=await(await fetch('/api/zonat',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({emri:z.emri.trim()})})).json();
+        body:JSON.stringify({emri:pastroEmer(z.emri)})})).json();
       if(r.id){ z.id=r.id; z.track_active=!!r.track_active; }
     }catch(e){}
   }
