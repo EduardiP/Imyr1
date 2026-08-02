@@ -231,23 +231,63 @@ async function ngarkoSnippetet(){
     const lista=r.snippetet||[];
     if(!lista.length){ c.innerHTML='<p class="small">Ende s\'ka snippet.</p>'; return; }
     let h='<div class="rektbl">'+
-      '<div class="rekhead" style="grid-template-columns:2fr 1fr 1fr;"><span>Emri</span><span>Statusi</span><span>Madhësia</span></div>';
+      '<div class="rekhead" style="grid-template-columns:2fr 1fr 1fr auto;"><span>Emri</span><span>Statusi</span><span>Madhësia</span><span></span></div>';
     lista.forEach(sn=>{
       const status = sn.snippet_active ? '<span style="color:var(--good);">● I lidhur</span>' : '<span style="color:var(--mut);">○ Pa lidhur</span>';
-      h+='<div class="rekrow" style="grid-template-columns:2fr 1fr 1fr;" onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})">'+
-         '<span class="nm">'+esc(sn.emri||('Snippet '+sn.id))+'</span>'+
-         '<span>'+status+'</span>'+
-         '<span class="small">'+esc(sn.madhesia_desktop||'—')+'</span></div>';
+      h+='<div class="rekrow" style="grid-template-columns:2fr 1fr 1fr auto;align-items:center;">'+
+         '<span class="nm" onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})" style="cursor:pointer;">'+esc(sn.emri||('Hapësira '+sn.id))+'</span>'+
+         '<span onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})" style="cursor:pointer;">'+status+'</span>'+
+         '<span class="small" onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})" style="cursor:pointer;">'+esc(sn.madhesia_desktop||'—')+'</span>'+
+         (lista.length>1 ? '<button class="btn" style="padding:5px 9px;" onclick="snipKonfirmoFshi('+sn.id+',\''+esc((sn.emri||'').replace(/\x27/g,""))+'\','+(sn.snippet_active?1:0)+')">✕</button>' : '<span></span>')+
+         '</div>';
     });
     h+='</div>';
     c.innerHTML=h;
   }catch(e){ c.innerHTML='<p class="small err">Gabim në ngarkim.</p>'; }
 }
 async function snipKrijo(){
+  const emri=(prompt('Vendos një emër për këtë hapësirë reklame (p.sh. "Fund faqe", "Anash blogu"):')||'').trim();
+  if(!emri) return;  // s'krijon pa emer
   try{
-    const r=await(await fetch('/api/snippetet',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).json();
+    const r=await(await fetch('/api/snippetet',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({emri})})).json();
     if(r.id){ nav({v:'profile',nav:'snippetet',sub:'detail',id:r.id}); }
   }catch(e){}
+}
+async function snipKonfirmoFshi(id, emri, ishteLidhur){
+  // Nese s'ka qene i lidhur ndonjehere → fshi menjehere
+  if(!ishteLidhur){ snipFshi(id); return; }
+  // Ishte i lidhur → gjurmo nese kodi eshte ende te faqja
+  const c=$('snipLista');
+  const stat=document.createElement('div');
+  stat.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999;';
+  stat.innerHTML='<div style="background:var(--bg2,#161a22);border:1px solid var(--line);border-radius:12px;padding:22px;max-width:420px;margin:16px;text-align:center;"><span class="spin"></span> Po kontrolloj nëse kodi është ende te faqja jote…</div>';
+  document.body.appendChild(stat);
+  try{
+    const r=await(await fetch('/api/snippetet/'+id+'/gjurmo')).json();
+    stat.remove();
+    if(r.gjendet){
+      // Kodi eshte ende aty → mos e fshi, kerko ta heqe
+      fshiDialogThjesht('Kodi i kësaj hapësire është ende te faqja jote. <b>Hiqe së pari kodin</b> ('+esc(emri||'')+') nga skedari i faqes, pastaj provo ta fshish sërish. Përndryshe reklama do të vazhdojë të shfaqet.');
+    } else {
+      // S'u gjet (ose s'u arrit faqja) → lejo fshirjen me konfirmim
+      fshiDialog('Kodi s\'u gjet më te faqja. Do ta heqësh hapësirën <b>'+esc(emri||'')+'</b>?', ()=>snipFshi(id));
+    }
+  }catch(e){ stat.remove(); }
+}
+async function snipFshi(id){
+  try{ await fetch('/api/snippetet/'+id,{method:'DELETE'}); }catch(e){}
+  ngarkoSnippetet();
+  try{ await refreshProg(); }catch(e){}
+}
+// Dialog vetem-informues (nje buton OK)
+function fshiDialogThjesht(mesazhi){
+  let d=$('fshiModal');
+  if(!d){ d=document.createElement('div'); d.id='fshiModal'; document.body.appendChild(d); }
+  d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999;';
+  d.innerHTML='<div style="background:var(--bg2,#161a22);border:1px solid var(--line);border-radius:12px;padding:22px;max-width:420px;margin:16px;">'+
+    '<div style="font-weight:600;font-size:16px;margin-bottom:10px;">Hiq kodin së pari</div>'+
+    '<p class="small" style="margin:0 0 18px;">'+mesazhi+'</p>'+
+    '<div style="display:flex;justify-content:flex-end;"><button class="btn" onclick="fshiMbyll()">E kuptova</button></div></div>';
 }
 async function snipDetaje(m, id){
   _snipAktiv=id;
