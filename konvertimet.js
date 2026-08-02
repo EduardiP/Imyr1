@@ -198,8 +198,16 @@ module.exports = function (app, pool, iLoguar, iAdmin) {
 
   app.delete('/api/zonat/:id', iLoguar, async (req, res) => {
     try {
-      // Soft-delete: sheno si e fshire (qe konvertimet e ardhshme te injorohen, mos rikrijohet)
+      // Merr emrin e zones per te fshire edhe konvertimet e saj te vjetra
+      const z = await pool.query('SELECT emri FROM zonat WHERE id=$1 AND biznes_id=$2', [req.params.id, req.biznesId]);
+      // Soft-delete: sheno si e fshire (konvertimet e ardhshme injorohen)
       await pool.query('UPDATE zonat SET fshire=true, track_active=false WHERE id=$1 AND biznes_id=$2', [req.params.id, req.biznesId]);
+      // Hiq konvertimet e vjetra te kesaj zone qe te mos numerohen me te piket/statistikat
+      if (z.rows.length) {
+        await pool.query(
+          "DELETE FROM ngjarjet WHERE biznes_id=$1 AND lloji='konvertim' AND origjina=$2",
+          [req.biznesId, 'zona:' + z.rows[0].emri]);
+      }
       res.json({ ok: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
