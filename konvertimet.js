@@ -99,10 +99,11 @@ module.exports = function (app, pool, iLoguar, iAdmin) {
         await pool.query('UPDATE bizneset SET track_active=true, track_seen_at=now() WHERE id=$1', [req.biznesId]);
       } else {
         await pool.query('UPDATE bizneset SET track_active=false WHERE id=$1', [req.biznesId]);
-        // Snippet-i s'eshte me → prish edhe lidhjen e te gjitha URL-ve (riverifikohen manualisht)
+        // Snippet-i s'eshte me → prish lidhjen e URL-ve DHE zonave (riverifikohen manualisht)
         await pool.query('UPDATE konvertimet SET track_active=false WHERE biznes_id=$1', [req.biznesId]);
+        await pool.query('UPDATE zonat SET track_active=false WHERE biznes_id=$1', [req.biznesId]);
       }
-      res.json({ aktiv: gjetur });
+      res.json({ aktiv: gjetur, faqja: faqja });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
