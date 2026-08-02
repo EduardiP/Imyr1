@@ -962,7 +962,7 @@ app.get('/imyr-track.js', (req, res) => {
   } catch(e){}
 
   function dergo(zona){
-    // MENYRA E VERIFIKIMIT: nese faqja ka ?imyr_test=1 → dergo sinjal verifikimi, JO konvertim.
+    // MENYRA E VERIFIKIMIT: nese faqja ka ?imyr_test=1 → sinjal verifikimi, JO konvertim.
     // S'kerkon kod klikimi (klienti provon vet, s'ka ardhur nga reklama).
     var testo = false;
     try { testo = new URLSearchParams(location.search).get('imyr_test') === '1'; } catch(e){}
@@ -995,6 +995,8 @@ app.get('/imyr-track.js', (req, res) => {
 
   // A eshte kjo faqja e suksesit? (vetem nese ka kod te ruajtur)
   if(!lexoKod() || preview) return;
+  // Gjate verifikimit (?imyr_test=1) mos kontrollo URL-t — verifikimi behet vetem nga thirrja e drejtperdrejte imyr.konvertim()
+  try { if(new URLSearchParams(location.search).get('imyr_test') === '1') return; } catch(e){}
   fetch(base + '/cil?key=' + encodeURIComponent(key))
     .then(function(r){ return r.json(); })
     .then(function(c){
