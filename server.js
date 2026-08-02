@@ -27,7 +27,7 @@ app.use((req, res, next) => {
   if (primar && req.headers.host && req.headers.host !== primar) {
     // Mos ridrejto: snippet-et/endpoint-et (klientet i kane vendosur me URL-en e vjeter),
     // dhe admin/api (qe login-i e cookie-t te mos prishen mes domain-eve).
-    const perjashto = ['/imyr.js','/imyr-track.js','/tag.js','/lidh','/track-lidh','/ad','/cil','/track','/klik','/konvertim','/admin','/api'];
+    const perjashto = ['/imyr.js','/imyr-track.js','/tag.js','/lidh','/track-lidh','/ad','/cil','/track','/klik','/konvertim','/konvertim-verifiko','/admin','/api'];
     if (!perjashto.some(p => req.path.startsWith(p))) {
       return res.redirect(302, 'https://' + primar + req.originalUrl);
     }
@@ -407,6 +407,23 @@ app.get('/klik', async (req, res) => {
 });
 
 // --- KONVERTIMI: numerohet vetem nese ekziston nje klikim i vlefshem ---
+// --- VERIFIKIMI I ZONES ME KOD (provë, s'numërohet si konvertim) ---
+app.all('/konvertim-verifiko', async (req, res) => {
+  cors(res);
+  const key = req.query.key || (req.body && req.body.key);
+  const zona = req.query.zona || (req.body && req.body.zona) || '';
+  if (!key) return res.status(204).end();
+  try {
+    const b = await pool.query('SELECT id FROM bizneset WHERE celes=$1', [key]);
+    if (b.rows.length) {
+      await pool.query(
+        'UPDATE zonat SET track_active=true, track_seen_at=now() WHERE biznes_id=$1 AND emri=$2',
+        [b.rows[0].id, zona]);
+    }
+  } catch (e) {}
+  res.status(204).end();
+});
+
 app.all('/konvertim', async (req, res) => {
   cors(res);
   const kod = req.query.kod || (req.body && req.body.kod);
@@ -945,6 +962,17 @@ app.get('/imyr-track.js', (req, res) => {
   } catch(e){}
 
   function dergo(zona){
+    // MENYRA E VERIFIKIMIT: nese faqja ka ?imyr_test=1 → dergo sinjal verifikimi, JO konvertim.
+    // S'kerkon kod klikimi (klienti provon vet, s'ka ardhur nga reklama).
+    var testo = false;
+    try { testo = new URLSearchParams(location.search).get('imyr_test') === '1'; } catch(e){}
+    if(testo){
+      try {
+        var uv = base + '/konvertim-verifiko?key=' + encodeURIComponent(key) + (zona ? ('&zona=' + encodeURIComponent(zona)) : '');
+        navigator.sendBeacon ? navigator.sendBeacon(uv) : fetch(uv, {mode:'no-cors'});
+      } catch(e){}
+      return;  // mos regjistro konvertim gjate verifikimit
+    }
     var kod = lexoKod(); if(!kod || preview) return;
     var celes = 'imyr_konv_' + kod + (zona ? ('_' + zona) : '');
     try { if(localStorage.getItem(celes)) return; } catch(e){}
