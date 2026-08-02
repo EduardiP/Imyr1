@@ -410,6 +410,7 @@ app.get('/klik', async (req, res) => {
 app.all('/konvertim', async (req, res) => {
   cors(res);
   const kod = req.query.kod || (req.body && req.body.kod);
+  const zona = req.query.zona || (req.body && req.body.zona) || null;
   if (!kod) return res.status(204).end();
   try {
     const k = await pool.query(
@@ -419,13 +420,15 @@ app.all('/konvertim', async (req, res) => {
     const kl = k.rows[0];
     const DITE = 30 * 24 * 3600 * 1000;
     if (Date.now() - new Date(kl.created_at).getTime() > DITE) return res.status(204).end();
+    // nje konvertim per klikim PER ZONE (zona te ndryshme numerohen veç)
     const ekz = await pool.query(
-      `SELECT 1 FROM ngjarjet WHERE klik_kod=$1 AND lloji='konvertim' LIMIT 1`, [kod]);
-    if (ekz.rows.length) return res.status(204).end();          // nje konvertim per klikim
+      `SELECT 1 FROM ngjarjet WHERE klik_kod=$1 AND lloji='konvertim'
+       AND COALESCE(origjina,'') = COALESCE($2,'') LIMIT 1`, [kod, zona ? ('zona:' + zona) : '']);
+    if (ekz.rows.length) return res.status(204).end();
     await pool.query(
       `INSERT INTO ngjarjet (biznes_id, lloji, origjina, reklama_id, reklamues_id, klik_kod)
        VALUES ($1,'konvertim',$2,$3,$4,$5)`,
-      [kl.reklamues_id, req.headers.origin || req.headers.referer || null,
+      [kl.reklamues_id, zona ? ('zona:' + zona) : (req.headers.origin || req.headers.referer || null),
        kl.reklama_id, kl.reklamues_id, kod]);
   } catch (e) {}
   res.status(204).end();
@@ -941,13 +944,14 @@ app.get('/imyr-track.js', (req, res) => {
     if(qp) ruajKod(qp);
   } catch(e){}
 
-  function dergo(){
+  function dergo(zona){
     var kod = lexoKod(); if(!kod || preview) return;
-    try { if(localStorage.getItem('imyr_konv_' + kod)) return; } catch(e){}
+    var celes = 'imyr_konv_' + kod + (zona ? ('_' + zona) : '');
+    try { if(localStorage.getItem(celes)) return; } catch(e){}
     try {
-      var u = base + '/konvertim?kod=' + encodeURIComponent(kod);
+      var u = base + '/konvertim?kod=' + encodeURIComponent(kod) + (zona ? ('&zona=' + encodeURIComponent(zona)) : '');
       navigator.sendBeacon ? navigator.sendBeacon(u) : fetch(u, {mode:'no-cors'});
-      localStorage.setItem('imyr_konv_' + kod, '1');
+      localStorage.setItem(celes, '1');
     } catch(e){}
   }
   window.imyr = window.imyr || {};
