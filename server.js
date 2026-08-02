@@ -972,10 +972,12 @@ app.get('/imyr-track.js', (req, res) => {
   } catch(e){}
 
   function dergo(zona){
-    // MENYRA E VERIFIKIMIT: nese faqja ka ?imyr_test=1 → sinjal verifikimi, JO konvertim.
-    // S'kerkon kod klikimi (klienti provon vet, s'ka ardhur nga reklama).
+    // MENYRA E VERIFIKIMIT: nese faqja ka ?imyr_test=1 (ose eshte ruajtur ne kete skede) → sinjal verifikimi, JO konvertim.
     var testo = false;
-    try { testo = new URLSearchParams(location.search).get('imyr_test') === '1'; } catch(e){}
+    try {
+      if(new URLSearchParams(location.search).get('imyr_test') === '1'){ testo = true; try{ sessionStorage.setItem('imyr_test','1'); }catch(e){} }
+      else { try{ testo = sessionStorage.getItem('imyr_test') === '1'; }catch(e){} }
+    } catch(e){}
     if(testo){
       try {
         var uv = base + '/konvertim-verifiko?key=' + encodeURIComponent(key) + (zona ? ('&zona=' + encodeURIComponent(zona)) : '');
