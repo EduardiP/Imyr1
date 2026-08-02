@@ -76,7 +76,7 @@ function njVeprim(v){
   const box=$('njBox'); if(box) box.classList.add('hide');
   if(v==='konvertimi') nav({v:'profile', nav:'konvertimi'});
   else if(v==='creatives') nav({v:'profile',nav:'reklamat',sub:'create'});
-  else if(v==='lidhja') openWizard(2);
+  else if(v==='lidhja') nav({v:'profile',nav:'lidhjaSnippet'});
   else nav({v:'profile'});
 }
 function renderNjBox(){
