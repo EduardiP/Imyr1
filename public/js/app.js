@@ -731,11 +731,17 @@ function fshiDialog(mesazhi, onFshi){
 }
 function fshiMbyll(){ const d=$('fshiModal'); if(d){ d.style.display='none'; d.innerHTML=''; } }
 function konvKonfirmoFshi(i){
-  const u=_konvUrls[i]; const emri=(u&&u.url)?u.url:'këtë adresë';
+  const u=_konvUrls[i];
+  // Nese s'eshte i lidhur (bosh ose i pa-verifikuar) → fshi menjehere, pa konfirmim
+  if(!u || !u.id || !u.track_active){ konvFshi(i); return; }
+  const emri=u.url||'këtë adresë';
   fshiDialog('Do të heqësh <b>'+esc(emri)+'</b>. Lidhja për gjurmim do të shkëputet dhe konvertimet e saj s\'do të numërohen më.', ()=>konvFshi(i));
 }
 function zonaKonfirmoFshi(i){
-  const z=_konvZona[i]; const emri=(z&&z.emri)?('"'+z.emri+'"'):'këtë kod';
+  const z=_konvZona[i];
+  // Nese s'eshte i lidhur (i sapokrijuar ose i pa-verifikuar) → fshi menjehere, pa konfirmim
+  if(!z || !z.id || !z.track_active){ zonaFshi(i); return; }
+  const emri=z.emri?('"'+z.emri+'"'):'këtë kod';
   fshiDialog('Do të heqësh kodin <b>'+esc(emri)+'</b>. Lidhja për gjurmim do të shkëputet dhe konvertimet e tij s\'do të numërohen më.', ()=>zonaFshi(i));
 }
 async function konvFshi(i){
