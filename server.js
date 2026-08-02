@@ -301,6 +301,8 @@ app.get('/api/profili', iLoguar, async (req, res) => {
               COUNT(*) FILTER (WHERE lloji='click')::int     AS klikime,
               COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
        FROM ngjarjet WHERE biznes_id=$1
+         AND COALESCE(origjina,'') NOT LIKE 'zona:%'
+         AND COALESCE(origjina,'') <> 'PROVE'
        GROUP BY origjina ORDER BY shfaqje DESC`, [req.biznesId]);
 
     const tot = await pool.query(
@@ -464,16 +466,12 @@ app.all('/konvertim', async (req, res) => {
     const DITE = 30 * 24 * 3600 * 1000;
     if (Date.now() - new Date(kl.created_at).getTime() > DITE) return res.status(204).end();
 
-    // KLIK PROVE (verifikim): lidh zonen POR mos regjistro konvertim te vertete
+    // KLIK PROVE (verifikim): lidh zonen NESE ekziston POR mos regjistro konvertim te vertete
     if (kl.origjina === 'PROVE') {
       if (zona) {
-        const z = await pool.query('SELECT id FROM zonat WHERE biznes_id=$1 AND emri=$2', [kl.reklamues_id, zona]);
-        if (z.rows.length) await pool.query('UPDATE zonat SET track_active=true, track_seen_at=now() WHERE id=$1', [z.rows[0].id]);
-        else await pool.query('INSERT INTO zonat (biznes_id, emri, track_active, track_seen_at) VALUES ($1,$2,true,now())', [kl.reklamues_id, zona]);
+        await pool.query('UPDATE zonat SET track_active=true, track_seen_at=now() WHERE biznes_id=$1 AND emri=$2', [kl.reklamues_id, zona]);
       } else {
-        // zona pa emer (imyr.konvertim() bosh) — lidh zonen boshe
-        const z = await pool.query("SELECT id FROM zonat WHERE biznes_id=$1 AND emri=''", [kl.reklamues_id]);
-        if (z.rows.length) await pool.query('UPDATE zonat SET track_active=true, track_seen_at=now() WHERE id=$1', [z.rows[0].id]);
+        await pool.query("UPDATE zonat SET track_active=true, track_seen_at=now() WHERE biznes_id=$1 AND emri=''", [kl.reklamues_id]);
       }
       return res.status(204).end();
     }
@@ -488,15 +486,9 @@ app.all('/konvertim', async (req, res) => {
        VALUES ($1,'konvertim',$2,$3,$4,$5)`,
       [kl.reklamues_id, zona ? ('zona:' + zona) : (req.headers.origin || req.headers.referer || null),
        kl.reklama_id, kl.reklamues_id, kod]);
-    // Nje konvertim REAL me zone → lidh automatikisht ate zone te profili (edhe pa Verifiko).
-    // Nese zona s'ekziston ende te tabela, krijoje si te lidhur.
+    // Nje konvertim REAL me zone → lidh ate zone NESE ekziston te profili (mos e rikrijo nese u fshi).
     if (zona) {
-      const z = await pool.query('SELECT id FROM zonat WHERE biznes_id=$1 AND emri=$2', [kl.reklamues_id, zona]);
-      if (z.rows.length) {
-        await pool.query('UPDATE zonat SET track_active=true, track_seen_at=now() WHERE id=$1', [z.rows[0].id]);
-      } else {
-        await pool.query('INSERT INTO zonat (biznes_id, emri, track_active, track_seen_at) VALUES ($1,$2,true,now())', [kl.reklamues_id, zona]);
-      }
+      await pool.query('UPDATE zonat SET track_active=true, track_seen_at=now() WHERE biznes_id=$1 AND emri=$2', [kl.reklamues_id, zona]);
     }
   } catch (e) {}
   res.status(204).end();
