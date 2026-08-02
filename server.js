@@ -13,6 +13,7 @@ const https = require('https');
 const http = require('http');
 const selector = require('./selector');
 const analytics = require('./analytics');
+const platforma = require('./platforma');
 const pesha = require('./pesha');
 const kombinimi = require('./kombinimi');
 const multer = require('multer');
@@ -248,6 +249,8 @@ app.post('/api/biz-baza', iLoguar, async (req, res) => {
   try {
     await pool.query('UPDATE bizneset SET emri=$2, website=$3, tipi=$4 WHERE id=$1', [req.biznesId, emri, website, tipi]);
     res.json({ ok: true });
+    // Studjo platformen ne sfond (pa e bllokuar pergjigjen) dhe ruaje
+    platforma.ruajPlatformen(pool, req.biznesId, website).catch(() => {});
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -1335,7 +1338,8 @@ const konvertimet = require('./konvertimet');
 konvertimet(app, pool, iLoguar, iAdmin);
 
 // Zbulimi i platformes se klientit nga URL-ja (skedar i ndare, pa AI)
-require('./platforma')(app, pool, iLoguar, iAdmin);
+platforma(app, pool, iLoguar, iAdmin);
+platforma.init(pool).catch(() => {});
 
 // Lista e bizneseve (emer + email)
 app.get('/api/admin/bizneset', iAdmin, async (req, res) => {
