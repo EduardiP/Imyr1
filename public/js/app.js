@@ -96,6 +96,7 @@ function renderMain(s){
   if(curNav==='njoftimet')  return mainNjoftimet(m);
   if(curNav==='konvertimi') return mainKonvertimi(m);
   if(curNav==='konvertimet') return mainKonvertimi(m);
+  if(curNav==='lidhjaSnippet') return mainLidhjaSnippet(m);
   if(curNav==='biznesi')    return mainBiznesi(m);
   if(curNav==='pershkrimi') return mainPershkrimi(m);
   if(curNav==='lidhja')     return mainLidhja(m);
@@ -175,7 +176,7 @@ function renderDashStatus(){
   const rreshtat=[
     { done: !!prog.llogaria,   label:'Biznesi',             veprim:()=>nav({v:'profile',nav:'biznesi'}) },
     { done: !!prog.pershkrimi, label:'Përshkrimi',          veprim:()=>nav({v:'profile',nav:'pershkrimi'}) },
-    { done: !!prog.lidhja,     label:'Lidhja e snippet-it', veprim:()=>nav({v:'profile',nav:'snippetet'}) },
+    { done: !!prog.lidhja,     label:'Lidhja e snippet-it', veprim:()=>nav({v:'profile',nav:'lidhjaSnippet'}) },
     { done: !!prog.reklama,    label:'Krijo produkt',       veprim:()=>nav({v:'profile',nav:'reklamat',sub:'create'}) },
     { done: !!prog.konvertimi, label:'Lidh konvertimin',    veprim:()=>nav({v:'profile',nav:'konvertimi'}) }
   ];
@@ -541,6 +542,21 @@ async function ruajMadhesine(){
   }catch(e){ if(msg){ msg.className='msg err'; msg.textContent='Gabim.'; } }
   if(btn) btn.disabled=false;
 }
+function mainLidhjaSnippet(m){
+  m.innerHTML=
+    '<h2 class="h">Reklamat e tua nuk po shfaqen</h2>'+
+    '<div style="background:#3a1212;border:1px solid var(--err);border-radius:10px;padding:16px;margin:12px 0 18px;">'+
+      '<p style="margin:0 0 10px;color:#f5b6b6;">S\'ke asnjë hapësirë reklame aktive te faqja jote.</p>'+
+      '<p class="small" style="margin:0;">Rrjeti ynë punon me shkëmbim: ti shfaq reklamat e bizneseve të tjera te faqja jote, dhe ata shfaqin tuajat te faqet e tyre. Meqë tani s\'po shfaq asnjë reklamë (s\'ke hapësirë aktive), <b>as reklamat e tua s\'po marrin shfaqje</b> te rrjeti.</p>'+
+    '</div>'+
+    '<div class="small" style="margin-bottom:18px;">'+
+      '<p><b>Si ta rregullosh:</b></p>'+
+      '<p>1. Krijo një hapësirë reklame (i vë një emër, p.sh. "Fund faqe").</p>'+
+      '<p>2. Vendos kodin e saj te faqja jote, aty ku do të shfaqet reklama.</p>'+
+      '<p>3. Verifiko lidhjen. Sapo një hapësirë bëhet aktive, reklamat e tua kthehen në rrjet menjëherë.</p>'+
+    '</div>'+
+    '<button class="btn cta" onclick="nav({v:\'profile\',nav:\'snippetet\'})">Lidh hapësirën e reklamave →</button>';
+}
 function mainReklamat(m, s){
   s = s || {};
   if(s.sub==='detail'){ return hapReklame(s.id, m); }
@@ -558,10 +574,10 @@ async function rekKontrolloSnippet(){
   try{
     const pr=await(await fetch('/api/progres')).json();
     if(!pr.lidhja){
-      el.innerHTML='<div onclick="nav({v:\'profile\',nav:\'snippetet\'})" style="cursor:pointer;background:#3a1212;border:1px solid var(--err);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;">'+
+      el.innerHTML='<div onclick="nav({v:\'profile\',nav:\'lidhjaSnippet\'})" style="cursor:pointer;background:#3a1212;border:1px solid var(--err);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;">'+
         '<div style="flex:1;"><div style="color:var(--err);font-weight:600;">Reklamat e tua nuk po shfaqen</div>'+
-        '<div class="small" style="margin-top:2px;">S\'ke asnjë hapësirë reklame aktive. Meqë s\'po shfaq reklamat e të tjerëve, as reklamat e tua s\'po marrin shfaqje. Lidh një hapësirë →</div></div>'+
-        '<button class="btn cta" style="white-space:nowrap;" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'snippetet\'})">Lidh hapësirë</button></div>';
+        '<div class="small" style="margin-top:2px;">S\'ke asnjë hapësirë reklame aktive. Meqë s\'po shfaq reklamat e të tjerëve, as reklamat e tua s\'po marrin shfaqje. Kliko për të mësuar si →</div></div>'+
+        '<button class="btn cta" style="white-space:nowrap;" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'lidhjaSnippet\'})">Shiko</button></div>';
     } else { el.innerHTML=''; }
   }catch(e){}
 }
