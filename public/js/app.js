@@ -345,7 +345,9 @@ async function claudeDergo(id){
     const p=document.getElementById(pritId); if(p) p.remove();
     if(r.pergjigje){
       _claudeHist[id].push({role:'assistant',content:r.pergjigje});
-      chat.innerHTML+='<div style="margin:8px 0;"><span style="background:var(--bg2,#1a1f28);padding:8px 12px;border-radius:10px;display:inline-block;max-width:90%;white-space:pre-wrap;">'+esc(r.pergjigje)+'</span></div>';
+      // Pastro Markdown bazE (**bold**, ##) qe te mos dale i madh; ruaj rreshtat
+      let txt=r.pergjigje.replace(/\*\*(.+?)\*\*/g,'$1').replace(/^#+\s*/gm,'').replace(/`([^`]+)`/g,'$1');
+      chat.innerHTML+='<div style="margin:8px 0;"><span style="background:var(--bg2,#1a1f28);padding:8px 12px;border-radius:10px;display:inline-block;max-width:90%;white-space:pre-wrap;font-size:13px;line-height:1.5;">'+esc(txt)+'</span></div>';
     } else {
       chat.innerHTML+='<div style="margin:8px 0;color:var(--err);font-size:13px;">'+esc(r.error||'Gabim në përgjigje.')+'</div>';
     }
