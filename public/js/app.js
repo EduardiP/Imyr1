@@ -176,7 +176,7 @@ function renderDashStatus(){
   const rreshtat=[
     { done: !!prog.llogaria,   label:'Biznesi',             veprim:()=>nav({v:'profile',nav:'biznesi'}) },
     { done: !!prog.pershkrimi, label:'Përshkrimi',          veprim:()=>nav({v:'profile',nav:'pershkrimi'}) },
-    { done: !!prog.lidhja,     label:'Lidhja e snippet-it', veprim:()=>nav({v:'profile',nav:'lidhjaSnippet'}) },
+    { done: !!prog.lidhja,     label:'Lidhja e snippet-it', veprim:()=> prog.lidhja ? nav({v:'profile',nav:'snippetet'}) : nav({v:'profile',nav:'lidhjaSnippet'}) },
     { done: !!prog.reklama,    label:'Krijo produkt',       veprim:()=>nav({v:'profile',nav:'reklamat',sub:'create'}) },
     { done: !!prog.konvertimi, label:'Lidh konvertimin',    veprim:()=>nav({v:'profile',nav:'konvertimi'}) }
   ];
@@ -366,7 +366,9 @@ function snipVerifiko(id){
       const r=await(await fetch('/api/snippetet/'+id+'/kontrollo')).json();
       if(r.active){
         clearInterval(pollTimer); pollTimer=null;
-        // rifresko pamjen → kalon te gjendja "I lidhur"
+        // Snippet-i u lidh → rifresko piken/njoftimin live, pastaj pamjen
+        try{ await refreshProg(); }catch(e){}
+        try{ await ngarkoNjoftimet(); }catch(e){}
         nav({v:'profile',nav:'snippetet',sub:'detail',id:id});
       }
     }catch(e){}
