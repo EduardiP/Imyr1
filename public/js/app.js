@@ -814,8 +814,8 @@ function vizatoZonat(){
   let h='';
   _konvZona.forEach((z,i)=>{
     const status = z.id ? (z.track_active
-        ? '<span style="color:var(--good);font-size:12px;">✓ E verifikuar</span>'
-        : '<span style="color:var(--mut);font-size:12px;">○ Pa verifikuar</span>')
+        ? '<span style="color:var(--good);font-size:12px;">✓ E lidhur</span>'
+        : '<span style="color:var(--mut);font-size:12px;">○ Pa lidhur</span>')
       : '<span style="color:var(--mut);font-size:12px;">Pa ruajtur</span>';
     h+='<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;">'+
        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'+
@@ -890,7 +890,7 @@ async function zonaStatus(){
     _konvZona.forEach(z=>{ const g=nga.find(x=>x.id===z.id); if(g){ z.track_active=g.track_active; if(g.track_active) ndonje=true; } });
     vizatoZonat();
     if(ndonje){
-      const m=$('k_msg'); if(m){ m.className='msg ok'; m.textContent='Zona u verifikua.'; setTimeout(()=>{m.textContent='';},3000); }
+      const m=$('k_msg'); if(m){ m.className='msg ok'; m.textContent='Kodi u lidh.'; setTimeout(()=>{m.textContent='';},3000); }
       // Zona u lidh → rifresko piken e Dashboard + njoftimin e ziles menjehere
       try{ await refreshProg(); }catch(e){}
       try{ await ngarkoNjoftimet(); }catch(e){}
