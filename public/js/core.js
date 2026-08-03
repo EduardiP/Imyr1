@@ -12,7 +12,10 @@ const NAV = [
   { k:'snippetet', l:'Hapësira e reklamave' },
   { k:'reklamat',  l:'Creatives' },
   { k:'konvertimet', l:'Konvertimet' },
-  { k:'analytics', l:'Analytics' }
+  { k:'analytics', l:'Analytics' },
+  { k:'cilesimet', l:'Cilësimet', ndaresi:true },
+  { k:'plani', l:'Plani' },
+  { k:'suport', l:'Ndihmë & Suport' }
 ];
 
 function esc(t){ const d=document.createElement('div'); d.textContent=(t==null?'':t); return d.innerHTML; }
@@ -32,11 +35,11 @@ async function refreshProg(){
   if(typeof ngarkoNjoftimet==='function') ngarkoNjoftimet();
 }
 function nextIncomplete(){ for(let i=0;i<STEPS.length;i++){ if(!prog[STEPS[i].key]) return i; } return STEPS.length; }
-// Herën e parë (asnjë hap i plotësuar) → udhëzuesi me 3 pikat; përndryshe → home
+// Herën e parë (asnjë hap i plotësuar) → udhëzuesi me 3 pikat; përndryshe → paneli (dashboard)
 function pasHyrjes(){
   const asgjeEBere = prog && !prog.llogaria && !prog.pershkrimi && !prog.lidhja;
   if(asgjeEBere) return {v:'wizard', step:0};
-  return {v:'home'};
+  return {v:'profile', nav:'dashboard'};
 }
 
 // ---------- HEADER (i loguar) ----------
@@ -46,12 +49,7 @@ function setHeaderLoggedIn(){
     '<div class="zile-wrap"><button class="zile" onclick="toggleNjoftimet(event)" aria-label="Njoftimet">'+
       '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>'+
       '<span id="zileBadge" class="zile-badge hide">0</span>'+
-    '</button><div id="njBox" class="njBox hide"></div></div>'+
-    '<div class="menu"><button class="btn" onclick="toggleMenu(event)">Profili ▾</button>'+
-    '<div id="menuBox" class="menuBox hide">'+
-      '<button onclick="goProfile()">Profili im</button>'+
-      '<button onclick="dil()">Log out</button>'+
-    '</div></div>';
+    '</button><div id="njBox" class="njBox hide"></div></div>';
   ngarkoNjoftimet();
 }
 function toggleMenu(e){ e.stopPropagation(); const m=$('menuBox'); if(m) m.classList.toggle('hide'); const n=$('njBox'); if(n) n.classList.add('hide'); }
@@ -99,7 +97,7 @@ function hapNjoftimet(){
   nav({v:'profile', nav:'njoftimet'});
 }
 function goProfile(){ nav({v:'profile'}); }
-function goHome(){ nav({v:'home'}); }
+function goHome(){ nav({v:'profile', nav:'dashboard'}); }
 
 async function loadMe(){
   let r; try{ r=await fetch('/api/une'); }catch(e){ une=null; return false; }
@@ -109,7 +107,7 @@ async function loadMe(){
 
 // ---------- NAVIGIMI (me shigjetën back të browser-it) ----------
 function applyState(s, replace){
-  if(!s){ s = une ? {v:'home'} : {v:'hero'}; }
+  if(!s){ s = une ? {v:'profile', nav:'dashboard'} : {v:'hero'}; }
   if(s.v==='wizard'){ renderWizard(s.step||0); }
   else if(s.v==='profile' && une){ renderProfile(s); showView('profile'); }
   else if(s.v==='home' && une){ renderHome(); showView('home'); }
