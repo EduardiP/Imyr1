@@ -1380,6 +1380,9 @@ platforma.init(pool).catch(() => {});
 // Asistenti me Claude per vendosjen e kodit (skedar i ndare)
 require('./asistenti')(app, pool, iLoguar);
 
+// Asistenti i suportit te pergjithshem (FAQ, model i lire) — para dhe pas login
+require('./suporti')(app, pool);
+
 // Lista e bizneseve (emer + email)
 app.get('/api/admin/bizneset', iAdmin, async (req, res) => {
   try {
