@@ -314,22 +314,24 @@ var _claudeHist = {};
 function claudeHap(id){
   const box=$('claudeSuport'+id); if(!box) return;
   if(!_claudeHist[id]) _claudeHist[id]=[];
+  var pyetjaKonv = "Hi! I'm here to help you set up conversion tracking on your website. This involves placing a tracking snippet, and then tracking either by URL (a success page) or by code (a button/action). To point you in the right direction — what do you need help with? For example: where the tracking snippet goes, which file to edit, how to track a button click, or anything else on your mind.";
+  var pyetjaRek = "Hi! I'm here to help you add the ad code to your website. To point you in the right direction — could you tell me what's stopping you or what you need help with? For example: you're not sure which file to edit, you don't know where in the code it goes, you don't have access, or anything else on your mind.";
+  var pyetja = (id==='Konv') ? pyetjaKonv : pyetjaRek;
   box.innerHTML='<div style="border:1px solid var(--acc);border-radius:12px;overflow:hidden;">'+
     '<div style="background:var(--acc);color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">'+
       '<span style="font-weight:600;">✨ Asistenti i kodit</span>'+
       '<button onclick="vizatoClaudeSuport('+(isNaN(id)?"'"+id+"'":id)+')" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;">✕</button>'+
     '</div>'+
     '<div id="claudeChat'+id+'" style="padding:14px;max-height:340px;overflow-y:auto;min-height:80px;font-size:13px;line-height:1.5;">'+
-      '<div style="margin:8px 0;"><span style="background:var(--bg2,#1a1f28);padding:8px 12px;border-radius:10px;display:inline-block;max-width:90%;">Hi! I\'m here to help you add the ad code to your website. To point you in the right direction — could you tell me what\'s stopping you or what you need help with? For example: you\'re not sure which file to edit, you don\'t know where in the code it goes, you don\'t have access, or anything else on your mind.</span></div>'+
+      '<div style="margin:8px 0;"><span style="background:var(--bg2,#1a1f28);padding:8px 12px;border-radius:10px;display:inline-block;max-width:90%;">'+esc(pyetja)+'</span></div>'+
     '</div>'+
     '<div style="padding:10px 14px;border-top:1px solid var(--line);display:flex;gap:8px;">'+
       '<input id="claudeInput'+id+'" placeholder="Shkruaj pyetjen tënde..." style="flex:1;" onkeydown="if(event.key===\'Enter\')claudeDergo('+(isNaN(id)?"'"+id+"'":id)+')">'+
       '<button class="btn cta" id="claudeBtn'+id+'" onclick="claudeDergo('+(isNaN(id)?"'"+id+"'":id)+')">Dërgo</button>'+
     '</div>'+
   '</div>';
-  // Pyetja e pare eshte fikse (e shfaqur lart, anglisht). E fusim te historiku qe Claude ta kete kontekstin.
   if(!_claudeHist[id] || !_claudeHist[id].length){
-    _claudeHist[id]=[{role:'assistant',content:"Hi! I'm here to help you add the ad code to your website. To point you in the right direction — could you tell me what's stopping you or what you need help with? For example: you're not sure which file to edit, you don't know where in the code it goes, you don't have access, or anything else on your mind."}];
+    _claudeHist[id]=[{role:'assistant',content: pyetja}];
   }
 }
 async function claudeDergo(id){
@@ -345,7 +347,7 @@ async function claudeDergo(id){
   chat.innerHTML+='<div id="'+pritId+'" style="margin:8px 0;"><span style="background:var(--bg2,#222);padding:6px 10px;border-radius:10px;display:inline-block;color:var(--mut);"><span class="spin"></span> Po mendoj...</span></div>';
   chat.scrollTop=chat.scrollHeight;
   try{
-    const r=await(await fetch('/api/asistenti',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mesazhet:_claudeHist[id], konteksti:'reklama'})})).json();
+    const r=await(await fetch('/api/asistenti',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mesazhet:_claudeHist[id], konteksti: (id==='Konv'?'konvertim':'reklama')})})).json();
     const p=document.getElementById(pritId); if(p) p.remove();
     if(r.pergjigje){
       _claudeHist[id].push({role:'assistant',content:r.pergjigje});
@@ -778,6 +780,7 @@ function ndertoKonvertim(b, ngaWizard){
         '<button class="btn" id="k_ver" onclick="riverifikoSnippet()">Verifiko lidhjen</button>'+
       '</div>'+
       '<div id="k_snipStat" style="margin-top:10px;"></div>'+
+      '<div id="claudeSuportKonv" style="margin-top:12px;"></div>'+
     '</div>'+
     // ZGJEDHJA: me URL ose me kod
     '<label>Si e shënon konvertimin?</label>'+
@@ -812,6 +815,7 @@ function ndertoKonvertim(b, ngaWizard){
   mbushTrack();
   ngarkoKonvertimet();
   kontrolloSnippetFresket();
+  vizatoClaudeSuport('Konv');
 }
 // Kontroll i fresket i snippet-it te gjurmimit kur hapet seksioni.
 // Serveri viziton faqen publike dhe sheh nese kodi eshte ende aty.
