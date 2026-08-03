@@ -83,16 +83,25 @@ function renderProfile(s){
 function renderNav(){
   const el=$('snav'); el.innerHTML='';
   NAV.forEach(n=>{
+    if(n.ndaresi){ const hr=document.createElement('div'); hr.style.cssText='height:1px;background:var(--line);margin:10px 4px;'; el.appendChild(hr); }
     const b=document.createElement('button');
     b.textContent=n.l; if(n.k===curNav) b.className='active';
     b.onclick=()=>nav({v:'profile', nav:n.k});
     el.appendChild(b);
   });
+  // Log out ne fund
+  const lo=document.createElement('button');
+  lo.textContent='Dilni'; lo.style.cssText='color:var(--err);margin-top:6px;';
+  lo.onclick=()=>dil();
+  el.appendChild(lo);
 }
 function renderMain(s){
   s = s || {};
   const m=$('mainPanel');
   if(curNav==='profili')    return mainProfili(m);
+  if(curNav==='cilesimet')  return mainProfili(m);
+  if(curNav==='plani')      return mainPlani(m);
+  if(curNav==='suport')     return mainSuport(m);
   if(curNav==='njoftimet')  return mainNjoftimet(m);
   if(curNav==='konvertimi') return mainKonvertimi(m);
   if(curNav==='konvertimet') return mainKonvertimi(m);
@@ -696,6 +705,21 @@ function krijoReklame(m){
     '<p class="small" style="margin:2px 0 16px;">Zgjidh llojin që do të ngarkosh. Ngarkimi vjen së shpejti.</p>'+
     '<div id="adTypeWrap2"></div>';
   adTypeUI($('adTypeWrap2'));
+}
+function mainPlani(m){
+  m.innerHTML='<h2 class="h">Plani</h2>'+
+    '<div style="border:1px solid var(--line);border-radius:12px;padding:20px;margin-top:14px;">'+
+      '<div style="font-size:18px;font-weight:600;">Plani Falas</div>'+
+      '<p class="small" style="margin:8px 0 0;">Aktualisht je në planin falas. Ke qasje te rrjeti i cross-promocionit, gjurmimi i konvertimeve dhe analitika bazë.</p>'+
+    '</div>'+
+    '<p class="small" style="margin-top:16px;color:var(--mut);">Planet me pagesë do të vijnë së shpejti — me përparësi në renditje dhe veçori shtesë.</p>';
+}
+function mainSuport(m){
+  m.innerHTML='<h2 class="h">Ndihmë & Suport</h2>'+
+    '<p class="small" style="margin:10px 0 16px;">Ke një pyetje ose problem? Na shkruaj dhe të ndihmojmë.</p>'+
+    '<div style="border:1px solid var(--line);border-radius:12px;padding:20px;">'+
+      '<p class="small" style="margin:0;">Email: <b>suport@phronexusai.com</b></p>'+
+    '</div>';
 }
 function mainAnalytics(m){
   m.innerHTML='<h2 class="h">Analytics</h2>'+
