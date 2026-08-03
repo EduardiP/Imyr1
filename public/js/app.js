@@ -320,28 +320,17 @@ function claudeHap(id){
       '<button onclick="vizatoClaudeSuport('+(isNaN(id)?"'"+id+"'":id)+')" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;">✕</button>'+
     '</div>'+
     '<div id="claudeChat'+id+'" style="padding:14px;max-height:340px;overflow-y:auto;min-height:80px;font-size:13px;line-height:1.5;">'+
-      '<div style="color:var(--mut);"><span class="spin"></span> Po hapet asistenti…</div>'+
+      '<div style="margin:8px 0;"><span style="background:var(--bg2,#1a1f28);padding:8px 12px;border-radius:10px;display:inline-block;max-width:90%;">Hi! I\'m here to help you add the ad code to your website. To point you in the right direction — could you tell me what\'s stopping you or what you need help with? For example: you\'re not sure which file to edit, you don\'t know where in the code it goes, you don\'t have access, or anything else on your mind.</span></div>'+
     '</div>'+
     '<div style="padding:10px 14px;border-top:1px solid var(--line);display:flex;gap:8px;">'+
       '<input id="claudeInput'+id+'" placeholder="Shkruaj pyetjen tënde..." style="flex:1;" onkeydown="if(event.key===\'Enter\')claudeDergo('+(isNaN(id)?"'"+id+"'":id)+')">'+
       '<button class="btn cta" id="claudeBtn'+id+'" onclick="claudeDergo('+(isNaN(id)?"'"+id+"'":id)+')">Dërgo</button>'+
     '</div>'+
   '</div>';
-  // Nis biseden: Claude ben pyetjen e pare (per nivelin e klientit)
-  claudeNis(id);
-}
-async function claudeNis(id){
-  const chat=$('claudeChat'+id); if(!chat) return;
-  if(!_claudeHist[id]) _claudeHist[id]=[];
-  try{
-    const r=await(await fetch('/api/asistenti',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({mesazhet:[{role:'user',content:'[fillim]'}], konteksti:'reklama'})})).json();
-    if(r.pergjigje){
-      _claudeHist[id]=[{role:'assistant',content:r.pergjigje}];
-      let txt=r.pergjigje.replace(/\*\*(.+?)\*\*/g,'$1').replace(/^#+\s*/gm,'').replace(/`([^`]+)`/g,'$1');
-      chat.innerHTML='<div style="margin:8px 0;"><span style="background:var(--bg2,#1a1f28);padding:8px 12px;border-radius:10px;display:inline-block;max-width:90%;white-space:pre-wrap;">'+esc(txt)+'</span></div>';
-    } else { chat.innerHTML='<div style="color:var(--mut);">Shkruaj një mesazh për të filluar.</div>'; }
-  }catch(e){ chat.innerHTML='<div style="color:var(--err);">Gabim në lidhje.</div>'; }
+  // Pyetja e pare eshte fikse (e shfaqur lart, anglisht). E fusim te historiku qe Claude ta kete kontekstin.
+  if(!_claudeHist[id] || !_claudeHist[id].length){
+    _claudeHist[id]=[{role:'assistant',content:"Hi! I'm here to help you add the ad code to your website. To point you in the right direction — could you tell me what's stopping you or what you need help with? For example: you're not sure which file to edit, you don't know where in the code it goes, you don't have access, or anything else on your mind."}];
+  }
 }
 async function claudeDergo(id){
   const inp=$('claudeInput'+id); const chat=$('claudeChat'+id); const btn=$('claudeBtn'+id);
