@@ -7,7 +7,7 @@ const MODELI = 'claude-opus-4-8';
 const API_URL = 'https://api.anthropic.com/v1/messages';
 
 // Ndertimi i udhezimit te sistemit — njohuria per Imyr + platforma e klientit
-function ndertoSystem(biz) {
+function ndertoSystem(biz, konteksti) {
   const detaje = [];
   if (biz.platforma && biz.platforma !== 'Kod i personalizuar (i panjohur)') detaje.push('Platforma: ' + biz.platforma);
   try {
@@ -15,6 +15,13 @@ function ndertoSystem(biz) {
     d.forEach(x => detaje.push(x.etiketa + ': ' + x.vlera));
   } catch (e) {}
   const platTekst = detaje.length ? detaje.join('\n') : 'E panjohur (kod i personalizuar).';
+
+  let kontekstTekst = '';
+  if (konteksti === 'reklama') {
+    kontekstTekst = '\n\nKONTEKSTI TANI: Klienti EshtE te seksioni i HAPESIRES SE REKLAMES (imyr.js) — po pErpiqet tE vendosE kodin qE SHFAQ reklamat te njE vend specifik i faqes. Fokusohu te ky lloj kodi (kodi i reklamEs), jo te gjurmimi apo konvertimi, pErvec nEse klienti pyet ndryshe.';
+  } else if (konteksti === 'konvertim') {
+    kontekstTekst = '\n\nKONTEKSTI TANI: Klienti EshtE te seksioni i KONVERTIMEVE — po pErpiqet tE vendosE kodin qE mat konvertimet (URL ose window.imyr && imyr.konvertim). Fokusohu ketu, pervec nese pyet ndryshe.';
+  }
 
   return `Ti je asistenti i Imyr (phronexusai.com), njE rrjet cross-promocioni ku bizneset shfaqin reklamat e njEri-tjetrit.
 Detyra jote: ndihmo klientin tE vendosE kodin e Imyr te faqja e vet, hap-pas-hapi.
@@ -36,7 +43,7 @@ TRE LLOJET E KODIT:
    FORMA E SIGURT gjithmonE: window.imyr && imyr.konvertim('emri') — s'e prish butonin nese snippet-i mungon.
 
 TE DHENAT E FAQES SE KETIJ KLIENTI (nga studimi automatik):
-${platTekst}
+${platTekst}${kontekstTekst}
 
 Perdor kEto tE dhEna pEr tE dhEnE udhEzim specifik pEr platformEn e tij.`;
 }
@@ -101,7 +108,8 @@ module.exports = function (app, pool, iLoguar) {
       const b = await pool.query(
         'SELECT platforma, platforma_detaje, website FROM bizneset WHERE id=$1', [req.biznesId]);
       const biz = b.rows[0] || {};
-      const system = ndertoSystem(biz);
+      const konteksti = (req.body && req.body.konteksti) || 'reklama';
+      const system = ndertoSystem(biz, konteksti);
       // Kufizo historikun ne 12 mesazhet e fundit (kosto)
       const hist = mesazhet.slice(-12).map(m => ({
         role: m.role === 'assistant' ? 'assistant' : 'user',
