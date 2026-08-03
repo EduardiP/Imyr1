@@ -434,7 +434,7 @@ function snipVerifiko(id){
         try{
           if(_claudeHist[id] && _claudeHist[id].length){
             fetch('/api/asistenti/ruaj-vendin',{method:'POST',headers:{'Content-Type':'application/json'},
-              body:JSON.stringify({mesazhet:_claudeHist[id]})}).catch(()=>{});
+              body:JSON.stringify({mesazhet:_claudeHist[id], lloji:'reklama'})}).catch(()=>{});
           }
         }catch(e){}
         // Snippet-i u lidh → rifresko piken/njoftimin live, pastaj pamjen
@@ -835,6 +835,13 @@ async function kontrolloSnippetFresket(){
     if(r.aktiv){
       nj.innerHTML='<div style="background:#123a1e;border:1px solid var(--good);color:#b6f5c8;padding:10px 12px;border-radius:8px;font-size:13px;">✓ Snippet-i u lidh me sukses.</div>';
       setTimeout(()=>{ const x=$('k_snipStat'); if(x && x.innerHTML.indexOf('u lidh me sukses')>-1) x.innerHTML=''; }, 5000);
+      // Nese pati bisedE me asistentin te konvertimet, ruaj implementimin e rrenjes
+      try{
+        if(_claudeHist && _claudeHist['Konv'] && _claudeHist['Konv'].length){
+          fetch('/api/asistenti/ruaj-vendin',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({mesazhet:_claudeHist['Konv'], lloji:'rrenja'})}).catch(()=>{});
+        }
+      }catch(e){}
       // Pika/njoftimi plotesohen VETEM nese ka edhe nje URL ose kod te lidhur — e leme serverin te vendose.
       try{ await refreshProg(); }catch(e){}
       try{ await ngarkoNjoftimet(); }catch(e){}
@@ -1067,6 +1074,13 @@ async function zonaStatus(){
     vizatoZonat();
     if(ndonje){
       const m=$('k_msg'); if(m){ m.className='msg ok'; m.textContent='Kodi u lidh.'; setTimeout(()=>{m.textContent='';},3000); }
+      // Ruaj implementimin e kodit nese pati bisedE me asistentin
+      try{
+        if(_claudeHist && _claudeHist['Konv'] && _claudeHist['Konv'].length){
+          fetch('/api/asistenti/ruaj-vendin',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({mesazhet:_claudeHist['Konv'], lloji:'kod'})}).catch(()=>{});
+        }
+      }catch(e){}
       // Zona u lidh → rifresko piken e Dashboard + njoftimin e ziles menjehere
       try{ await refreshProg(); }catch(e){}
       try{ await ngarkoNjoftimet(); }catch(e){}
@@ -1099,6 +1113,12 @@ async function kStatus(){
     }
     if(st){
       if(ka && teGjitha){ st.innerHTML='<span style="color:var(--good)">✓ Të gjitha adresat u lidhën.</span>';
+        try{
+          if(_claudeHist && _claudeHist['Konv'] && _claudeHist['Konv'].length){
+            fetch('/api/asistenti/ruaj-vendin',{method:'POST',headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({mesazhet:_claudeHist['Konv'], lloji:'url'})}).catch(()=>{});
+          }
+        }catch(e){}
         if(kTimer){ clearInterval(kTimer); kTimer=null; } return true; }
       else if(ndonjeLidhur){ st.innerHTML='<span class="mut">Disa u lidhën, të tjerat jo ende. Hap secilën faqe dhe prit…</span>'; }
       else { st.innerHTML='<span class="mut">Ende s\'i kemi parë. Vendos kodin te faqja jote dhe hap secilën adresë.</span>'; }
