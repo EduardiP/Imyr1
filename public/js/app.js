@@ -319,14 +319,29 @@ function claudeHap(id){
       '<span style="font-weight:600;">✨ Asistenti i kodit</span>'+
       '<button onclick="vizatoClaudeSuport('+(isNaN(id)?"'"+id+"'":id)+')" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;">✕</button>'+
     '</div>'+
-    '<div id="claudeChat'+id+'" style="padding:14px;max-height:340px;overflow-y:auto;min-height:80px;">'+
-      '<div class="small" style="color:var(--mut);">Përshëndetje! Të ndihmoj të vendosësh kodin te faqja jote. Më trego me çfarë e ke ndërtuar faqen, ose çfarë të pengon — dhe të udhëzoj hap-pas-hapi.</div>'+
+    '<div id="claudeChat'+id+'" style="padding:14px;max-height:340px;overflow-y:auto;min-height:80px;font-size:13px;line-height:1.5;">'+
+      '<div style="color:var(--mut);"><span class="spin"></span> Po hapet asistenti…</div>'+
     '</div>'+
     '<div style="padding:10px 14px;border-top:1px solid var(--line);display:flex;gap:8px;">'+
       '<input id="claudeInput'+id+'" placeholder="Shkruaj pyetjen tënde..." style="flex:1;" onkeydown="if(event.key===\'Enter\')claudeDergo('+(isNaN(id)?"'"+id+"'":id)+')">'+
       '<button class="btn cta" id="claudeBtn'+id+'" onclick="claudeDergo('+(isNaN(id)?"'"+id+"'":id)+')">Dërgo</button>'+
     '</div>'+
   '</div>';
+  // Nis biseden: Claude ben pyetjen e pare (per nivelin e klientit)
+  claudeNis(id);
+}
+async function claudeNis(id){
+  const chat=$('claudeChat'+id); if(!chat) return;
+  if(!_claudeHist[id]) _claudeHist[id]=[];
+  try{
+    const r=await(await fetch('/api/asistenti',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({mesazhet:[{role:'user',content:'[fillim]'}], konteksti:'reklama'})})).json();
+    if(r.pergjigje){
+      _claudeHist[id]=[{role:'assistant',content:r.pergjigje}];
+      let txt=r.pergjigje.replace(/\*\*(.+?)\*\*/g,'$1').replace(/^#+\s*/gm,'').replace(/`([^`]+)`/g,'$1');
+      chat.innerHTML='<div style="margin:8px 0;"><span style="background:var(--bg2,#1a1f28);padding:8px 12px;border-radius:10px;display:inline-block;max-width:90%;white-space:pre-wrap;">'+esc(txt)+'</span></div>';
+    } else { chat.innerHTML='<div style="color:var(--mut);">Shkruaj një mesazh për të filluar.</div>'; }
+  }catch(e){ chat.innerHTML='<div style="color:var(--err);">Gabim në lidhje.</div>'; }
 }
 async function claudeDergo(id){
   const inp=$('claudeInput'+id); const chat=$('claudeChat'+id); const btn=$('claudeBtn'+id);
