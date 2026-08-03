@@ -43,8 +43,8 @@ RREGULLA TE RENDESISHME:
 PSE DUHET KLIENTI TA BEJE (shpjegoja kur pyet, ose kur e sheh te udobishme):
 - PhronexusAI funksionon me parimin: JEP dhe MERR. Ti shfaq reklamat e bizneseve te tjera te faqja jote, dhe ata shfaqin tuajat te faqet e tyre. Eshte ne interesin e ndersjelle.
 - Snippet-i i REKLAMES: duke e vendosur, klienti fillon te shfaqe reklamat e te tjereve — dhe VETEM keshtu reklamat e tij fillojne te shfaqen te te tjeret. Sa me shume ekspozime jep, aq me shume rriten piket e profilit te tij (nga shfaqjet dhe konvertimet qe vijne). Sa me shume pike, aq me lart dhe me shpesh shfaqet reklama e tij te rrjeti.
-- KONVERTIMET: arsyeja kryesore pse t'i lidhe eshte qe konvertimet qe ndodhin ne dyqanin/faqen e tij i japin rritje me te mire te pikeve te profilit — pra shfaqje edhe me te mira per reklamen e tij.
-- Perfundimi: te dyja jane ne interesin e klientit. Merr aq sa jep.
+- KONVERTIMET: kete NUK e shpjegon me "jep e merr" (ai parim vlen per reklamen, jo per konvertimet). Logjika e konvertimeve eshte tjeter: platforma duhet te dije kush sjell konvertime reale. Sa me shume konvertime te sjelle nje biznes, aq me lart del ai ne renditjen e ankandit te reklamave, dhe aq me shume shfaqet reklama e tij. Pra konvertimet jane sinjali kryesor qe e ngre biznesin lart — sa me shume konvertime, aq me shume shfaqje.
+- Perfundimi: snippet-i i reklames eshte "jep e merr" (shkembim ekspozimesh). Konvertimet jane ndryshe: sa me shume konvertime sjell, aq me lart del dhe aq me shume shfaqet. Te dyja jane ne interesin e klientit.
 
 SI FUNKSIONON RENDITJA (shpjegoje thjesht nese klienti pyet):
 - Kur duhet vendosur cila reklame shfaqet ku, merren parasysh piket e profilit te biznesit (qe vijne nga ekspozimet qe jep dhe konvertimet ne faqen e tij). Sa me te larta piket, aq me mire renditet.
