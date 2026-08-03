@@ -341,7 +341,7 @@ async function claudeDergo(id){
   chat.innerHTML+='<div id="'+pritId+'" style="margin:8px 0;"><span style="background:var(--bg2,#222);padding:6px 10px;border-radius:10px;display:inline-block;color:var(--mut);"><span class="spin"></span> Po mendoj...</span></div>';
   chat.scrollTop=chat.scrollHeight;
   try{
-    const r=await(await fetch('/api/asistenti',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mesazhet:_claudeHist[id]})})).json();
+    const r=await(await fetch('/api/asistenti',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mesazhet:_claudeHist[id], konteksti:'reklama'})})).json();
     const p=document.getElementById(pritId); if(p) p.remove();
     if(r.pergjigje){
       _claudeHist[id].push({role:'assistant',content:r.pergjigje});
