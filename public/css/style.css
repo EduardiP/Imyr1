@@ -246,7 +246,7 @@ footer.site{background:#080a0e;border-top:1px solid var(--line);padding:54px 0 3
 .ndaresi span{ padding:0 12px; }
 
 /* ===== Widget-i i suportit (robot poshte-majtas) ===== */
-#suportWrap { position:fixed; left:20px; bottom:20px; z-index:9998; }
+#suportWrap { position:fixed; right:20px; bottom:20px; z-index:9998; }
 #suportBtn {
   width:60px; height:60px; border-radius:50%; border:none; cursor:pointer;
   background:linear-gradient(135deg,#3552d6,#5b7cff); box-shadow:0 6px 20px rgba(53,82,214,.45);
@@ -287,6 +287,6 @@ footer.site{background:#080a0e;border-top:1px solid var(--line);padding:54px 0 3
 }
 #suportSend:hover { background:#2a42b8; }
 @media (max-width:480px){
-  #suportWrap { left:12px; bottom:12px; }
+  #suportWrap { right:12px; bottom:12px; }
   #suportPanel { width:calc(100vw - 24px); height:calc(100vh - 90px); }
 }
