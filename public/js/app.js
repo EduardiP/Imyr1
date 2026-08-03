@@ -99,7 +99,7 @@ function renderMain(s){
   s = s || {};
   const m=$('mainPanel');
   if(curNav==='profili')    return mainProfili(m);
-  if(curNav==='cilesimet')  return mainProfili(m);
+  if(curNav==='cilesimet')  return mainCilesimet(m);
   if(curNav==='plani')      return mainPlani(m);
   if(curNav==='suport')     return mainSuport(m);
   if(curNav==='njoftimet')  return mainNjoftimet(m);
@@ -705,6 +705,13 @@ function krijoReklame(m){
     '<p class="small" style="margin:2px 0 16px;">Zgjidh llojin që do të ngarkosh. Ngarkimi vjen së shpejti.</p>'+
     '<div id="adTypeWrap2"></div>';
   adTypeUI($('adTypeWrap2'));
+}
+function mainCilesimet(m){
+  m.innerHTML='<h2 class="h">Cilësimet</h2>'+
+    '<p class="small" style="margin:10px 0 16px;">Këtu do të mund të aktivizosh ose çaktivizosh funksione të llogarisë tënde.</p>'+
+    '<div style="border:1px solid var(--line);border-radius:12px;padding:20px;color:var(--mut);">'+
+      '<p class="small" style="margin:0;">Së shpejti.</p>'+
+    '</div>';
 }
 function mainPlani(m){
   m.innerHTML='<h2 class="h">Plani</h2>'+
