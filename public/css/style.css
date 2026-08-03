@@ -76,7 +76,10 @@ button.primary:disabled { opacity:.5; }
 h2.h { font-size:20px; margin:0 0 4px; }
 
 .appwrap { display:flex; align-items:stretch; min-height:calc(100vh - 58px); }
-.sidebar { width:250px; flex:0 0 auto; border-right:1px solid var(--line); padding:20px 14px; }
+.sidebar { width:250px; flex:0 0 auto; border-right:1px solid var(--line); padding:20px 14px; display:flex; flex-direction:column; }
+.snav button, #snavFoot button { display:block; width:100%; text-align:left; background:none; border:none; color:var(--txt); padding:10px; border-radius:8px; cursor:pointer; font-size:14px; margin-bottom:2px; }
+#snavFoot button:hover { background:#0e1116; }
+#snavFoot button.active { background:#0e1116; color:var(--acc); }
 .main { flex:1; padding:26px 30px; min-width:0; }
 .pcard { padding:4px 8px 16px; border-bottom:1px solid var(--line); margin-bottom:12px; }
 .pname { font-size:17px; font-weight:600; }
@@ -101,6 +104,8 @@ h2.h { font-size:20px; margin:0 0 4px; }
   .sidebar{ width:auto; border-right:none; border-bottom:1px solid var(--line); }
   .snav{ display:flex; overflow-x:auto; gap:8px; -webkit-overflow-scrolling:touch; }
   .snav button{ width:auto; white-space:nowrap; flex:0 0 auto; margin-bottom:0; }
+  #snavFoot{ margin-top:8px !important; display:flex; gap:8px; border-top:none !important; padding-top:0 !important; }
+  #snavFoot button{ width:auto; white-space:nowrap; }
   .rektbl{ overflow-x:auto; }
   .rekhead, .rekrow{ min-width:440px; }
 }
