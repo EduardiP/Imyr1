@@ -13,8 +13,7 @@ const NAV = [
   { k:'reklamat',  l:'Creatives' },
   { k:'konvertimet', l:'Konvertimet' },
   { k:'analytics', l:'Analytics' },
-  { k:'cilesimet', l:'Cilësimet', ndaresi:true },
-  { k:'plani', l:'Plani' },
+  { k:'plani', l:'Plani', ndaresi:true },
   { k:'suport', l:'Ndihmë & Suport' }
 ];
 
