@@ -20,7 +20,11 @@ function ndertoSystem(biz, konteksti) {
   if (konteksti === 'reklama') {
     kontekstTekst = '\n\nKONTEKSTI TANI: Klienti eshte te seksioni i HAPESIRES SE REKLAMES — po perpiqet te vendose kodin qe SHFAQ reklamat te nje vend specifik i faqes. Fokusohu te kodi i reklames (imyr.js), pervec nese klienti pyet ndryshe.';
   } else if (konteksti === 'konvertim') {
-    kontekstTekst = '\n\nKONTEKSTI TANI: Klienti eshte te seksioni i KONVERTIMEVE — po perpiqet te vendose kodin qe mat konvertimet. Fokusohu ketu, pervec nese pyet ndryshe.';
+    kontekstTekst = '\n\nKONTEKSTI TANI: Klienti eshte te seksioni i KONVERTIMEVE. Ketu ka tri gjera: (1) snippet-i i gjurmimit (imyr-track.js) qe shkon para </body> te skedari kryesor; (2) gjurmim me URL (adresa e faqes se suksesit); (3) gjurmim me kod (window.imyr && imyr.konvertim). Fokusohu ketu, jo te reklama.';
+    // Nese klienti ka vendosur me pare kodin e reklames, perdore si referencE (i njejti skedar shpesh)
+    if (biz.kodi_vendi) {
+      kontekstTekst += '\n\nREFERENCE: Heren e fundit klienti e vendosi kodin ketu: "' + String(biz.kodi_vendi).slice(0,500) + '". Snippet-i i gjurmimit shpesh shkon te i njejti skedar — perdore kete si pikenisje per ta udhezuar.';
+    }
   }
 
   return `Ti je asistenti i Imyr (phronexusai.com), nje rrjet cross-promocioni ku bizneset shfaqin reklamat e njeri-tjetrit.
@@ -106,7 +110,7 @@ module.exports = function (app, pool, iLoguar) {
 
     try {
       const b = await pool.query(
-        'SELECT platforma, platforma_detaje, website FROM bizneset WHERE id=$1', [req.biznesId]);
+        'SELECT platforma, platforma_detaje, website, kodi_vendi FROM bizneset WHERE id=$1', [req.biznesId]);
       const biz = b.rows[0] || {};
       const konteksti = (req.body && req.body.konteksti) || 'reklama';
       const system = ndertoSystem(biz, konteksti);
