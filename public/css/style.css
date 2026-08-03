@@ -244,3 +244,49 @@ footer.site{background:#080a0e;border-top:1px solid var(--line);padding:54px 0 3
 .ndaresi{ display:flex; align-items:center; text-align:center; color:var(--mut); font-size:12px; margin:16px 0; }
 .ndaresi::before,.ndaresi::after{ content:''; flex:1; height:1px; background:var(--line); }
 .ndaresi span{ padding:0 12px; }
+
+/* ===== Widget-i i suportit (robot poshte-majtas) ===== */
+#suportWrap { position:fixed; left:20px; bottom:20px; z-index:9998; }
+#suportBtn {
+  width:60px; height:60px; border-radius:50%; border:none; cursor:pointer;
+  background:linear-gradient(135deg,#3552d6,#5b7cff); box-shadow:0 6px 20px rgba(53,82,214,.45);
+  display:flex; align-items:center; justify-content:center; transition:transform .15s, box-shadow .15s;
+}
+#suportBtn:hover { transform:scale(1.08); box-shadow:0 8px 26px rgba(53,82,214,.6); }
+#suportBtn.hide, #suportPanel.hide { display:none; }
+#suportPanel {
+  width:360px; max-width:calc(100vw - 40px); height:480px; max-height:calc(100vh - 100px);
+  background:var(--bg2,#161a22); border:1px solid var(--line,#2a2f3a); border-radius:16px;
+  display:flex; flex-direction:column; overflow:hidden; box-shadow:0 12px 40px rgba(0,0,0,.5);
+}
+#suportHead {
+  background:linear-gradient(135deg,#3552d6,#5b7cff); color:#fff; padding:12px 14px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+#suportHead button {
+  background:rgba(255,255,255,.15); border:none; color:#fff; width:26px; height:26px;
+  border-radius:6px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center;
+}
+#suportHead button:hover { background:rgba(255,255,255,.28); }
+#suportChat { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:8px; font-size:13.5px; line-height:1.5; }
+.suportMsg { padding:9px 12px; border-radius:12px; max-width:85%; white-space:pre-wrap; word-wrap:break-word; }
+.suportMsg.bot { background:#0e1116; color:var(--txt,#e6e8ef); align-self:flex-start; border-bottom-left-radius:4px; }
+.suportMsg.user { background:#3552d6; color:#fff; align-self:flex-end; border-bottom-right-radius:4px; }
+.suportMsg.err { color:#ff9b9b; }
+.suportDots { letter-spacing:2px; opacity:.6; animation:suportBlink 1.2s infinite; }
+@keyframes suportBlink { 0%,100%{opacity:.3;} 50%{opacity:.8;} }
+#suportInputRow { display:flex; gap:8px; padding:10px 12px; border-top:1px solid var(--line,#2a2f3a); }
+#suportInput {
+  flex:1; background:#0e1116; border:1px solid var(--line,#2a2f3a); border-radius:20px;
+  padding:9px 14px; color:var(--txt,#e6e8ef); font-size:13.5px; outline:none;
+}
+#suportInput:focus { border-color:#3552d6; }
+#suportSend {
+  width:38px; height:38px; border-radius:50%; border:none; cursor:pointer;
+  background:#3552d6; color:#fff; font-size:15px; display:flex; align-items:center; justify-content:center;
+}
+#suportSend:hover { background:#2a42b8; }
+@media (max-width:480px){
+  #suportWrap { left:12px; bottom:12px; }
+  #suportPanel { width:calc(100vw - 24px); height:calc(100vh - 90px); }
+}
