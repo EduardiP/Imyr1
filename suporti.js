@@ -9,23 +9,31 @@ const API_URL = 'https://api.openai.com/v1/chat/completions';
 const NJOHURIA = `
 PhronexusAI eshte nje rrjet cross-promocioni (jep-e-merr) ku bizneset PLOTESUESE promovojne njeri-tjetrin.
 
-SI FUNKSIONON:
-- Biznesi regjistrohet dhe pershkruan cfare ofron.
-- Algoritmi yne e cifteon automatikisht me biznese plotesuese (JO konkurrente).
-- Biznesi vendos nje kod te vogel te faqja e vet dhe shfaq reklamat e bizneseve plotesuese.
-- Ne kembim, reklama e tij shfaqet te faqet e te tjereve.
-- Sa me shume ekspozime jep, aq me shume shfaqet edhe reklama e tij.
+PARIMI JEP-E-MERR (per hapesiren e reklames):
+- Per te shfaqur reklamat e te tjereve, biznesi vendos nje kod te faqja e vet.
+- DUKE lejuar qe te shfaqen reklamat e te tjereve te faqja e tij, ai fiton te drejten qe edhe reklama e TIJ te shfaqet te faqet e te tjereve.
+- Pra: lejon te tjeret te shfaqen tek ti → ti shfaqesh tek ata. Eshte i ndersjelle.
+
+KOMBINIMI (ne fillim, automatik):
+- Kur nje biznes regjistrohet, PhronexusAI ben automatikisht nje kombinim te tij me CDO biznes tjeter ne platforme.
+- Ky kombinim nxjerr sa PLOTESUES eshte secili biznes per tjetrin (jo konkurrent).
+- Rezultati: te faqja e nje biznesi shfaqen VETEM biznese plotesuese, kurre konkurrenca.
+
+PIKET E PROFILIT:
+- Shfaqjet (ekspozimet) qe jep biznesi DHE konvertimet qe sjell → rrisin piket e profilit te tij.
+- Sa me shume shfaqje jep dhe sa me shume konvertime sjell, aq me te larta piket e tij.
+
+ANKANDI (si renditet kush shfaqet ku):
+- Algoritmi i shfaqjes eshte nje ANKAND. Kur duhet vendosur cila reklame shfaqet ne nje hapesire, bizneset "konkurrojne" me piket e tyre te profilit.
+- Sa me te larta piket e profilit (nga shfaqjet qe jep + konvertimet qe sjell), aq me lart dhe me shpesh shfaqet reklama e atij biznesi.
+- Pra: jep me shume ekspozime + sjell me shume konvertime → me shume pike → fiton ankandin me shpesh → reklama jote shfaqet me shume.
 
 TRE GJERAT QE VENDOS BIZNESI:
-1. Hapesira e reklames (kodi qe shfaq reklamat e te tjereve).
-2. Konvertimet (mat kur nje vizitor kryen nje veprim me vlere — blerje/regjistrim).
+1. Hapesira e reklames — kodi qe shfaq reklamat e te tjereve (dhe keshtu ti shfaqesh tek ata).
+2. Konvertimet — mat kur nje vizitor kryen nje veprim me vlere (blerje/regjistrim). Rrisin piket.
 3. Reklama e vet (creatives) qe shfaqet te te tjeret.
 
-KONVERTIMET: sa me shume konvertime te sjelle nje biznes, aq me lart del ne renditje dhe aq me shume shfaqet reklama e tij.
-
-CROSS-PROMOCIONI: te faqja e nje biznesi shfaqen VETEM biznese plotesuese, kurre konkurrenca. Kete e siguron algoritmi i ciftimit.
-
-CMIMI: Bizneset paguajne nje plan mujor per te perdorur platformen. (Detajet e planeve jane duke u finalizuar.)
+CMIMI: Bizneset paguajne nje plan mujor per te perdorur platformen.
 
 Ky eshte nje mjet software (SaaS) — gjithcka ndodh automatikisht permes algoritmit, jo me pune manuale.
 `;
@@ -66,21 +74,61 @@ async function pyet(apiKey, system, mesazhet) {
 }
 
 module.exports = function (app, pool) {
-  // Endpoint publik (para DHE pas login) — s'kerkon iLoguar
+  // Endpoint publik (para DHE pas login) — streaming fjale-per-fjale
   app.post('/api/suport', async (req, res) => {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) return res.status(500).json({ error: 'AI s\'eshte konfiguruar.' });
     const mesazhet = (req.body && req.body.mesazhet) || [];
     if (!Array.isArray(mesazhet) || !mesazhet.length) return res.status(400).json({ error: 'Mungojne mesazhet.' });
-    const iLoguar = !!(req.cookies && req.cookies.imyr_session);  // shenje nese eshte i loguar
+    const iLoguar = !!(req.cookies && req.cookies.imyr_session);
     try {
       const system = ndertoSystem(iLoguar);
       const hist = mesazhet.slice(-10).map(m => ({
         role: m.role === 'assistant' ? 'assistant' : 'user',
         content: String(m.content || '').slice(0, 2000)
       }));
-      const pergjigje = await pyet(apiKey, system, hist);
-      res.json({ pergjigje });
-    } catch (e) { res.status(500).json({ error: e.message }); }
+      // Kerko streaming nga OpenAI
+      const resp = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+        body: JSON.stringify({
+          model: MODEL, max_tokens: 500, stream: true,
+          messages: [{ role: 'system', content: system }, ...hist]
+        })
+      });
+      if (!resp.ok) {
+        const t = await resp.text();
+        return res.status(500).json({ error: 'OpenAI ' + resp.status + ': ' + t.slice(0, 200) });
+      }
+      // Dergo copezat te klienti si text/event-stream
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('X-Accel-Buffering', 'no');
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const rreshtat = buf.split('\n');
+        buf = rreshtat.pop();
+        for (const rr of rreshtat) {
+          const l = rr.trim();
+          if (!l.startsWith('data:')) continue;
+          const data = l.slice(5).trim();
+          if (data === '[DONE]') { res.end(); return; }
+          try {
+            const j = JSON.parse(data);
+            const copa = j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content;
+            if (copa) res.write(copa);
+          } catch (e) {}
+        }
+      }
+      res.end();
+    } catch (e) {
+      if (!res.headersSent) res.status(500).json({ error: e.message });
+      else res.end();
+    }
   });
 };
