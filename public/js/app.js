@@ -32,14 +32,6 @@ function renderAdTypes(){
     b.onclick=()=>{ window.__adType=t.k; if(t.k==='image'){ ngarkoImazhUI(); return; } renderAdTypes(); $('adTypeNote').textContent='Ngarkimi i "'+t.l+'" — së shpejti.'; };
     g.appendChild(b);
   });
-  // I RI: butoni per te marre nga Creative-t e krijuara me AI
-  const bC=document.createElement('button');
-  bC.style.cssText='flex:1;min-width:120px;padding:16px 12px;border-radius:10px;cursor:pointer;color:#fff;'+
-    'background:linear-gradient(135deg,#3552d6,#5b7cff);border:1px solid #3552d6;';
-  bC.innerHTML='<div style="font-weight:600;font-size:15px;">✨ Nga Creative-t e mia</div>'+
-    '<div style="font-size:12px;opacity:.85;margin-top:4px;">Reklama të krijuara me AI</div>';
-  bC.onclick=()=>{ hapCreativetPerReklame(); };
-  g.appendChild(bC);
 }
 
 async function hapCreativetPerReklame(){
