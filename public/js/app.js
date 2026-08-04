@@ -32,7 +32,42 @@ function renderAdTypes(){
     b.onclick=()=>{ window.__adType=t.k; if(t.k==='image'){ ngarkoImazhUI(); return; } renderAdTypes(); $('adTypeNote').textContent='Ngarkimi i "'+t.l+'" — së shpejti.'; };
     g.appendChild(b);
   });
+  // I RI: butoni per te marre nga Creative-t e krijuara me AI
+  const bC=document.createElement('button');
+  bC.style.cssText='flex:1;min-width:120px;padding:16px 12px;border-radius:10px;cursor:pointer;color:#fff;'+
+    'background:linear-gradient(135deg,#3552d6,#5b7cff);border:1px solid #3552d6;';
+  bC.innerHTML='<div style="font-weight:600;font-size:15px;">✨ Nga Creative-t e mia</div>'+
+    '<div style="font-size:12px;opacity:.85;margin-top:4px;">Reklama të krijuara me AI</div>';
+  bC.onclick=()=>{ hapCreativetPerReklame(); };
+  g.appendChild(bC);
 }
+
+async function hapCreativetPerReklame(){
+  try{
+    const r = await (await fetch('/api/kreative/gati')).json();
+    const bd = $('backdrop') || document.body;
+    if(!r.kreative || !r.kreative.length){
+      bd.innerHTML = '<div class="modal card"><button class="x" onclick="mbyllCrModal()">×</button>'+
+        '<h3 style="margin:0 0 10px;">S\'ke Creative të krijuara</h3>'+
+        '<p class="small mut">Krijo një reklamë me AI, dhe pastaj mund ta përdorësh këtu.</p>'+
+        '<button class="btn cta" style="margin-top:12px;" onclick="mbyllCrModal();nav({v:\'profile\',nav:\'kreative\'})">Krijo tani</button></div>';
+      if(bd.classList) bd.classList.remove('hide');
+      return;
+    }
+    const grid = r.kreative.map(k =>
+      '<div class="krPick" onclick="zgjidhCreativePerReklame('+k.id+')">'+
+        '<div class="krPickPrev">'+(k.output_url ? '<img src="'+k.output_url+'">' : '📄')+'</div>'+
+        '<div style="padding:8px;"><b>'+krEsc(k.emri)+'</b><div class="small mut">'+krEsc(k.lloji)+'</div></div>'+
+      '</div>').join('');
+    bd.innerHTML = '<div class="modal card" style="max-width:640px;"><button class="x" onclick="mbyllCrModal()">×</button>'+
+      '<h3 style="margin:0 0 14px;">Zgjidh nga Creative-t e mia</h3>'+
+      '<div class="krPickGrid">'+grid+'</div></div>';
+    if(bd.classList) bd.classList.remove('hide');
+  }catch(e){}
+}
+function zgjidhCreativePerReklame(id){ console.log('U zgjodh #'+id); mbyllCrModal(); }
+function mbyllCrModal(){ const b=$('backdrop'); if(b){ b.classList.add('hide'); b.innerHTML=''; } }
+
 function ngarkoImazhUI(){
   const m=$('mainPanel');
   m.innerHTML=
@@ -750,7 +785,7 @@ function mainReklamat(m, s){
   if(s.sub==='detail'){ return hapReklame(s.id, m); }
   if(s.sub==='create'){ return krijoReklame(m); }
   m.innerHTML=
-    '<h2 class="h">Creatives</h2>'+
+    '<h2 class="h">My Ads</h2>'+
     '<div id="rekShiritSnippet"></div>'+
     '<div style="margin:12px 0 14px;"><button class="btn cta" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">+ Create</button></div>'+
     '<div id="reklamaList"><p class="small">Po ngarkoj…</p></div>';
