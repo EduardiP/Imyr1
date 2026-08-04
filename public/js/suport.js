@@ -91,22 +91,33 @@
     chat.innerHTML += '<div class="suportMsg user">'+esc(teksti)+'</div>';
     hist.push({role:'user', content:teksti});
     inp.value='';
-    var pritId = 'suportPrit'+Date.now();
-    chat.innerHTML += '<div class="suportMsg bot" id="'+pritId+'"><span class="suportDots">•••</span></div>';
+    // Krijo bulen e pergjigjes (bosh, mbushet fjale-per-fjale)
+    var botId = 'suportBot'+Date.now();
+    chat.innerHTML += '<div class="suportMsg bot" id="'+botId+'"><span class="suportDots">•••</span></div>';
     chat.scrollTop = chat.scrollHeight;
+    var bula = el(botId);
     try{
-      var r = await (await fetch('/api/suport',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({mesazhet:hist})})).json();
-      var p = el(pritId); if(p) p.remove();
-      if(r.pergjigje){
-        hist.push({role:'assistant', content:r.pergjigje});
-        chat.innerHTML += '<div class="suportMsg bot">'+esc(r.pergjigje)+'</div>';
-      } else {
-        chat.innerHTML += '<div class="suportMsg bot err">'+esc(r.error||'Gabim.')+'</div>';
+      var resp = await fetch('/api/suport',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({mesazhet:hist})});
+      if(!resp.ok || !resp.body){
+        var er = await resp.json().catch(function(){return {};});
+        if(bula) bula.innerHTML = '<span class="err">'+esc(er.error||'Gabim.')+'</span>';
+        return;
       }
+      // Lexo stream-in cope-cope
+      var reader = resp.body.getReader();
+      var decoder = new TextDecoder();
+      var plot = '';
+      if(bula) bula.textContent = '';  // hiq pikat
+      while(true){
+        var r = await reader.read();
+        if(r.done) break;
+        plot += decoder.decode(r.value, {stream:true});
+        if(bula){ bula.textContent = plot; chat.scrollTop = chat.scrollHeight; }
+      }
+      hist.push({role:'assistant', content:plot});
     }catch(e){
-      var p2 = el(pritId); if(p2) p2.remove();
-      chat.innerHTML += '<div class="suportMsg bot err">Gabim në lidhje.</div>';
+      if(bula) bula.innerHTML = '<span class="err">Gabim në lidhje.</span>';
     }
     chat.scrollTop = chat.scrollHeight;
   }
