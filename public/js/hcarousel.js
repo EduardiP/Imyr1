@@ -15,20 +15,20 @@
     for(i=0;i<10;i++){
       var d=(i*0.28).toFixed(2);  // vonesa nje-nga-nje
       // Origjinalet qe MBETEN te rreshti fillestar (thjesht shfaqen)
-      origK += '<g class="p vOrig" style="--x:'+kx[i]+'px;--y:'+kY+'px;--d:'+d+'s"><circle r="6.5" fill="#8b93a7"/><circle cy="-10" r="4.2" fill="#8b93a7"/></g>';
-      origB += '<g class="p vOrig" style="--x:'+bx[i]+'px;--y:'+kY+'px;--d:'+d+'s"><circle r="6.5" fill="#8b93a7"/><circle cy="-10" r="4.2" fill="#8b93a7"/></g>';
+      origK += '<g class="p vOrig" style="--x:'+kx[i]+'px;--y:'+kY+'px;--d:'+d+'s"><circle r="6.5" fill="#e63f5c"/><circle cy="-10" r="4.2" fill="#e63f5c"/></g>';
+      origB += '<g class="p vOrig" style="--x:'+bx[i]+'px;--y:'+kY+'px;--d:'+d+'s"><circle r="6.5" fill="#3552d6"/><circle cy="-10" r="4.2" fill="#3552d6"/></g>';
       // Udhetaret: nga rreshti i faqes kuqe → te reklama (te faqja kuqe) → zhduken → shfaqen te reklama e faqes blu → zbresin te rreshti i ri poshte faqes blu
       var xtK=364 + i*21;  // pozicioni final te rreshti i ri poshte faqes BLU
       udhK += '<g class="p udhK" style="--sx:'+kx[i]+'px;--sy:'+kY+'px;'+
               '--rx:'+reklamaKuqeQender.x+'px;--ry:'+reklamaKuqeQender.y+'px;'+
               '--rx2:'+reklamaBluQender.x+'px;--ry2:'+reklamaBluQender.y+'px;'+
-              '--fx:'+xtK+'px;--fy:340px;--d:'+d+'s"><circle r="6.5" fill="#8b93a7"/><circle cy="-10" r="4.2" fill="#8b93a7"/></g>';
+              '--fx:'+xtK+'px;--fy:340px;--d:'+d+'s"><circle r="6.5" fill="#e63f5c"/><circle cy="-10" r="4.2" fill="#e63f5c"/></g>';
       // Udhetaret nga faqja BLU → reklama (te faqja blu) → zhduken → shfaqen te reklama e faqes kuqe → rreshti i ri poshte faqes KUQE
       var xtB=44 + i*21;
       udhB += '<g class="p udhB" style="--sx:'+bx[i]+'px;--sy:'+kY+'px;'+
               '--rx:'+reklamaBluQender.x+'px;--ry:'+reklamaBluQender.y+'px;'+
               '--rx2:'+reklamaKuqeQender.x+'px;--ry2:'+reklamaKuqeQender.y+'px;'+
-              '--fx:'+xtB+'px;--fy:340px;--d:'+d+'s"><circle r="6.5" fill="#8b93a7"/><circle cy="-10" r="4.2" fill="#8b93a7"/></g>';
+              '--fx:'+xtB+'px;--fy:340px;--d:'+d+'s"><circle r="6.5" fill="#3552d6"/><circle cy="-10" r="4.2" fill="#3552d6"/></g>';
     }
     return `
 <svg class="hsvg" viewBox="0 0 620 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cross-promocion: klientët shumohen">
