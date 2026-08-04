@@ -173,7 +173,7 @@ h2.h { font-size:20px; margin:0 0 4px; }
 .plan .price{font-size:38px;font-weight:800;margin:6px 0 2px;letter-spacing:-.02em;}
 .plan ul{list-style:none;padding:0;margin:18px 0 24px;}
 .plan li{padding:7px 0 7px 26px;position:relative;font-size:15px;}
-.plan li::before{content:"✓";position:absolute;left:0;color:var(--good);font-weight:700;}
+.plan li::before{content:"\2713";position:absolute;left:0;color:var(--good);font-weight:700;}
 .tag{position:absolute;top:-12px;right:22px;background:var(--err);color:#fff;font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;}
 .faq{max-width:760px;margin:34px auto 0;}
 .qa{border-bottom:1px solid var(--line);padding:20px 0;}
@@ -302,7 +302,7 @@ footer.site{background:#080a0e;border-top:1px solid var(--line);padding:54px 0 3
 .hdot { width:8px; height:8px; border-radius:50%; background:#2a2f3a; cursor:pointer; transition:.2s; }
 .hdot.on { background:#5b7cff; transform:scale(1.3); }
 
-/* Reklamat shkembehen ne fillim: kuqja→hapesira e faqes blu (368,170); blu→hapesira e faqes kuqe (48,170) */
+/* Reklamat shkembehen ne fillim: kuqja->hapesira e faqes blu (368,170); blu->hapesira e faqes kuqe (48,170) */
 .adRed { animation: adRed 11s ease-in-out infinite; transform: translate(48px,112px) scale(.5); opacity:0; }
 @keyframes adRed {
   0%{transform:translate(48px,112px) scale(.5);opacity:0;} 3%{transform:translate(48px,112px) scale(.5);opacity:1;}
@@ -318,19 +318,35 @@ footer.site{background:#080a0e;border-top:1px solid var(--line);padding:54px 0 3
 .vOrig { transform: translate(var(--x),var(--y)); opacity:0; animation: vOrigShow 11s ease-in-out infinite; animation-delay: var(--d); }
 @keyframes vOrigShow { 0%{opacity:0;} 4%{opacity:1;} 100%{opacity:1;} }
 
-/* Udhetaret: rreshti fillestar (sx,sy) → reklama e faqes vet (rx,ry) → zhduken →
-   shfaqen te reklama e faqes tjeter (rx2,ry2) → zbresin te rreshti i ri (fx,fy).
-   Nje-nga-nje me --d. Cikli here: shfaqet, ngjitet te reklama, zhduket, rishfaqet tek tjetra, zbret. */
+/* Udhetaret: rreshti fillestar (sx,sy) -> reklama e faqes vet (rx,ry, random) -> zhduken ->
+   shfaqen te reklama e faqes tjeter (rx2,ry2, random) -> zbresin te rreshti i ri (fx,fy) ->
+   zbehen gradualisht dhe ngjyra kthehet gri, qe cikli te rifilloje IDENTIK.
+   Nje-nga-nje me --d. */
 .udhK,.udhB { opacity:0; animation: udhetimi 11s ease-in-out infinite; animation-delay: var(--d); }
+/* Ngjyra e trupit kontrollohet nga CSS qe te animohet drejt grise ne fund. */
+.udhK circle { fill:#e63f5c; animation: ngjyraKuqe 11s ease-in-out infinite; animation-delay: var(--d); }
+.udhB circle { fill:#3552d6; animation: ngjyraBlu  11s ease-in-out infinite; animation-delay: var(--d); }
+
 @keyframes udhetimi {
   0%   { transform: translate(var(--sx),var(--sy)); opacity:0; }
   14%  { transform: translate(var(--sx),var(--sy)); opacity:1; }        /* shfaqet te rreshti */
-  26%  { transform: translate(var(--rx),var(--ry)); opacity:1; }        /* ngjitet te reklama e vet */
+  26%  { transform: translate(var(--rx),var(--ry)); opacity:1; }        /* ngjitet te reklama e vet (random) */
   30%  { transform: translate(var(--rx),var(--ry)); opacity:0; }        /* zhduket te reklama */
   30.1%{ transform: translate(var(--rx2),var(--ry2)); opacity:0; }      /* teleportohet te reklama tjeter */
-  34%  { transform: translate(var(--rx2),var(--ry2)); opacity:1; }      /* shfaqet te reklama tjeter */
+  34%  { transform: translate(var(--rx2),var(--ry2)); opacity:1; }      /* shfaqet te reklama tjeter (random) */
   46%  { transform: translate(var(--fx),var(--fy)); opacity:1; }        /* zbret te rreshti i ri */
-  100% { transform: translate(var(--fx),var(--fy)); opacity:1; }
+  80%  { transform: translate(var(--fx),var(--fy)); opacity:1; }        /* qendron pak i dukshem */
+  100% { transform: translate(var(--fx),var(--fy)); opacity:0; }        /* zbehet gradualisht -> cikli rifillon identik */
+}
+
+/* Ngjyra kthehet gri gradualisht bashke me zbehjen (80%->100%), qe cikli i ri te nise pastER. */
+@keyframes ngjyraKuqe {
+  0%,80% { fill:#e63f5c; }
+  100%   { fill:#8b93a7; }
+}
+@keyframes ngjyraBlu {
+  0%,80% { fill:#3552d6; }
+  100%   { fill:#8b93a7; }
 }
 
 @media (max-width:560px){ .hcarousel{margin-top:28px;} .hcap{font-size:13px;} }
