@@ -290,3 +290,73 @@ footer.site{background:#080a0e;border-top:1px solid var(--line);padding:54px 0 3
   #suportWrap { right:12px; bottom:12px; }
   #suportPanel { width:calc(100vw - 24px); height:calc(100vh - 90px); }
 }
+/* ===== Carousel-i i hyrjes ===== */
+.hcarousel { margin:40px auto 0; max-width:660px; }
+.hslide { display:none; }
+.hslide.on { display:block; animation:hfade .6s ease; }
+@keyframes hfade { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
+.hanim { width:100%; }
+.hsvg { width:100%; height:auto; display:block; overflow:visible; }
+.hcap { text-align:center; color:#8b93a7; font-size:14px; margin-top:16px; padding:0 12px; line-height:1.5; }
+.hdots { display:flex; gap:8px; justify-content:center; margin-top:18px; }
+.hdot { width:8px; height:8px; border-radius:50%; background:#2a2f3a; cursor:pointer; transition:.2s; }
+.hdot.on { background:#5b7cff; transform:scale(1.3); }
+
+/* Animacioni 1 — reklamat qe zhvendosen dhe vizitoret.
+   Elementet e SVG animohen me transform (translate ne koordinata te viewBox-it 620x360). */
+
+/* REKLAMA KUQE: niset mbi faqen kuqe (majtas, y=134) → ulet te hapesira e faqes BLU (x=368,y=196) */
+.adRed {
+  animation: adRed 9s ease-in-out infinite;
+  transform: translate(48px,134px) scale(.55);
+  opacity:0;
+}
+@keyframes adRed {
+  0%   { transform: translate(48px,134px) scale(.55); opacity:0; }
+  5%   { transform: translate(48px,134px) scale(.55); opacity:1; }
+  25%  { transform: translate(368px,196px) scale(1);  opacity:1; }
+  100% { transform: translate(368px,196px) scale(1);  opacity:1; }
+}
+/* REKLAMA BLU: niset mbi faqen blu (djathtas, y=134) → ulet te hapesira e faqes KUQE (x=48,y=196) */
+.adBlue {
+  animation: adBlue 9s ease-in-out infinite;
+  transform: translate(368px,134px) scale(.55);
+  opacity:0;
+}
+@keyframes adBlue {
+  0%   { transform: translate(368px,134px) scale(.55); opacity:0; }
+  5%   { transform: translate(368px,134px) scale(.55); opacity:1; }
+  25%  { transform: translate(48px,196px) scale(1);   opacity:1; }
+  100% { transform: translate(48px,196px) scale(1);   opacity:1; }
+}
+
+/* VIZITORET E KUQ: te faqja kuqe (rreth hapesires ku erdhi reklama blu, x~150,y~300),
+   ngjiten te reklama blu (y~231), pastaj kalojne djathtas te faqja blu → konvertim */
+.pR1,.pR2,.pR3 { opacity:0; }
+.pR1 { animation: pR 9s ease-in-out infinite; animation-delay:.0s; }
+.pR2 { animation: pR 9s ease-in-out infinite; animation-delay:.6s; }
+.pR3 { animation: pR 9s ease-in-out infinite; animation-delay:1.2s; }
+@keyframes pR {
+  0%,30%   { transform: translate(120px,320px); opacity:0; }
+  36%      { transform: translate(120px,320px); opacity:1; }
+  50%      { transform: translate(150px,250px); opacity:1; }   /* te reklama blu (te faqja kuqe) */
+  70%      { transform: translate(470px,250px); opacity:1; }   /* kalon te faqja blu */
+  80%      { transform: translate(470px,300px); opacity:.3; }
+  86%,100% { transform: translate(470px,300px); opacity:0; }
+}
+
+/* VIZITORET BLU: te faqja blu, ngjiten te reklama kuqe, kalojne majtas te faqja kuqe */
+.pB1,.pB2,.pB3 { opacity:0; }
+.pB1 { animation: pB 9s ease-in-out infinite; animation-delay:.3s; }
+.pB2 { animation: pB 9s ease-in-out infinite; animation-delay:.9s; }
+.pB3 { animation: pB 9s ease-in-out infinite; animation-delay:1.5s; }
+@keyframes pB {
+  0%,30%   { transform: translate(490px,320px); opacity:0; }
+  36%      { transform: translate(490px,320px); opacity:1; }
+  50%      { transform: translate(470px,250px); opacity:1; }   /* te reklama kuqe (te faqja blu) */
+  70%      { transform: translate(150px,250px); opacity:1; }   /* kalon te faqja kuqe */
+  80%      { transform: translate(150px,300px); opacity:.3; }
+  86%,100% { transform: translate(150px,300px); opacity:0; }
+}
+
+@media (max-width:560px){ .hcarousel{margin-top:28px;} .hcap{font-size:13px;} }
