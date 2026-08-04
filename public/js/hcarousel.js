@@ -1,6 +1,8 @@
 // hcarousel.js — Animacioni 1: vizitoret shkojne nje-nga-nje te reklama, zhduken,
 // shfaqen te reklama e faqes tjeter, dhe zbresin te rreshti i ri (dublikim).
 // Fillim: 1 rresht x 10 poshte secilES faqe. Fund: 2 rreshta x 10 = 20 per secilen.
+// Ne fund te ciklit TE GJITHE (udhetare + origjinale) kthehen gri gradualisht ndersa rreshtohen;
+// pastaj cikli rifillon menjehere (snap) si video: udhetaret zhduken, te gjithe rikthehen me ngjyre.
 (function(){
   function anim1(){
     // Pozicionet e rreshtit fillestar (10 vizitore poshte secilES faqe)
@@ -12,7 +14,6 @@
     // Reklama BLU eshte te faqja KUQE (majtas), reklama KUQE eshte te faqja BLU (djathtas) pas shkembimit.
 
     // Offset i rastesishem brenda hapesires se reklames (qe vizitoret te mos mblidhen ne nje pike).
-    // Hapesira e reklames eshte ~204 e gjere x 66 e larte → mbajme brenda me nje margjine te vogel.
     function rnd(min,max){ return min + Math.random()*(max-min); }
     function offX(){ return rnd(-80,80).toFixed(1); }
     function offY(){ return rnd(-20,20).toFixed(1); }
@@ -20,9 +21,10 @@
     var origK='', origB='', udhK='', udhB='';
     for(i=0;i<10;i++){
       var d=(i*0.28).toFixed(2);  // vonesa nje-nga-nje
-      // Origjinalet qe MBETEN te rreshti fillestar (thjesht shfaqen)
-      origK += '<g class="p vOrig" style="--x:'+kx[i]+'px;--y:'+kY+'px;--d:'+d+'s"><circle r="6.5" fill="#e63f5c"/><circle cy="-10" r="4.2" fill="#e63f5c"/></g>';
-      origB += '<g class="p vOrig" style="--x:'+bx[i]+'px;--y:'+kY+'px;--d:'+d+'s"><circle r="6.5" fill="#3552d6"/><circle cy="-10" r="4.2" fill="#3552d6"/></g>';
+      // Origjinalet qe MBETEN te rreshti fillestar (shfaqen, dhe ne fund kthehen gri bashke me te tjeret).
+      // fill-i kontrollohet nga CSS.
+      origK += '<g class="p vOrig vOrigK" style="--x:'+kx[i]+'px;--y:'+kY+'px;--d:'+d+'s"><circle r="6.5"/><circle cy="-10" r="4.2"/></g>';
+      origB += '<g class="p vOrig vOrigB" style="--x:'+bx[i]+'px;--y:'+kY+'px;--d:'+d+'s"><circle r="6.5"/><circle cy="-10" r="4.2"/></g>';
       // Udhetaret: nga rreshti i faqes kuqe -> te reklama (pozicion random brenda saj) -> zhduken ->
       // shfaqen te reklama e faqes blu (pozicion random) -> zbresin te rreshti i ri poshte faqes blu.
       // fill-i kontrollohet nga CSS (nis me ngjyren e faqes, ne fund kthehet gri).
