@@ -1383,6 +1383,9 @@ require('./asistenti')(app, pool, iLoguar);
 // Asistenti i suportit te pergjithshem (FAQ, model i lire) — para dhe pas login
 require('./suporti')(app, pool);
 
+// Kreative — krijimi i reklamave me AI (imazh/video/HTML5)
+require('./kreative')(app, pool, iLoguar);
+
 // Lista e bizneseve (emer + email)
 app.get('/api/admin/bizneset', iAdmin, async (req, res) => {
   try {
