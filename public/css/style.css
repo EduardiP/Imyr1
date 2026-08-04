@@ -439,3 +439,15 @@ footer.site{background:#080a0e;border-top:1px solid var(--line);padding:54px 0 3
 .krItem { border:1px solid var(--line); border-radius:10px; padding:14px; background:#0e1116; }
 .krItemHead { display:flex; justify-content:space-between; align-items:center; gap:8px; }
 .krLloj { font-size:11px; background:#0a1b2e; color:#3b82f6; padding:2px 8px; border-radius:10px; text-transform:uppercase; letter-spacing:.05em; }
+
+#backdrop {
+  position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:9999;
+  display:flex; align-items:center; justify-content:center; padding:20px;
+}
+#backdrop.hide { display:none; }
+#backdrop .modal { max-width:560px; width:100%; }
+#backdrop .x {
+  position:absolute; top:12px; right:12px; background:none; border:none;
+  color:var(--txt); font-size:22px; cursor:pointer; line-height:1;
+}
+.modal.card { position:relative; }
