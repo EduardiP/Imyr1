@@ -469,6 +469,96 @@ function snipVerifiko(id){
   tick(); pollTimer=setInterval(tick,6000);
 }
 
+function mainKreative(m, s){
+  s = s || {};
+  const zgjedhur = s.lloji || null;
+  m.innerHTML = '<h2 class="h">Creative</h2>'+
+    '<p class="small" style="margin:8px 0 20px;">Krijo reklama me AI: imazh, video, ose HTML5.</p>'+
+    // Zgjedhesi i llojit
+    '<label>Cfare do te krijosh?</label>'+
+    '<div class="krTip">'+
+      '<button class="krT '+(zgjedhur==='imazh'?'sel':'')+'" onclick="krZgjidh(\'imazh\')">'+
+        '<div class="krIco">🖼️</div><div>Imazh</div></button>'+
+      '<button class="krT '+(zgjedhur==='video'?'sel':'')+'" onclick="krZgjidh(\'video\')">'+
+        '<div class="krIco">🎬</div><div>Video</div></button>'+
+      '<button class="krT '+(zgjedhur==='html5'?'sel':'')+'" onclick="krZgjidh(\'html5\')">'+
+        '<div class="krIco">💻</div><div>HTML5</div></button>'+
+    '</div>'+
+    // Permbajtja kur zgjedhet nje lloj
+    (zgjedhur ? formaKreative(zgjedhur) : '<p class="small mut" style="margin-top:16px;">Zgjidh nje lloj për të vazhduar.</p>')+
+    // Lista e krijimeve te fundit
+    '<div id="krLista" style="margin-top:30px;"></div>';
+  ngarkoKreativet();
+}
+
+function krZgjidh(l){ nav({v:'profile', nav:'kreative', lloji:l}); }
+
+function formaKreative(lloji){
+  // Ngarkimi lejon: imazh (jpg/png) per te treja; per HTML5 lejon edhe .htm dhe .zip
+  const accept = lloji==='html5' ? 'image/*,.htm,.html,.zip' : 'image/*';
+  const ndihma = lloji==='html5'
+    ? 'Mund të ngarkosh imazhe, ose një skedar .htm/.zip për modifikim.'
+    : 'Mund të ngarkosh vetëm imazhe (JPG, PNG).';
+  return '<div style="margin-top:18px;">'+
+    '<label>Emri</label>'+
+    '<input id="krEmri" placeholder="Emri i reklamës (p.sh. Fushata Verë)">'+
+    '<label style="margin-top:12px;">Përshkrimi</label>'+
+    '<textarea id="krPer" placeholder="Çfarë do të tregojë reklama? (mesazhi, ndjesia, thirrja për veprim)" style="min-height:100px;"></textarea>'+
+    '<label style="margin-top:12px;">Ngarko skedarë</label>'+
+    '<div class="krFile">'+
+      '<input type="file" id="krFile" accept="'+accept+'" multiple>'+
+      '<p class="small mut" style="margin:6px 0 0;">'+ndihma+'</p>'+
+    '</div>'+
+    '<button class="primary" onclick="krGjenero(\''+lloji+'\')" style="margin-top:18px;">✨ Gjenero me AI</button>'+
+    '<p id="krMsg" class="msg"></p>'+
+  '</div>';
+}
+
+async function krGjenero(lloji){
+  const emri = ($('krEmri')||{}).value || '';
+  const pershkrimi = ($('krPer')||{}).value || '';
+  const msg = $('krMsg');
+  if(!emri.trim()){ if(msg){msg.className='msg err';msg.textContent='Vendos emrin.';} return; }
+  try{
+    const r = await (await fetch('/api/kreative',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({lloji, emri, pershkrimi})})).json();
+    if(r.error){ if(msg){msg.className='msg err';msg.textContent=r.error;} return; }
+    if(msg){msg.className='msg ok';msg.textContent='✓ U ruajt si draft. Gjenerimi me AI vjen së shpejti.';}
+    ngarkoKreativet();
+  }catch(e){ if(msg){msg.className='msg err';msg.textContent='Gabim: '+e.message;} }
+}
+
+async function ngarkoKreativet(){
+  const el = $('krLista'); if(!el) return;
+  try{
+    const r = await (await fetch('/api/kreative')).json();
+    if(!r.kreative || !r.kreative.length){ el.innerHTML=''; return; }
+    el.innerHTML = '<h3 style="font-size:15px;margin:0 0 12px;">Krijimet e mia</h3>'+
+      '<div class="krLista">'+
+      r.kreative.map(k => 
+        '<div class="krItem">'+
+          '<div class="krItemHead"><b>'+esc(k.emri||'')+'</b>'+
+            '<span class="krLloj">'+esc(k.lloji)+'</span></div>'+
+          (k.pershkrimi ? '<p class="small mut" style="margin:6px 0 0;">'+esc(k.pershkrimi).slice(0,150)+'</p>' : '')+
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">'+
+            '<span class="small mut">'+esc(k.status)+'</span>'+
+            '<button class="btn" style="padding:4px 10px;font-size:12px;" onclick="krFshi('+k.id+')">Fshi</button>'+
+          '</div>'+
+        '</div>').join('')+
+      '</div>';
+  }catch(e){}
+}
+
+async function krFshi(id){
+  if(!confirm('Fshi këtë krijim?')) return;
+  try{
+    await fetch('/api/kreative/'+id,{method:'DELETE'});
+    ngarkoKreativet();
+  }catch(e){}
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
 function mainLidhja(m){
   window.__pamjeVecante=true;
   _snipAktiv=null;
