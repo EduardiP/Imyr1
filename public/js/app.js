@@ -72,20 +72,65 @@ function ngarkoImazhUI(){
   const m=$('mainPanel');
   m.innerHTML=
     '<h2 class="h">Ngarko imazhin</h2>'+
-    '<p class="small" style="margin:2px 0 14px;">Zgjidh një imazh nga laptopi (JPG / PNG / GIF).</p>'+
+    '<p class="small" style="margin:2px 0 14px;">Zgjidh një imazh nga laptopi ose nga Creative-t e krijuara me AI.</p>'+
     '<label>Titulli (opsional)</label><input id="up_title" placeholder="Emri i reklamës">'+
     '<label style="margin-top:12px;">Linku i destinacionit *</label>'+
     '<input id="up_link" placeholder="https://faqja-ime.com/oferta" inputmode="url">'+
     '<div class="small mut" style="margin-top:3px;">Ku çohet vizitori kur klikon reklamën (dhe ku matet konvertimi).</div>'+
-    '<label style="margin-top:12px;">Imazhi</label><input type="file" id="up_file" accept="image/*">'+
+    '<label style="margin-top:12px;">Përmbajtja</label>'+
+    '<div class="upDy">'+
+      '<label class="upBtn upBtnFile">📁 Choose file'+
+        '<input type="file" id="up_file" accept="image/*" style="display:none;">'+
+      '</label>'+
+      '<button type="button" class="upBtn upBtnCreative" onclick="hapCreativeBallon()">✨ Nga Creative-t e mia</button>'+
+    '</div>'+
     '<div id="up_prev" style="margin-top:12px;"></div>'+
-    '<button class="primary" id="up_btn" onclick="ngarkoImazh()">Ngarko →</button>'+
+    '<input type="hidden" id="up_creative_id">'+
+    '<button class="primary" id="up_btn" onclick="ngarkoImazh()" style="margin-top:14px;">Ngarko →</button>'+
     '<div class="msg" id="up_msg"></div>';
   $('up_file').addEventListener('change', function(){
     const f=this.files[0]; if(!f) return;
+    $('up_creative_id').value='';  // fshi zgjedhjen nga Creative — nje reklame ka vetem nje permbajtje
     $('up_prev').innerHTML='<img src="'+URL.createObjectURL(f)+'" style="max-width:220px;border-radius:10px;border:1px solid var(--line);">';
   });
 }
+
+async function hapCreativeBallon(){
+  const bd=$('backdrop'); if(!bd) return;
+  try{
+    const r=await (await fetch('/api/kreative/gati')).json();
+    if(!r.kreative || !r.kreative.length){
+      bd.innerHTML='<div class="modal card"><button class="x" onclick="mbyllCreativeBallon()">×</button>'+
+        '<h3 style="margin:0 0 10px;">S\'ke Creative të krijuara</h3>'+
+        '<p class="small mut">Krijo një reklamë me AI, pastaj mund ta përdorësh këtu.</p>'+
+        '<button class="btn cta" style="margin-top:12px;" onclick="mbyllCreativeBallon();nav({v:\'profile\',nav:\'kreative\'})">Krijo tani</button></div>';
+      bd.classList.remove('hide'); return;
+    }
+    const grid=r.kreative.map(k=>
+      '<div class="krPick" onclick="zgjidhCreative('+k.id+',\''+encodeURIComponent(k.output_url||'')+'\',\''+krEsc(k.emri)+'\')">'+
+        '<div class="krPickPrev">'+(k.output_url?'<img src="'+k.output_url+'">':'📄')+'</div>'+
+        '<div style="padding:8px;"><b>'+krEsc(k.emri)+'</b><div class="small mut">'+krEsc(k.lloji)+'</div></div>'+
+      '</div>').join('');
+    bd.innerHTML='<div class="modal card" style="max-width:560px;"><button class="x" onclick="mbyllCreativeBallon()">×</button>'+
+      '<h3 style="margin:0 0 14px;">Nga Creative-t e mia</h3>'+
+      '<div class="krPickGrid">'+grid+'</div></div>';
+    bd.classList.remove('hide');
+  }catch(e){}
+}
+
+function zgjidhCreative(id, urlEnc, emri){
+  const url=decodeURIComponent(urlEnc||'');
+  const idF=$('up_creative_id'); if(idF) idF.value=id;
+  const fileF=$('up_file'); if(fileF) fileF.value='';   // fshi file-in — nje permbajtje e vetme
+  const prev=$('up_prev');
+  if(prev) prev.innerHTML = url
+    ? '<img src="'+url+'" style="max-width:220px;border-radius:10px;border:1px solid var(--line);"><div class="small mut" style="margin-top:4px;">'+emri+'</div>'
+    : '<div class="small">'+emri+'</div>';
+  mbyllCreativeBallon();
+}
+function mbyllCreativeBallon(){ const b=$('backdrop'); if(b){ b.classList.add('hide'); b.innerHTML=''; } }
+
+
 async function ngarkoImazh(){
   const f=$('up_file').files[0];
   if(!f){ $('up_msg').className='msg err'; $('up_msg').textContent='Zgjidh një imazh.'; return; }
