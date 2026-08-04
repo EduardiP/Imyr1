@@ -314,39 +314,58 @@ footer.site{background:#080a0e;border-top:1px solid var(--line);padding:54px 0 3
   12%{transform:translate(48px,170px) scale(1);opacity:1;} 100%{transform:translate(48px,170px) scale(1);opacity:1;}
 }
 
-/* Origjinalet: rrine te rreshti fillestar, thjesht shfaqen (me vonese nje-nga-nje) */
-.vOrig { transform: translate(var(--x),var(--y)); opacity:0; animation: vOrigShow 11s ease-in-out infinite; animation-delay: var(--d); }
-@keyframes vOrigShow { 0%{opacity:0;} 4%{opacity:1;} 100%{opacity:1;} }
+/* Origjinalet: rrine te rreshti fillestar. Shfaqen me ngjyre, dhe ne fund te ciklit
+   kthehen gri gradualisht bashke me te gjithe (ndersa udhetaret rreshtohen). */
+.vOrig { transform: translate(var(--x),var(--y)); opacity:0; animation-duration:11s; animation-timing-function:ease-in-out; animation-iteration-count:infinite; animation-delay: var(--d); }
+.vOrigK { fill:#e63f5c; animation-name: vOrigK; }
+.vOrigB { fill:#3552d6; animation-name: vOrigB; }
 
-/* Udhetaret: rreshti fillestar (sx,sy) -> reklama e faqes vet (rx,ry, random) -> zhduken ->
-   shfaqen te reklama e faqes tjeter (rx2,ry2, random) -> zbresin te rreshti i ri (fx,fy) ->
-   zbehen gradualisht dhe ngjyra kthehet gri, qe cikli te rifilloje IDENTIK.
-   Nje-nga-nje me --d. */
-.udhK,.udhB { opacity:0; animation: udhetimi 11s ease-in-out infinite; animation-delay: var(--d); }
-/* Ngjyra e trupit kontrollohet nga CSS qe te animohet drejt grise ne fund. */
-.udhK circle { fill:#e63f5c; animation: ngjyraKuqe 11s ease-in-out infinite; animation-delay: var(--d); }
-.udhB circle { fill:#3552d6; animation: ngjyraBlu  11s ease-in-out infinite; animation-delay: var(--d); }
+/* Origjinalet: shfaqen shpejt me ngjyre, mbajne ngjyren, pastaj griohen (46%->90%), rrine gri, snap. */
+@keyframes vOrigK {
+  0%    { opacity:0; fill:#e63f5c; }
+  4%    { opacity:1; fill:#e63f5c; }
+  46%   { opacity:1; fill:#e63f5c; }
+  90%   { opacity:1; fill:#8b93a7; }
+  100%  { opacity:1; fill:#8b93a7; }
+}
+@keyframes vOrigB {
+  0%    { opacity:0; fill:#3552d6; }
+  4%    { opacity:1; fill:#3552d6; }
+  46%   { opacity:1; fill:#3552d6; }
+  90%   { opacity:1; fill:#8b93a7; }
+  100%  { opacity:1; fill:#8b93a7; }
+}
+
+/* Udhetaret: rreshti fillestar (sx,sy) -> reklama e faqes vet (rx,ry, RANDOM) -> zhduken ->
+   shfaqen te reklama e faqes tjeter (rx2,ry2, RANDOM) -> zbresin e rreshtohen te (fx,fy) ->
+   ndersa rreshtohen, kthehen gri gradualisht bashke me origjinalet. RRINE te dukshem deri ne 100%.
+   Cikli i ri (0%) i ka te padukshem te pozicioni fillestar -> "zhduken menjehere" (snap si video).
+   Nje-nga-nje me --d. fill nga CSS. */
+.udhK,.udhB { opacity:0; animation:udhetimi 11s ease-in-out infinite; animation-delay: var(--d); }
+.udhK { fill:#e63f5c; }
+.udhB { fill:#3552d6; }
+.udhK circle { animation: griKuqe 11s ease-in-out infinite; animation-delay: var(--d); }
+.udhB circle { animation: griBlu  11s ease-in-out infinite; animation-delay: var(--d); }
 
 @keyframes udhetimi {
-  0%   { transform: translate(var(--sx),var(--sy)); opacity:0; }
+  0%   { transform: translate(var(--sx),var(--sy)); opacity:0; }        /* snap: rifillon te pozicioni fillestar, i padukshem */
   14%  { transform: translate(var(--sx),var(--sy)); opacity:1; }        /* shfaqet te rreshti */
   26%  { transform: translate(var(--rx),var(--ry)); opacity:1; }        /* ngjitet te reklama e vet (random) */
   30%  { transform: translate(var(--rx),var(--ry)); opacity:0; }        /* zhduket te reklama */
   30.1%{ transform: translate(var(--rx2),var(--ry2)); opacity:0; }      /* teleportohet te reklama tjeter */
   34%  { transform: translate(var(--rx2),var(--ry2)); opacity:1; }      /* shfaqet te reklama tjeter (random) */
-  46%  { transform: translate(var(--fx),var(--fy)); opacity:1; }        /* zbret te rreshti i ri */
-  80%  { transform: translate(var(--fx),var(--fy)); opacity:1; }        /* qendron pak i dukshem */
-  100% { transform: translate(var(--fx),var(--fy)); opacity:0; }        /* zbehet gradualisht -> cikli rifillon identik */
+  46%  { transform: translate(var(--fx),var(--fy)); opacity:1; }        /* zbret e rreshtohet te rreshti i ri */
+  100% { transform: translate(var(--fx),var(--fy)); opacity:1; }        /* RRI i dukshem gri deri ne fund; snap-i te 0% e fshin */
 }
 
-/* Ngjyra kthehet gri gradualisht bashke me zbehjen (80%->100%), qe cikli i ri te nise pastER. */
-@keyframes ngjyraKuqe {
-  0%,80% { fill:#e63f5c; }
-  100%   { fill:#8b93a7; }
+/* Ngjyra e udhetareve: e mbajne gjate udhetimit, pastaj griohet (46%->90%) ndersa rreshtohen. */
+@keyframes griKuqe {
+  0%,46% { fill:#e63f5c; }
+  90%,100% { fill:#8b93a7; }
 }
-@keyframes ngjyraBlu {
-  0%,80% { fill:#3552d6; }
-  100%   { fill:#8b93a7; }
+@keyframes griBlu {
+  0%,46% { fill:#3552d6; }
+  90%,100% { fill:#8b93a7; }
 }
 
 @media (max-width:560px){ .hcarousel{margin-top:28px;} .hcap{font-size:13px;} }
