@@ -89,7 +89,7 @@ h2.h { font-size:20px; margin:0 0 4px; }
 .snav button:hover { background:#0e1116; }
 .snav button.active { background:#0e1116; color:var(--acc); }
 .rektbl { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
-.rekhead, .rekrow { display:grid; grid-template-columns:2.4fr 1fr 1fr 1fr; align-items:center; gap:8px; padding:12px 14px; }
+.rekhead, .rekrow { display:grid; grid-template-columns:2.4fr 1fr 1fr 1fr auto auto; align-items:center; gap:8px; padding:12px 14px; }
 .rekhead { color:var(--mut); font-size:12px; text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--line); background:#0e1116; }
 .rekrow { border-bottom:1px solid #20262f; cursor:pointer; font-size:14px; }
 .rekrow:last-child { border-bottom:none; }
