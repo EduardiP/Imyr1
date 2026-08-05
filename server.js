@@ -391,8 +391,8 @@ app.get('/api/njoftimet', iLoguar, async (req, res) => {
         teksti: "S'ke asnjë hapësirë reklame aktive. Meqë s'po shfaq reklamat e të tjerëve, as reklamat e tua s'po marrin shfaqje te rrjeti. Lidh një hapësirë që të kthehet gjithçka në normalitet.", veprim: 'lidhja' });
     }
     if (!kaReklame) {
-      njf.push({ tip: 'reklama', titull: 'Krijo reklamën tënde të parë',
-        teksti: "Ende s'ke një reklamë aktive. Krijo një te Creatives që të fillosh të shfaqesh te rrjeti.", veprim: 'creatives' });
+      njf.push({ tip: 'reklama', titull: 'Reklamat e tua nuk po shfaqen',
+        teksti: "S'ke asnjë reklamë aktive. Krijo një të re ose riaktivizo një të pauzuar që të fillosh të shfaqesh te rrjeti.", veprim: 'creatives' });
     }
     if (!kaKonvertimTeLidhur) {
       njf.push({ tip: 'konvertim', titull: 'Aktivizo gjurmimin e konvertimeve',
