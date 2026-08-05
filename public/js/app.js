@@ -499,6 +499,15 @@ async function ngarkoSnippetet(){
     c.innerHTML=h;
   }catch(e){ c.innerHTML='<p class="small err">Gabim në ngarkim.</p>'; }
 }
+
+async function snipPauza(id, aktiv){
+  const pauzuar = !aktiv;   // toggle ON = aktiv; OFF = pauzuar
+  try{
+    await fetch('/api/snippetet/'+id+'/pauza',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pauzuar})});
+  }catch(e){}
+}
+
 async function snipKrijo(){
   // Krijo menjEhere (pa emer) dhe hap detajet — emri vihet ne krye te asaj faqeje
   try{
