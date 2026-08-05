@@ -1414,7 +1414,7 @@ require('./suporti')(app, pool);
 require('./kreative')(app, pool, iLoguar);
 
 require('./reklama-media')(app, pool, iLoguar, { upload, s3, PutObjectCommand });
-
+require('./pauza')(app, pool, iLoguar);
 // Lista e bizneseve (emer + email)
 app.get('/api/admin/bizneset', iAdmin, async (req, res) => {
   try {
