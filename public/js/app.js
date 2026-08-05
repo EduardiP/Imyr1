@@ -482,13 +482,15 @@ async function ngarkoSnippetet(){
     const lista=r.snippetet||[];
     if(!lista.length){ c.innerHTML='<p class="small">Ende s\'ka snippet.</p>'; return; }
     let h='<div class="rektbl">'+
-      '<div class="rekhead" style="grid-template-columns:2fr 1fr 1fr auto auto;"><span>Emri</span><span>Statusi</span><span>Madhësia</span><span></span><span></span></div>';
+      '<div class="rekhead" style="grid-template-columns:2fr 1fr 1fr auto auto auto;"><span>Emri</span><span>Statusi</span><span>Madhësia</span><span></span><span></span><span></span></div>';
     lista.forEach(sn=>{
       const status = sn.snippet_active ? '<span style="color:var(--good);">● I lidhur</span>' : '<span style="color:var(--mut);">○ Pa lidhur</span>';
-      h+='<div class="rekrow" style="grid-template-columns:2fr 1fr 1fr auto auto;align-items:center;" id="snipRow'+sn.id+'">'+
+      const tgl = '<label class="tgl" title="'+(sn.pauzuar?'I pauzuar':'Aktiv')+'"><input type="checkbox" '+(sn.pauzuar?'':'checked')+' onchange="snipPauza('+sn.id+',this.checked)"><span class="slider"></span></label>';
+      h+='<div class="rekrow" style="grid-template-columns:2fr 1fr 1fr auto auto auto;align-items:center;" id="snipRow'+sn.id+'">'+
          '<span class="nm" id="snipEmri'+sn.id+'" onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})" style="cursor:pointer;">'+esc(sn.emri||('Hapësira '+sn.id))+'</span>'+
          '<span onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})" style="cursor:pointer;">'+status+'</span>'+
          '<span class="small" onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})" style="cursor:pointer;">'+esc(sn.madhesia_desktop||'—')+'</span>'+
+         tgl+
          '<button class="btn" style="padding:5px 9px;" title="Ndrysho emrin" onclick="snipEmriEdito('+sn.id+',\''+esc((sn.emri||'').replace(/\x27/g,""))+'\')">✎</button>'+
          '<button class="btn" style="padding:5px 9px;" title="Fshi" onclick="snipKonfirmoFshi('+sn.id+',\''+esc((sn.emri||'').replace(/\x27/g,""))+'\','+(sn.snippet_active?1:0)+')">✕</button>'+
          '</div>';
