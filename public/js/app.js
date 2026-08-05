@@ -1028,6 +1028,17 @@ async function loadReklamat(){
     el.innerHTML=h;
   }catch(e){ el.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
 }
+
+async function reklamaPauza(id, aktiv){
+  const pauzuar = !aktiv;   // toggle ON = aktive; OFF = pauzuar
+  try{
+    await fetch('/api/reklamat/'+id+'/pauza',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pauzuar})});
+    try{ await ngarkoNjoftimet(); }catch(e){}   // rifresko ziljen menjehere
+  }catch(e){}
+}
+
+
 async function hapReklame(id, m){
   m.innerHTML='<p class="small">Po ngarkoj…</p>';
   let rows=window.__reklamat;
