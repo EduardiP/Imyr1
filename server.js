@@ -1044,7 +1044,7 @@ app.get('/cil', async (req, res) => {
     if (!b.rows.length) return res.json({ konv_url: null, konv_urls: [] });
     const urls = await konvertimet.urletPerBiznes(pool, b.rows[0].id);
     // konv_url: e para (perputhshmeri me snippet-in e vjeter); konv_urls: te gjitha
-    res.json({ konv_url: urls.length ? urls[0] : (b.rows[0].url_konvertimi || null), konv_urls: urls });
+    res.json({ konv_url: urls.length ? urls[0] : null, konv_urls: urls });
   } catch (e) { res.json({ konv_url: null, konv_urls: [] }); }
 });
 
