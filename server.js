@@ -1435,11 +1435,8 @@ app.get('/api/admin/bizneset', iAdmin, async (req, res) => {
   try {
     const r = await pool.query(`
       SELECT b.id, b.emri, b.email, b.logo_url,
-        COALESCE((SELECT COUNT(*) FROM ngjarjet e
-                  JOIN promovimet p ON p.id = e.reklama_id
-                  WHERE p.biznes_id = b.id AND e.lloji='view'),0)::int AS shfaqje_marre,
-        COALESCE((SELECT COUNT(*) FROM ngjarjet e
-                  WHERE e.host_id = b.id AND e.lloji='view'),0)::int AS shfaqje_dhene
+        COALESCE((SELECT COUNT(*) FROM ngjarjet e WHERE e.reklamues_id = b.id AND e.lloji='view'),0)::int AS shfaqje_marre,
+        COALESCE((SELECT COUNT(*) FROM ngjarjet e WHERE e.biznes_id = b.id AND e.lloji='view'),0)::int AS shfaqje_dhene
       FROM bizneset b ORDER BY b.created_at DESC`);
     res.json(r.rows);
   } catch(e){ res.status(500).json({ error: e.message }); }
