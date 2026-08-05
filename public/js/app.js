@@ -9,6 +9,18 @@ function renderHome(){
   $('homeHi').textContent = une.emri;
 }
 
+async function ruajPershkrim(){
+  $('e_next').disabled=true;
+  try{
+    const perm=$('e_perm').value.trim();
+    await fetch('/api/permbledhje',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({permbledhje:perm})});
+    une.permbledhje=perm;
+    const msg=$('e_msg');
+    if(msg){ msg.className='msg ok'; msg.textContent='✓ U ruajt.'; }
+    $('e_next').disabled=false;
+  }catch(e){ $('e_msg').className='msg err'; $('e_msg').textContent='Gabim: '+e.message; $('e_next').disabled=false; }
+}
+
 // ---------- LLOJET E REKLAMES (Image / Video / HTML5) ----------
 const AD_TYPES = [
   { k:'image', l:'Image', d:'JPG / PNG / GIF' },
