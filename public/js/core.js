@@ -100,14 +100,10 @@ function renderNjBox(){
   else {
     nj.slice(0,5).forEach((x,i)=>{
       if(x.nga_admin){
-        // Njoftim nga admin: mund te kete buton. Plotesimi: mbyll (pa buton) OSE kliko buton.
-        const btn = x.veprim
-          ? '<button class="njBtn" onclick="event.stopPropagation();njAdminButon('+x.id+',\''+x.veprim+'\')">'+esc(x.veprim_label||'Hap')+'</button>'
-          : '';
-        const oncl = x.veprim ? '' : 'onclick="njAdminMbyll('+x.id+')"';
-        h+='<div class="njItem njAdmin" '+oncl+'>'+
+        // Preview: vetem titull + tekst. Butoni shfaqet te faqja e plote.
+        h+='<div class="njItem njAdmin" onclick="hapNjoftimet()">'+
            '<div class="njT">📢 '+esc(x.titull)+'</div>'+
-           '<div class="njX">'+esc(x.teksti)+'</div>'+btn+'</div>';
+           '<div class="njX">'+esc(x.teksti)+'</div></div>';
       } else {
         h+='<div class="njItem" onclick="njVeprim(\''+x.veprim+'\')">'+
            '<div class="njT">'+esc(x.titull)+'</div>'+
