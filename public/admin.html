@@ -437,20 +437,43 @@
     }catch(e){ d.innerHTML='<p class="small">Gabim.</p>'; }
   }
 
+  var _bizList=[];
   async function loadBizList(m){
-    m.innerHTML='<h2 class="h">Bizneset</h2><div id="bizRows" style="margin-top:12px;"><p class="small">Po ngarkoj…</p></div>';
+    m.innerHTML='<h2 class="h">Bizneset</h2>'+
+      '<input class="kinput" id="bizKerkim" placeholder="Kërko biznes me emër…" oninput="bizFiltro(this.value)" style="max-width:360px;margin-top:10px;">'+
+      '<div id="bizGrid" class="bizGrid" style="margin-top:14px;"><p class="small">Po ngarkoj…</p></div>';
     try{
-      const rows=await(await fetch('/api/admin/bizneset')).json();
-      const el=$('bizRows'); el.innerHTML='';
-      if(!rows.length){ el.innerHTML='<p class="small">Ende s\'ka biznese.</p>'; return; }
-      rows.forEach(b=>{
-        const d=document.createElement('div'); d.className='bizrow';
-        const ini=((b.emri||'?').trim().charAt(0)||'?').toUpperCase();
-        d.innerHTML='<div class="circle">'+esc(ini)+'</div><div><div class="bn">'+esc(b.emri)+'</div><div class="be">'+esc(b.email)+'</div></div>';
-        d.onclick=()=>loadBizDetail(b.id, m);
-        el.appendChild(d);
-      });
-    }catch(e){ const el=$('bizRows'); if(el) el.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
+      _bizList=await(await fetch('/api/admin/bizneset')).json();
+      bizRenderGrid(_bizList, m);
+    }catch(e){ const el=$('bizGrid'); if(el) el.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
+  }
+  function bizFiltro(q){
+    q=(q||'').toLowerCase().trim();
+    const f=_bizList.filter(b=>!q||(b.emri||'').toLowerCase().includes(q));
+    bizRenderGrid(f, $('bizMain'));
+  }
+  function bizRenderGrid(rows, m){
+    const el=$('bizGrid'); if(!el) return; el.innerHTML='';
+    if(!rows.length){ el.innerHTML='<p class="small">S\'ka biznese.</p>'; return; }
+    rows.forEach(b=>{
+      const ini=((b.emri||'?').trim().charAt(0)||'?').toUpperCase();
+      const logo = b.logo_url
+        ? '<img src="'+esc(b.logo_url)+'" class="bizLogo">'
+        : '<div class="bizLogo bizLogoTxt">'+esc(ini)+'</div>';
+      const d=document.createElement('div'); d.className='bizCard';
+      d.innerHTML=
+        logo+
+        '<div class="bizCardBody">'+
+          '<div class="bizCardName">'+esc(b.emri||'—')+'</div>'+
+          '<div class="bizCardEmail">'+esc(b.email||'—')+'</div>'+
+          '<div class="bizCardStats">'+
+            '<span title="Shfaqje të marra">▲ '+(b.shfaqje_marre||0)+'</span>'+
+            '<span title="Shfaqje të dhëna">▼ '+(b.shfaqje_dhene||0)+'</span>'+
+          '</div>'+
+        '</div>';
+      d.onclick=()=>loadBizDetail(b.id, m);
+      el.appendChild(d);
+    });
   }
 
   async function loadBizDetail(id, m){
