@@ -138,6 +138,64 @@
     c.innerHTML='<div class="wrap"><h2 class="h">'+lbl+'</h2><p class="small" style="margin-top:8px;">Së shpejti.</p></div>';
   }
 
+  // ================= NJOFTIME (manuale nga admin) =================
+  var njBizneset = [];
+  async function renderNjoftime(c){
+    c.innerHTML=
+      '<div class="wrap" style="max-width:760px;">'+
+        '<h2 class="h">Dërgo njoftim</h2>'+
+        '<p class="small" style="margin:2px 0 18px;">Zgjidh një ose disa biznese dhe dërgo një njoftim te ikona e ziles së tyre.</p>'+
+        '<label>Titulli *</label><input id="njTit" placeholder="Titulli i njoftimit">'+
+        '<label style="margin-top:12px;">Teksti</label><textarea id="njTek" placeholder="Përmbajtja e njoftimit" style="min-height:90px;"></textarea>'+
+        '<label style="margin-top:12px;">Buton (opsional)</label>'+
+        '<div style="display:flex;gap:10px;">'+
+          '<input id="njBtnLbl" placeholder="Teksti i butonit (p.sh. Rregullo)" style="flex:1;">'+
+          '<select id="njBtnVep" style="flex:1;background:#0e1116;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px;">'+
+            '<option value="">— pa buton —</option>'+
+            '<option value="reklamat">My Ads</option>'+
+            '<option value="snippetet">Hapësira e reklamave</option>'+
+            '<option value="konvertimi">Konvertimet</option>'+
+            '<option value="creatives">Krijo reklamë</option>'+
+          '</select>'+
+        '</div>'+
+        '<p class="small mut" style="margin-top:4px;">Nëse vendos buton, njoftimi qëndron derisa përdoruesi ta klikojë. Pa buton, largohet kur e lexon.</p>'+
+        '<label style="margin-top:16px;">Zgjidh bizneset *</label>'+
+        '<div id="njLista" style="border:1px solid var(--line);border-radius:10px;max-height:280px;overflow-y:auto;padding:8px;margin-top:6px;"><p class="small">Po ngarkoj…</p></div>'+
+        '<button class="primary" style="margin-top:16px;" onclick="njDergo(this)">Dërgo njoftimin</button>'+
+        '<span class="small" id="njStat" style="margin-left:10px;"></span>'+
+      '</div>';
+    try{
+      njBizneset = await(await fetch('/api/admin/njoftime/bizneset')).json();
+      const el=$('njLista');
+      if(!njBizneset.length){ el.innerHTML='<p class="small">S\'ka biznese.</p>'; return; }
+      el.innerHTML = njBizneset.map(b=>
+        '<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;cursor:pointer;">'+
+          '<input type="checkbox" class="njChk" value="'+b.id+'">'+
+          '<span>'+(b.emri||('#'+b.id))+' <span class="small mut">('+(b.tipi||'—')+')</span></span>'+
+        '</label>').join('');
+    }catch(e){ $('njLista').innerHTML='<p class="small">Gabim.</p>'; }
+  }
+  async function njDergo(btn){
+    const titulli=($('njTit')||{}).value||'';
+    const teksti=($('njTek')||{}).value||'';
+    const veprim=($('njBtnVep')||{}).value||'';
+    const veprim_label=($('njBtnLbl')||{}).value||'';
+    const ids=Array.prototype.map.call(document.querySelectorAll('.njChk:checked'),x=>parseInt(x.value,10));
+    const stat=$('njStat');
+    if(!titulli.trim()){ if(stat){stat.textContent='Vendos titullin.';} return; }
+    if(!ids.length){ if(stat){stat.textContent='Zgjidh të paktën një biznes.';} return; }
+    btn.disabled=true;
+    try{
+      const r=await(await fetch('/api/admin/njoftime/dergo',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({biznes_ids:ids, titulli, teksti, veprim, veprim_label})})).json();
+      if(r.error){ if(stat)stat.textContent=r.error; btn.disabled=false; return; }
+      if(stat)stat.textContent='✓ U dërgua te '+r.derguar+' biznese.';
+      $('njTit').value=''; $('njTek').value=''; $('njBtnLbl').value='';
+      document.querySelectorAll('.njChk:checked').forEach(x=>x.checked=false);
+    }catch(e){ if(stat)stat.textContent='Gabim: '+e.message; }
+    btn.disabled=false;
+  }
+  
   // ================= KOMBINIMET AI =================
   var kFiltri=null, kA=null, kB=null, kBizneset=[];
   function renderKombinimet(c){
