@@ -403,6 +403,17 @@ app.get('/api/njoftimet', iLoguar, async (req, res) => {
         teksti: "Lidhja e konvertimit ende s'është bërë. Është mënyra kryesore për të mbledhur pikë nëse ke pak trafik.", veprim: 'konvertimi' });
     }
 
+    // Njoftimet manuale nga admin (shtohen ne fillim — jane te rendesishme)
+    try {
+      const njAdmin = await require('./njoftime-admin').merrPerBiznes(pool, req.biznesId);
+      njAdmin.forEach(a => {
+        njf.unshift({
+          tip: 'admin', id: a.id, titull: a.titulli, teksti: a.teksti,
+          veprim: a.veprim || null, veprim_label: a.veprim_label || null, nga_admin: true
+        });
+      });
+    } catch (e) {}
+
     res.json({ ditet, njoftimet: njf });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
