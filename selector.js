@@ -60,10 +60,10 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
   const hTipi = h.rows[0] && h.rows[0].tipi;
 
   const kand = await pool.query(
-    `SELECT p.id, p.biznes_id, p.teksti, p.imazh_url, p.link, b.tipi
+    `SELECT p.id, p.biznes_id, p.teksti, p.imazh_url, p.video_url, p.html5_url, p.link, b.tipi
      FROM promovimet p JOIN bizneset b ON b.id = p.biznes_id
      WHERE p.biznes_id <> $1 AND p.aktiv = true
-       AND (p.teksti IS NOT NULL OR p.imazh_url IS NOT NULL)
+       AND (p.teksti IS NOT NULL OR p.imazh_url IS NOT NULL OR p.video_url IS NOT NULL OR p.html5_url IS NOT NULL)
        AND EXISTS (SELECT 1 FROM snippetet s WHERE s.biznes_id = b.id AND s.snippet_active = true)`, [hostId]);
 
   // Filtri i tipit
