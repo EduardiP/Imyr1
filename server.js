@@ -541,8 +541,22 @@ app.all('/konvertim', async (req, res) => {
     //  - nese ekziston (jo e fshire) → vazhdo dhe lidhe
     //  - nese s'ekziston fare → krijohet me poshte dhe lidhet (sjellja qe punonte)
     if (zona) {
-      const zr = await pool.query('SELECT id, fshire FROM zonat WHERE biznes_id=$1 AND emri=$2 LIMIT 1', [kl.reklamues_id, zona]);
-      if (zr.rows.length && zr.rows[0].fshire) return res.status(204).end();  // e fshire → injoro
+      const zr = await pool.query('SELECT id, fshire, pauzuar FROM zonat WHERE biznes_id=$1 AND emri=$2 LIMIT 1', [kl.reklamues_id, zona]);
+      if (zr.rows.length && zr.rows[0].fshire) return res.status(204).end();   // e fshire → injoro
+      if (zr.rows.length && zr.rows[0].pauzuar) return res.status(204).end();  // e pauzuar → injoro (s'regjistrohet)
+    }
+    if (!zona) {
+      const origjinaFaqe = req.headers.origin || req.headers.referer || null;
+      if (origjinaFaqe) {
+        try {
+          let shteg = origjinaFaqe;
+          try { const p = new URL(origjinaFaqe); shteg = (p.origin + p.pathname).replace(/\/+$/, ''); } catch(e){}
+          const pz = await pool.query(
+            "SELECT 1 FROM konvertimet WHERE biznes_id=$1 AND pauzuar=true AND ($2 LIKE rtrim(url,'/') || '%') LIMIT 1",
+            [kl.reklamues_id, shteg]);
+          if (pz.rows.length) return res.status(204).end();
+        } catch(e){}
+      }
     }
     // nje konvertim per klikim PER ZONE (zona te ndryshme numerohen veç)
     const ekz = await pool.query(
