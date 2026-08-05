@@ -375,7 +375,7 @@ app.get('/api/njoftimet', iLoguar, async (req, res) => {
   try {
     const b = await pool.query(
       'SELECT created_at, snippet_active, track_active, url_konvertimi FROM bizneset WHERE id=$1', [req.biznesId]);
-    const p = await pool.query('SELECT COUNT(*)::int n FROM promovimet WHERE biznes_id=$1 AND aktiv=true', [req.biznesId]);
+    const p = await pool.query('SELECT COUNT(*)::int n FROM promovimet WHERE biznes_id=$1 AND aktiv=true AND pauzuar=false', [req.biznesId]);
     const uLidhur = await pool.query('SELECT 1 FROM konvertimet WHERE biznes_id=$1 AND track_active=true LIMIT 1', [req.biznesId]);
     const zLidhur = await pool.query('SELECT 1 FROM zonat WHERE biznes_id=$1 AND track_active=true AND fshire=false LIMIT 1', [req.biznesId]);
     const snLidhur = await pool.query('SELECT 1 FROM snippetet WHERE biznes_id=$1 AND snippet_active=true AND pauzuar=false LIMIT 1', [req.biznesId]);
