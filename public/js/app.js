@@ -501,10 +501,11 @@ async function ngarkoSnippetet(){
 }
 
 async function snipPauza(id, aktiv){
-  const pauzuar = !aktiv;   // toggle ON = aktiv; OFF = pauzuar
+  const pauzuar = !aktiv;
   try{
     await fetch('/api/snippetet/'+id+'/pauza',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({pauzuar})});
+    try{ await ngarkoNjoftimet(); }catch(e){}   // rifresko ziljen menjehere
   }catch(e){}
 }
 
