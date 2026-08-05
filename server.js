@@ -1188,6 +1188,7 @@ app.get('/ad', async (req, res) => {
     // Gjej snippet-in (ose biznesin per celesa te vjeter) nga celesi
     const sn = await snippetet.ngaCelesi(pool, key);
     if (!sn) return res.json({ teksti: null });
+    if (sn.pauzuar) return res.json({ teksti: null });   // snippet ne pauze → asgje (s'shfaqet, s'mat, s'konkurron)
     const bizId = sn.biznes_id;
     // Merr url_konvertimi te biznesit (konvertimi eshte per biznes)
     const bkonv = await pool.query('SELECT url_konvertimi, snippet_active FROM bizneset WHERE id=$1', [bizId]);
