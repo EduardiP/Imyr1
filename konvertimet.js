@@ -127,7 +127,7 @@ module.exports = function (app, pool, iLoguar, iAdmin) {
   app.get('/api/konvertimet', iLoguar, async (req, res) => {
     try {
       const r = await pool.query(
-        `SELECT id, url, track_active, track_seen_at FROM konvertimet WHERE biznes_id=$1 ORDER BY id ASC`,
+        `SELECT id, url, track_active, track_seen_at, pauzuar FROM konvertimet WHERE biznes_id=$1 ORDER BY id ASC`,
         [req.biznesId]);
       res.json({ konvertimet: r.rows });
     } catch (e) { res.status(500).json({ error: e.message }); }
@@ -177,7 +177,7 @@ module.exports = function (app, pool, iLoguar, iAdmin) {
   app.get('/api/zonat', iLoguar, async (req, res) => {
     try {
       const r = await pool.query(
-        'SELECT id, emri, track_active FROM zonat WHERE biznes_id=$1 AND fshire=false ORDER BY id ASC', [req.biznesId]);
+        'SELECT id, emri, track_active, pauzuar FROM zonat WHERE biznes_id=$1 AND fshire=false ORDER BY id ASC', [req.biznesId]);
       res.json({ zonat: r.rows });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
