@@ -6,6 +6,18 @@
 <title>Imyr · Admin</title>
 <link rel="stylesheet" href="/css/style.css">
 <style>
+  .rekBizTbl { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .rekBizTr { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid #20262f; cursor:pointer; }
+  .rekBizTr:last-child { border-bottom:none; }
+  .rekBizTr:hover { background:#131820; }
+  .rekNumri { color:var(--mut); font-size:13px; }
+  .rekTbl { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .rekThead, .rekTr { display:grid; grid-template-columns:2.2fr .9fr .7fr .8fr .9fr; align-items:center; gap:8px; padding:11px 14px; }
+  .rekThead { background:#0e1116; color:var(--mut); font-size:11px; text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--line); }
+  .rekTr { border-bottom:1px solid #20262f; cursor:pointer; font-size:13px; }
+  .rekTr:last-child { border-bottom:none; }
+  .rekTr:hover { background:#131820; }
+  .rekTip2 { text-transform:uppercase; font-size:11px; color:#7aa2ff; }
   .njToolbar { display:flex; gap:12px; align-items:center; margin:6px 0 10px; flex-wrap:wrap; }
   .njFiltra { display:flex; gap:6px; }
   .njFbtn { padding:6px 12px; border-radius:8px; border:1px solid var(--line); background:#0e1116; color:var(--txt); cursor:pointer; font-size:12px; font-family:inherit; }
@@ -442,6 +454,60 @@
       ankRenderLista(ankBizneset);
     }catch(e){ $('ankLista').innerHTML='<p class="small">Gabim.</p>'; }
   }
+  // ============ REKLAMAT (lista e bizneseve → reklamat e secilit) ============
+  var _rekBiz=[];
+  async function renderReklamat(m){
+    m.innerHTML='<h2 class="h">Reklamat</h2>'+
+      '<input class="kinput" id="rekKerkim" placeholder="Kërko biznes me emër…" oninput="rekFiltro(this.value)" style="max-width:360px;margin:6px 0 12px;">'+
+      '<div id="rekBizLista"><p class="small">Po ngarkoj…</p></div>';
+    try{
+      _rekBiz=await(await fetch('/api/admin/bizneset')).json();
+      rekRenderBiz(_rekBiz);
+    }catch(e){ $('rekBizLista').innerHTML='<p class="small">Gabim.</p>'; }
+  }
+  function rekFiltro(q){
+    q=(q||'').toLowerCase().trim();
+    rekRenderBiz(_rekBiz.filter(b=>!q||(b.emri||'').toLowerCase().includes(q)));
+  }
+  function rekRenderBiz(rows){
+    const el=$('rekBizLista'); if(!el) return;
+    if(!rows.length){ el.innerHTML='<p class="small">S\'ka biznese.</p>'; return; }
+    el.innerHTML='<div class="rekBizTbl">'+rows.map(b=>{
+      const ini=((b.emri||'?').trim().charAt(0)||'?').toUpperCase();
+      const logo=b.logo_url?'<img src="'+esc(b.logo_url)+'" class="njBizLogo">':'<span class="njBizLogo njBizLogoTxt">'+esc(ini)+'</span>';
+      return '<div class="rekBizTr" onclick="hapReklamatBiz('+b.id+',\''+esc((b.emri||'').replace(/\x27/g,""))+'\')">'+
+        '<span class="njIdent">'+logo+'<span class="njId2"><span class="njBizNm">'+esc(b.emri||'—')+'</span><span class="njBizEm">'+esc(b.email||'—')+'</span></span></span>'+
+        '<span class="rekNumri" id="rekNr'+b.id+'">…</span>'+
+      '</div>';
+    }).join('')+'</div>';
+    // Ngarko numrin e reklamave per secilin
+    rows.forEach(b=>{
+      fetch('/api/admin/biznes/'+b.id+'/reklamat').then(r=>r.json()).then(a=>{
+        const el=$('rekNr'+b.id); if(el) el.textContent=(a.length||0)+' reklama';
+      }).catch(()=>{});
+    });
+  }
+  async function hapReklamatBiz(id, emri){
+    const m=$('bizMain');
+    m.innerHTML='<button class="back" onclick="renderReklamat($(\'bizMain\'))">← Reklamat</button>'+
+      '<h2 class="h">'+esc(emri)+' — Reklamat</h2><div id="rekLista"><p class="small">Po ngarkoj…</p></div>';
+    try{
+      const a=await(await fetch('/api/admin/biznes/'+id+'/reklamat')).json();
+      const el=$('rekLista');
+      if(!a.length){ el.innerHTML='<p class="small">S\'ka reklama.</p>'; return; }
+      el.innerHTML='<div class="rekTbl">'+
+        '<div class="rekThead"><span>Reklama</span><span>Formati</span><span>Pikët</span><span>Shikime</span><span>Konvertime</span></div>'+
+        a.map(r=>
+          '<div class="rekTr" onclick="alert(\'Detajet vijnë së shpejti.\')">'+
+            '<span class="njBizNm">'+esc(r.emri)+'</span>'+
+            '<span class="rekTip2">'+esc(r.lloji)+'</span>'+
+            '<span>'+r.pike+'</span>'+
+            '<span>'+r.shikime+'</span>'+
+            '<span>'+r.konvertime+'</span>'+
+          '</div>').join('')+'</div>';
+    }catch(e){ $('rekLista').innerHTML='<p class="small">Gabim.</p>'; }
+  }
+  
   function ankFiltro(q){
     q=(q||'').toLowerCase().trim();
     ankRenderLista(ankBizneset.filter(b=>!q||(b.emri||'').toLowerCase().includes(q)||(b.email||'').toLowerCase().includes(q)));
