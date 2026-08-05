@@ -41,11 +41,7 @@ function renderAdTypes(){
     b.style.cssText='flex:1;min-width:120px;padding:16px 12px;border-radius:10px;cursor:pointer;background:#0e1116;color:var(--txt);'+
       'border:1px solid '+(sel?'#3b82f6':'var(--line)')+';'+(sel?'box-shadow:0 0 0 1px #3b82f6;':'');
     b.innerHTML='<div style="font-weight:600;font-size:15px;">'+t.l+'</div><div style="font-size:12px;color:var(--mut);margin-top:4px;">'+t.d+'</div>';
-    b.onclick=()=>{ window.__adType=t.k;
-      if(t.k==='image'){ ngarkoImazhUI(); return; }
-      if(t.k==='video'){ ngarkoVideoUI(); return; }
-      if(t.k==='html5'){ ngarkoHtml5UI(); return; }
-      renderAdTypes(); $('adTypeNote').textContent='Ngarkimi i "'+t.l+'" — së shpejti.'; };
+    b.onclick=()=>{ nav({v:'profile', nav:'reklamat', sub:'create', format:t.k}); };
     g.appendChild(b);
   });
 }
