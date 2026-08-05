@@ -984,8 +984,33 @@ app.get('/imyr.js', (req, res) => {
         var kutia = '<div style="width:' + mw + 'px;height:' + mh + 'px;max-width:100%;position:sticky;top:10px;">' + inner + '</div>';
         slot.innerHTML = '<div style="display:flex;justify-content:' + align + ';width:100%;">' + kutia + '</div>';
         if(d.id){ if(d.cikel_ri){ rifilloCikel(d.id); } else { shtoPare(d.id); } }
-        if(!preview){ try { var v = base + '/track?key=' + encodeURIComponent(key) + '&event=view' + rid;
-          navigator.sendBeacon ? navigator.sendBeacon(v) : fetch(v); } catch(e){} }
+        if(!preview){
+          // Ngarkim (view): reklama u vendos ne faqe
+          try { var v = base + '/track?key=' + encodeURIComponent(key) + '&event=view' + rid;
+            navigator.sendBeacon ? navigator.sendBeacon(v) : fetch(v); } catch(e){}
+          // Shikim real: 50% e reklames ne ekran per >=1 sekonde (Intersection Observer)
+          try {
+            var elKutia = slot.querySelector('div'); // kutia e reklames
+            if (elKutia && 'IntersectionObserver' in window) {
+              var pare = false, timer = null;
+              var obs = new IntersectionObserver(function(entries){
+                entries.forEach(function(en){
+                  if (!pare && en.isIntersecting && en.intersectionRatio >= 0.5) {
+                    if (!timer) timer = setTimeout(function(){
+                      if (pare) return; pare = true;
+                      try { var s = base + '/track?key=' + encodeURIComponent(key) + '&event=shikim' + rid;
+                        navigator.sendBeacon ? navigator.sendBeacon(s) : fetch(s); } catch(e){}
+                      obs.disconnect();
+                    }, 1000); // 1 sekonde
+                  } else {
+                    if (timer) { clearTimeout(timer); timer = null; } // doli para 1 sek → rifillo
+                  }
+                });
+              }, { threshold: [0, 0.5, 1] });
+              obs.observe(elKutia);
+            }
+          } catch(e){}
+        }
       }
     }
 
@@ -1261,7 +1286,9 @@ app.all('/track', async (req, res) => {
   cors(res);
   if (req.query.preview === '1') return res.status(204).end(); // injoro preview-in
   const key = req.query.key;
-  const lloji = req.query.event === 'click' ? 'click' : 'view';
+  const lloji = req.query.event === 'click' ? 'click'
+              : req.query.event === 'shikim' ? 'shikim'
+              : 'view';
   const rid = parseInt(req.query.rid, 10) || null;
   try {
     const snK2 = await snippetet.ngaCelesi(pool, key);
