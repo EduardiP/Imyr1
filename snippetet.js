@@ -49,7 +49,7 @@ async function init(pool) {
 async function ngaCelesi(pool, celes) {
   let r = await pool.query(
     `SELECT s.id AS snippet_id, s.biznes_id, s.celes,
-            s.madhesia_desktop, s.madhesia_mobile, s.pozicioni, s.snippet_active
+            s.madhesia_desktop, s.madhesia_mobile, s.pozicioni, s.snippet_active, s.pauzuar
      FROM snippetet s WHERE s.celes = $1`, [celes]);
   if (r.rows.length) return r.rows[0];
   // Fallback te bizneset (nese ndonje celes s'eshte migruar)
