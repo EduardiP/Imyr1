@@ -928,18 +928,17 @@ app.get('/imyr.js', (req, res) => {
         var madhStr = eshteMobile ? (d.madhesia_mobile || '290x260') : (d.madhesia || '210x261');
         if(eshteMobile){ mw = 290; mh = 260; }
         var pp = String(madhStr).split('x'); var a1=parseInt(pp[0],10), a2=parseInt(pp[1],10); if(a1>0 && a2>0){ mw=a1; mh=a2; }
-        var inner, eshteVideo = false;
+        var inner, sVideoHtml = false;
         if(d.video_url){
-          // Video nga YouTube: autoplay, pa ze, max 30s, pa fullscreen. Puthitet si imazhi.
-          eshteVideo = true;
+          sVideoHtml = true;
           var ytId = d.video_url;
           var src = 'https://www.youtube.com/embed/' + ytId
             + '?autoplay=1&mute=1&controls=1&loop=1&playlist=' + ytId
             + '&modestbranding=1&rel=0&fs=0&end=30&playsinline=1';
           inner = '<iframe src="' + src + '" frameborder="0" allow="autoplay; encrypted-media" '
-            + 'style="display:block;width:100%;height:100%;border:0;border-radius:10px;object-fit:contain;"></iframe>';
+            + 'style="display:block;width:100%;height:100%;border:0;border-radius:10px;"></iframe>';
         } else if(d.html5_url){
-          // HTML5: puthitet brenda hapesires si imazhi.
+          sVideoHtml = true;
           inner = '<iframe src="' + d.html5_url + '" frameborder="0" '
             + 'style="display:block;width:100%;height:100%;border:0;border-radius:10px;"></iframe>';
         } else if(d.imazh_url){
@@ -949,8 +948,7 @@ app.get('/imyr.js', (req, res) => {
             + 'border:1px solid #e2c68a;background:#fbf6ea;color:#5a4a24;padding:12px 14px;border-radius:10px;'
             + 'font:14px/1.5 system-ui,sans-serif;text-align:center;">' + esc(d.teksti) + '</div>';
         }
-        // Video/HTML5 s'mbeshtillen me <a> (klikimi menaxhohet brenda); imazh/tekst po.
-        if(!preview && !eshteVideo && !d.html5_url){
+        if(!preview && !sVideoHtml){
           var href = base + '/klik?key=' + encodeURIComponent(key) + rid;
           inner = '<a href="' + href + '" target="_blank" rel="noopener"'
             + ' style="text-decoration:none;display:block;width:100%;height:100%;cursor:pointer;">' + inner + '</a>';
