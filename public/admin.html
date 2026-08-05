@@ -133,6 +133,7 @@
     const c=$('content');
     if(curSec==='bizneset'){ renderBizneset(c); return; }
     if(curSec==='b1'){ renderKombinimet(c); return; }
+    if(curSec==='b2'){ renderNjoftime(c); return; }
     const lbl=(SECTIONS.find(s=>s.k===curSec)||{}).l||'';
     c.innerHTML='<div class="wrap"><h2 class="h">'+lbl+'</h2><p class="small" style="margin-top:8px;">Së shpejti.</p></div>';
   }
