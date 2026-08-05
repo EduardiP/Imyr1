@@ -68,7 +68,7 @@ module.exports = function (app, pool, iLoguar, beCeles) {
   app.get('/api/snippetet', iLoguar, async (req, res) => {
     try {
       const r = await pool.query(
-        `SELECT id, celes, emri, madhesia_desktop, madhesia_mobile, pozicioni, snippet_active, krijuar_at
+        `SELECT id, celes, emri, madhesia_desktop, madhesia_mobile, pozicioni, snippet_active, pauzuar, krijuar_at
          FROM snippetet WHERE biznes_id=$1 ORDER BY id ASC`, [req.biznesId]);
       res.json({ snippetet: r.rows });
     } catch (e) { res.status(500).json({ error: e.message }); }
