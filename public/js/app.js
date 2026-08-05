@@ -1465,7 +1465,7 @@ function stepPershkrimi(b){
     '<div id="d_res" class="hide" style="margin-top:16px;">'+
       '<label>Përmbledhja (e editueshme)</label>'+
       '<textarea id="e_perm"></textarea>'+
-      '<button class="primary" id="e_next" onclick="vazhdoPershkrim()">Vazhdo →</button>'+
+      '<button class="primary" id="e_next" onclick="ruajPershkrim()">Ruaj</button>'+
       '<div class="msg" id="e_msg"></div>'+
     '</div>';
   if(une.permbledhje){ $('d_res').classList.remove('hide'); $('e_perm').value=une.permbledhje; }
