@@ -83,4 +83,36 @@ async function zgjedhReklamen(pool, bizId) {
   return lista[lista.length - 1].id;
 }
 
-module.exports = { zgjedhReklamen, pikeReklame, reklamatEBiznesit, statPerReklama };
+// Lista e reklamave te nje biznesi me statistika + pike aktuale (per admin)
+async function reklamatMePike(pool, bizId) {
+  const r = await pool.query(
+    `SELECT id, titulli, teksti, imazh_url, video_url, html5_url
+     FROM promovimet WHERE biznes_id=$1 AND aktiv=true ORDER BY id DESC`, [bizId]);
+  if (!r.rows.length) return [];
+  const ids = r.rows.map(x => x.id);
+  const stat = await statPerReklama(pool, ids);
+  return r.rows.map(p => {
+    const st = stat[p.id] || {};
+    const lloji = p.video_url ? 'video' : (p.html5_url ? 'html5' : (p.imazh_url ? 'imazh' : 'tekst'));
+    return {
+      id: p.id,
+      emri: p.titulli || (p.teksti ? String(p.teksti).slice(0, 40) : 'Reklamë'),
+      lloji,
+      shikime: st.shikime || 0,
+      konvertime: st.konvertime || 0,
+      pike: Math.round(Math.max(0, pikeReklame(st)))
+    };
+  });
+}
+
+// Regjistron endpoint-in per admin: GET /api/admin/biznes/:id/reklamat
+function rregjistroRoutet(app, pool, iAdmin) {
+  app.get('/api/admin/biznes/:id/reklamat', iAdmin, async (req, res) => {
+    try {
+      const rows = await reklamatMePike(pool, parseInt(req.params.id, 10));
+      res.json(rows);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+}
+
+module.exports = { zgjedhReklamen, pikeReklame, reklamatEBiznesit, statPerReklama, reklamatMePike, rregjistroRoutet };
