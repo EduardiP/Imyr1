@@ -1233,7 +1233,7 @@ var _konvUrls = [];   // {id?, url, track_active}
 async function ngarkoKonvertimet(){
   try{
     const r=await(await fetch('/api/konvertimet')).json();
-    _konvUrls = (r.konvertimet||[]).map(x=>({id:x.id, url:x.url, track_active:x.track_active}));
+    _konvUrls = (r.konvertimet||[]).map(x=>({id:x.id, url:x.url, track_active:x.track_active, pauzuar:x.pauzuar}));
   }catch(e){ _konvUrls=[]; }
   if(!_konvUrls.length) _konvUrls=[{url:'', track_active:false}];  // nje fushe bosh per fillim
   vizatoKonvertimet();
