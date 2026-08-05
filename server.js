@@ -1455,6 +1455,8 @@ require('./kreative')(app, pool, iLoguar);
 
 require('./njoftime-admin')(app, pool, iLoguar, iAdmin);
 
+require('./pike-reklama').rregjistroRoutet(app, pool, iAdmin);
+
 require('./reklama-media')(app, pool, iLoguar, { upload, s3, PutObjectCommand });
 require('./pauza')(app, pool, iLoguar);
 // Lista e bizneseve (emer + email)
