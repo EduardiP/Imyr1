@@ -1030,6 +1030,29 @@ async function loadReklamat(){
   }catch(e){ el.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
 }
 
+function reklamaKonfirmoFshi(id, emri){
+  const bd=$('backdrop'); if(!bd) return;
+  bd.innerHTML='<div class="modal card"><button class="x" onclick="mbyllReklamaModal()">×</button>'+
+    '<h3 style="margin:0 0 10px;">Fshi reklamën?</h3>'+
+    '<p class="small mut">Je i sigurt që do të fshish "<b>'+esc(emri||'këtë reklamë')+'</b>"? Kjo reklamë nuk do të shfaqet më dhe nuk mund të kthehet.</p>'+
+    '<div style="display:flex;gap:10px;margin-top:16px;">'+
+      '<button class="btn" style="flex:1;" onclick="mbyllReklamaModal()">Anulo</button>'+
+      '<button class="btn" style="flex:1;background:#dc2626;color:#fff;border-color:#dc2626;" onclick="reklamaFshi('+id+')">Fshi</button>'+
+    '</div></div>';
+  bd.classList.remove('hide');
+}
+async function reklamaFshi(id){
+  try{
+    await fetch('/api/reklamat/'+id,{method:'DELETE'});
+    mbyllReklamaModal();
+    window.__reklamat=null;
+    loadReklamat();
+    try{ await ngarkoNjoftimet(); }catch(e){}
+  }catch(e){}
+}
+function mbyllReklamaModal(){ const b=$('backdrop'); if(b){ b.classList.add('hide'); b.innerHTML=''; } }
+
+
 async function reklamaPauza(id, aktiv){
   const pauzuar = !aktiv;   // toggle ON = aktive; OFF = pauzuar
   try{
