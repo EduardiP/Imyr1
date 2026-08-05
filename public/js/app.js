@@ -1379,6 +1379,7 @@ function vizatoZonat(){
          '<button class="btn" onclick="zonaKopjo('+i+')">Kopjo</button>'+
          '<button class="btn" onclick="zonaVerifiko('+i+')">Verifiko</button>'+
          '<span style="margin-left:auto;">'+status+'</span>'+
+         (z.id ? '<label class="tgl" title="'+(z.pauzuar?'I pauzuar':'Aktiv')+'"><input type="checkbox" '+(z.pauzuar?'':'checked')+' onchange="zonaPauza('+i+',this.checked)"><span class="slider"></span></label>' : '')+
        '</div>'+
        '</div>';
   });
