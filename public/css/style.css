@@ -107,7 +107,7 @@ h2.h { font-size:20px; margin:0 0 4px; }
   #snavFoot{ margin-top:8px !important; display:flex; gap:8px; border-top:none !important; padding-top:0 !important; }
   #snavFoot button{ width:auto; white-space:nowrap; }
   .rektbl{ overflow-x:auto; }
-  .rekhead, .rekrow{ min-width:440px; }
+  .rekhead, .rekrow{ min-width:520px; }
 }
 
 /* ZGJEDHESI I FORMATIT */
