@@ -451,3 +451,9 @@ footer.site{background:#080a0e;border-top:1px solid var(--line);padding:54px 0 3
   color:var(--txt); font-size:22px; cursor:pointer; line-height:1;
 }
 .modal.card { position:relative; }
+
+.html5Paralajmerim {
+  margin-top:14px; padding:14px 16px; border-radius:10px;
+  background:#1a1508; border:1px solid #4a3a12; color:#e8d9a8; font-size:13px;
+}
+.html5Paralajmerim b { color:#ffd970; }
