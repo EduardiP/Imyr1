@@ -61,10 +61,9 @@ function normalizo(u) {
 
 // Kthen te gjitha URL-te e konvertimit te nje biznesi (per snippet-in gjurmues).
 async function urletPerBiznes(pool, bizId) {
-  const r = await pool.query('SELECT url FROM konvertimet WHERE biznes_id=$1 ORDER BY id ASC', [bizId]);
+  const r = await pool.query('SELECT url FROM konvertimet WHERE biznes_id=$1 AND pauzuar=false ORDER BY id ASC', [bizId]);
   return r.rows.map(x => x.url);
 }
-
 module.exports = function (app, pool, iLoguar, iAdmin) {
 
   init(pool).catch(e => console.error('konvertimet init:', e.message));
