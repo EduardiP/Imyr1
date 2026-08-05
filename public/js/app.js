@@ -1251,6 +1251,7 @@ function vizatoKonvertimet(){
        '<button class="btn" style="padding:7px 12px;" onclick="verifikoNje('+i+')">Verifiko</button>'+
        (_konvUrls.length>1 ? '<button class="btn" style="padding:7px 10px;" onclick="konvKonfirmoFshi('+i+')">✕</button>' : '')+
        '<span style="min-width:74px;text-align:right;">'+status+'</span>'+
+       (u.id ? '<label class="tgl" title="'+(u.pauzuar?'I pauzuar':'Aktiv')+'"><input type="checkbox" '+(u.pauzuar?'':'checked')+' onchange="konvPauza('+i+',this.checked)"><span class="slider"></span></label>' : '')+
        '</div>';
   });
   c.innerHTML=h;
