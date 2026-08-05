@@ -9,6 +9,47 @@ function renderHome(){
   $('homeHi').textContent = une.emri;
 }
 
+async function ngarkoHtml5(){
+  const titull=($('up_title')||{}).value||'';
+  const link=($('up_link')||{}).value||'';
+  const msg=$('up_msg');
+  if(!link.trim()){ if(msg){msg.className='msg err';msg.textContent='Vendos linkun e destinacionit.';} return; }
+  const f=($('up_file')||{}).files ? $('up_file').files[0] : null;
+  const crId=($('up_creative_id')||{}).value||'';
+  if(!f && !crId){ if(msg){msg.className='msg err';msg.textContent='Ngarko një skedar ose zgjidh nga Creative-t.';} return; }
+  if(f && f.size > 200*1024){ if(msg){msg.className='msg err';msg.textContent='Skedari e kalon 200 KB.';} return; }
+  $('up_btn').disabled=true;
+  try{
+    const fd=new FormData();
+    fd.append('titull', titull);
+    fd.append('link', link);
+    if(crId){ fd.append('creative_id', crId); }
+    else if(f){ fd.append('file', f); }
+    const r=await (await fetch('/api/reklama/html5',{method:'POST',body:fd})).json();
+    if(r.error){ if(msg){msg.className='msg err';msg.textContent=r.error;} $('up_btn').disabled=false; return; }
+    if(msg){msg.className='msg ok';msg.textContent='✓ HTML5 u shtua.';}
+    setTimeout(()=>nav({v:'profile',nav:'reklamat'}),800);
+  }catch(e){ if(msg){msg.className='msg err';msg.textContent='Gabim: '+e.message;} $('up_btn').disabled=false; }
+}
+
+async function ngarkoVideo(){
+  const titull=($('up_title')||{}).value||'';
+  const link=($('up_link')||{}).value||'';
+  const video=($('up_video')||{}).value||'';
+  const msg=$('up_msg');
+  if(!link.trim()){ if(msg){msg.className='msg err';msg.textContent='Vendos linkun e destinacionit.';} return; }
+  if(!video.trim()){ if(msg){msg.className='msg err';msg.textContent='Vendos linkun e YouTube.';} return; }
+  $('up_btn').disabled=true;
+  try{
+    const r=await (await fetch('/api/reklama/video',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({titull, link, youtube:video})})).json();
+    if(r.error){ if(msg){msg.className='msg err';msg.textContent=r.error;} $('up_btn').disabled=false; return; }
+    if(msg){msg.className='msg ok';msg.textContent='✓ Video u shtua.';}
+    setTimeout(()=>nav({v:'profile',nav:'reklamat'}),800);
+  }catch(e){ if(msg){msg.className='msg err';msg.textContent='Gabim: '+e.message;} $('up_btn').disabled=false; }
+}
+
+
 async function ruajPershkrim(){
   $('e_next').disabled=true;
   try{
