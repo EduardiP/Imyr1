@@ -9,6 +9,7 @@ async function init(pool) {
   await pool.query(`ALTER TABLE konvertimet ADD COLUMN IF NOT EXISTS pauzuar BOOLEAN DEFAULT false`);
   await pool.query(`ALTER TABLE zonat ADD COLUMN IF NOT EXISTS pauzuar BOOLEAN DEFAULT false`);
   await pool.query(`ALTER TABLE snippetet ADD COLUMN IF NOT EXISTS pauzuar BOOLEAN DEFAULT false`);
+  await pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS pauzuar BOOLEAN DEFAULT false`);
 }
 
 module.exports = function (app, pool, iLoguar) {
@@ -47,6 +48,19 @@ module.exports = function (app, pool, iLoguar) {
         'UPDATE snippetet SET pauzuar=$1 WHERE id=$2 AND biznes_id=$3 RETURNING id, pauzuar',
         [pauzuar, req.params.id, req.biznesId]);
       if (!r.rows.length) return res.status(404).json({ error: 'Snippet-i s\'u gjet.' });
+      res.json({ ok: true, id: r.rows[0].id, pauzuar: r.rows[0].pauzuar });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ── PAUZO / RIAKTIVIZO nje REKLAME (promovim) ──
+  // Kur pauzuar: reklama s'merr pjese ne asnje ankand, POR nuk fshihet.
+  app.post('/api/reklamat/:id/pauza', iLoguar, async (req, res) => {
+    const pauzuar = !!(req.body && req.body.pauzuar);
+    try {
+      const r = await pool.query(
+        'UPDATE promovimet SET pauzuar=$1 WHERE id=$2 AND biznes_id=$3 RETURNING id, pauzuar',
+        [pauzuar, req.params.id, req.biznesId]);
+      if (!r.rows.length) return res.status(404).json({ error: 'Reklama s\'u gjet.' });
       res.json({ ok: true, id: r.rows[0].id, pauzuar: r.rows[0].pauzuar });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
