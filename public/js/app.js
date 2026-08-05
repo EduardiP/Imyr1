@@ -1328,7 +1328,7 @@ function kodiZones(emri){
 async function ngarkoZonat(){
   try{
     const r=await(await fetch('/api/zonat')).json();
-    _konvZona=(r.zonat||[]).map(z=>({id:z.id, emri:z.emri||'', track_active:z.track_active}));
+    _konvZona=(r.zonat||[]).map(z=>({id:z.id, emri:z.emri||'', track_active:z.track_active, pauzuar:z.pauzuar}));
   }catch(e){ _konvZona=[]; }
   if(!_konvZona.length) _konvZona=[{emri:'', id:null, track_active:false}];
   vizatoZonat();
