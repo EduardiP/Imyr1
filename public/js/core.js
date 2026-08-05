@@ -78,6 +78,20 @@ function njVeprim(v){
   else if(v==='lidhja') nav({v:'profile',nav:'lidhjaSnippet'});
   else nav({v:'profile'});
 }
+
+async function njAdminMbyll(id){
+  try{ await fetch('/api/njoftime-admin/'+id+'/ploteso',{method:'POST'}); }catch(e){}
+  try{ await ngarkoNjoftimet(); }catch(e){}
+}
+async function njAdminButon(id, veprim){
+  // Plotesohet vetem kur klikohet butoni
+  try{ await fetch('/api/njoftime-admin/'+id+'/ploteso',{method:'POST'}); }catch(e){}
+  const box=$('njBox'); if(box) box.classList.add('hide');
+  njVeprim(veprim);
+  try{ await ngarkoNjoftimet(); }catch(e){}
+}
+
+
 function renderNjBox(){
   const box=$('njBox'); if(!box) return;
   const nj=window.__njoftimet||[];
