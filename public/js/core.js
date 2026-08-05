@@ -84,10 +84,21 @@ function renderNjBox(){
   let h='<div class="njHead">Njoftime</div>';
   if(!nj.length){ h+='<div class="njEmpty">S\'ke njoftime të reja.</div>'; }
   else {
-    nj.slice(0,4).forEach((x,i)=>{
-      h+='<div class="njItem" onclick="njVeprim(\''+x.veprim+'\')">'+
-         '<div class="njT">'+esc(x.titull)+'</div>'+
-         '<div class="njX">'+esc(x.teksti)+'</div></div>';
+    nj.slice(0,5).forEach((x,i)=>{
+      if(x.nga_admin){
+        // Njoftim nga admin: mund te kete buton. Plotesimi: mbyll (pa buton) OSE kliko buton.
+        const btn = x.veprim
+          ? '<button class="njBtn" onclick="event.stopPropagation();njAdminButon('+x.id+',\''+x.veprim+'\')">'+esc(x.veprim_label||'Hap')+'</button>'
+          : '';
+        const oncl = x.veprim ? '' : 'onclick="njAdminMbyll('+x.id+')"';
+        h+='<div class="njItem njAdmin" '+oncl+'>'+
+           '<div class="njT">📢 '+esc(x.titull)+'</div>'+
+           '<div class="njX">'+esc(x.teksti)+'</div>'+btn+'</div>';
+      } else {
+        h+='<div class="njItem" onclick="njVeprim(\''+x.veprim+'\')">'+
+           '<div class="njT">'+esc(x.titull)+'</div>'+
+           '<div class="njX">'+esc(x.teksti)+'</div></div>';
+      }
     });
   }
   h+='<div class="njMore" onclick="hapNjoftimet()">Shiko më shumë →</div>';
