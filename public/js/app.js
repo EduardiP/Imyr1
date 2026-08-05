@@ -923,7 +923,7 @@ async function lidhHapesiren(){
 function mainReklamat(m, s){
   s = s || {};
   if(s.sub==='detail'){ return hapReklame(s.id, m); }
-  if(s.sub==='create'){ return krijoReklame(m); }
+  if(s.sub==='create'){ return krijoReklame(m, s); }
   m.innerHTML=
     '<h2 class="h">My Ads</h2>'+
     '<div id="rekShiritSnippet"></div>'+
