@@ -24,8 +24,18 @@ module.exports = function (app, pool, iLoguar, iAdmin) {
   // ── ADMIN: listo te gjitha bizneset (per te zgjedhur marresit) ──
   app.get('/api/admin/njoftime/bizneset', iAdmin, async (req, res) => {
     try {
-      const r = await pool.query('SELECT id, emri, tipi FROM bizneset WHERE emri IS NOT NULL ORDER BY emri ASC');
-      res.json(r.rows);
+      const r = await pool.query(`
+        SELECT b.id, b.emri, b.email, b.logo_url, b.tipi,
+          COALESCE((SELECT COUNT(*) FROM ngjarjet e WHERE e.reklamues_id=b.id AND e.lloji='view'),0)::int AS shfaqje_marre,
+          COALESCE((SELECT COUNT(*) FROM ngjarjet e WHERE e.biznes_id=b.id AND e.lloji='view'),0)::int AS shfaqje_dhene,
+          COALESCE((SELECT COUNT(*) FROM ngjarjet e WHERE e.reklamues_id=b.id AND e.lloji='konvertim'),0)::int AS konvertime
+        FROM bizneset b WHERE b.emri IS NOT NULL ORDER BY b.emri ASC`);
+      const pesha = require('./pesha');
+      res.json(r.rows.map(b => ({
+        id:b.id, emri:b.emri, email:b.email, logo_url:b.logo_url, tipi:b.tipi,
+        shfaqje_marre:b.shfaqje_marre, shfaqje_dhene:b.shfaqje_dhene,
+        pike_profili: Math.round(pesha.pikeProfili(b.tipi||'b2b', b.shfaqje_marre, b.konvertime))
+      })));
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
