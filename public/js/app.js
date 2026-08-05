@@ -407,10 +407,19 @@ async function mainNjoftimet(m){
     if(!nj.length){ el.innerHTML='<p class="small">S\'ke njoftime të reja.</p>'; return; }
     let h='';
     nj.forEach(x=>{
-      h+='<div class="njCard" onclick="njVeprim(\''+x.veprim+'\')">'+
-         '<div class="njT">'+esc(x.titull)+'</div>'+
-         '<div class="njX">'+esc(x.teksti)+'</div>'+
-         '<div class="njGo">Rregulloje →</div></div>';
+      if(x.nga_admin){
+        const btn = x.veprim
+          ? '<button class="njBtn" onclick="event.stopPropagation();njAdminButon('+x.id+',\''+x.veprim+'\')">'+esc(x.veprim_label||'Hap')+'</button>'
+          : '<div class="njGo" onclick="event.stopPropagation();njAdminMbyll('+x.id+')" style="cursor:pointer;">Shëno si të lexuar ✓</div>';
+        h+='<div class="njCard njAdmin">'+
+           '<div class="njT">📢 '+esc(x.titull)+'</div>'+
+           '<div class="njX">'+esc(x.teksti)+'</div>'+btn+'</div>';
+      } else {
+        h+='<div class="njCard" onclick="njVeprim(\''+x.veprim+'\')">'+
+           '<div class="njT">'+esc(x.titull)+'</div>'+
+           '<div class="njX">'+esc(x.teksti)+'</div>'+
+           '<div class="njGo">Rregulloje →</div></div>';
+      }
     });
     el.innerHTML=h;
   }catch(e){ $('njLista').innerHTML='<p class="small">Gabim.</p>'; }
