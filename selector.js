@@ -6,6 +6,7 @@
 // Probabiliteti = pesha ÷ shuma (weighted-random). Regjistron ankandin te `garat`.
 
 const pesha = require('./pesha');
+const pikeRekl = require('./pike-reklama');
 
 function tipetPerputhen(rTipi, hTipi) {
   if (rTipi === 'b2b2c' || hTipi === 'b2b2c') return true;
