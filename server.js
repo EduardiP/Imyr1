@@ -1223,6 +1223,7 @@ app.get('/ad', async (req, res) => {
     // Reklamat e para nga ky vizitor brenda vizites (frequency capping)
     const pareRaw = (req.query.pare || '').split(',').map(x => x.trim()).filter(Boolean);
     const rek = await selector.zgjidhReklame(pool, bizId, pareRaw, b.rows[0].snippet_id || null);
+    
     // konv_url = faqja e konvertimit E KETIJ biznesi (snippet-i e perdor per te njohur suksesin)
     res.json(Object.assign({ konv_url: b.rows[0].url_konvertimi || null, madhesia: b.rows[0].madhesia_desktop || '210x261', madhesia_mobile: b.rows[0].madhesia_mobile || '290x260', pozicioni: b.rows[0].pozicioni_reklames || 'qender' }, rek || {}));
   } catch (e) {
@@ -1399,6 +1400,8 @@ require('./suporti')(app, pool);
 
 // Kreative — krijimi i reklamave me AI (imazh/video/HTML5)
 require('./kreative')(app, pool, iLoguar);
+
+require('./reklama-media')(app, pool, iLoguar, { upload, s3, PutObjectCommand });
 
 // Lista e bizneseve (emer + email)
 app.get('/api/admin/bizneset', iAdmin, async (req, res) => {
