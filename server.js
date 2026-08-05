@@ -392,7 +392,7 @@ app.get('/api/njoftimet', iLoguar, async (req, res) => {
     }
     if (!kaReklame) {
       njf.push({ tip: 'reklama', titull: 'Reklamat e tua nuk po shfaqen',
-        teksti: "S'ke asnjë reklamë aktive. Krijo një të re ose riaktivizo një të pauzuar që të fillosh të shfaqesh te rrjeti.", veprim: 'creatives' });
+        teksti: "S'ke asnjë reklamë aktive. Krijo një të re ose riaktivizo një të pauzuar që të fillosh të shfaqesh te rrjeti.", veprim: 'reklamat' });
     }
     if (!kaKonvertimTeLidhur) {
       njf.push({ tip: 'konvertim', titull: 'Aktivizo gjurmimin e konvertimeve',
