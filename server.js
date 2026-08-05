@@ -378,7 +378,7 @@ app.get('/api/njoftimet', iLoguar, async (req, res) => {
     const p = await pool.query('SELECT COUNT(*)::int n FROM promovimet WHERE biznes_id=$1 AND aktiv=true', [req.biznesId]);
     const uLidhur = await pool.query('SELECT 1 FROM konvertimet WHERE biznes_id=$1 AND track_active=true LIMIT 1', [req.biznesId]);
     const zLidhur = await pool.query('SELECT 1 FROM zonat WHERE biznes_id=$1 AND track_active=true AND fshire=false LIMIT 1', [req.biznesId]);
-    const snLidhur = await pool.query('SELECT 1 FROM snippetet WHERE biznes_id=$1 AND snippet_active=true LIMIT 1', [req.biznesId]);
+    const snLidhur = await pool.query('SELECT 1 FROM snippetet WHERE biznes_id=$1 AND snippet_active=true AND pauzuar=false LIMIT 1', [req.biznesId]);
     const kaSnippetAktiv = snLidhur.rows.length > 0;
     const row = b.rows[0] || {};
     const ditet = Math.floor((Date.now() - new Date(row.created_at).getTime()) / 86400000);
