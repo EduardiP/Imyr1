@@ -64,6 +64,18 @@ module.exports = function (app, pool, iLoguar) {
       res.json({ ok: true, id: r.rows[0].id, pauzuar: r.rows[0].pauzuar });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
+
+  // ── FSHI nje REKLAME (te vetme) ──
+  // Fshirje e plote: reklama nuk shfaqet me dhe nuk kthehet.
+  app.delete('/api/reklamat/:id', iLoguar, async (req, res) => {
+    try {
+      const r = await pool.query(
+        'DELETE FROM promovimet WHERE id=$1 AND biznes_id=$2 RETURNING id',
+        [req.params.id, req.biznesId]);
+      if (!r.rows.length) return res.status(404).json({ error: 'Reklama s\'u gjet.' });
+      res.json({ ok: true, id: r.rows[0].id });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
 };
 
 module.exports.init = init;
