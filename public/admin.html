@@ -424,6 +424,7 @@
     const m=$('bizMain');
     if(curBizSub==='bizneset'){ loadBizList(m); return; }
     if(curBizSub==='r2'){ renderAnkandet(m); return; }
+    if(curBizSub==='r3'){ renderReklamat(m); return; }
     const lbl=(BIZ_SUB.find(s=>s.k===curBizSub)||{}).l||'';
     m.innerHTML='<h2 class="h">'+lbl+'</h2><p class="small" style="margin-top:8px;">Së shpejti.</p>';
   }
