@@ -1407,6 +1407,28 @@ function zonaKopjo(i){
     const m=$('k_msg'); if(m){ m.className='msg ok'; m.textContent='U kopjua.'; setTimeout(()=>{m.textContent='';},2000); }
   }).catch(()=>{});
 }
+
+async function konvPauza(i, aktiv){
+  const u=_konvUrls[i]; if(!u || !u.id) return;
+  const pauzuar = !aktiv;   // toggle ON = aktiv; OFF = pauzuar
+  try{
+    await fetch('/api/konvertimet/'+u.id+'/pauza',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pauzuar})});
+    u.pauzuar = pauzuar;
+    try{ await refreshProg(); }catch(e){}
+  }catch(e){}
+}
+async function zonaPauza(i, aktiv){
+  const z=_konvZona[i]; if(!z || !z.id) return;
+  const pauzuar = !aktiv;
+  try{
+    await fetch('/api/zonat/'+z.id+'/pauza',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pauzuar})});
+    z.pauzuar = pauzuar;
+    try{ await refreshProg(); }catch(e){}
+  }catch(e){}
+}
+
 async function zonaVerifiko(i){
   const z=_konvZona[i]; if(!z) return;
   // Ruaj zonen nese s'eshte ruajtur
