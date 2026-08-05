@@ -143,6 +143,18 @@ function ngarkoHtml5UI(){
     '<input id="up_link" placeholder="https://faqja-ime.com/oferta" inputmode="url">'+
     '<div class="small mut" style="margin-top:3px;">Ku çohet vizitori kur klikon reklamën (dhe ku matet konvertimi).</div>'+
     '<label style="margin-top:12px;">Përmbajtja</label>'+
+    '<div class="small mut" style="margin-top:3px;">Ku çohet vizitori kur klikon reklamën (dhe ku matet konvertimi).</div>'+
+    // PARALAJMERIMI I RI:
+    '<div class="html5Paralajmerim">'+
+      '<b>⚠️ Përpara se të ngarkosh:</b>'+
+      '<ul style="margin:8px 0 0;padding-left:18px;line-height:1.7;">'+
+        '<li>Madhësia e skedarit: <b>max 200 KB</b>.</li>'+
+        '<li>Përmasat: brenda <b>260×290px</b> (desktop) dhe <b>320×400px</b> (mobile).</li>'+
+        '<li>Bëje <b>fleksibël (responsiv)</b> — të përshtatet me hapësira të ndryshme pa u prishur. Përdor përqindje dhe clamp(), jo px fikse.</li>'+
+        '<li>Sa më i vogël dhe fleksibël, aq më shumë vende fiton.</li>'+
+      '</ul>'+
+    '</div>'+
+    '<label style="margin-top:12px;">Përmbajtja</label>'+
     '<div class="upDy">'+
       '<label class="upBtn upBtnFile">📁 Choose file'+
         '<input type="file" id="up_file" accept=".htm,.html,.zip" style="display:none;">'+
