@@ -60,55 +60,39 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
   const h = await pool.query('SELECT tipi FROM bizneset WHERE id=$1', [hostId]);
   const hTipi = h.rows[0] && h.rows[0].tipi;
 
+  // ANKANDI KRYESOR: kandidatet jane BIZNESE (jo cdo reklame). Nje biznes = nje kandidat.
   const kand = await pool.query(
     `SELECT DISTINCT b.id AS biznes_id, b.tipi
      FROM promovimet p JOIN bizneset b ON b.id = p.biznes_id
      WHERE p.biznes_id <> $1 AND p.aktiv = true AND COALESCE(p.pauzuar,false) = false
        AND (p.teksti IS NOT NULL OR p.imazh_url IS NOT NULL OR p.video_url IS NOT NULL OR p.html5_url IS NOT NULL)
        AND EXISTS (SELECT 1 FROM snippetet s WHERE s.biznes_id = b.id AND s.snippet_active = true AND COALESCE(s.pauzuar,false) = false)`, [hostId]);
+
   // Filtri i tipit
-  let kandidatet = kand.rows.filter(k => !(hTipi && k.tipi && !tipetPerputhen(k.tipi, hTipi)));
+  let biznesetKand = kand.rows.filter(k => !(hTipi && k.tipi && !tipetPerputhen(k.tipi, hTipi)));
+  if (!biznesetKand.length) return null;
 
-  // Frequency capping: hiq ato qe vizitori i ka pare tashme kete vizite.
-  // Nese pas heqjes s'mbetet asnje (i pa te gjitha), rifillo ciklin nga e para.
-  let cikelRi = false;
-  if (pare.length) {
-    const pareStr = pare.map(String);
-    const paFiltruar = kandidatet.filter(k => pareStr.indexOf(String(k.id)) === -1);
-    if (paFiltruar.length) {
-      kandidatet = paFiltruar;
-    } else {
-      cikelRi = true;   // i pa te gjitha → cikel i ri, snippet-i pastron listen
-    }
-  }
-
+  // Pesha per secilin BIZNES (ankandi kryesor)
   const lista = [];
-  for (const k of kandidatet) {
-
-    // 1. Vleresimi AI: reklamues→host
+  for (const k of biznesetKand) {
     let skorAI = 0;
     try {
       const s = await pool.query(
         'SELECT skori FROM perputhjet WHERE reklamues_id=$1 AND host_id=$2', [k.biznes_id, hostId]);
       if (s.rows.length && s.rows[0].skori != null) skorAI = s.rows[0].skori;
     } catch (e) {}
-
-    // 2. Piket e profilit
     const pikeProf = await pikeProfiliBiznesi(pool, k.biznes_id, k.tipi || hTipi);
-
-    // 3. Ndihma — vetem nese nder top-3 e reklamuesit; zbritet nga profili
     let nderTop3 = false;
     try { nderTop3 = await eshteNderTop3(pool, k.biznes_id, hostId); } catch (e) {}
-    const ndihBruto = nderTop3 ? pesha.ndihma(skorAI) : 0;      // para zbritjes
-    const ndih = pesha.ndihmaNeto(skorAI, pikeProf, nderTop3);  // pas zbritjes
-
-    const w = skorAI + pikeProf + ndih;   // pesha totale
+    const ndihBruto = nderTop3 ? pesha.ndihma(skorAI) : 0;
+    const ndih = pesha.ndihmaNeto(skorAI, pikeProf, nderTop3);
+    const w = skorAI + pikeProf + ndih;
     lista.push({ k, pesha: w, ai: skorAI, profili: pikeProf, ndihma: ndih, ndihmaBruto: ndihBruto });
   }
-
   if (!lista.length) return null;
 
-  // Weighted-random
+  // Weighted-random per biznesin fitues; capping: sprovojme te shmangim biznese
+  // qe s'kane asnje reklame te pashikuar kete vizite (kontrolli behet te ankandi i dyte).
   const shuma = lista.reduce((a, x) => a + x.pesha, 0);
   let fituesi;
   if (shuma <= 0) {
@@ -119,8 +103,53 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
     if (!fituesi) fituesi = lista[lista.length - 1];
   }
 
+  // ANKANDI I DYTE: zgjedh CILA reklame e biznesit fitues shfaqet.
+  // Provon te respektoje capping-un: perjashton reklamat e para kete vizite; nese te gjitha jane pare, cikel i ri.
+  let cikelRi = false;
+  const pareStr = pare.map(String);
+  const rekIds = await pikeRekl.reklamatEBiznesit(pool, fituesi.k.biznes_id);
+  if (!rekIds.length) return null;
+
+  let rekId;
+  const paPara = rekIds.filter(id => pareStr.indexOf(String(id)) === -1);
+  if (paPara.length) {
+    // Ka reklama te pashikuara → zgjedh mes tyre (ankandi i dyte vetem mbi keto)
+    rekId = await zgjedhNgaLista(pool, fituesi.k.biznes_id, paPara);
+  } else if (rekIds.length) {
+    // Te gjitha te pdisplay-uara kete vizite → cikel i ri, zgjedh mbi te gjitha
+    cikelRi = true;
+    rekId = await zgjedhNgaLista(pool, fituesi.k.biznes_id, rekIds);
+  }
+  if (!rekId) return null;
+
+  // Merr te dhenat e plota te reklames se zgjedhur
+  const rd = await pool.query(
+    'SELECT id, biznes_id, teksti, imazh_url, video_url, html5_url, link FROM promovimet WHERE id=$1', [rekId]);
+  if (!rd.rows.length) return null;
+
   regjistroAnkandin(pool, hostId, lista, fituesi, snippetId).catch(()=>{});
-  return Object.assign({}, fituesi.k, { cikel_ri: cikelRi });
+  return Object.assign({}, rd.rows[0], { cikel_ri: cikelRi });
+}
+
+// Ankandi i dyte i kufizuar ne nje nenlliste id-sh (per capping)
+async function zgjedhNgaLista(pool, bizId, idet) {
+  if (idet.length === 1) return idet[0];
+  const stat = await pikeRekl.statPerReklama(pool, idet);
+  // Faza fillestare: nese ndonje ka < 3 shikime, zgjedh me radhe ate me me pak
+  const SHF = 3;
+  const mePak = idet.map(id => ({ id, shikime: (stat[id] && stat[id].shikime) || 0 })).filter(x => x.shikime < SHF);
+  if (mePak.length) {
+    const min = Math.min.apply(null, mePak.map(x => x.shikime));
+    const kand = mePak.filter(x => x.shikime === min);
+    return kand[Math.floor(Math.random() * kand.length)].id;
+  }
+  // Weighted-random sipas pikeve
+  const l = idet.map(id => ({ id, pike: Math.max(0, pikeRekl.pikeReklame(stat[id])) }));
+  const sh = l.reduce((a, x) => a + x.pike, 0);
+  if (sh <= 0) return l[Math.floor(Math.random() * l.length)].id;
+  let p = Math.random() * sh;
+  for (const x of l) { p -= x.pike; if (p <= 0) return x.id; }
+  return l[l.length - 1].id;
 }
 
 async function regjistroAnkandin(pool, hostId, lista, fituesi, snippetId) {
