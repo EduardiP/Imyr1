@@ -1015,14 +1015,15 @@ async function loadReklamat(){
     const rows=await(await fetch('/api/reklamat')).json();
     window.__reklamat = rows;
     if(!rows.length){ el.innerHTML='<p class="small">Ende s\'ke krijuar reklama. Kliko “+ Create”.</p>'; return; }
-    let h='<div class="rektbl"><div class="rekhead"><span>Reklama</span><span>Shikime</span><span>Klikime</span><span>Konvertime</span><span></span></div>';
+    let h='<div class="rektbl"><div class="rekhead"><span>Reklama</span><span>Shikime</span><span>Klikime</span><span>Konvertime</span><span></span><span></span></div>';
     rows.forEach(r=>{
       const thumb = r.imazh_url ? '<span class="rekthumb"><img src="'+esc(r.imazh_url)+'"></span>' : '<span class="rekthumb">▦</span>';
       const tgl = '<label class="tgl" title="'+(r.pauzuar?'E pauzuar':'Aktive')+'" onclick="event.stopPropagation()"><input type="checkbox" '+(r.pauzuar?'':'checked')+' onchange="reklamaPauza('+r.id+',this.checked)"><span class="slider"></span></label>';
+      const xbtn = '<button class="btn" style="padding:4px 9px;" title="Fshi" onclick="event.stopPropagation();reklamaKonfirmoFshi('+r.id+',\''+esc((r.emri||'').replace(/\x27/g,""))+'\')">✕</button>';
       h+='<div class="rekrow" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'detail\',id:'+r.id+'})">'+
          '<span class="rekname">'+thumb+'<span class="nm">'+esc(r.emri)+'</span></span>'+
          '<span>'+r.shikime+'</span><span>'+r.klikime+'</span><span>'+r.konvertime+'</span>'+
-         '<span>'+tgl+'</span></div>';
+         '<span>'+tgl+'</span><span>'+xbtn+'</span></div>';
     });
     h+='</div>';
     el.innerHTML=h;
