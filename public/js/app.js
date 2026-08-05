@@ -977,10 +977,16 @@ async function hapReklame(id, m){
     '</div>'+
     '<p class="small">Variantet e krijuara (Image / Video / HTML5) do të shfaqen këtu — për të parë cili performon më mirë në testim.</p>';
 }
-function krijoReklame(m){
+function krijoReklame(m, s){
+  s = s || {};
+  // Nese eshte zgjedhur nje format, shfaq formen perkatese
+  if(s.format==='image'){ window.__adType='image'; return ngarkoImazhUI(); }
+  if(s.format==='video'){ window.__adType='video'; return ngarkoVideoUI(); }
+  if(s.format==='html5'){ window.__adType='html5'; return ngarkoHtml5UI(); }
+  // Ndryshe, shfaq zgjedhjen e tre formateve
   m.innerHTML=
     '<h2 class="h">Krijo reklamë</h2>'+
-    '<p class="small" style="margin:2px 0 16px;">Zgjidh llojin që do të ngarkosh. Ngarkimi vjen së shpejti.</p>'+
+    '<p class="small" style="margin:2px 0 16px;">Zgjidh llojin që do të ngarkosh.</p>'+
     '<div id="adTypeWrap2"></div>';
   adTypeUI($('adTypeWrap2'));
 }
