@@ -41,10 +41,105 @@ function renderAdTypes(){
     b.style.cssText='flex:1;min-width:120px;padding:16px 12px;border-radius:10px;cursor:pointer;background:#0e1116;color:var(--txt);'+
       'border:1px solid '+(sel?'#3b82f6':'var(--line)')+';'+(sel?'box-shadow:0 0 0 1px #3b82f6;':'');
     b.innerHTML='<div style="font-weight:600;font-size:15px;">'+t.l+'</div><div style="font-size:12px;color:var(--mut);margin-top:4px;">'+t.d+'</div>';
-    b.onclick=()=>{ window.__adType=t.k; if(t.k==='image'){ ngarkoImazhUI(); return; } renderAdTypes(); $('adTypeNote').textContent='Ngarkimi i "'+t.l+'" — së shpejti.'; };
+    b.onclick=()=>{ window.__adType=t.k;
+      if(t.k==='image'){ ngarkoImazhUI(); return; }
+      if(t.k==='video'){ ngarkoVideoUI(); return; }
+      if(t.k==='html5'){ ngarkoHtml5UI(); return; }
+      renderAdTypes(); $('adTypeNote').textContent='Ngarkimi i "'+t.l+'" — së shpejti.'; };
     g.appendChild(b);
   });
 }
+
+// funksioni i ngarkimit ngarkimit video 
+function ngarkoVideoUI(){
+  const m=$('mainPanel');
+  m.innerHTML=
+    '<h2 class="h">Shto video</h2>'+
+    '<p class="small" style="margin:2px 0 14px;">Video duhet të jetë në YouTube. Vendos linkun — reklama shfaqet si video, dhe klikimi çon te destinacioni.</p>'+
+    '<label>Titulli (opsional)</label><input id="up_title" placeholder="Emri i reklamës">'+
+    '<label style="margin-top:12px;">Linku i destinacionit *</label>'+
+    '<input id="up_link" placeholder="https://faqja-ime.com/oferta" inputmode="url">'+
+    '<div class="small mut" style="margin-top:3px;">Ku çohet vizitori kur klikon reklamën (dhe ku matet konvertimi).</div>'+
+    '<label style="margin-top:12px;">Linku i videos (YouTube) *</label>'+
+    '<input id="up_video" placeholder="https://www.youtube.com/watch?v=..." inputmode="url">'+
+    '<div class="small mut" style="margin-top:3px;">Kopjo linkun e videos nga YouTube.</div>'+
+    '<div id="up_prev" style="margin-top:12px;"></div>'+
+    '<button class="primary" id="up_btn" onclick="ngarkoVideo()" style="margin-top:14px;">Shto →</button>'+
+    '<div class="msg" id="up_msg"></div>';
+  $('up_video').addEventListener('blur', function(){
+    const id=nxjerrYtId(this.value);
+    if(id) $('up_prev').innerHTML='<img src="https://img.youtube.com/vi/'+id+'/hqdefault.jpg" style="max-width:260px;border-radius:10px;border:1px solid var(--line);">';
+  });
+}
+
+function nxjerrYtId(url){
+  const m=String(url||'').match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/);
+  return m ? m[1] : '';
+}
+
+async function ngarkoVideo(){
+  const titull=($('up_title')||{}).value||'';
+  const link=($('up_link')||{}).value||'';
+  const video=($('up_video')||{}).value||'';
+  const msg=$('up_msg');
+  if(!link.trim()){ if(msg){msg.className='msg err';msg.textContent='Vendos linkun e destinacionit.';} return; }
+  const ytId=nxjerrYtId(video);
+  if(!ytId){ if(msg){msg.className='msg err';msg.textContent='Linku i YouTube s\'është i vlefshëm.';} return; }
+  $('up_btn').disabled=true;
+  try{
+    const r=await (await fetch('/api/reklama/video',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({titull, link, youtube_id:ytId})})).json();
+    if(r.error){ if(msg){msg.className='msg err';msg.textContent=r.error;} $('up_btn').disabled=false; return; }
+    if(msg){msg.className='msg ok';msg.textContent='✓ Video u shtua.';}
+    setTimeout(()=>nav({v:'profile',nav:'reklamat'}),800);
+  }catch(e){ if(msg){msg.className='msg err';msg.textContent='Gabim: '+e.message;} $('up_btn').disabled=false; }
+}
+
+//funksioni per HTML5
+function ngarkoHtml5UI(){
+  const m=$('mainPanel');
+  m.innerHTML=
+    '<h2 class="h">Ngarko HTML5</h2>'+
+    '<p class="small" style="margin:2px 0 14px;">Ngarko një skedar .htm ose .zip (max 200 KB), ose merr nga Creative-t e mia.</p>'+
+    '<label>Titulli (opsional)</label><input id="up_title" placeholder="Emri i reklamës">'+
+    '<label style="margin-top:12px;">Linku i destinacionit *</label>'+
+    '<input id="up_link" placeholder="https://faqja-ime.com/oferta" inputmode="url">'+
+    '<div class="small mut" style="margin-top:3px;">Ku çohet vizitori kur klikon reklamën (dhe ku matet konvertimi).</div>'+
+    '<label style="margin-top:12px;">Përmbajtja</label>'+
+    '<div class="upDy">'+
+      '<label class="upBtn upBtnFile">📁 Choose file'+
+        '<input type="file" id="up_file" accept=".htm,.html,.zip" style="display:none;">'+
+      '</label>'+
+      '<button type="button" class="upBtn upBtnCreative" onclick="hapCreativeBallon()">✨ Nga Creative-t e mia</button>'+
+    '</div>'+
+    '<div id="up_prev" style="margin-top:12px;"></div>'+
+    '<input type="hidden" id="up_creative_id">'+
+    '<button class="primary" id="up_btn" onclick="ngarkoHtml5()" style="margin-top:14px;">Ngarko →</button>'+
+    '<div class="msg" id="up_msg"></div>';
+  $('up_file').addEventListener('change', function(){
+    const f=this.files[0]; if(!f) return;
+    if(f.size > 200*1024){
+      $('up_msg').className='msg err';
+      $('up_msg').textContent='Skedari është '+Math.round(f.size/1024)+' KB. Maksimumi është 200 KB.';
+      this.value=''; return;
+    }
+    $('up_msg').textContent='';
+    $('up_creative_id').value='';
+    $('up_prev').innerHTML='<div class="small">📄 '+f.name+' ('+Math.round(f.size/1024)+' KB)</div>';
+  });
+}
+
+async function ngarkoHtml5(){
+  const link=($('up_link')||{}).value||'';
+  const msg=$('up_msg');
+  if(!link.trim()){ if(msg){msg.className='msg err';msg.textContent='Vendos linkun e destinacionit.';} return; }
+  const f=($('up_file')||{}).files ? $('up_file').files[0] : null;
+  const crId=($('up_creative_id')||{}).value||'';
+  if(!f && !crId){ if(msg){msg.className='msg err';msg.textContent='Ngarko një skedar ose zgjidh nga Creative-t.';} return; }
+  if(msg){msg.className='msg ok';msg.textContent='✓ Gati për ngarkim (backend-i i html5 vjen së shpejti).';}
+  // TODO: dërgo skedarin te serveri (multipart) ose crId te /api/reklama/html5
+}
+
 
 async function hapCreativetPerReklame(){
   try{
