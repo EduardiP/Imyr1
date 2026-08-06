@@ -115,7 +115,35 @@
         plot += decoder.decode(r.value, {stream:true});
         if(bula){ bula.textContent = plot; chat.scrollTop = chat.scrollHeight; }
       }
-      hist.push({role:'assistant', content:plot});
+     // Zbulo shenjen [[KONTAKTO_EKIPIN]]: dergo shqetesimin te ekipi + fshihe nga teksti
+      if (plot.indexOf('[[KONTAKTO_EKIPIN]]') !== -1) {
+        var plotPastruar = plot.replace(/\s*\[\[KONTAKTO_EKIPIN\]\]\s*$/, '').trim();
+        if (bula) bula.textContent = plotPastruar;
+        // Merr shqetesimin: mesazhi i fundit i klientit para kesaj pergjigjeje
+        var shqetesimi = '';
+        for (var i = hist.length - 1; i >= 0; i--) {
+          if (hist[i].role === 'user') { shqetesimi = hist[i].content; break; }
+        }
+        // Dergo kerkesen te backend
+        try {
+          var rr = await fetch('/api/suport/kontakto-ekipin', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({shqetesimi: shqetesimi})
+          });
+          var jj = await rr.json();
+          if (jj.ok) {
+            chat.innerHTML += '<div class="suportMsg bot" style="background:#0e2a1a;border-left:3px solid #10b981;">✓ Kërkesa u dërgua te ekipi. Do të të kontaktojnë sa më shpejt.</div>';
+          } else {
+            chat.innerHTML += '<div class="suportMsg bot"><span class="err">Nuk u dërgua: ' + esc(jj.error || 'gabim') + '</span></div>';
+          }
+        } catch (e) {
+          chat.innerHTML += '<div class="suportMsg bot"><span class="err">Gabim në dërgim.</span></div>';
+        }
+        chat.scrollTop = chat.scrollHeight;
+        hist.push({role: 'assistant', content: plotPastruar});
+      } else {
+        hist.push({role: 'assistant', content: plot});
+      }
     }catch(e){
       if(bula) bula.innerHTML = '<span class="err">Gabim në lidhje.</span>';
     }
