@@ -674,7 +674,7 @@ app.post('/api/ngarko-logo', iLoguar, upload.single('file'), async (req, res) =>
 app.get('/api/reklamat', iLoguar, async (req, res) => {
   try {
     const r = await pool.query(
-      'SELECT id, titulli, teksti, imazh_url, pauzuar, created_at FROM promovimet WHERE biznes_id=$1 AND aktiv=true ORDER BY id DESC',
+      'SELECT id, titulli, teksti, imazh_url, video_url, html5_url, pauzuar, created_at FROM promovimet WHERE biznes_id=$1 AND aktiv=true ORDER BY id DESC',
       [req.biznesId]);
     const st = await pool.query(
       `SELECT reklama_id,
