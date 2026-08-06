@@ -330,6 +330,37 @@ app.get('/api/progres', iLoguar, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+app.get('/api/analytics/reklamat', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const ngaD=new Date(nga), deriD=new Date(deri);
+    if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+
+    const r = await pool.query(`
+      SELECT gs::date AS data,
+        COALESCE(v.n,0)::int  AS shfaqje,
+        COALESCE(sh.n,0)::int AS shikime,
+        COALESCE(k.n,0)::int  AS klikime,
+        COALESCE(kv.n,0)::int AS konvertime
+      FROM generate_series($2::date, $3::date, '1 day') AS gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='view' GROUP BY d) v ON v.d=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='shikim' GROUP BY d) sh ON sh.d=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='click' GROUP BY d) k ON k.d=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='konvertim' GROUP BY d) kv ON kv.d=gs
+      ORDER BY gs`, [req.biznesId, nga, deri]);
+
+    res.json({ nga, deri, rows: r.rows.map(x => ({
+      data: x.data.toISOString().slice(0,10),
+      shfaqje: x.shfaqje, shikime: x.shikime, klikime: x.klikime, konvertime: x.konvertime
+    })) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+
 // --- PROFILI I ZGJERUAR: pikët e profilit + analitika për çdo snippet ---
 app.get('/api/profili', iLoguar, async (req, res) => {
   try {
