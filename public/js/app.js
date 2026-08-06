@@ -427,16 +427,72 @@ async function mainNjoftimet(m){
 function mainDashboard(m){
   m.innerHTML='<h2 class="h">Statusi i llogarisë</h2>'+
     '<p class="small" style="margin:2px 0 18px;">Këto tregojnë çfarë është gati dhe çfarë jo. Kliko një rresht për ta plotësuar.</p>'+
-    '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">'+
+    '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;">'+
       '<div class="card" style="flex:0 0 auto;">'+
         '<div class="vstep" id="vstep" style="display:flex;flex-direction:column;"></div>'+
       '</div>'+
       '<div class="card" id="dashAnalitika" style="flex:1;min-width:280px;cursor:pointer;">'+
         '<p class="small">Po ngarkoj…</p>'+
       '</div>'+
+    '</div>'+
+    '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
+      '<div class="card" id="dashReklamat" style="flex:1.6;min-width:300px;cursor:pointer;">'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 10px;">Reklamat</h3>'+
+        '<div id="dashReklamatList"><p class="small">Po ngarkoj…</p></div>'+
+      '</div>'+
+      '<div class="card" id="dashSnippetet" style="flex:1;min-width:220px;cursor:pointer;">'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 10px;">Snippet-et e reklamave</h3>'+
+        '<div id="dashSnippetetList"><p class="small">Po ngarkoj…</p></div>'+
+      '</div>'+
     '</div>';
   renderDashStatus();
   ngarkoDashAnalitika();
+  ngarkoDashReklamat();
+  ngarkoDashSnippetet();
+}
+async function ngarkoDashReklamat(){
+  const card=$('dashReklamat'), el=$('dashReklamatList');
+  if(card) card.onclick=()=>nav({v:'profile', nav:'reklamat'});
+  if(!el) return;
+  try{
+    const rows=await(await fetch('/api/reklamat')).json();
+    if(!rows.length){ el.innerHTML='<p class="small mut">S\'ke ende reklama.</p>'; return; }
+    el.innerHTML = rows.map(r=>{
+      const thumb = r.imazh_url
+        ? '<img src="'+esc(r.imazh_url)+'" style="width:34px;height:34px;border-radius:8px;object-fit:cover;flex:0 0 auto;">'
+        : '<div style="width:34px;height:34px;border-radius:8px;background:#0e1116;border:1px solid var(--line);flex:0 0 auto;"></div>';
+      const kaContent = !!(r.imazh_url || r.video_url || r.html5_url || r.teksti);
+      let statusTxt, statusCol;
+      if(r.pauzuar){ statusTxt='Pezulluar'; statusCol='var(--mut)'; }
+      else if(kaContent){ statusTxt='Aktive'; statusCol='var(--good)'; }
+      else { statusTxt='Pa lidhur'; statusCol='var(--mut)'; }
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #20262f;">'+
+        thumb+
+        '<span style="flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(r.emri)+'</span>'+
+        '<span style="font-size:12px;color:'+statusCol+';flex:0 0 auto;">'+statusTxt+'</span>'+
+      '</div>';
+    }).join('');
+  }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; }
+}
+async function ngarkoDashSnippetet(){
+  const card=$('dashSnippetet'), el=$('dashSnippetetList');
+  if(card) card.onclick=()=>nav({v:'profile', nav:'snippetet'});
+  if(!el) return;
+  try{
+    const r=await(await fetch('/api/snippetet')).json();
+    const rows=r.snippetet||[];
+    if(!rows.length){ el.innerHTML='<p class="small mut">S\'ke ende hapësira.</p>'; return; }
+    el.innerHTML = rows.map(s=>{
+      let statusTxt, statusCol;
+      if(s.pauzuar){ statusTxt='Pezulluar'; statusCol='var(--mut)'; }
+      else if(s.snippet_active){ statusTxt='Aktive'; statusCol='var(--good)'; }
+      else { statusTxt='Palidhur'; statusCol='var(--mut)'; }
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #20262f;">'+
+        '<span style="flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(s.emri||('Hapësira '+s.id))+'</span>'+
+        '<span style="font-size:12px;color:'+statusCol+';flex:0 0 auto;">'+statusTxt+'</span>'+
+      '</div>';
+    }).join('');
+  }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; }
 }
 async function ngarkoDashAnalitika(){
   const card=$('dashAnalitika'); if(!card) return;
