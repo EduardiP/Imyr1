@@ -12,7 +12,7 @@
 //   const rekId = await pr.zgjedhReklamen(pool, bizId);
 
 const DITE = 30;            // dritarja e skadimit
-const KLIKIM_PIKE = 5;
+const KLIKIM_PIKE = 300;
 const KONVERTIM_PIKE = 2;
 const ZBRITJE_EMERUES = 14; // cdo shikim pa klikim zbret 1/14
 const BAZA = 1000;
