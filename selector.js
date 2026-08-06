@@ -104,22 +104,12 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
   }
 
   // ANKANDI I DYTE: zgjedh CILA reklame e biznesit fitues shfaqet.
-  // Provon te respektoje capping-un: perjashton reklamat e para kete vizite; nese te gjitha jane pare, cikel i ri.
-  let cikelRi = false;
-  const pareStr = pare.map(String);
+  // Weighted-random I PASTER sipas pikeve te reklamave (PA frequency capping).
+  // Capping-u ben pjese te ankandi kryesor (mbi bizneset), jo ketu.
+  // Ndaj reklama me pike te larta shfaqet me shpesh, sic duhet.
   const rekIds = await pikeRekl.reklamatEBiznesit(pool, fituesi.k.biznes_id);
   if (!rekIds.length) return null;
-
-  let rekId;
-  const paPara = rekIds.filter(id => pareStr.indexOf(String(id)) === -1);
-  if (paPara.length) {
-    // Ka reklama te pashikuara → zgjedh mes tyre (ankandi i dyte vetem mbi keto)
-    rekId = await zgjedhNgaLista(pool, fituesi.k.biznes_id, paPara);
-  } else if (rekIds.length) {
-    // Te gjitha te pdisplay-uara kete vizite → cikel i ri, zgjedh mbi te gjitha
-    cikelRi = true;
-    rekId = await zgjedhNgaLista(pool, fituesi.k.biznes_id, rekIds);
-  }
+  const rekId = await zgjedhNgaLista(pool, fituesi.k.biznes_id, rekIds);
   if (!rekId) return null;
 
   // Merr te dhenat e plota te reklames se zgjedhur
@@ -128,7 +118,7 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
   if (!rd.rows.length) return null;
 
   regjistroAnkandin(pool, hostId, lista, fituesi, snippetId).catch(()=>{});
-  return Object.assign({}, rd.rows[0], { cikel_ri: cikelRi });
+  return Object.assign({}, rd.rows[0], { cikel_ri: false });
 }
 
 // Ankandi i dyte i kufizuar ne nje nenlliste id-sh (per capping)
