@@ -11,12 +11,13 @@
 // Server.js/selector.js e therret: const pr = require('./pike-reklama');
 //   const rekId = await pr.zgjedhReklamen(pool, bizId);
 
-const DITE = 30;            // dritarja e skadimit
-const KLIKIM_PIKE = 300;
-const KONVERTIM_PIKE = 2;
-const ZBRITJE_EMERUES = 14; // cdo shikim pa klikim zbret 1/14
+const DITE = 30;            // dritarja e skadimit (te dhenat fshihen pas 30 ditesh)
+const KLIKIM_PIKE = 90;     // 1 klikim = +90 pike
+const KONVERTIM_PIKE = 25;  // 1 konvertim = +25 pike
+const ZBRITJE_A = 0.6746;   // zbritja jo-lineare: A × (shikime_pa_klikim)^B
+const ZBRITJE_B = 1.9;
 const BAZA = 1000;
-const SHIKIME_FAZA = 3;     // secila reklame merr deri 3 shikime para weighted-random
+const SHIKIME_FAZA = 5;     // secila reklame merr deri 5 shikime para weighted-random
 
 // Merr reklamat aktive (jo te pauzuara) te nje biznesi
 async function reklamatEBiznesit(pool, bizId) {
@@ -52,7 +53,9 @@ function pikeReklame(st) {
   const klikime    = (st && st.klikime)    || 0;
   const konvertime = (st && st.konvertime) || 0;
   const paKlikim = Math.max(0, shikime - klikime);
-  return BAZA + (klikime * KLIKIM_PIKE) + (konvertime * KONVERTIM_PIKE) - (paKlikim / ZBRITJE_EMERUES);
+  // Zbritja jo-lineare: A × (shikime_pa_klikim)^B. Kurre s'kalon ne shtim (gjithmone >=0).
+  const zbritje = ZBRITJE_A * Math.pow(paKlikim, ZBRITJE_B);
+  return BAZA + (klikime * KLIKIM_PIKE) + (konvertime * KONVERTIM_PIKE) - zbritje;
 }
 
 // Zgjedh nje reklame te biznesit. Kthen id-ne e reklames, ose null nese s'ka.
