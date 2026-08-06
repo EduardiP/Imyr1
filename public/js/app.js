@@ -1267,7 +1267,7 @@ function mainSuport(m){
     '</div>';
 }
 function mainAnalytics(m){
-  _anaSelectedAds=[]; _anaDropdownOpen=false;
+  _anaSelectedAd=null; _anaDropdownOpen=false;
   m.innerHTML='<h2 class="h">Analytics</h2>'+
     '<p class="small" style="margin:2px 0 16px;">Ecuria e reklamave të tua me ditë.</p>'+
     '<div class="card" style="margin-bottom:16px;">'+
@@ -1305,7 +1305,7 @@ document.addEventListener('click', function(){
   const dd=$('anaRekDropdown');
   if(dd && _anaDropdownOpen){ dd.classList.add('hide'); _anaDropdownOpen=false; }
 });
-var _anaSelectedAds=[], _anaRekAll=[], _anaDropdownOpen=false;
+var _anaSelectedAd=null, _anaRekAll=[], _anaDropdownOpen=false;
 var ANA_METRIKA=[
   {k:'shfaqje',    l:'Shfaqje',    c:'#f0883e'},
   {k:'shikime',    l:'Shikime',    c:'#4a9eff'},
@@ -1316,7 +1316,7 @@ var _anaMetrikaAktive={shfaqje:true,shikime:true,klikime:true,konvertime:true};
 function anaStilBtnMetrike(btn,x){
   const on=_anaMetrikaAktive[x.k];
   btn.style.cssText = on
-    ? 'padding:7px 14px;border-radius:20px;border:1px solid '+x.c+';background:'+x.c+'22;color:'+x.c+';font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;'
+    ? 'padding:7px 14px;border-radius:20px;border:1px solid var(--acc);background:rgba(74,158,255,.15);color:var(--acc);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;'
     : 'padding:7px 14px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:13px;cursor:pointer;font-family:inherit;';
 }
 function anaRenderMetrika(){
@@ -1349,8 +1349,8 @@ function anaRekRresht(innerHTML, checked, bold, onClickFn){
   const lab=document.createElement('label');
   lab.style.cssText='display:flex;align-items:center;gap:8px;padding:7px 8px;cursor:pointer;border-radius:6px;'+(bold?'font-weight:600;':'');
   const chk=document.createElement('input');
-  chk.type='checkbox'; chk.checked=checked;
-  chk.style.cssText='pointer-events:none;width:16px;height:16px;min-width:16px;padding:0;margin:0;flex:0 0 auto;background:none;border-radius:4px;accent-color:var(--acc);';
+  chk.type='radio'; chk.name='anaRekRadio'; chk.checked=checked;
+  chk.style.cssText='pointer-events:none;width:16px;height:16px;min-width:16px;padding:0;margin:0;flex:0 0 auto;background:none;border-radius:50%;accent-color:var(--acc);';
   lab.appendChild(chk);
   if(innerHTML){ const t=document.createElement('span'); t.innerHTML=innerHTML; t.style.cssText='display:flex;align-items:center;gap:8px;flex:1;min-width:0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'; lab.appendChild(t); }
   lab.addEventListener('click', function(e){ e.stopPropagation(); onClickFn(); });
@@ -1359,25 +1359,21 @@ function anaRekRresht(innerHTML, checked, bold, onClickFn){
 function anaRenderRekDropdown(){
   const dd=$('anaRekDropdown'); if(!dd) return;
   dd.innerHTML='';
-  dd.appendChild(anaRekRresht('Të gjitha', _anaSelectedAds.length===0, true, anaZgjidhTeGjitha));
+  dd.appendChild(anaRekRresht('Të gjitha', !_anaSelectedAd, true, anaZgjidhTeGjitha));
   if(!_anaRekAll.length){ const p=document.createElement('p'); p.className='small mut'; p.style.padding='6px'; p.textContent="S'ke ende reklama."; dd.appendChild(p); anaUpdateRekBtnLabel(); return; }
   const hr=document.createElement('div'); hr.style.cssText='height:1px;background:var(--line);margin:4px 2px;'; dd.appendChild(hr);
   _anaRekAll.forEach(r=>{
     const thumb=anaRekThumbHTML(r);
     const html=thumb+'<span style="overflow:hidden;text-overflow:ellipsis;">'+esc(r.emri||('#'+r.id))+'</span>';
-    dd.appendChild(anaRekRresht(html, _anaSelectedAds.indexOf(r.id)!==-1, false, function(){ anaToggleRekItem(r.id); }));
+    dd.appendChild(anaRekRresht(html, _anaSelectedAd===r.id, false, function(){ anaZgjidhReklam(r.id); }));
   });
   anaUpdateRekBtnLabel();
 }
-function anaZgjidhTeGjitha(){ _anaSelectedAds=[]; anaRenderRekDropdown(); ngarkoAnalitika(); }
-function anaToggleRekItem(id){
-  const i=_anaSelectedAds.indexOf(id);
-  if(i===-1) _anaSelectedAds.push(id); else _anaSelectedAds.splice(i,1);
-  anaRenderRekDropdown(); ngarkoAnalitika();
-}
+function anaZgjidhTeGjitha(){ _anaSelectedAd=null; anaRenderRekDropdown(); ngarkoAnalitika(); }
+function anaZgjidhReklam(id){ _anaSelectedAd=id; anaRenderRekDropdown(); ngarkoAnalitika(); }
 function anaUpdateRekBtnLabel(){
   const el=$('anaRekBtnCount'); if(!el) return;
-  el.textContent = _anaSelectedAds.length ? '('+_anaSelectedAds.length+')' : '';
+  el.textContent = _anaSelectedAd ? '(1)' : '';
 }
 function anaFmt(d){ return d.toISOString().slice(0,10); }
 function anaPreset(dite){
@@ -1390,7 +1386,7 @@ async function ngarkoAnalitika(){
   const ngaEl=$('anaNga'), deriEl=$('anaDeri');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let url='/api/analytics/reklamat?nga='+ngaEl.value+'&deri='+deriEl.value;
-  if(_anaSelectedAds.length) url+='&reklama_ids='+_anaSelectedAds.join(',');
+  if(_anaSelectedAd) url+='&reklama_ids='+_anaSelectedAd;
   let d;
   try{ d=await(await fetch(url)).json(); }catch(e){ return; }
   const rows=d.rows||[];
@@ -1405,7 +1401,7 @@ async function ngarkoAnalitika(){
   _anaChart=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
       scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}},
-      plugins:{legend:{labels:{color:'#e6edf3'}}}}
+      plugins:{legend:{labels:{color:'#e6edf3'}, onClick:function(){}}}}
   });
 }
 function renderVStep(){
