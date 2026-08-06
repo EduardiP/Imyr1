@@ -1282,53 +1282,91 @@ function mainAnalytics(m){
       '</div>'+
       '<div style="display:flex;justify-content:flex-end;margin-top:10px;">'+
         '<div style="position:relative;">'+
-          '<button type="button" id="anaRekBtn" class="btn" style="min-width:150px;" onclick="anaToggleRekDropdown(event)">Reklamat <span id="anaRekBtnCount"></span> ▾</button>'+
-          '<div id="anaRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:220px;max-height:260px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);">'+
-            '<p class="small" style="padding:6px;">Po ngarkoj…</p>'+
-          '</div>'+
+          '<button type="button" id="anaRekBtn" class="btn" style="min-width:150px;">Reklamat <span id="anaRekBtnCount"></span> ▾</button>'+
+          '<div id="anaRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:240px;max-height:280px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
         '</div>'+
       '</div>'+
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">'+
-        '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:6px 10px;border:1px solid var(--line);border-radius:8px;"><input type="checkbox" id="anaShfaqje" checked onchange="ngarkoAnalitika()">Shfaqje</label>'+
-        '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:6px 10px;border:1px solid var(--line);border-radius:8px;"><input type="checkbox" id="anaShikime" checked onchange="ngarkoAnalitika()">Shikime</label>'+
-        '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:6px 10px;border:1px solid var(--line);border-radius:8px;"><input type="checkbox" id="anaKlikime" checked onchange="ngarkoAnalitika()">Klikime</label>'+
-        '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:6px 10px;border:1px solid var(--line);border-radius:8px;"><input type="checkbox" id="anaKonvertime" checked onchange="ngarkoAnalitika()">Konvertime</label>'+
-      '</div>'+
+      '<div id="anaMetrikaRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;"></div>'+
     '</div>'+
     '<div class="card"><canvas id="anaCanvas" height="90"></canvas></div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
   $('anaNga').value=anaFmt(nga); $('anaDeri').value=anaFmt(sot);
+  $('anaRekBtn').addEventListener('click', function(e){
+    e.stopPropagation();
+    const dd=$('anaRekDropdown'); if(!dd) return;
+    _anaDropdownOpen=!_anaDropdownOpen;
+    dd.classList.toggle('hide', !_anaDropdownOpen);
+  });
+  anaRenderMetrika();
   ngarkoAnaReklamatLista();
   ngarkoAnalitika();
-}
-var _anaSelectedAds=[], _anaRekAll=[], _anaDropdownOpen=false;
-function anaToggleRekDropdown(e){
-  e.stopPropagation();
-  const dd=$('anaRekDropdown'); if(!dd) return;
-  _anaDropdownOpen=!_anaDropdownOpen;
-  dd.classList.toggle('hide', !_anaDropdownOpen);
 }
 document.addEventListener('click', function(){
   const dd=$('anaRekDropdown');
   if(dd && _anaDropdownOpen){ dd.classList.add('hide'); _anaDropdownOpen=false; }
 });
+var _anaSelectedAds=[], _anaRekAll=[], _anaDropdownOpen=false;
+var ANA_METRIKA=[
+  {k:'shfaqje',    l:'Shfaqje',    c:'#f0883e'},
+  {k:'shikime',    l:'Shikime',    c:'#4a9eff'},
+  {k:'klikime',    l:'Klikime',    c:'#3fb950'},
+  {k:'konvertime', l:'Konvertime', c:'#f85149'}
+];
+var _anaMetrikaAktive={shfaqje:true,shikime:true,klikime:true,konvertime:true};
+function anaStilBtnMetrike(btn,x){
+  const on=_anaMetrikaAktive[x.k];
+  btn.style.cssText = on
+    ? 'padding:7px 14px;border-radius:20px;border:1px solid '+x.c+';background:'+x.c+'22;color:'+x.c+';font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;'
+    : 'padding:7px 14px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:13px;cursor:pointer;font-family:inherit;';
+}
+function anaRenderMetrika(){
+  const el=$('anaMetrikaRow'); if(!el) return;
+  el.innerHTML='';
+  ANA_METRIKA.forEach(x=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.textContent=x.l;
+    anaStilBtnMetrike(btn,x);
+    btn.addEventListener('click', function(){
+      _anaMetrikaAktive[x.k]=!_anaMetrikaAktive[x.k];
+      anaStilBtnMetrike(btn,x);
+      ngarkoAnalitika();
+    });
+    el.appendChild(btn);
+  });
+}
+function anaRekThumbHTML(r){
+  const wrap='width:26px;height:26px;border-radius:6px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#0e1116;border:1px solid var(--line);';
+  if(r.imazh_url) return '<div style="'+wrap+'"><img src="'+esc(r.imazh_url)+'" style="width:100%;height:100%;object-fit:cover;"></div>';
+  if(r.video_url) return '<div style="'+wrap+'font-size:12px;color:var(--mut);">▶</div>';
+  if(r.html5_url) return '<div style="'+wrap+'font-size:10px;color:var(--mut);">&lt;/&gt;</div>';
+  return '<div style="'+wrap+'"></div>';
+}
 async function ngarkoAnaReklamatLista(){
   try{ _anaRekAll=await(await fetch('/api/reklamat')).json(); }catch(e){ _anaRekAll=[]; }
   anaRenderRekDropdown();
 }
+function anaRekRresht(innerHTML, checked, bold, onClickFn){
+  const lab=document.createElement('label');
+  lab.style.cssText='display:flex;align-items:center;gap:8px;padding:7px 8px;cursor:pointer;border-radius:6px;'+(bold?'font-weight:600;':'');
+  const chk=document.createElement('input');
+  chk.type='checkbox'; chk.checked=checked;
+  chk.style.cssText='pointer-events:none;width:16px;height:16px;min-width:16px;padding:0;margin:0;flex:0 0 auto;background:none;border-radius:4px;accent-color:var(--acc);';
+  lab.appendChild(chk);
+  if(innerHTML){ const t=document.createElement('span'); t.innerHTML=innerHTML; t.style.cssText='display:flex;align-items:center;gap:8px;flex:1;min-width:0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'; lab.appendChild(t); }
+  lab.addEventListener('click', function(e){ e.stopPropagation(); onClickFn(); });
+  return lab;
+}
 function anaRenderRekDropdown(){
   const dd=$('anaRekDropdown'); if(!dd) return;
-  if(!_anaRekAll.length){ dd.innerHTML='<p class="small mut" style="padding:6px;">S\'ke ende reklama.</p>'; anaUpdateRekBtnLabel(); return; }
-  const teGjithaChecked = _anaSelectedAds.length===0;
-  let h='<label style="display:flex;align-items:center;gap:8px;padding:7px 8px;cursor:pointer;border-radius:6px;font-weight:600;" onclick="event.stopPropagation();anaZgjidhTeGjitha()">'+
-    '<input type="checkbox" style="pointer-events:none;" '+(teGjithaChecked?'checked':'')+'>Të gjitha</label>'+
-    '<div style="height:1px;background:var(--line);margin:4px 2px;"></div>';
-  h += _anaRekAll.map(r=>{
-    const checked=_anaSelectedAds.indexOf(r.id)!==-1;
-    return '<label style="display:flex;align-items:center;gap:8px;padding:7px 8px;cursor:pointer;border-radius:6px;" onclick="event.stopPropagation();anaToggleRekItem('+r.id+')">'+
-      '<input type="checkbox" style="pointer-events:none;" '+(checked?'checked':'')+'>'+esc(r.emri)+'</label>';
-  }).join('');
-  dd.innerHTML=h;
+  dd.innerHTML='';
+  dd.appendChild(anaRekRresht('Të gjitha', _anaSelectedAds.length===0, true, anaZgjidhTeGjitha));
+  if(!_anaRekAll.length){ const p=document.createElement('p'); p.className='small mut'; p.style.padding='6px'; p.textContent="S'ke ende reklama."; dd.appendChild(p); anaUpdateRekBtnLabel(); return; }
+  const hr=document.createElement('div'); hr.style.cssText='height:1px;background:var(--line);margin:4px 2px;'; dd.appendChild(hr);
+  _anaRekAll.forEach(r=>{
+    const thumb=anaRekThumbHTML(r);
+    const html=thumb+'<span style="overflow:hidden;text-overflow:ellipsis;">'+esc(r.emri||('#'+r.id))+'</span>';
+    dd.appendChild(anaRekRresht(html, _anaSelectedAds.indexOf(r.id)!==-1, false, function(){ anaToggleRekItem(r.id); }));
+  });
   anaUpdateRekBtnLabel();
 }
 function anaZgjidhTeGjitha(){ _anaSelectedAds=[]; anaRenderRekDropdown(); ngarkoAnalitika(); }
@@ -1358,10 +1396,9 @@ async function ngarkoAnalitika(){
   const rows=d.rows||[];
   const labels=rows.map(r=>r.data);
   const datasets=[];
-  if($('anaShfaqje').checked)    datasets.push({label:'Shfaqje',    data:rows.map(r=>r.shfaqje),    borderColor:'#f0883e', backgroundColor:'transparent', tension:.25, borderWidth:2});
-  if($('anaShikime').checked)    datasets.push({label:'Shikime',    data:rows.map(r=>r.shikime),    borderColor:'#4a9eff', backgroundColor:'transparent', tension:.25, borderWidth:2});
-  if($('anaKlikime').checked)    datasets.push({label:'Klikime',    data:rows.map(r=>r.klikime),    borderColor:'#3fb950', backgroundColor:'transparent', tension:.25, borderWidth:2});
-  if($('anaKonvertime').checked) datasets.push({label:'Konvertime', data:rows.map(r=>r.konvertime), borderColor:'#f85149', backgroundColor:'transparent', tension:.25, borderWidth:2});
+  ANA_METRIKA.forEach(x=>{
+    if(_anaMetrikaAktive[x.k]) datasets.push({label:x.l, data:rows.map(r=>r[x.k]), borderColor:x.c, backgroundColor:'transparent', tension:.25, borderWidth:2});
+  });
   const canvas=$('anaCanvas'); if(!canvas||typeof Chart==='undefined') return;
   const ctx=canvas.getContext('2d');
   if(_anaChart) _anaChart.destroy();
