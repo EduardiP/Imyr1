@@ -496,13 +496,14 @@
       const el=$('rekLista');
       if(!a.length){ el.innerHTML='<p class="small">S\'ka reklama.</p>'; return; }
       el.innerHTML='<div class="rekTbl">'+
-        '<div class="rekThead"><span>Reklama</span><span>Formati</span><span>Pikët</span><span>Shikime</span><span>Konvertime</span></div>'+
+        '<div class="rekThead"><span>Reklama</span><span>Formati</span><span>Pikët</span><span>Shikime</span><span>Klikime</span><span>Konvertime</span></div>'+
         a.map(r=>
           '<div class="rekTr" onclick="alert(\'Detajet vijnë së shpejti.\')">'+
             '<span class="njBizNm">'+esc(r.emri)+'</span>'+
             '<span class="rekTip2">'+esc(r.lloji)+'</span>'+
             '<span>'+r.pike+'</span>'+
             '<span>'+r.shikime+'</span>'+
+            '<span>'+(r.klikime||0)+'</span>'+
             '<span>'+r.konvertime+'</span>'+
           '</div>').join('')+'</div>';
     }catch(e){ $('rekLista').innerHTML='<p class="small">Gabim.</p>'; }
