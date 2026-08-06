@@ -339,6 +339,9 @@ app.get('/api/analytics/reklamat', iLoguar, async (req, res) => {
     if (nga > deri) { const t=nga; nga=deri; deri=t; }
     const ngaD=new Date(nga), deriD=new Date(deri);
     if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+    const rekIds = (req.query.reklama_ids || '').split(',').map(x => parseInt(x, 10)).filter(x => !isNaN(x));
+    const filtroRek = rekIds.length ? ' AND reklama_id = ANY($4::int[])' : '';
+    const params = rekIds.length ? [req.biznesId, nga, deri, rekIds] : [req.biznesId, nga, deri];
 
     const r = await pool.query(`
       SELECT gs::date AS data,
@@ -347,12 +350,11 @@ app.get('/api/analytics/reklamat', iLoguar, async (req, res) => {
         COALESCE(k.n,0)::int  AS klikime,
         COALESCE(kv.n,0)::int AS konvertime
       FROM generate_series($2::date, $3::date, '1 day') AS gs
-      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='view' GROUP BY d) v ON v.d=gs
-      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='shikim' GROUP BY d) sh ON sh.d=gs
-      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='click' GROUP BY d) k ON k.d=gs
-      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='konvertim' GROUP BY d) kv ON kv.d=gs
-      ORDER BY gs`, [req.biznesId, nga, deri]);
-
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='view'${filtroRek} GROUP BY d) v ON v.d=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='shikim'${filtroRek} GROUP BY d) sh ON sh.d=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='click'${filtroRek} GROUP BY d) k ON k.d=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='konvertim'${filtroRek} GROUP BY d) kv ON kv.d=gs
+      ORDER BY gs`, params);
     res.json({ nga, deri, rows: r.rows.map(x => ({
       data: x.data.toISOString().slice(0,10),
       shfaqje: x.shfaqje, shikime: x.shikime, klikime: x.klikime, konvertime: x.konvertime
