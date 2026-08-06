@@ -99,6 +99,7 @@ async function reklamatMePike(pool, bizId) {
       emri: p.titulli || (p.teksti ? String(p.teksti).slice(0, 40) : 'Reklamë'),
       lloji,
       shikime: st.shikime || 0,
+      klikime: st.klikime || 0,
       konvertime: st.konvertime || 0,
       pike: Math.round(Math.max(0, pikeReklame(st)))
     };
