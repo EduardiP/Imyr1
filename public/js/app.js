@@ -427,8 +427,31 @@ async function mainNjoftimet(m){
 function mainDashboard(m){
   m.innerHTML='<h2 class="h">Statusi i llogarisë</h2>'+
     '<p class="small" style="margin:2px 0 18px;">Këto tregojnë çfarë është gati dhe çfarë jo. Kliko një rresht për ta plotësuar.</p>'+
-    '<div class="vstep" id="vstep" style="max-width:520px;"></div>';
+    '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">'+
+      '<div class="card" style="flex:1;min-width:280px;max-width:520px;">'+
+        '<div class="vstep" id="vstep"></div>'+
+      '</div>'+
+      '<div class="card" id="dashAnalitika" style="flex:1;min-width:260px;cursor:pointer;">'+
+        '<p class="small">Po ngarkoj…</p>'+
+      '</div>'+
+    '</div>';
   renderDashStatus();
+  ngarkoDashAnalitika();
+}
+async function ngarkoDashAnalitika(){
+  const el=$('dashAnalitika'); if(!el) return;
+  el.onclick=()=>nav({v:'profile', nav:'profili'});
+  try{
+    const d=await(await fetch('/api/profili')).json();
+    const mm = d.marra || {shfaqje:0,klikime:0,konvertime:0};
+    el.innerHTML=
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;">'+
+        '<div class="miniStat"><div class="mv">'+(d.pike_profili||0)+'</div><div class="small">pikë profili</div></div>'+
+        '<div class="miniStat"><div class="mv">'+(mm.konvertime||0)+'</div><div class="small">konvertime</div></div>'+
+        '<div class="miniStat"><div class="mv">'+(mm.shfaqje||0)+'</div><div class="small">shfaqje</div></div>'+
+        '<div class="miniStat"><div class="mv">'+(mm.klikime||0)+'</div><div class="small">klikime</div></div>'+
+      '</div>';
+  }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; }
 }
 function renderDashStatus(){
   const el=$('vstep'); if(!el) return; el.innerHTML='';
