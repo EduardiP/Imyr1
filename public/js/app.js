@@ -1267,6 +1267,7 @@ function mainSuport(m){
     '</div>';
 }
 function mainAnalytics(m){
+  _anaSelectedAds=[];
   m.innerHTML='<h2 class="h">Analytics</h2>'+
     '<p class="small" style="margin:2px 0 16px;">Ecuria e reklamave të tua me ditë.</p>'+
     '<div class="card" style="margin-bottom:16px;">'+
@@ -1279,6 +1280,10 @@ function mainAnalytics(m){
         '<span class="small">deri</span>'+
         '<input type="date" id="anaDeri" style="width:auto;" onchange="ngarkoAnalitika()">'+
       '</div>'+
+      '<div style="margin-bottom:14px;">'+
+        '<div class="small mut" style="margin-bottom:6px;">Filtro sipas reklamës (lëre bosh për të gjitha):</div>'+
+        '<div id="anaRekList" style="display:flex;gap:8px;flex-wrap:wrap;"><p class="small">Po ngarkoj…</p></div>'+
+      '</div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
         '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:6px 10px;border:1px solid var(--line);border-radius:8px;"><input type="checkbox" id="anaShfaqje" checked onchange="ngarkoAnalitika()">Shfaqje</label>'+
         '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:6px 10px;border:1px solid var(--line);border-radius:8px;"><input type="checkbox" id="anaShikime" checked onchange="ngarkoAnalitika()">Shikime</label>'+
@@ -1289,6 +1294,24 @@ function mainAnalytics(m){
     '<div class="card"><canvas id="anaCanvas" height="90"></canvas></div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
   $('anaNga').value=anaFmt(nga); $('anaDeri').value=anaFmt(sot);
+  ngarkoAnaReklamatLista();
+  ngarkoAnalitika();
+}
+var _anaSelectedAds=[];
+async function ngarkoAnaReklamatLista(){
+  const el=$('anaRekList'); if(!el) return;
+  try{
+    const rows=await(await fetch('/api/reklamat')).json();
+    if(!rows.length){ el.innerHTML='<p class="small mut">S\'ke ende reklama.</p>'; return; }
+    el.innerHTML = rows.map(r=>
+      '<button type="button" class="anaRekChip" data-id="'+r.id+'" onclick="anaToggleRek('+r.id+',this)" style="padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:#0e1116;color:var(--txt);font-size:12px;cursor:pointer;">'+esc(r.emri)+'</button>'
+    ).join('');
+  }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; }
+}
+function anaToggleRek(id, btn){
+  const i=_anaSelectedAds.indexOf(id);
+  if(i===-1){ _anaSelectedAds.push(id); btn.style.background='var(--acc)'; btn.style.borderColor='var(--acc)'; btn.style.color='#06121f'; }
+  else { _anaSelectedAds.splice(i,1); btn.style.background='#0e1116'; btn.style.borderColor='var(--line)'; btn.style.color='var(--txt)'; }
   ngarkoAnalitika();
 }
 function anaFmt(d){ return d.toISOString().slice(0,10); }
@@ -1301,8 +1324,10 @@ var _anaChart=null;
 async function ngarkoAnalitika(){
   const ngaEl=$('anaNga'), deriEl=$('anaDeri');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
+  let url='/api/analytics/reklamat?nga='+ngaEl.value+'&deri='+deriEl.value;
+  if(_anaSelectedAds.length) url+='&reklama_ids='+_anaSelectedAds.join(',');
   let d;
-  try{ d=await(await fetch('/api/analytics/reklamat?nga='+ngaEl.value+'&deri='+deriEl.value)).json(); }catch(e){ return; }
+  try{ d=await(await fetch(url)).json(); }catch(e){ return; }
   const rows=d.rows||[];
   const labels=rows.map(r=>r.data);
   const datasets=[];
