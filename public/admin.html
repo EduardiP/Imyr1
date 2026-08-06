@@ -230,6 +230,7 @@
       njBizneset = await(await fetch('/api/admin/njoftime/bizneset')).json();
       njRenderLista();
     }catch(e){ $('njLista').innerHTML='<p class="small" style="padding:14px;">Gabim.</p>'; }
+    ngarkoKerkesat();
   }
   var _njKerkim='', _njTip='';
   function njSetKerkim(v){ _njKerkim=(v||'').toLowerCase().trim(); njRenderLista(); }
