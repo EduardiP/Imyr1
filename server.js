@@ -358,6 +358,13 @@ app.get('/api/profili', iLoguar, async (req, res) => {
     const pikeShfaqje = shfaqje / rate;
     const pikeTotal = pikeShfaqje + konvertime;
 
+    // Marra: shfaqje/klikime/konvertime qe kane marre REKLAMAT E TIJ (si reklamues, te te tjeret)
+    const marraQ = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE lloji='view')::int      AS shfaqje,
+              COUNT(*) FILTER (WHERE lloji='click')::int     AS klikime,
+              COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
+       FROM ngjarjet WHERE reklamues_id=$1`, [req.biznesId]);
+
     res.json({
       emri: biz.emri, email: biz.email, tipi, logo_url: biz.logo_url || null,
       pike_profili: Math.round(pikeTotal * 10) / 10,
@@ -365,6 +372,7 @@ app.get('/api/profili', iLoguar, async (req, res) => {
         shfaqje, pike_nga_shfaqjet: Math.round(pikeShfaqje * 10) / 10, rate,
         konvertime, pike_nga_konvertimet: konvertime
       },
+      marra: marraQ.rows[0],
       snippets: perSnippet.rows
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
