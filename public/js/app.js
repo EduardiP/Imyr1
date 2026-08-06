@@ -521,8 +521,8 @@ async function ngarkoDashKonvertimet(){
   try{
     const ku=await(await fetch('/api/konvertimet')).json();
     const kz=await(await fetch('/api/zonat')).json();
-    const urlRows=(ku.konvertimet||[]).map(x=>({emri:x.url, track_active:x.track_active, pauzuar:x.pauzuar}));
-    const zonaRows=(kz.zonat||[]).map(x=>({emri:x.emri, track_active:x.track_active, pauzuar:x.pauzuar}));
+    const urlRows=(ku.konvertimet||[]).map(x=>({emri:x.url, lloji:'url', track_active:x.track_active, pauzuar:x.pauzuar}));
+    const zonaRows=(kz.zonat||[]).map(x=>({emri:x.emri, lloji:'kod', track_active:x.track_active, pauzuar:x.pauzuar}));
     const rows=urlRows.concat(zonaRows);
     if(!rows.length){ el.innerHTML='<button class="btn cta" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'konvertimi\'})">Lidh konvertimet →</button>'; return; }
     el.innerHTML = rows.map(x=>{
@@ -532,6 +532,7 @@ async function ngarkoDashKonvertimet(){
       else { statusTxt='Palidhur'; statusCol='var(--mut)'; }
       return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #20262f;">'+
         '<span style="flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(x.emri||'—')+'</span>'+
+        '<span style="font-size:11px;color:var(--mut);text-transform:uppercase;flex:0 0 auto;">'+(x.lloji==='url'?'URL':'Kod')+'</span>'+
         '<span style="font-size:12px;color:'+statusCol+';flex:0 0 auto;">'+statusTxt+'</span>'+
       '</div>';
     }).join('');
