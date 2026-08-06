@@ -444,11 +444,22 @@ function mainDashboard(m){
         '<h3 class="h" style="font-size:15px;margin:0 0 10px;">Snippet-et e reklamave</h3>'+
         '<div id="dashSnippetetList"><p class="small">Po ngarkoj…</p></div>'+
       '</div>'+
+    '</div>'+
+    '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
+      '<div class="card" id="dashSnippetet2" style="flex:1;min-width:220px;cursor:pointer;">'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 10px;">Snippet-et e reklamave</h3>'+
+        '<div id="dashSnippetet2List"><p class="small">Po ngarkoj…</p></div>'+
+      '</div>'+
+      '<div class="card" id="dashKonvertimet" style="flex:1.6;min-width:300px;cursor:pointer;">'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 10px;">Gjurmimi i konvertimeve</h3>'+
+        '<div id="dashKonvertimetList"><p class="small">Po ngarkoj…</p></div>'+
+      '</div>'+
     '</div>';
   renderDashStatus();
   ngarkoDashAnalitika();
   ngarkoDashReklamat();
   ngarkoDashSnippetet();
+  ngarkoDashKonvertimet();
 }
 async function ngarkoDashReklamat(){
   const card=$('dashReklamat'), el=$('dashReklamatList');
@@ -456,7 +467,7 @@ async function ngarkoDashReklamat(){
   if(!el) return;
   try{
     const rows=await(await fetch('/api/reklamat')).json();
-    if(!rows.length){ el.innerHTML='<p class="small mut">S\'ke ende reklama.</p>'; return; }
+    if(!rows.length){ el.innerHTML='<button class="btn cta" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">Krijo një reklamë →</button>'; return; }
     el.innerHTML = rows.map(r=>{
       const thumb = r.imazh_url
         ? '<img src="'+esc(r.imazh_url)+'" style="width:34px;height:34px;border-radius:8px;object-fit:cover;flex:0 0 auto;">'
@@ -475,20 +486,52 @@ async function ngarkoDashReklamat(){
   }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; }
 }
 async function ngarkoDashSnippetet(){
-  const card=$('dashSnippetet'), el=$('dashSnippetetList');
-  if(card) card.onclick=()=>nav({v:'profile', nav:'snippetet'});
-  if(!el) return;
+  const c1=$('dashSnippetet'), c2=$('dashSnippetet2');
+  if(c1) c1.onclick=()=>nav({v:'profile', nav:'snippetet'});
+  if(c2) c2.onclick=()=>nav({v:'profile', nav:'snippetet'});
   try{
     const r=await(await fetch('/api/snippetet')).json();
     const rows=r.snippetet||[];
-    if(!rows.length){ el.innerHTML='<p class="small mut">S\'ke ende hapësira.</p>'; return; }
-    el.innerHTML = rows.map(s=>{
+    renderDashSnippetList('dashSnippetetList', rows);
+    renderDashSnippetList('dashSnippetet2List', rows);
+  }catch(e){
+    const a=$('dashSnippetetList'), b=$('dashSnippetet2List');
+    if(a) a.innerHTML='<p class="small">Gabim.</p>';
+    if(b) b.innerHTML='<p class="small">Gabim.</p>';
+  }
+}
+function renderDashSnippetList(elId, rows){
+  const el=$(elId); if(!el) return;
+  if(!rows.length){ el.innerHTML='<button class="btn cta" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'lidhjaSnippet\'})">Shto një snippet →</button>'; return; }
+  el.innerHTML = rows.map(s=>{
+    let statusTxt, statusCol;
+    if(s.pauzuar){ statusTxt='Pezulluar'; statusCol='var(--mut)'; }
+    else if(s.snippet_active){ statusTxt='Aktive'; statusCol='var(--good)'; }
+    else { statusTxt='Palidhur'; statusCol='var(--mut)'; }
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #20262f;">'+
+      '<span style="flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(s.emri||('Hapësira '+s.id))+'</span>'+
+      '<span style="font-size:12px;color:'+statusCol+';flex:0 0 auto;">'+statusTxt+'</span>'+
+    '</div>';
+  }).join('');
+}
+async function ngarkoDashKonvertimet(){
+  const card=$('dashKonvertimet'), el=$('dashKonvertimetList');
+  if(card) card.onclick=()=>nav({v:'profile', nav:'konvertimi'});
+  if(!el) return;
+  try{
+    const ku=await(await fetch('/api/konvertimet')).json();
+    const kz=await(await fetch('/api/zonat')).json();
+    const urlRows=(ku.konvertimet||[]).map(x=>({emri:x.url, track_active:x.track_active, pauzuar:x.pauzuar}));
+    const zonaRows=(kz.zonat||[]).map(x=>({emri:x.emri, track_active:x.track_active, pauzuar:x.pauzuar}));
+    const rows=urlRows.concat(zonaRows);
+    if(!rows.length){ el.innerHTML='<button class="btn cta" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'konvertimi\'})">Lidh konvertimet →</button>'; return; }
+    el.innerHTML = rows.map(x=>{
       let statusTxt, statusCol;
-      if(s.pauzuar){ statusTxt='Pezulluar'; statusCol='var(--mut)'; }
-      else if(s.snippet_active){ statusTxt='Aktive'; statusCol='var(--good)'; }
+      if(x.pauzuar){ statusTxt='Pezulluar'; statusCol='var(--mut)'; }
+      else if(x.track_active){ statusTxt='Aktive'; statusCol='var(--good)'; }
       else { statusTxt='Palidhur'; statusCol='var(--mut)'; }
       return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #20262f;">'+
-        '<span style="flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(s.emri||('Hapësira '+s.id))+'</span>'+
+        '<span style="flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(x.emri||'—')+'</span>'+
         '<span style="font-size:12px;color:'+statusCol+';flex:0 0 auto;">'+statusTxt+'</span>'+
       '</div>';
     }).join('');
