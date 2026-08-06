@@ -425,26 +425,53 @@ async function mainNjoftimet(m){
   }catch(e){ $('njLista').innerHTML='<p class="small">Gabim.</p>'; }
 }
 function mainDashboard(m){
-  const inic=((une&&une.emri)||'?').trim().charAt(0).toUpperCase();
-  const logoHTML = (une&&une.logo_url)
-    ? '<div class="avatar" style="width:32px;height:32px;font-size:14px;overflow:hidden;"><img src="'+esc(une.logo_url)+'" style="width:100%;height:100%;object-fit:cover;"></div>'
-    : '<div class="avatar" style="width:32px;height:32px;font-size:14px;">'+esc(inic)+'</div>';
   m.innerHTML='<h2 class="h">Statusi i llogarisë</h2>'+
     '<p class="small" style="margin:2px 0 18px;">Këto tregojnë çfarë është gati dhe çfarë jo. Kliko një rresht për ta plotësuar.</p>'+
-    '<div style="display:flex;gap:16px;flex-wrap:wrap;">'+
+    '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">'+
       '<div class="card" style="flex:0 0 auto;">'+
-        '<div class="vstep" id="vstep"></div>'+
+        '<div class="vstep" id="vstep" style="display:flex;flex-direction:column;"></div>'+
       '</div>'+
       '<div class="card" id="dashAnalitika" style="flex:1;min-width:280px;cursor:pointer;">'+
-        '<div style="display:flex;align-items:center;gap:10px;width:fit-content;padding:2px 14px 2px 2px;margin-bottom:16px;">'+
-          logoHTML+
-          '<div style="font-weight:700;font-size:15px;">'+esc((une&&une.emri)||'')+'</div>'+
-        '</div>'+
-        '<div id="dashStats"><p class="small">Po ngarkoj…</p></div>'+
+        '<p class="small">Po ngarkoj…</p>'+
       '</div>'+
     '</div>';
   renderDashStatus();
   ngarkoDashAnalitika();
+}
+async function ngarkoDashAnalitika(){
+  const card=$('dashAnalitika'); if(!card) return;
+  card.onclick=()=>nav({v:'profile', nav:'profili'});
+  try{
+    const d=await(await fetch('/api/profili')).json();
+    const mm = d.marra || {shfaqje:0,klikime:0,konvertime:0};
+    const inic=(d.emri||'?').trim().charAt(0).toUpperCase();
+    const logoHTML = d.logo_url
+      ? '<div style="width:30px;height:30px;border-radius:50%;overflow:hidden;flex:0 0 auto;"><img src="'+esc(d.logo_url)+'" style="width:100%;height:100%;object-fit:cover;"></div>'
+      : '<div style="width:30px;height:30px;border-radius:50%;background:var(--acc);color:#06121f;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex:0 0 auto;">'+esc(inic)+'</div>';
+    card.innerHTML=
+      '<div style="display:flex;flex-direction:column;gap:16px;">'+
+        '<div style="display:flex;align-items:center;gap:10px;width:fit-content;">'+
+          logoHTML+
+          '<div style="font-weight:700;font-size:15px;">'+esc(d.emri||'')+'</div>'+
+        '</div>'+
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;">'+
+          '<div style="flex:1;min-width:130px;background:rgba(74,158,255,.12);border:1px solid var(--acc);border-radius:10px;padding:14px 16px;">'+
+            '<div style="font-size:28px;font-weight:800;color:var(--acc);line-height:1;">'+(d.pike_profili||0)+'</div>'+
+            '<div class="small" style="margin-top:4px;">pikë profili</div></div>'+
+          '<div style="flex:1;min-width:130px;background:rgba(74,158,255,.12);border:1px solid var(--acc);border-radius:10px;padding:14px 16px;">'+
+            '<div style="font-size:28px;font-weight:800;color:var(--acc);line-height:1;">'+(mm.konvertime||0)+'</div>'+
+            '<div class="small" style="margin-top:4px;">konvertime</div></div>'+
+        '</div>'+
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;">'+
+          '<div style="flex:1;min-width:100px;background:#0e1116;border:1px solid var(--line);border-radius:9px;padding:8px 12px;opacity:.75;">'+
+            '<div style="font-size:15px;font-weight:600;">'+(mm.shfaqje||0)+'</div>'+
+            '<div class="small mut" style="font-size:11px;">shfaqje</div></div>'+
+          '<div style="flex:1;min-width:100px;background:#0e1116;border:1px solid var(--line);border-radius:9px;padding:8px 12px;opacity:.75;">'+
+            '<div style="font-size:15px;font-weight:600;">'+(mm.klikime||0)+'</div>'+
+            '<div class="small mut" style="font-size:11px;">klikime</div></div>'+
+        '</div>'+
+      '</div>';
+  }catch(e){ card.innerHTML='<p class="small">Gabim.</p>'; }
 }
 async function ngarkoDashAnalitika(){
   const card=$('dashAnalitika'), el=$('dashStats');
