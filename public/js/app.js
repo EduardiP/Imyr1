@@ -1267,11 +1267,11 @@ function mainSuport(m){
     '</div>';
 }
 function mainAnalytics(m){
-  _anaSelectedAds=[];
+  _anaSelectedAds=[]; _anaDropdownOpen=false;
   m.innerHTML='<h2 class="h">Analytics</h2>'+
     '<p class="small" style="margin:2px 0 16px;">Ecuria e reklamave të tua me ditë.</p>'+
     '<div class="card" style="margin-bottom:16px;">'+
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
         '<button class="btn" onclick="anaPreset(7)">7 ditët e fundit</button>'+
         '<button class="btn" onclick="anaPreset(30)">30 ditët e fundit</button>'+
         '<button class="btn" onclick="anaPreset(90)">90 ditët e fundit</button>'+
@@ -1280,11 +1280,15 @@ function mainAnalytics(m){
         '<span class="small">deri</span>'+
         '<input type="date" id="anaDeri" style="width:auto;" onchange="ngarkoAnalitika()">'+
       '</div>'+
-      '<div style="margin-bottom:14px;">'+
-        '<div class="small mut" style="margin-bottom:6px;">Filtro sipas reklamës (lëre bosh për të gjitha):</div>'+
-        '<div id="anaRekList" style="display:flex;gap:8px;flex-wrap:wrap;"><p class="small">Po ngarkoj…</p></div>'+
+      '<div style="display:flex;justify-content:flex-end;margin-top:10px;">'+
+        '<div style="position:relative;">'+
+          '<button type="button" id="anaRekBtn" class="btn" style="min-width:150px;" onclick="anaToggleRekDropdown(event)">Reklamat <span id="anaRekBtnCount"></span> ▾</button>'+
+          '<div id="anaRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:220px;max-height:260px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);">'+
+            '<p class="small" style="padding:6px;">Po ngarkoj…</p>'+
+          '</div>'+
+        '</div>'+
       '</div>'+
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">'+
         '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:6px 10px;border:1px solid var(--line);border-radius:8px;"><input type="checkbox" id="anaShfaqje" checked onchange="ngarkoAnalitika()">Shfaqje</label>'+
         '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:6px 10px;border:1px solid var(--line);border-radius:8px;"><input type="checkbox" id="anaShikime" checked onchange="ngarkoAnalitika()">Shikime</label>'+
         '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:6px 10px;border:1px solid var(--line);border-radius:8px;"><input type="checkbox" id="anaKlikime" checked onchange="ngarkoAnalitika()">Klikime</label>'+
@@ -1297,22 +1301,45 @@ function mainAnalytics(m){
   ngarkoAnaReklamatLista();
   ngarkoAnalitika();
 }
-var _anaSelectedAds=[];
-async function ngarkoAnaReklamatLista(){
-  const el=$('anaRekList'); if(!el) return;
-  try{
-    const rows=await(await fetch('/api/reklamat')).json();
-    if(!rows.length){ el.innerHTML='<p class="small mut">S\'ke ende reklama.</p>'; return; }
-    el.innerHTML = rows.map(r=>
-      '<button type="button" class="anaRekChip" data-id="'+r.id+'" onclick="anaToggleRek('+r.id+',this)" style="padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:#0e1116;color:var(--txt);font-size:12px;cursor:pointer;">'+esc(r.emri)+'</button>'
-    ).join('');
-  }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; }
+var _anaSelectedAds=[], _anaRekAll=[], _anaDropdownOpen=false;
+function anaToggleRekDropdown(e){
+  e.stopPropagation();
+  const dd=$('anaRekDropdown'); if(!dd) return;
+  _anaDropdownOpen=!_anaDropdownOpen;
+  dd.classList.toggle('hide', !_anaDropdownOpen);
 }
-function anaToggleRek(id, btn){
+document.addEventListener('click', function(){
+  const dd=$('anaRekDropdown');
+  if(dd && _anaDropdownOpen){ dd.classList.add('hide'); _anaDropdownOpen=false; }
+});
+async function ngarkoAnaReklamatLista(){
+  try{ _anaRekAll=await(await fetch('/api/reklamat')).json(); }catch(e){ _anaRekAll=[]; }
+  anaRenderRekDropdown();
+}
+function anaRenderRekDropdown(){
+  const dd=$('anaRekDropdown'); if(!dd) return;
+  if(!_anaRekAll.length){ dd.innerHTML='<p class="small mut" style="padding:6px;">S\'ke ende reklama.</p>'; anaUpdateRekBtnLabel(); return; }
+  const teGjithaChecked = _anaSelectedAds.length===0;
+  let h='<label style="display:flex;align-items:center;gap:8px;padding:7px 8px;cursor:pointer;border-radius:6px;font-weight:600;" onclick="event.stopPropagation();anaZgjidhTeGjitha()">'+
+    '<input type="checkbox" style="pointer-events:none;" '+(teGjithaChecked?'checked':'')+'>Të gjitha</label>'+
+    '<div style="height:1px;background:var(--line);margin:4px 2px;"></div>';
+  h += _anaRekAll.map(r=>{
+    const checked=_anaSelectedAds.indexOf(r.id)!==-1;
+    return '<label style="display:flex;align-items:center;gap:8px;padding:7px 8px;cursor:pointer;border-radius:6px;" onclick="event.stopPropagation();anaToggleRekItem('+r.id+')">'+
+      '<input type="checkbox" style="pointer-events:none;" '+(checked?'checked':'')+'>'+esc(r.emri)+'</label>';
+  }).join('');
+  dd.innerHTML=h;
+  anaUpdateRekBtnLabel();
+}
+function anaZgjidhTeGjitha(){ _anaSelectedAds=[]; anaRenderRekDropdown(); ngarkoAnalitika(); }
+function anaToggleRekItem(id){
   const i=_anaSelectedAds.indexOf(id);
-  if(i===-1){ _anaSelectedAds.push(id); btn.style.background='var(--acc)'; btn.style.borderColor='var(--acc)'; btn.style.color='#06121f'; }
-  else { _anaSelectedAds.splice(i,1); btn.style.background='#0e1116'; btn.style.borderColor='var(--line)'; btn.style.color='var(--txt)'; }
-  ngarkoAnalitika();
+  if(i===-1) _anaSelectedAds.push(id); else _anaSelectedAds.splice(i,1);
+  anaRenderRekDropdown(); ngarkoAnalitika();
+}
+function anaUpdateRekBtnLabel(){
+  const el=$('anaRekBtnCount'); if(!el) return;
+  el.textContent = _anaSelectedAds.length ? '('+_anaSelectedAds.length+')' : '';
 }
 function anaFmt(d){ return d.toISOString().slice(0,10); }
 function anaPreset(dite){
@@ -1331,10 +1358,10 @@ async function ngarkoAnalitika(){
   const rows=d.rows||[];
   const labels=rows.map(r=>r.data);
   const datasets=[];
-  if($('anaShfaqje').checked)    datasets.push({label:'Shfaqje',    data:rows.map(r=>r.shfaqje),    borderColor:'#8b949e', backgroundColor:'transparent', tension:.25});
-  if($('anaShikime').checked)    datasets.push({label:'Shikime',    data:rows.map(r=>r.shikime),    borderColor:'#4a9eff', backgroundColor:'transparent', tension:.25});
-  if($('anaKlikime').checked)    datasets.push({label:'Klikime',    data:rows.map(r=>r.klikime),    borderColor:'#3fb950', backgroundColor:'transparent', tension:.25});
-  if($('anaKonvertime').checked) datasets.push({label:'Konvertime', data:rows.map(r=>r.konvertime), borderColor:'#f85149', backgroundColor:'transparent', tension:.25});
+  if($('anaShfaqje').checked)    datasets.push({label:'Shfaqje',    data:rows.map(r=>r.shfaqje),    borderColor:'#f0883e', backgroundColor:'transparent', tension:.25, borderWidth:2});
+  if($('anaShikime').checked)    datasets.push({label:'Shikime',    data:rows.map(r=>r.shikime),    borderColor:'#4a9eff', backgroundColor:'transparent', tension:.25, borderWidth:2});
+  if($('anaKlikime').checked)    datasets.push({label:'Klikime',    data:rows.map(r=>r.klikime),    borderColor:'#3fb950', backgroundColor:'transparent', tension:.25, borderWidth:2});
+  if($('anaKonvertime').checked) datasets.push({label:'Konvertime', data:rows.map(r=>r.konvertime), borderColor:'#f85149', backgroundColor:'transparent', tension:.25, borderWidth:2});
   const canvas=$('anaCanvas'); if(!canvas||typeof Chart==='undefined') return;
   const ctx=canvas.getContext('2d');
   if(_anaChart) _anaChart.destroy();
