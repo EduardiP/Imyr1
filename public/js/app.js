@@ -473,47 +473,6 @@ async function ngarkoDashAnalitika(){
       '</div>';
   }catch(e){ card.innerHTML='<p class="small">Gabim.</p>'; }
 }
-async function ngarkoDashAnalitika(){
-  const card=$('dashAnalitika'), el=$('dashStats');
-  if(card) card.onclick=()=>nav({v:'profile', nav:'profili'});
-  if(!el) return;
-  try{
-    const d=await(await fetch('/api/profili')).json();
-    const mm = d.marra || {shfaqje:0,klikime:0,konvertime:0};
-    el.innerHTML=
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;">'+
-        '<div style="flex:1;min-width:130px;background:#0e1116;border:1px solid var(--acc);border-radius:10px;padding:14px 16px;">'+
-          '<div style="font-size:26px;font-weight:800;color:var(--acc);line-height:1;">'+(d.pike_profili||0)+'</div>'+
-          '<div class="small" style="margin-top:4px;">pikë profili</div></div>'+
-        '<div style="flex:1;min-width:130px;background:#0e1116;border:1px solid var(--acc);border-radius:10px;padding:14px 16px;">'+
-          '<div style="font-size:26px;font-weight:800;color:var(--acc);line-height:1;">'+(mm.konvertime||0)+'</div>'+
-          '<div class="small" style="margin-top:4px;">konvertime</div></div>'+
-        '<div class="miniStat" style="flex:1;min-width:100px;padding:9px 12px;opacity:.8;">'+
-          '<div class="mv" style="font-size:16px;">'+(mm.shfaqje||0)+'</div>'+
-          '<div class="small mut">shfaqje</div></div>'+
-        '<div class="miniStat" style="flex:1;min-width:100px;padding:9px 12px;opacity:.8;">'+
-          '<div class="mv" style="font-size:16px;">'+(mm.klikime||0)+'</div>'+
-          '<div class="small mut">klikime</div></div>'+
-      '</div>';
-  }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; }
-}
-
-
-async function ngarkoDashAnalitika(){
-  const el=$('dashAnalitika'); if(!el) return;
-  el.onclick=()=>nav({v:'profile', nav:'profili'});
-  try{
-    const d=await(await fetch('/api/profili')).json();
-    const mm = d.marra || {shfaqje:0,klikime:0,konvertime:0};
-    el.innerHTML=
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;">'+
-        '<div class="miniStat"><div class="mv">'+(d.pike_profili||0)+'</div><div class="small">pikë profili</div></div>'+
-        '<div class="miniStat"><div class="mv">'+(mm.konvertime||0)+'</div><div class="small">konvertime</div></div>'+
-        '<div class="miniStat"><div class="mv">'+(mm.shfaqje||0)+'</div><div class="small">shfaqje</div></div>'+
-        '<div class="miniStat"><div class="mv">'+(mm.klikime||0)+'</div><div class="small">klikime</div></div>'+
-      '</div>';
-  }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; }
-}
 function renderDashStatus(){
   const el=$('vstep'); if(!el) return; el.innerHTML='';
   const rreshtat=[
