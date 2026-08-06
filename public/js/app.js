@@ -1268,7 +1268,56 @@ function mainSuport(m){
 }
 function mainAnalytics(m){
   m.innerHTML='<h2 class="h">Analytics</h2>'+
-    '<p class="small" style="margin-top:10px;">Së shpejti: shikime, klikime dhe konvertime për reklamën tënde.</p>';
+    '<p class="small" style="margin:2px 0 16px;">Ecuria e reklamave të tua me ditë.</p>'+
+    '<div class="card" style="margin-bottom:16px;">'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
+        '<button class="btn" onclick="anaPreset(7)">7 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPreset(30)">30 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPreset(90)">90 ditët e fundit</button>'+
+        '<span style="flex:1"></span>'+
+        '<input type="date" id="anaNga" style="width:auto;" onchange="ngarkoAnalitika()">'+
+        '<span class="small">deri</span>'+
+        '<input type="date" id="anaDeri" style="width:auto;" onchange="ngarkoAnalitika()">'+
+      '</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
+        '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:6px 10px;border:1px solid var(--line);border-radius:8px;"><input type="checkbox" id="anaShfaqje" checked onchange="ngarkoAnalitika()">Shfaqje</label>'+
+        '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:6px 10px;border:1px solid var(--line);border-radius:8px;"><input type="checkbox" id="anaShikime" checked onchange="ngarkoAnalitika()">Shikime</label>'+
+        '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:6px 10px;border:1px solid var(--line);border-radius:8px;"><input type="checkbox" id="anaKlikime" checked onchange="ngarkoAnalitika()">Klikime</label>'+
+        '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:6px 10px;border:1px solid var(--line);border-radius:8px;"><input type="checkbox" id="anaKonvertime" checked onchange="ngarkoAnalitika()">Konvertime</label>'+
+      '</div>'+
+    '</div>'+
+    '<div class="card"><canvas id="anaCanvas" height="90"></canvas></div>';
+  const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
+  $('anaNga').value=anaFmt(nga); $('anaDeri').value=anaFmt(sot);
+  ngarkoAnalitika();
+}
+function anaFmt(d){ return d.toISOString().slice(0,10); }
+function anaPreset(dite){
+  const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-(dite-1));
+  $('anaNga').value=anaFmt(nga); $('anaDeri').value=anaFmt(sot);
+  ngarkoAnalitika();
+}
+var _anaChart=null;
+async function ngarkoAnalitika(){
+  const ngaEl=$('anaNga'), deriEl=$('anaDeri');
+  if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
+  let d;
+  try{ d=await(await fetch('/api/analytics/reklamat?nga='+ngaEl.value+'&deri='+deriEl.value)).json(); }catch(e){ return; }
+  const rows=d.rows||[];
+  const labels=rows.map(r=>r.data);
+  const datasets=[];
+  if($('anaShfaqje').checked)    datasets.push({label:'Shfaqje',    data:rows.map(r=>r.shfaqje),    borderColor:'#8b949e', backgroundColor:'transparent', tension:.25});
+  if($('anaShikime').checked)    datasets.push({label:'Shikime',    data:rows.map(r=>r.shikime),    borderColor:'#4a9eff', backgroundColor:'transparent', tension:.25});
+  if($('anaKlikime').checked)    datasets.push({label:'Klikime',    data:rows.map(r=>r.klikime),    borderColor:'#3fb950', backgroundColor:'transparent', tension:.25});
+  if($('anaKonvertime').checked) datasets.push({label:'Konvertime', data:rows.map(r=>r.konvertime), borderColor:'#f85149', backgroundColor:'transparent', tension:.25});
+  const canvas=$('anaCanvas'); if(!canvas||typeof Chart==='undefined') return;
+  const ctx=canvas.getContext('2d');
+  if(_anaChart) _anaChart.destroy();
+  _anaChart=new Chart(ctx,{type:'line',data:{labels,datasets},
+    options:{responsive:true,interaction:{mode:'index',intersect:false},
+      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}},
+      plugins:{legend:{labels:{color:'#e6edf3'}}}}
+  });
 }
 function renderVStep(){
   const nx=nextIncomplete(), el=$('vstep'); el.innerHTML='';
