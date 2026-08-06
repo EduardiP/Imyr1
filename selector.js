@@ -135,8 +135,8 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
 async function zgjedhNgaLista(pool, bizId, idet) {
   if (idet.length === 1) return idet[0];
   const stat = await pikeRekl.statPerReklama(pool, idet);
-  // Faza fillestare: nese ndonje ka < 3 shikime, zgjedh me radhe ate me me pak
-  const SHF = 3;
+  // Faza fillestare: nese ndonje ka < 5 shikime, zgjedh me radhe ate me me pak
+  const SHF = 5;
   const mePak = idet.map(id => ({ id, shikime: (stat[id] && stat[id].shikime) || 0 })).filter(x => x.shikime < SHF);
   if (mePak.length) {
     const min = Math.min.apply(null, mePak.map(x => x.shikime));
