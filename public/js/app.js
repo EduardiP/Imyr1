@@ -425,19 +425,53 @@ async function mainNjoftimet(m){
   }catch(e){ $('njLista').innerHTML='<p class="small">Gabim.</p>'; }
 }
 function mainDashboard(m){
+  const inic=((une&&une.emri)||'?').trim().charAt(0).toUpperCase();
+  const logoHTML = (une&&une.logo_url)
+    ? '<div class="avatar" style="width:32px;height:32px;font-size:14px;overflow:hidden;"><img src="'+esc(une.logo_url)+'" style="width:100%;height:100%;object-fit:cover;"></div>'
+    : '<div class="avatar" style="width:32px;height:32px;font-size:14px;">'+esc(inic)+'</div>';
   m.innerHTML='<h2 class="h">Statusi i llogarisë</h2>'+
     '<p class="small" style="margin:2px 0 18px;">Këto tregojnë çfarë është gati dhe çfarë jo. Kliko një rresht për ta plotësuar.</p>'+
-    '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">'+
-      '<div class="card" style="flex:1;min-width:280px;max-width:520px;">'+
+    '<div style="display:flex;gap:16px;flex-wrap:wrap;">'+
+      '<div class="card" style="flex:0 0 auto;">'+
         '<div class="vstep" id="vstep"></div>'+
       '</div>'+
-      '<div class="card" id="dashAnalitika" style="flex:1;min-width:260px;cursor:pointer;">'+
-        '<p class="small">Po ngarkoj…</p>'+
+      '<div class="card" id="dashAnalitika" style="flex:1;min-width:280px;cursor:pointer;">'+
+        '<div style="display:flex;align-items:center;gap:10px;width:fit-content;padding:2px 14px 2px 2px;margin-bottom:16px;">'+
+          logoHTML+
+          '<div style="font-weight:700;font-size:15px;">'+esc((une&&une.emri)||'')+'</div>'+
+        '</div>'+
+        '<div id="dashStats"><p class="small">Po ngarkoj…</p></div>'+
       '</div>'+
     '</div>';
   renderDashStatus();
   ngarkoDashAnalitika();
 }
+async function ngarkoDashAnalitika(){
+  const card=$('dashAnalitika'), el=$('dashStats');
+  if(card) card.onclick=()=>nav({v:'profile', nav:'profili'});
+  if(!el) return;
+  try{
+    const d=await(await fetch('/api/profili')).json();
+    const mm = d.marra || {shfaqje:0,klikime:0,konvertime:0};
+    el.innerHTML=
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;">'+
+        '<div style="flex:1;min-width:130px;background:#0e1116;border:1px solid var(--acc);border-radius:10px;padding:14px 16px;">'+
+          '<div style="font-size:26px;font-weight:800;color:var(--acc);line-height:1;">'+(d.pike_profili||0)+'</div>'+
+          '<div class="small" style="margin-top:4px;">pikë profili</div></div>'+
+        '<div style="flex:1;min-width:130px;background:#0e1116;border:1px solid var(--acc);border-radius:10px;padding:14px 16px;">'+
+          '<div style="font-size:26px;font-weight:800;color:var(--acc);line-height:1;">'+(mm.konvertime||0)+'</div>'+
+          '<div class="small" style="margin-top:4px;">konvertime</div></div>'+
+        '<div class="miniStat" style="flex:1;min-width:100px;padding:9px 12px;opacity:.8;">'+
+          '<div class="mv" style="font-size:16px;">'+(mm.shfaqje||0)+'</div>'+
+          '<div class="small mut">shfaqje</div></div>'+
+        '<div class="miniStat" style="flex:1;min-width:100px;padding:9px 12px;opacity:.8;">'+
+          '<div class="mv" style="font-size:16px;">'+(mm.klikime||0)+'</div>'+
+          '<div class="small mut">klikime</div></div>'+
+      '</div>';
+  }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; }
+}
+
+
 async function ngarkoDashAnalitika(){
   const el=$('dashAnalitika'); if(!el) return;
   el.onclick=()=>nav({v:'profile', nav:'profili'});
