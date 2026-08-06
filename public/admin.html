@@ -280,6 +280,30 @@
     }catch(e){ if(stat)stat.textContent='Gabim: '+e.message; }
     btn.disabled=false;
   }
+
+  async function ngarkoKerkesat(){
+    const el=$('kerkesatLista'); if(!el) return;
+    try{
+      const rows=await(await fetch('/api/admin/kerkesat-suport')).json();
+      if(!rows.length){ el.innerHTML='<p class="small mut">S\'ka kërkesa.</p>'; return; }
+      el.innerHTML='<div class="kerkesaTbl">'+rows.map(r=>{
+        const ini=((r.emri||'?').trim().charAt(0)||'?').toUpperCase();
+        const logo=r.logo_url?'<img src="'+esc(r.logo_url)+'" class="njBizLogo">':'<span class="njBizLogo njBizLogoTxt">'+esc(ini)+'</span>';
+        const stil=r.trajtuar?'opacity:.5;':'';
+        return '<div class="kerkesaTr" style="'+stil+'">'+
+          '<div class="kerkesaIdent">'+logo+'<div><div class="njBizNm">'+esc(r.emri||'—')+'</div><div class="njBizEm">'+esc(r.email||'—')+'</div></div></div>'+
+          '<div class="kerkesaTxt">'+esc(r.shqetesimi)+'</div>'+
+          (r.trajtuar?'<span class="small mut">✓ Trajtuar</span>':'<button class="btn" onclick="trajtoKerkesen('+r.id+')">Shëno si e trajtuar</button>')+
+        '</div>';
+      }).join('')+'</div>';
+    }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; }
+  }
+  async function trajtoKerkesen(id){
+    try{
+      await fetch('/api/admin/kerkesat-suport/'+id+'/trajto',{method:'POST'});
+      ngarkoKerkesat();
+    }catch(e){}
+  }
   
   // ================= KOMBINIMET AI =================
   var kFiltri=null, kA=null, kB=null, kBizneset=[];
