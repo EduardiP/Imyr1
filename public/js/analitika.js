@@ -600,17 +600,24 @@ async function ngarkoAnaSnipDhene(){
   catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; return; }
   const rows=d.snippetet||[];
   if(!rows.length){ el.innerHTML='<button class="btn cta" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'lidhjaSnippet\'})">Lidh një snippet →</button>'; return; }
-  el.innerHTML = rows.map(s=>
-    '<div style="padding:10px 0;border-bottom:1px solid #20262f;">'+
-      '<div style="font-weight:600;font-size:13px;margin-bottom:6px;">'+esc(s.emri||('Hapësira '+s.id))+'</div>'+
+  el.innerHTML = rows.map(s=>{
+    let statusTxt, statusCol;
+    if(s.pauzuar){ statusTxt='Pezulluar'; statusCol='var(--mut)'; }
+    else if(s.snippet_active){ statusTxt='Aktive'; statusCol='var(--good)'; }
+    else { statusTxt='Palidhur'; statusCol='var(--mut)'; }
+    return '<div style="padding:10px 0;border-bottom:1px solid #20262f;">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'+
+        '<span style="font-weight:600;font-size:13px;">'+esc(s.emri||('Hapësira '+s.id))+'</span>'+
+        '<span style="font-size:11px;color:'+statusCol+';">'+statusTxt+'</span>'+
+      '</div>'+
       '<div style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--mut);">'+
         '<span>Shfaqje: <b style="color:var(--txt);">'+s.shfaqje+'</b></span>'+
         '<span>Shikime: <b style="color:var(--txt);">'+s.shikime+'</b></span>'+
         '<span>Klikime: <b style="color:var(--txt);">'+s.klikime+'</b></span>'+
         '<span>Konvertime: <b style="color:var(--txt);">'+s.konvertime+'</b></span>'+
       '</div>'+
-    '</div>'
-  ).join('');
+    '</div>';
+  }).join('');
 }
 var _anaKatDheneMetrikaAktive='shikime', _anaKatDheneChart=null;
 function anaRenderKatDheneMetrika(){
