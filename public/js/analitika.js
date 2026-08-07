@@ -13,9 +13,12 @@ function mainAnalytics(m){
         '<button class="btn" onclick="anaPreset(30)">30 ditët e fundit</button>'+
         '<button class="btn" onclick="anaPreset(90)">90 ditët e fundit</button>'+
         '<span style="flex:1"></span>'+
-        '<input type="date" id="anaNga" style="width:auto;color-scheme:dark;" onchange="anaNgarkoTeGjitha()">'+
-        '<span class="small">deri</span>'+
-        '<input type="date" id="anaDeri" style="width:auto;color-scheme:dark;" onchange="anaNgarkoTeGjitha()">'+
+        '<div style="position:relative;">'+
+          '<button type="button" id="anaKalBtn_top" class="btn" style="min-width:170px;"></button>'+
+          '<div id="anaKalPanel_top" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;width:230px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+        '</div>'+
+        '<input type="date" id="anaNga" style="display:none;">'+
+        '<input type="date" id="anaDeri" style="display:none;">'+
       '</div>'+
       '<div style="display:flex;justify-content:flex-end;margin-top:10px;">'+
         '<div style="position:relative;">'+
@@ -32,9 +35,12 @@ function mainAnalytics(m){
         '<button class="btn" onclick="anaPresetKat(30)">30 ditët e fundit</button>'+
         '<button class="btn" onclick="anaPresetKat(90)">90 ditët e fundit</button>'+
         '<span style="flex:1"></span>'+
-        '<input type="date" id="anaNgaKat" style="width:auto;color-scheme:dark;" onchange="anaNgarkoKategoriteTeGjitha()">'+
-        '<span class="small">deri</span>'+
-        '<input type="date" id="anaDeriKat" style="width:auto;color-scheme:dark;" onchange="anaNgarkoKategoriteTeGjitha()">'+
+        '<div style="position:relative;">'+
+          '<button type="button" id="anaKalBtn_kat" class="btn" style="min-width:170px;"></button>'+
+          '<div id="anaKalPanel_kat" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;width:230px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+        '</div>'+
+        '<input type="date" id="anaNgaKat" style="display:none;">'+
+        '<input type="date" id="anaDeriKat" style="display:none;">'+
       '</div>'+
     '</div>'+
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
@@ -66,6 +72,18 @@ function mainAnalytics(m){
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
   $('anaNga').value=anaFmt(nga); $('anaDeri').value=anaFmt(sot);
   $('anaNgaKat').value=anaFmt(nga); $('anaDeriKat').value=anaFmt(sot);
+  anaKrijoKalendarRangu({
+    id:'top', btnId:'anaKalBtn_top', panelId:'anaKalPanel_top',
+    getNga:()=>$('anaNga').value, getDeri:()=>$('anaDeri').value,
+    setNga:v=>{ $('anaNga').value=v; }, setDeri:v=>{ $('anaDeri').value=v; },
+    onRuaj: ngarkoAnalitika
+  });
+  anaKrijoKalendarRangu({
+    id:'kat', btnId:'anaKalBtn_kat', panelId:'anaKalPanel_kat',
+    getNga:()=>$('anaNgaKat').value, getDeri:()=>$('anaDeriKat').value,
+    setNga:v=>{ $('anaNgaKat').value=v; }, setDeri:v=>{ $('anaDeriKat').value=v; },
+    onRuaj: anaNgarkoKategoriteTeGjitha
+  });
   $('anaRekBtn').addEventListener('click', function(e){
     e.stopPropagation();
     const dd=$('anaRekDropdown'); if(!dd) return;
@@ -98,6 +116,7 @@ function anaNgarkoKategoriteTeGjitha(){ ngarkoAnaKategorite(); ngarkoAnaLista();
 function anaPresetKat(dite){
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-(dite-1));
   $('anaNgaKat').value=anaFmt(nga); $('anaDeriKat').value=anaFmt(sot);
+  if(window.__anaKalendaret && window.__anaKalendaret.kat) window.__anaKalendaret.kat.refreshLabel();
   anaNgarkoKategoriteTeGjitha();
 }
 document.addEventListener('click', function(){
@@ -188,6 +207,7 @@ function anaMbyllDropdown(ddId, stateVarSetter){
 function anaPreset(dite){
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-(dite-1));
   $('anaNga').value=anaFmt(nga); $('anaDeri').value=anaFmt(sot);
+  if(window.__anaKalendaret && window.__anaKalendaret.top) window.__anaKalendaret.top.refreshLabel();
   anaNgarkoTeGjitha();
 }
 var _anaChart=null;
@@ -416,3 +436,99 @@ async function ngarkoAnaLista(){
     '</div>';
   }).join('');
 }
+
+// ================= KALENDAR RANGU (si Google Analytics): 1 kalendar, klik-fillim, klik-mbarim, Ruaj =================
+window.__anaKalendaret = window.__anaKalendaret || {};
+function anaKrijoKalendarRangu(cfg){
+  let vm=new Date(); vm.setDate(1);
+  let selStart=null, selEnd=null;
+
+  function fmt(d){ return d.toISOString().slice(0,10); }
+  function parse(s){ const p=s.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
+  function fmtShkurt(d){ return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear(); }
+  function emriMuajit(d){
+    const emrat=['Janar','Shkurt','Mars','Prill','Maj','Qershor','Korrik','Gusht','Shtator','Tetor','Nëntor','Dhjetor'];
+    return emrat[d.getMonth()]+' '+d.getFullYear();
+  }
+  function refreshLabel(){
+    const btn=$(cfg.btnId); if(!btn) return;
+    const ng=parse(cfg.getNga()), dr=parse(cfg.getDeri());
+    btn.textContent = fmtShkurt(ng)+' – '+fmtShkurt(dr)+' 📅';
+  }
+  function hapPanelin(){
+    selStart=parse(cfg.getNga()); selEnd=parse(cfg.getDeri());
+    vm=new Date(selStart.getFullYear(), selStart.getMonth(), 1);
+    renderPanel();
+    $(cfg.panelId).classList.remove('hide');
+  }
+  function mbyllPanelin(){ const p=$(cfg.panelId); if(p) p.classList.add('hide'); }
+  function ndryshoMuaj(delta){ vm=new Date(vm.getFullYear(), vm.getMonth()+delta, 1); renderPanel(); }
+  function brendaRangut(d){ return selStart && selEnd && d>=selStart && d<=selEnd; }
+  function klikDita(dnr){
+    const d=new Date(vm.getFullYear(), vm.getMonth(), dnr);
+    if(!selStart || (selStart && selEnd)){ selStart=d; selEnd=null; }
+    else if(d<selStart){ selEnd=selStart; selStart=d; }
+    else { selEnd=d; }
+    renderPanel();
+  }
+  function ruaj(){
+    if(!selStart) return;
+    const fund=selEnd||selStart;
+    cfg.setNga(fmt(selStart)); cfg.setDeri(fmt(fund));
+    refreshLabel(); mbyllPanelin(); cfg.onRuaj();
+  }
+  function renderPanel(){
+    const panel=$(cfg.panelId); if(!panel) return;
+    const y=vm.getFullYear(), m=vm.getMonth();
+    const pareDite=new Date(y,m,1).getDay();
+    const zhvend=(pareDite+6)%7;
+    const diteNeMuaj=new Date(y,m+1,0).getDate();
+    let h='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'+
+      '<button type="button" class="btn" style="padding:4px 10px;" onclick="event.stopPropagation();__anaKalNav(\''+cfg.id+'\',-1)">‹</button>'+
+      '<div style="font-weight:600;font-size:13px;">'+emriMuajit(vm)+'</div>'+
+      '<button type="button" class="btn" style="padding:4px 10px;" onclick="event.stopPropagation();__anaKalNav(\''+cfg.id+'\',1)">›</button>'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;font-size:11px;color:var(--mut);text-align:center;margin-bottom:4px;">'+
+      ['Hë','Ma','Më','En','Pr','Sh','Di'].map(x=>'<div>'+x+'</div>').join('')+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">';
+    for(let i=0;i<zhvend;i++) h+='<div></div>';
+    for(let dnr=1; dnr<=diteNeMuaj; dnr++){
+      const d=new Date(y,m,dnr);
+      const eshteFillim = selStart && d.getTime()===selStart.getTime();
+      const eshteMbarim = selEnd && d.getTime()===selEnd.getTime();
+      const embrenda = brendaRangut(d);
+      let st='padding:6px 0;text-align:center;font-size:12px;cursor:pointer;border-radius:6px;';
+      if(eshteFillim||eshteMbarim) st+='background:var(--acc);color:#06121f;font-weight:700;';
+      else if(embrenda) st+='background:rgba(74,158,255,.18);color:var(--txt);';
+      else st+='color:var(--txt);';
+      h+='<div style="'+st+'" onclick="event.stopPropagation();__anaKalKlik(\''+cfg.id+'\','+dnr+')">'+dnr+'</div>';
+    }
+    h+='</div>'+
+    '<div style="display:flex;gap:8px;margin-top:12px;">'+
+      '<button type="button" class="btn" style="flex:1;" onclick="event.stopPropagation();__anaKalMbyll(\''+cfg.id+'\')">Anulo</button>'+
+      '<button type="button" class="btn" style="flex:1;background:var(--acc);color:#06121f;border-color:var(--acc);font-weight:600;" onclick="event.stopPropagation();__anaKalRuaj(\''+cfg.id+'\')">Ruaj</button>'+
+    '</div>';
+    panel.innerHTML=h;
+  }
+
+  window.__anaKalendaret[cfg.id] = { nav:ndryshoMuaj, klik:klikDita, ruaj:ruaj, mbyll:mbyllPanelin, refreshLabel:refreshLabel };
+
+  $(cfg.btnId).addEventListener('click', function(e){
+    e.stopPropagation();
+    const panel=$(cfg.panelId);
+    if(panel.classList.contains('hide')) hapPanelin(); else mbyllPanelin();
+  });
+  refreshLabel();
+}
+function __anaKalNav(id,delta){ window.__anaKalendaret[id].nav(delta); }
+function __anaKalKlik(id,dnr){ window.__anaKalendaret[id].klik(dnr); }
+function __anaKalRuaj(id){ window.__anaKalendaret[id].ruaj(); }
+function __anaKalMbyll(id){ window.__anaKalendaret[id].mbyll(); }
+document.addEventListener('click', function(){
+  if(!window.__anaKalendaret) return;
+  Object.keys(window.__anaKalendaret).forEach(function(id){
+    const p=$('anaKalPanel_'+id);
+    if(p && !p.classList.contains('hide')) p.classList.add('hide');
+  });
+});
