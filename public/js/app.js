@@ -582,7 +582,7 @@ function dashKatUpdateBtnLabel(){
 async function dashKatNgarkoListen(){
   const el=$('dashKategoriLista'); if(!el) return;
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
-  const fmt=d=>d.toISOString().slice(0,10);
+  const fmt=d=>{ const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0'); return y+'-'+m+'-'+dd; };
   let url='/api/analytics/kategorite?nga='+fmt(nga)+'&deri='+fmt(sot);
   if(_dashKatSelectedAd) url+='&reklama_ids='+_dashKatSelectedAd;
   let d;
