@@ -91,7 +91,7 @@ function mainAnalytics(m){
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
       '<div class="card" style="flex:1;min-width:260px;">'+
         '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Snippet-et e reklamave</h3>'+
-        '<p class="small mut" style="margin:0 0 12px;">Çfarë u ke dhënë bizneseve të tjera nëpërmjet snippet-eve tuaja. <span style="color:var(--acc);text-decoration:underline;cursor:pointer;" onclick="nav({v:\'profile\',nav:\'snippetet\'})">Shto snippet</span> për t\'u shfaqur edhe ti më shumë tek të tjerët.</p>'+
+        '<p class="small mut" style="margin:0 0 12px;">Çfarë u ke dhënë bizneseve të tjera nëpërmjet snippet-eve tuaja. <span style="color:var(--acc);text-decoration:underline;cursor:pointer;" onclick="snipKrijo()">Shto snippet</span> për t\'u shfaqur edhe ti më shumë tek të tjerët.</p>'+
         '<div id="anaSnipDheneLista" style="max-height:300px;overflow-y:auto;padding-right:4px;"><p class="small">Po ngarkoj…</p></div>'+
       '</div>'+
       '<div class="card" style="flex:2;min-width:340px;">'+
