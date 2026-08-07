@@ -362,6 +362,57 @@ app.get('/api/analytics/reklamat', iLoguar, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// --- ANALYTICS: ecuria e reklamave, ndare sipas KATEGORISE se biznesit qe i shfaqi (host) ---
+app.get('/api/analytics/kategorite', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const ngaD=new Date(nga), deriD=new Date(deri);
+    if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+
+    const rekIds = (req.query.reklama_ids || '').split(',').map(x => parseInt(x, 10)).filter(x => !isNaN(x));
+    const filtroRek = rekIds.length ? ' AND e.reklama_id = ANY($4::int[])' : '';
+    const baseParams = rekIds.length ? [req.biznesId, nga, deri, rekIds] : [req.biznesId, nga, deri];
+
+    // 1) Kategorite qe kane te pakten 1 ngjarje (cfaredo lloji) ne kete periudhe/filtrim
+    const katQ = await pool.query(`
+      SELECT DISTINCT b.kategoria_kryesore AS kategoria
+      FROM ngjarjet e JOIN bizneset b ON b.id = e.biznes_id
+      WHERE e.reklamues_id=$1 AND e.created_at::date BETWEEN $2 AND $3
+        AND e.lloji IN ('view','shikim','click','konvertim')
+        AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''
+        ${filtroRek}`, baseParams);
+    const kategorite = katQ.rows.map(r => r.kategoria);
+
+    const rezultat = [];
+    for (const kat of kategorite) {
+      const filtroRek2 = rekIds.length ? ' AND e.reklama_id = ANY($4::int[])' : '';
+      const katIdx = rekIds.length ? 5 : 4;
+      const params2 = rekIds.length ? [req.biznesId, nga, deri, rekIds, kat] : [req.biznesId, nga, deri, kat];
+      const r = await pool.query(`
+        SELECT gs::date AS data,
+          COALESCE(v.n,0)::int  AS shfaqje,
+          COALESCE(sh.n,0)::int AS shikime,
+          COALESCE(k.n,0)::int  AS klikime,
+          COALESCE(kv.n,0)::int AS konvertime
+        FROM generate_series($2::date, $3::date, '1 day') AS gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.biznes_id WHERE e.reklamues_id=$1 AND e.lloji='view'${filtroRek2} AND b.kategoria_kryesore=$${katIdx} GROUP BY d) v ON v.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.biznes_id WHERE e.reklamues_id=$1 AND e.lloji='shikim'${filtroRek2} AND b.kategoria_kryesore=$${katIdx} GROUP BY d) sh ON sh.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.biznes_id WHERE e.reklamues_id=$1 AND e.lloji='click'${filtroRek2} AND b.kategoria_kryesore=$${katIdx} GROUP BY d) k ON k.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.biznes_id WHERE e.reklamues_id=$1 AND e.lloji='konvertim'${filtroRek2} AND b.kategoria_kryesore=$${katIdx} GROUP BY d) kv ON kv.d=gs
+        ORDER BY gs`, params2);
+      rezultat.push({ emri: kat, pikat: r.rows.map(x => ({
+        data: x.data.toISOString().slice(0,10),
+        shfaqje: x.shfaqje, shikime: x.shikime, klikime: x.klikime, konvertime: x.konvertime
+      })) });
+    }
+
+    res.json({ nga, deri, kategorite: rezultat });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
 // --- PROFILI I ZGJERUAR: pikët e profilit + analitika për çdo snippet ---
 app.get('/api/profili', iLoguar, async (req, res) => {
