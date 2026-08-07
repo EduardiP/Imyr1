@@ -3,6 +3,7 @@
 
 function mainAnalytics(m){
   _anaSelectedAd=null; _anaDropdownOpen=false;
+  _anaKatSelectedAd=null; _anaKatDropdownOpen=false; _anaKatMetrikaAktive='shikime';
   m.innerHTML='<h2 class="h">Analytics</h2>'+
     '<p class="small" style="margin:2px 0 16px;">Ecuria e reklamave të tua me ditë.</p>'+
     '<div class="card" style="margin-bottom:16px;">'+
@@ -11,9 +12,9 @@ function mainAnalytics(m){
         '<button class="btn" onclick="anaPreset(30)">30 ditët e fundit</button>'+
         '<button class="btn" onclick="anaPreset(90)">90 ditët e fundit</button>'+
         '<span style="flex:1"></span>'+
-        '<input type="date" id="anaNga" style="width:auto;" onchange="ngarkoAnalitika()">'+
+        '<input type="date" id="anaNga" style="width:auto;color-scheme:dark;" onchange="anaNgarkoTeGjitha()">'+
         '<span class="small">deri</span>'+
-        '<input type="date" id="anaDeri" style="width:auto;" onchange="ngarkoAnalitika()">'+
+        '<input type="date" id="anaDeri" style="width:auto;color-scheme:dark;" onchange="anaNgarkoTeGjitha()">'+
       '</div>'+
       '<div style="display:flex;justify-content:flex-end;margin-top:10px;">'+
         '<div style="position:relative;">'+
@@ -23,7 +24,21 @@ function mainAnalytics(m){
       '</div>'+
       '<div id="anaMetrikaRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;"></div>'+
     '</div>'+
-    '<div class="card"><canvas id="anaCanvas" height="90"></canvas></div>';
+    '<div class="card"><canvas id="anaCanvas" height="90"></canvas></div>'+
+    '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
+      '<div class="card" style="flex:2;min-width:340px;">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;">'+
+          '<h3 class="h" style="font-size:15px;margin:0;">Sipas kategorisë së biznesit</h3>'+
+          '<div style="position:relative;">'+
+            '<button type="button" id="anaKatRekBtn" class="btn" style="min-width:140px;">Reklamat <span id="anaKatRekBtnCount"></span> ▾</button>'+
+            '<div id="anaKatRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:230px;max-height:260px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+          '</div>'+
+        '</div>'+
+        '<div id="anaKatMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
+        '<canvas id="anaKatCanvas" height="110"></canvas>'+
+      '</div>'+
+      '<div class="card" style="flex:1;min-width:220px;"></div>'+
+    '</div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
   $('anaNga').value=anaFmt(nga); $('anaDeri').value=anaFmt(sot);
   $('anaRekBtn').addEventListener('click', function(e){
@@ -32,13 +47,25 @@ function mainAnalytics(m){
     _anaDropdownOpen=!_anaDropdownOpen;
     dd.classList.toggle('hide', !_anaDropdownOpen);
   });
+  $('anaKatRekBtn').addEventListener('click', function(e){
+    e.stopPropagation();
+    const dd=$('anaKatRekDropdown'); if(!dd) return;
+    _anaKatDropdownOpen=!_anaKatDropdownOpen;
+    dd.classList.toggle('hide', !_anaKatDropdownOpen);
+  });
   anaRenderMetrika();
   ngarkoAnaReklamatLista();
+  anaRenderKategoriMetrika();
+  ngarkoAnaKatReklamatLista();
   ngarkoAnalitika();
+  ngarkoAnaKategorite();
 }
+function anaNgarkoTeGjitha(){ ngarkoAnalitika(); ngarkoAnaKategorite(); }
 document.addEventListener('click', function(){
   const dd=$('anaRekDropdown');
   if(dd && _anaDropdownOpen){ dd.classList.add('hide'); _anaDropdownOpen=false; }
+  const dd2=$('anaKatRekDropdown');
+  if(dd2 && _anaKatDropdownOpen){ dd2.classList.add('hide'); _anaKatDropdownOpen=false; }
 });
 var _anaSelectedAd=null, _anaRekAll=[], _anaDropdownOpen=false;
 var ANA_METRIKA=[
@@ -114,7 +141,7 @@ function anaFmt(d){ return d.toISOString().slice(0,10); }
 function anaPreset(dite){
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-(dite-1));
   $('anaNga').value=anaFmt(nga); $('anaDeri').value=anaFmt(sot);
-  ngarkoAnalitika();
+  anaNgarkoTeGjitha();
 }
 var _anaChart=null;
 async function ngarkoAnalitika(){
@@ -201,3 +228,86 @@ var anaMultiColorLinePlugin={
     }
   }
 };
+
+// ================= GRAFIKU I DYTE: sipas kategorise se biznesit qe e shfaqi reklamen =================
+var _anaKatSelectedAd=null, _anaKatRekAll=[], _anaKatDropdownOpen=false;
+var _anaKatMetrikaAktive='shikime';
+var _anaKatChart=null;
+
+function anaKatPaleta(i){
+  const hue=(i*137.508)%360;   // kend i artë — ngjyra te dallueshme per cdo numer kategorish
+  return 'hsl('+hue.toFixed(0)+',65%,55%)';
+}
+function anaRenderKategoriMetrika(){
+  const el=$('anaKatMetrikaRow'); if(!el) return;
+  el.innerHTML='';
+  ANA_METRIKA.forEach(x=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.textContent=x.l;
+    const on=_anaKatMetrikaAktive===x.k;
+    btn.style.cssText = on
+      ? 'padding:6px 12px;border-radius:20px;border:1px solid var(--acc);background:var(--acc);color:#06121f;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;'
+      : 'padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit;';
+    btn.addEventListener('click', function(){
+      _anaKatMetrikaAktive=x.k;
+      anaRenderKategoriMetrika();
+      ngarkoAnaKategorite();
+    });
+    el.appendChild(btn);
+  });
+}
+async function ngarkoAnaKatReklamatLista(){
+  try{ _anaKatRekAll = await(await fetch('/api/reklamat')).json(); }catch(e){ _anaKatRekAll=[]; }
+  anaRenderKatRekDropdown();
+}
+function anaRenderKatRekDropdown(){
+  const dd=$('anaKatRekDropdown'); if(!dd) return;
+  dd.innerHTML='';
+  dd.appendChild(anaRekRresht('Të gjitha', !_anaKatSelectedAd, true, anaKatZgjidhTeGjitha));
+  if(!_anaKatRekAll.length){ const p=document.createElement('p'); p.className='small mut'; p.style.padding='6px'; p.textContent="S'ke ende reklama."; dd.appendChild(p); anaKatUpdateBtnLabel(); return; }
+  const hr=document.createElement('div'); hr.style.cssText='height:1px;background:var(--line);margin:4px 2px;'; dd.appendChild(hr);
+  _anaKatRekAll.forEach(r=>{
+    const thumb=anaRekThumbHTML(r);
+    const html=thumb+'<span style="overflow:hidden;text-overflow:ellipsis;">'+esc(r.emri||('#'+r.id))+'</span>';
+    dd.appendChild(anaRekRresht(html, _anaKatSelectedAd===r.id, false, function(){ anaKatZgjidhReklam(r.id); }));
+  });
+  anaKatUpdateBtnLabel();
+}
+function anaKatZgjidhTeGjitha(){ _anaKatSelectedAd=null; anaRenderKatRekDropdown(); ngarkoAnaKategorite(); }
+function anaKatZgjidhReklam(id){ _anaKatSelectedAd=id; anaRenderKatRekDropdown(); ngarkoAnaKategorite(); }
+function anaKatUpdateBtnLabel(){
+  const el=$('anaKatRekBtnCount'); if(!el) return;
+  el.textContent = _anaKatSelectedAd ? '(1)' : '';
+}
+async function ngarkoAnaKategorite(){
+  const ngaEl=$('anaNga'), deriEl=$('anaDeri');
+  if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
+  let url='/api/analytics/kategorite?nga='+ngaEl.value+'&deri='+deriEl.value;
+  if(_anaKatSelectedAd) url+='&reklama_ids='+_anaKatSelectedAd;
+  let d;
+  try{ d=await(await fetch(url)).json(); }catch(e){ return; }
+  const kategorite=d.kategorite||[];
+  const canvas=$('anaKatCanvas'); if(!canvas||typeof Chart==='undefined') return;
+  if(_anaKatChart){ _anaKatChart.destroy(); _anaKatChart=null; }
+  if(!kategorite.length){
+    const ctx0=canvas.getContext('2d'); ctx0.clearRect(0,0,canvas.width,canvas.height);
+    return;
+  }
+  const labels=kategorite[0].pikat.map(p=>p.data);
+  const datasets=kategorite.map((k,i)=>({
+    label:k.emri, data:k.pikat.map(p=>p[_anaKatMetrikaAktive]),
+    borderColor:anaKatPaleta(i), backgroundColor:'transparent',
+    tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:anaKatPaleta(i)
+  }));
+  const ctx=canvas.getContext('2d');
+  _anaKatChart=new Chart(ctx,{type:'line',data:{labels,datasets},
+    options:{responsive:true,interaction:{mode:'index',intersect:false},
+      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}},
+      plugins:{legend:{labels:{color:'#e6edf3', generateLabels:function(chart){
+        const items=Chart.defaults.plugins.legend.labels.generateLabels(chart);
+        items.forEach(it=>{ it.lineDash=[]; it.lineWidth=2; });
+        return items;
+      }}, onClick:function(){}}}},
+    plugins:[anaMultiColorLinePlugin]
+  });
+}
