@@ -325,7 +325,7 @@ function renderUserMenu(){
   let foot=$('snavFoot');
   if(!foot){
     foot=document.createElement('div'); foot.id='snavFoot';
-    foot.style.cssText='margin-top:auto;padding-top:12px;padding-bottom:40px;border-top:1px solid var(--line);position:relative;';
+    foot.style.cssText='margin-top:auto;padding-top:12px;padding-bottom:60px;border-top:1px solid var(--line);position:relative;';
     const aside=$('snav').closest('.sidebar'); if(aside) aside.appendChild(foot);
   }
   const inic=((une&&une.emri)||'?').trim().charAt(0).toUpperCase();
