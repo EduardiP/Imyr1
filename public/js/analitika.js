@@ -89,12 +89,12 @@ function mainAnalytics(m){
       '</div>'+
     '</div>'+
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
-      '<div class="card" style="flex:2;min-width:340px;">'+
+      '<div class="card" style="flex:1;min-width:260px;">'+
         '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Snippet-et e reklamave</h3>'+
         '<p class="small mut" style="margin:0 0 12px;">Çfarë u ke dhënë bizneseve të tjera nëpërmjet snippet-eve tuaja.</p>'+
         '<div id="anaSnipDheneLista" style="max-height:300px;overflow-y:auto;padding-right:4px;"><p class="small">Po ngarkoj…</p></div>'+
       '</div>'+
-      '<div class="card" style="flex:1;min-width:220px;">'+
+      '<div class="card" style="flex:2;min-width:340px;">'+
         '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Sipas kategorisë së biznesit</h3>'+
         '<p class="small mut" style="margin:0 0 12px;">Çfarë u ke dhënë secilës kategori.</p>'+
         '<div id="anaKatDheneMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
