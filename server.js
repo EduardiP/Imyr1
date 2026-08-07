@@ -373,6 +373,10 @@ app.get('/api/analytics/kategorite', iLoguar, async (req, res) => {
     const ngaD=new Date(nga), deriD=new Date(deri);
     if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
 
+    // Kategoria e vet biznesit — s'duhet shfaqur (asnjeherë s'shfaqet konkurrenca e vet)
+    const vetja = await pool.query('SELECT kategoria_kryesore FROM bizneset WHERE id=$1', [req.biznesId]);
+    const vetjaKat = vetja.rows.length ? vetja.rows[0].kategoria_kryesore : null;
+
     const rekIds = (req.query.reklama_ids || '').split(',').map(x => parseInt(x, 10)).filter(x => !isNaN(x));
     const filtroRek = rekIds.length ? ' AND e.reklama_id = ANY($4::int[])' : '';
     const baseParams = rekIds.length ? [req.biznesId, nga, deri, rekIds] : [req.biznesId, nga, deri];
@@ -385,7 +389,8 @@ app.get('/api/analytics/kategorite', iLoguar, async (req, res) => {
         AND e.lloji IN ('view','shikim','click','konvertim')
         AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''
         ${filtroRek}`, baseParams);
-    const kategorite = katQ.rows.map(r => r.kategoria);
+    let kategorite = katQ.rows.map(r => r.kategoria);
+    if (vetjaKat) kategorite = kategorite.filter(k => k !== vetjaKat);
 
     const rezultat = [];
     for (const kat of kategorite) {
