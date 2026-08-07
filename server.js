@@ -45,6 +45,9 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
+// Migrim: snippet_id te ngjarjet (per te ditur cili snippet i biznesit shfaqi reklamen qe solli shikimin/klikimin/konvertimin)
+pool.query(`ALTER TABLE ngjarjet ADD COLUMN IF NOT EXISTS snippet_id INTEGER`).catch(e => console.error('migrim snippet_id:', e.message));
+
 // --- Ruajtja e skedareve (Cloudflare R2) ---
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 const s3 = process.env.R2_ENDPOINT ? new S3Client({
@@ -549,9 +552,9 @@ app.get('/klik', async (req, res) => {
       if (p.rows.length) {
         const kod = crypto.randomBytes(9).toString('hex');
         await pool.query(
-          `INSERT INTO ngjarjet (biznes_id, lloji, origjina, reklama_id, reklamues_id, klik_kod)
-           VALUES ($1,'click',$2,$3,$4,$5)`,
-          [h.rows[0].id, req.headers.referer || null, p.rows[0].id, p.rows[0].biznes_id, kod]);
+          `INSERT INTO ngjarjet (biznes_id, lloji, origjina, reklama_id, reklamues_id, klik_kod, snippet_id)
+           VALUES ($1,'click',$2,$3,$4,$5,$6)`,
+          [h.rows[0].id, req.headers.referer || null, p.rows[0].id, p.rows[0].biznes_id, kod, snK ? snK.snippet_id : null]);
         dest = p.rows[0].dest;
         if (dest) {
           if (!/^https?:\/\//i.test(dest)) dest = 'https://' + dest;
@@ -622,7 +625,7 @@ app.all('/konvertim', async (req, res) => {
   if (!kod) return res.status(204).end();
   try {
     const k = await pool.query(
-      `SELECT reklama_id, reklamues_id, created_at, origjina FROM ngjarjet
+      `SELECT reklama_id, reklamues_id, created_at, origjina, snippet_id FROM ngjarjet
        WHERE klik_kod=$1 AND lloji='click' LIMIT 1`, [kod]);
     if (!k.rows.length) return res.status(204).end();           // kod i panjohur
     const kl = k.rows[0];
@@ -672,10 +675,10 @@ app.all('/konvertim', async (req, res) => {
        AND COALESCE(origjina,'') = COALESCE($2,'') LIMIT 1`, [kod, zona ? ('zona:' + zona) : '']);
     if (ekz.rows.length) return res.status(204).end();
     await pool.query(
-      `INSERT INTO ngjarjet (biznes_id, lloji, origjina, reklama_id, reklamues_id, klik_kod)
-       VALUES ($1,'konvertim',$2,$3,$4,$5)`,
+      `INSERT INTO ngjarjet (biznes_id, lloji, origjina, reklama_id, reklamues_id, klik_kod, snippet_id)
+       VALUES ($1,'konvertim',$2,$3,$4,$5,$6)`,
       [kl.reklamues_id, zona ? ('zona:' + zona) : (req.headers.origin || req.headers.referer || null),
-       kl.reklama_id, kl.reklamues_id, kod]);
+       kl.reklama_id, kl.reklamues_id, kod, kl.snippet_id]);
     // Nje konvertim REAL eshte prova qe snippet-i i gjurmimit eshte aktiv → rivendos track_active.
     await pool.query('UPDATE bizneset SET track_active=true, track_seen_at=now() WHERE id=$1', [kl.reklamues_id]);
     // Nje konvertim REAL me zone → lidhe. Nese s'ekziston, krijoje si te lidhur (por jo e fshire).
@@ -1400,8 +1403,8 @@ app.all('/track', async (req, res) => {
         if (pr.rows.length) reklamuesId = pr.rows[0].biznes_id;
       }
       await pool.query(
-        'INSERT INTO ngjarjet (biznes_id, lloji, origjina, reklama_id, reklamues_id) VALUES ($1,$2,$3,$4,$5)',
-        [b.rows[0].id, lloji, req.headers.origin || req.headers.referer || null, rid, reklamuesId]
+        'INSERT INTO ngjarjet (biznes_id, lloji, origjina, reklama_id, reklamues_id, snippet_id) VALUES ($1,$2,$3,$4,$5,$6)',
+        [b.rows[0].id, lloji, req.headers.origin || req.headers.referer || null, rid, reklamuesId, snK2.snippet_id || null]
       );
     }
   } catch (e) {}
