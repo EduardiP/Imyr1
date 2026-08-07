@@ -930,6 +930,10 @@ function mainKreative(m, s){
   const zgjedhur = s.lloji || null;
   m.innerHTML = '<h2 class="h">Creative</h2>'+
     '<p class="small" style="margin:8px 0 20px;">Krijo reklama me AI: imazh, video, ose HTML5.</p>'+
+    '<div id="krGatiWrap" style="display:none;margin-bottom:20px;">'+
+      '<label>Krijimet e gatshme</label>'+
+      '<div id="krGatiLista" style="max-height:160px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:6px 8px;margin-top:8px;"></div>'+
+    '</div>'+
     // Zgjedhesi i llojit
     '<label>Cfare do te krijosh?</label>'+
     '<div class="krTip">'+
@@ -945,6 +949,29 @@ function mainKreative(m, s){
     // Lista e krijimeve te fundit
     '<div id="krLista" style="margin-top:30px;"></div>';
   ngarkoKreativet();
+  ngarkoKreativetGati();
+}
+function krThumbHTML(k){
+  const wrap='width:30px;height:30px;border-radius:6px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#0e1116;border:1px solid var(--line);';
+  if(k.lloji==='imazh' && (k.output_url||k.skedari_url)) return '<div style="'+wrap+'"><img src="'+esc(k.output_url||k.skedari_url)+'" style="width:100%;height:100%;object-fit:cover;"></div>';
+  if(k.lloji==='video') return '<div style="'+wrap+'font-size:13px;color:var(--mut);">▶</div>';
+  if(k.lloji==='html5') return '<div style="'+wrap+'font-size:11px;color:var(--mut);">&lt;/&gt;</div>';
+  return '<div style="'+wrap+'"></div>';
+}
+async function ngarkoKreativetGati(){
+  const wrap=$('krGatiWrap'), el=$('krGatiLista'); if(!wrap||!el) return;
+  try{
+    const r=await(await fetch('/api/kreative/gati')).json();
+    const rows=r.kreative||[];
+    if(!rows.length){ wrap.style.display='none'; return; }
+    wrap.style.display='block';
+    el.innerHTML = rows.map(k=>
+      '<div style="display:flex;align-items:center;gap:10px;padding:6px 2px;border-bottom:1px solid #20262f;">'+
+        krThumbHTML(k)+
+        '<span style="font-size:13px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(k.emri||'')+'</span>'+
+      '</div>'
+    ).join('');
+  }catch(e){ wrap.style.display='none'; }
 }
 
 function krZgjidh(l){ nav({v:'profile', nav:'kreative', lloji:l}); }
