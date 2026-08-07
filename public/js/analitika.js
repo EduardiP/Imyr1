@@ -4,6 +4,7 @@
 function mainAnalytics(m){
   _anaSelectedAd=null; _anaDropdownOpen=false;
   _anaKatSelectedAd=null; _anaKatDropdownOpen=false; _anaKatMetrikaAktive='shikime';
+  _anaListSelectedAd=null; _anaListDropdownOpen=false;
   m.innerHTML='<h2 class="h">Analytics</h2>'+
     '<p class="small" style="margin:2px 0 16px;">Ecuria e reklamave të tua me ditë.</p>'+
     '<div class="card" style="margin-bottom:16px;">'+
@@ -41,7 +42,15 @@ function mainAnalytics(m){
         '<div id="anaKatMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
         '<canvas id="anaKatCanvas" height="110"></canvas>'+
       '</div>'+
-      '<div class="card" style="flex:1;min-width:220px;"></div>'+
+      '<div class="card" style="flex:1;min-width:220px;">'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Kategoritë e bizneseve</h3>'+
+        '<p class="small mut" style="margin:0 0 12px;">Ku janë ngarkuar reklamat tuaja.</p>'+
+        '<div style="position:relative;margin-bottom:14px;">'+
+          '<button type="button" id="anaListRekBtn" class="btn" style="width:100%;">Reklamat <span id="anaListRekBtnCount"></span> ▾</button>'+
+          '<div id="anaListRekDropdown" class="hide" style="position:absolute;top:110%;left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;max-height:240px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+        '</div>'+
+        '<div id="anaListaKategori"><p class="small">Po ngarkoj…</p></div>'+
+      '</div>'+
     '</div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
   $('anaNga').value=anaFmt(nga); $('anaDeri').value=anaFmt(sot);
@@ -57,19 +66,29 @@ function mainAnalytics(m){
     _anaKatDropdownOpen=!_anaKatDropdownOpen;
     dd.classList.toggle('hide', !_anaKatDropdownOpen);
   });
+  $('anaListRekBtn').addEventListener('click', function(e){
+    e.stopPropagation();
+    const dd=$('anaListRekDropdown'); if(!dd) return;
+    _anaListDropdownOpen=!_anaListDropdownOpen;
+    dd.classList.toggle('hide', !_anaListDropdownOpen);
+  });
   anaRenderMetrika();
   ngarkoAnaReklamatLista();
   anaRenderKategoriMetrika();
   ngarkoAnaKatReklamatLista();
+  ngarkoAnaListRekamatLista();
   ngarkoAnalitika();
   ngarkoAnaKategorite();
+  ngarkoAnaLista();
 }
-function anaNgarkoTeGjitha(){ ngarkoAnalitika(); ngarkoAnaKategorite(); }
+function anaNgarkoTeGjitha(){ ngarkoAnalitika(); ngarkoAnaKategorite(); ngarkoAnaLista(); }
 document.addEventListener('click', function(){
   const dd=$('anaRekDropdown');
   if(dd && _anaDropdownOpen){ dd.classList.add('hide'); _anaDropdownOpen=false; }
   const dd2=$('anaKatRekDropdown');
   if(dd2 && _anaKatDropdownOpen){ dd2.classList.add('hide'); _anaKatDropdownOpen=false; }
+  const dd3=$('anaListRekDropdown');
+  if(dd3 && _anaListDropdownOpen){ dd3.classList.add('hide'); _anaListDropdownOpen=false; }
 });
 var _anaSelectedAd=null, _anaRekAll=[], _anaDropdownOpen=false;
 var ANA_METRIKA=[
@@ -322,4 +341,54 @@ async function ngarkoAnaKategorite(){
       plugins:{legend:{display:false}}},
     plugins:[anaMultiColorLinePlugin]
   });
+}
+
+// ================= DIVI I DYTE: LISTE me kategorite + 4 metrikat totale (jo grafik) =================
+var _anaListSelectedAd=null, _anaListRekAll=[], _anaListDropdownOpen=false;
+
+async function ngarkoAnaListRekamatLista(){
+  try{ _anaListRekAll = await(await fetch('/api/reklamat')).json(); }catch(e){ _anaListRekAll=[]; }
+  anaRenderListRekDropdown();
+}
+function anaRenderListRekDropdown(){
+  const dd=$('anaListRekDropdown'); if(!dd) return;
+  dd.innerHTML='';
+  dd.appendChild(anaRekRresht('Të gjitha', !_anaListSelectedAd, true, anaListZgjidhTeGjitha));
+  if(!_anaListRekAll.length){ const p=document.createElement('p'); p.className='small mut'; p.style.padding='6px'; p.textContent="S'ke ende reklama."; dd.appendChild(p); anaListUpdateBtnLabel(); return; }
+  const hr=document.createElement('div'); hr.style.cssText='height:1px;background:var(--line);margin:4px 2px;'; dd.appendChild(hr);
+  _anaListRekAll.forEach(r=>{
+    const thumb=anaRekThumbHTML(r);
+    const html=thumb+'<span style="overflow:hidden;text-overflow:ellipsis;">'+esc(r.emri||('#'+r.id))+'</span>';
+    dd.appendChild(anaRekRresht(html, _anaListSelectedAd===r.id, false, function(){ anaListZgjidhReklam(r.id); }));
+  });
+  anaListUpdateBtnLabel();
+}
+function anaListZgjidhTeGjitha(){ _anaListSelectedAd=null; anaRenderListRekDropdown(); ngarkoAnaLista(); }
+function anaListZgjidhReklam(id){ _anaListSelectedAd=id; anaRenderListRekDropdown(); ngarkoAnaLista(); }
+function anaListUpdateBtnLabel(){
+  const el=$('anaListRekBtnCount'); if(!el) return;
+  el.textContent = _anaListSelectedAd ? '(1)' : '';
+}
+async function ngarkoAnaLista(){
+  const ngaEl=$('anaNga'), deriEl=$('anaDeri'), el=$('anaListaKategori');
+  if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value||!el) return;
+  let url='/api/analytics/kategorite?nga='+ngaEl.value+'&deri='+deriEl.value;
+  if(_anaListSelectedAd) url+='&reklama_ids='+_anaListSelectedAd;
+  let d;
+  try{ d=await(await fetch(url)).json(); }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; return; }
+  const kategorite=d.kategorite||[];
+  if(!kategorite.length){ el.innerHTML='<p class="small mut">Asnjë kategori me të dhëna në këtë periudhë.</p>'; return; }
+  el.innerHTML = kategorite.map(k=>{
+    const tot={shfaqje:0,shikime:0,klikime:0,konvertime:0};
+    k.pikat.forEach(p=>{ tot.shfaqje+=p.shfaqje; tot.shikime+=p.shikime; tot.klikime+=p.klikime; tot.konvertime+=p.konvertime; });
+    return '<div style="padding:10px 0;border-bottom:1px solid #20262f;">'+
+      '<div style="font-weight:600;font-size:13px;margin-bottom:6px;">'+esc(k.emri)+'</div>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--mut);">'+
+        '<span>Shfaqje: <b style="color:var(--txt);">'+tot.shfaqje+'</b></span>'+
+        '<span>Shikime: <b style="color:var(--txt);">'+tot.shikime+'</b></span>'+
+        '<span>Klikime: <b style="color:var(--txt);">'+tot.klikime+'</b></span>'+
+        '<span>Konvertime: <b style="color:var(--txt);">'+tot.konvertime+'</b></span>'+
+      '</div>'+
+    '</div>';
+  }).join('');
 }
