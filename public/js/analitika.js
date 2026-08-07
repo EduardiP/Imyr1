@@ -157,12 +157,15 @@ var anaMultiColorLinePlugin={
     }
     if(!active.length) return;
     const n=active[0].data.length, totalWidth=2, STEPS=12;
+    const zeroY=chart.scales.y.getPixelForValue(0);
     function catmull(p0,p1,p2,p3,t){
       const t2=t*t, t3=t2*t;
-      return {
+      const pt={
         x:0.5*((2*p1.x)+(-p0.x+p2.x)*t+(2*p0.x-5*p1.x+4*p2.x-p3.x)*t2+(-p0.x+3*p1.x-3*p2.x+p3.x)*t3),
         y:0.5*((2*p1.y)+(-p0.y+p2.y)*t+(2*p0.y-5*p1.y+4*p2.y-p3.y)*t2+(-p0.y+3*p1.y-3*p2.y+p3.y)*t3)
       };
+      if(pt.y>zeroY) pt.y=zeroY;   // mos kalo kurre poshte 0 (kanavaca rritet poshte)
+      return pt;
     }
     for(let p=0;p<n-1;p++){
       const groups={};
