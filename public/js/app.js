@@ -309,8 +309,7 @@ function renderProfile(s){
 function renderNav(){
   const el=$('snav'); el.innerHTML='';
   NAV.forEach(n=>{
-    if(n.k==='plani') return;   // shkon te menuja e re e perdoruesit, poshte
-    if(n.k==='suport'){ const hr=document.createElement('div'); hr.style.cssText='height:1px;background:var(--line);margin:10px 4px;'; el.appendChild(hr); }
+    if(n.k==='plani' || n.k==='suport') return;   // shkojne te menuja e re e perdoruesit, poshte
     const b=document.createElement('button');
     b.textContent=n.l; if(n.k===curNav) b.className='active';
     b.onclick=()=>nav({v:'profile', nav:n.k});
@@ -326,7 +325,7 @@ function renderUserMenu(){
   let foot=$('snavFoot');
   if(!foot){
     foot=document.createElement('div'); foot.id='snavFoot';
-    foot.style.cssText='margin-top:auto;padding-top:12px;border-top:1px solid var(--line);position:relative;';
+    foot.style.cssText='margin-top:auto;padding-top:12px;padding-bottom:14px;border-top:1px solid var(--line);position:relative;';
     const aside=$('snav').closest('.sidebar'); if(aside) aside.appendChild(foot);
   }
   const inic=((une&&une.emri)||'?').trim().charAt(0).toUpperCase();
@@ -338,13 +337,14 @@ function renderUserMenu(){
       avatarHTML+
       '<span style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc((une&&une.emri)||'')+'</span>'+
     '</button>'+
-    '<div id="userMenuDropdown" class="hide" style="position:absolute;bottom:100%;left:4px;right:4px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;margin-bottom:8px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:30;"></div>';
+    '<div id="userMenuDropdown" class="hide" style="position:absolute;left:100%;bottom:0;margin-left:8px;width:190px;background:var(--card);border:1px solid var(--line);border-radius:0;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:30;"></div>';
 
   const items = [
-    { l:'Profili',    fn:function(){ nav({v:'profile', nav:'profili'}); } },
-    { l:'Plani',      fn:function(){ nav({v:'profile', nav:'plani'}); } },
-    { l:'Cilësimet',  fn:function(){ nav({v:'profile', nav:'cilesimet'}); } },
-    { l:'Dil',        fn:function(){ dil(); }, err:true }
+    { l:'Profili',           fn:function(){ nav({v:'profile', nav:'profili'}); } },
+    { l:'Plani',             fn:function(){ nav({v:'profile', nav:'plani'}); } },
+    { l:'Ndihmë & Suport',   fn:function(){ nav({v:'profile', nav:'suport'}); } },
+    { l:'Cilësimet',         fn:function(){ nav({v:'profile', nav:'cilesimet'}); } },
+    { l:'Dil',               fn:function(){ dil(); }, err:true }
   ];
   const dd=$('userMenuDropdown');
   dd.innerHTML = items.map(function(it,i){
