@@ -229,7 +229,7 @@ async function ngarkoAnalitika(){
   if(_anaChart) _anaChart.destroy();
   _anaChart=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
-      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}},
+      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
       plugins:{legend:{labels:{color:'#e6edf3', generateLabels:function(chart){
         const items=Chart.defaults.plugins.legend.labels.generateLabels(chart);
         items.forEach(it=>{ it.lineDash=[]; it.lineWidth=2; });
@@ -381,7 +381,7 @@ async function ngarkoAnaKategorite(){
   const ctx=canvas.getContext('2d');
   _anaKatChart=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
-      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}},
+      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
       plugins:{legend:{display:false}}},
     plugins:[anaMultiColorLinePlugin]
   });
