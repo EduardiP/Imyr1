@@ -475,7 +475,7 @@ footer.site{background:#080a0e;border-top:1px solid var(--line);padding:54px 0 3
 .njBtn { margin-top:8px; padding:6px 12px; background:#3b82f6; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; }
 .njBtn:hover { background:#2a6cd6; }
 input[type="date"] {
-  color-scheme: dark !important;
+  color-scheme: white !important;
 }
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1) !important;
