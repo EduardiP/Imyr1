@@ -27,14 +27,16 @@ function mainAnalytics(m){
     '<div class="card"><canvas id="anaCanvas" height="90"></canvas></div>'+
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
       '<div class="card" style="flex:2;min-width:340px;">'+
-        '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px;">'+
           '<h3 class="h" style="font-size:15px;margin:0;">Sipas kategorisë së biznesit</h3>'+
           '<div style="position:relative;">'+
             '<button type="button" id="anaKatRekBtn" class="btn" style="min-width:140px;">Reklamat <span id="anaKatRekBtnCount"></span> ▾</button>'+
             '<div id="anaKatRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:230px;max-height:260px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
           '</div>'+
         '</div>'+
-        '<div id="anaKatMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
+        '<p class="small mut" style="margin:0 0 12px;">Kategoritë e bizneseve ku janë ngarkuar reklamat tuaja.</p>'+
+        '<div id="anaKatMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
+        '<div id="anaKatLegend" style="display:flex;gap:14px;overflow-x:auto;white-space:nowrap;padding:4px 2px 10px;"></div>'+
         '<canvas id="anaKatCanvas" height="110"></canvas>'+
       '</div>'+
       '<div class="card" style="flex:1;min-width:220px;"></div>'+
@@ -191,7 +193,7 @@ var anaMultiColorLinePlugin={
         x:0.5*((2*p1.x)+(-p0.x+p2.x)*t+(2*p0.x-5*p1.x+4*p2.x-p3.x)*t2+(-p0.x+3*p1.x-3*p2.x+p3.x)*t3),
         y:0.5*((2*p1.y)+(-p0.y+p2.y)*t+(2*p0.y-5*p1.y+4*p2.y-p3.y)*t2+(-p0.y+3*p1.y-3*p2.y+p3.y)*t3)
       };
-      if(pt.y>zeroY) pt.y=zeroY;   // mos kalo kurre poshte 0 (kanavaca rritet poshte)
+      if(pt.y>zeroY) pt.y=zeroY;
       return pt;
     }
     for(let p=0;p<n-1;p++){
@@ -279,6 +281,16 @@ function anaKatUpdateBtnLabel(){
   const el=$('anaKatRekBtnCount'); if(!el) return;
   el.textContent = _anaKatSelectedAd ? '(1)' : '';
 }
+function anaRenderKatLegend(kategorite){
+  const el=$('anaKatLegend'); if(!el) return;
+  if(!kategorite.length){ el.innerHTML='<p class="small mut">Asnjë kategori me të dhëna në këtë periudhë.</p>'; return; }
+  el.innerHTML = kategorite.map((k,i)=>
+    '<span style="display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:12px;color:var(--txt);">'+
+      '<span style="width:10px;height:10px;border-radius:50%;background:'+anaKatPaleta(i)+';flex:0 0 auto;"></span>'+
+      esc(k.emri)+
+    '</span>'
+  ).join('');
+}
 async function ngarkoAnaKategorite(){
   const ngaEl=$('anaNga'), deriEl=$('anaDeri');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
@@ -286,7 +298,9 @@ async function ngarkoAnaKategorite(){
   if(_anaKatSelectedAd) url+='&reklama_ids='+_anaKatSelectedAd;
   let d;
   try{ d=await(await fetch(url)).json(); }catch(e){ return; }
-  const kategorite=d.kategorite||[];
+  // Vetem kategorite me te pakten 1 tek METRIKA aktualisht e zgjedhur, ne kete periudhe
+  const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>p[_anaKatMetrikaAktive]>0));
+  anaRenderKatLegend(kategorite);
   const canvas=$('anaKatCanvas'); if(!canvas||typeof Chart==='undefined') return;
   if(_anaKatChart){ _anaKatChart.destroy(); _anaKatChart=null; }
   if(!kategorite.length){
@@ -303,11 +317,7 @@ async function ngarkoAnaKategorite(){
   _anaKatChart=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
       scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}},
-      plugins:{legend:{labels:{color:'#e6edf3', generateLabels:function(chart){
-        const items=Chart.defaults.plugins.legend.labels.generateLabels(chart);
-        items.forEach(it=>{ it.lineDash=[]; it.lineWidth=2; });
-        return items;
-      }}, onClick:function(){}}}},
+      plugins:{legend:{display:false}}},
     plugins:[anaMultiColorLinePlugin]
   });
 }
