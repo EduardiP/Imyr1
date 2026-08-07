@@ -422,6 +422,82 @@ app.get('/api/analytics/kategorite', iLoguar, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// --- ANALYTICS: cfare u ke DHENE bizneseve te tjera, per SECILIN snippet te tend (host-side) ---
+app.get('/api/analytics/snippetet-dhene', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const ngaD=new Date(nga), deriD=new Date(deri);
+    if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+
+    const r = await pool.query(`
+      SELECT s.id, s.emri,
+        COALESCE(v.n,0)::int  AS shfaqje,
+        COALESCE(sh.n,0)::int AS shikime,
+        COALESCE(k.n,0)::int  AS klikime,
+        COALESCE(kv.n,0)::int AS konvertime
+      FROM snippetet s
+      LEFT JOIN (SELECT snippet_id, COUNT(*) n FROM ngjarjet WHERE lloji='view'      AND created_at::date BETWEEN $2 AND $3 GROUP BY snippet_id) v  ON v.snippet_id=s.id
+      LEFT JOIN (SELECT snippet_id, COUNT(*) n FROM ngjarjet WHERE lloji='shikim'    AND created_at::date BETWEEN $2 AND $3 GROUP BY snippet_id) sh ON sh.snippet_id=s.id
+      LEFT JOIN (SELECT snippet_id, COUNT(*) n FROM ngjarjet WHERE lloji='click'     AND created_at::date BETWEEN $2 AND $3 GROUP BY snippet_id) k  ON k.snippet_id=s.id
+      LEFT JOIN (SELECT snippet_id, COUNT(*) n FROM ngjarjet WHERE lloji='konvertim' AND created_at::date BETWEEN $2 AND $3 GROUP BY snippet_id) kv ON kv.snippet_id=s.id
+      WHERE s.biznes_id=$1
+      ORDER BY s.id ASC`, [req.biznesId, nga, deri]);
+
+    res.json({ nga, deri, snippetet: r.rows });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- ANALYTICS: cfare u ke DHENE secilës KATEGORI (host-side, drejtim i kundert nga /kategorite) ---
+app.get('/api/analytics/kategorite-dhene', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const ngaD=new Date(nga), deriD=new Date(deri);
+    if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+
+    const vetja = await pool.query('SELECT kategoria_kryesore FROM bizneset WHERE id=$1', [req.biznesId]);
+    const vetjaKat = vetja.rows.length ? vetja.rows[0].kategoria_kryesore : null;
+
+    const katQ = await pool.query(`
+      SELECT DISTINCT b.kategoria_kryesore AS kategoria
+      FROM ngjarjet e JOIN bizneset b ON b.id = e.reklamues_id
+      WHERE e.biznes_id=$1 AND e.created_at::date BETWEEN $2 AND $3
+        AND e.lloji IN ('view','shikim','click','konvertim')
+        AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''`, [req.biznesId, nga, deri]);
+    let kategorite = katQ.rows.map(r => r.kategoria);
+    if (vetjaKat) kategorite = kategorite.filter(k => k !== vetjaKat);
+
+    const rezultat = [];
+    for (const kat of kategorite) {
+      const r = await pool.query(`
+        SELECT gs::date AS data,
+          COALESCE(v.n,0)::int  AS shfaqje,
+          COALESCE(sh.n,0)::int AS shikime,
+          COALESCE(k.n,0)::int  AS klikime,
+          COALESCE(kv.n,0)::int AS konvertime
+        FROM generate_series($2::date, $3::date, '1 day') AS gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='view'      AND b.kategoria_kryesore=$4 GROUP BY d) v  ON v.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='shikim'    AND b.kategoria_kryesore=$4 GROUP BY d) sh ON sh.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='click'     AND b.kategoria_kryesore=$4 GROUP BY d) k  ON k.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='konvertim' AND b.kategoria_kryesore=$4 GROUP BY d) kv ON kv.d=gs
+        ORDER BY gs`, [req.biznesId, nga, deri, kat]);
+      rezultat.push({ emri: kat, pikat: r.rows.map(x => ({
+        data: x.data.toISOString().slice(0,10),
+        shfaqje: x.shfaqje, shikime: x.shikime, klikime: x.klikime, konvertime: x.konvertime
+      })) });
+    }
+
+    res.json({ nga, deri, kategorite: rezultat });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // --- PROFILI I ZGJERUAR: pikët e profilit + analitika për çdo snippet ---
 app.get('/api/profili', iLoguar, async (req, res) => {
   try {
