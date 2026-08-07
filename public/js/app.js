@@ -325,7 +325,7 @@ function renderUserMenu(){
   let foot=$('snavFoot');
   if(!foot){
     foot=document.createElement('div'); foot.id='snavFoot';
-    foot.style.cssText='margin-top:auto;padding-top:12px;padding-bottom:60px;border-top:1px solid var(--line);position:relative;';
+    foot.style.cssText='margin-top:auto;padding-top:12px;padding-bottom:58px;border-top:1px solid var(--line);position:relative;';
     const aside=$('snav').closest('.sidebar'); if(aside) aside.appendChild(foot);
   }
   const inic=((une&&une.emri)||'?').trim().charAt(0).toUpperCase();
@@ -337,7 +337,7 @@ function renderUserMenu(){
       avatarHTML+
       '<span style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc((une&&une.emri)||'')+'</span>'+
     '</button>'+
-    '<div id="userMenuDropdown" class="hide" style="position:absolute;left:100%;bottom:0;margin-left:8px;width:190px;background:var(--card);border:1px solid var(--line);border-radius:0;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:30;"></div>';
+    '<div id="userMenuDropdown" class="hide" style="position:fixed;width:190px;background:var(--card);border:1px solid var(--line);border-radius:0;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:9999;"></div>';
 
   const items = [
     { l:'Profili',           fn:function(){ nav({v:'profile', nav:'profili'}); } },
@@ -356,6 +356,11 @@ function renderUserMenu(){
   $('userMenuBtn').addEventListener('click', function(e){
     e.stopPropagation();
     _userMenuOpen=!_userMenuOpen;
+    if(_userMenuOpen){
+      const rect=this.getBoundingClientRect();
+      dd.style.left=(rect.right+8)+'px';
+      dd.style.bottom=(window.innerHeight-rect.bottom)+'px';
+    }
     dd.classList.toggle('hide', !_userMenuOpen);
   });
 }
