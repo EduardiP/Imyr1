@@ -300,40 +300,64 @@ async function ngarkoImazh(){
 function renderProfile(s){
   s = s || {};
   curNav = s.nav || 'dashboard';
-  $('p_emri').textContent = une.emri;
-  $('p_email').textContent = une.email;
-  $('p_kat').textContent = '';
-  const card = document.querySelector('.pcard');
-  if(card){ card.style.cursor='pointer'; card.onclick=()=>nav({v:'profile', nav:'profili'}); }
+  // Karta e vjetër e krye — fshihet, zhvendoset poshte si menuja e re
+  const oldCard = document.querySelector('.pcard');
+  if(oldCard) oldCard.style.display='none';
   renderNav();
   renderMain(s);
 }
 function renderNav(){
   const el=$('snav'); el.innerHTML='';
   NAV.forEach(n=>{
-    if(n.ndaresi){ const hr=document.createElement('div'); hr.style.cssText='height:1px;background:var(--line);margin:10px 4px;'; el.appendChild(hr); }
+    if(n.k==='plani') return;   // shkon te menuja e re e perdoruesit, poshte
+    if(n.k==='suport'){ const hr=document.createElement('div'); hr.style.cssText='height:1px;background:var(--line);margin:10px 4px;'; el.appendChild(hr); }
     const b=document.createElement('button');
     b.textContent=n.l; if(n.k===curNav) b.className='active';
     b.onclick=()=>nav({v:'profile', nav:n.k});
     el.appendChild(b);
   });
-  // Footer i sidebar-it: Cilesimet (ingranazh) + Dilni, ne fund fare
+  renderUserMenu();
+}
+var _userMenuOpen=false;
+document.addEventListener('click', function(){
+  if(_userMenuOpen){ const dd=$('userMenuDropdown'); if(dd) dd.classList.add('hide'); _userMenuOpen=false; }
+});
+function renderUserMenu(){
   let foot=$('snavFoot');
   if(!foot){
     foot=document.createElement('div'); foot.id='snavFoot';
-    foot.style.cssText='margin-top:auto;padding-top:12px;border-top:1px solid var(--line);';
-    const aside=el.closest('.sidebar'); if(aside) aside.appendChild(foot);
+    foot.style.cssText='margin-top:auto;padding-top:12px;border-top:1px solid var(--line);position:relative;';
+    const aside=$('snav').closest('.sidebar'); if(aside) aside.appendChild(foot);
   }
-  foot.innerHTML='';
-  const cil=document.createElement('button');
-  cil.innerHTML='<span style="display:inline-flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> Cilësimet</span>';
-  if(curNav==='cilesimet') cil.className='active';
-  cil.onclick=()=>nav({v:'profile', nav:'cilesimet'});
-  foot.appendChild(cil);
-  const lo=document.createElement('button');
-  lo.textContent='Dilni'; lo.style.cssText='color:var(--err);';
-  lo.onclick=()=>dil();
-  foot.appendChild(lo);
+  const inic=((une&&une.emri)||'?').trim().charAt(0).toUpperCase();
+  const avatarHTML = (une&&une.logo_url)
+    ? '<div style="width:32px;height:32px;border-radius:50%;overflow:hidden;flex:0 0 auto;"><img src="'+esc(une.logo_url)+'" style="width:100%;height:100%;object-fit:cover;"></div>'
+    : '<div style="width:32px;height:32px;border-radius:50%;background:var(--acc);color:#06121f;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex:0 0 auto;">'+esc(inic)+'</div>';
+  foot.innerHTML =
+    '<button type="button" id="userMenuBtn" style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;padding:8px 4px;cursor:pointer;color:var(--txt);font-family:inherit;font-size:14px;text-align:left;">'+
+      avatarHTML+
+      '<span style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc((une&&une.emri)||'')+'</span>'+
+    '</button>'+
+    '<div id="userMenuDropdown" class="hide" style="position:absolute;bottom:100%;left:4px;right:4px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;margin-bottom:8px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:30;"></div>';
+
+  const items = [
+    { l:'Profili',    fn:function(){ nav({v:'profile', nav:'profili'}); } },
+    { l:'Plani',      fn:function(){ nav({v:'profile', nav:'plani'}); } },
+    { l:'Cilësimet',  fn:function(){ nav({v:'profile', nav:'cilesimet'}); } },
+    { l:'Dil',        fn:function(){ dil(); }, err:true }
+  ];
+  const dd=$('userMenuDropdown');
+  dd.innerHTML = items.map(function(it,i){
+    return '<button type="button" data-umi="'+i+'" style="display:block;width:100%;background:none;border:none;padding:9px 10px;cursor:pointer;font-family:inherit;font-size:13px;border-radius:6px;text-align:left;'+(it.err?'color:var(--err);':'color:var(--txt);')+'">'+it.l+'</button>';
+  }).join('');
+  Array.prototype.forEach.call(dd.querySelectorAll('button'), function(btn,i){
+    btn.addEventListener('click', function(e){ e.stopPropagation(); dd.classList.add('hide'); _userMenuOpen=false; items[i].fn(); });
+  });
+  $('userMenuBtn').addEventListener('click', function(e){
+    e.stopPropagation();
+    _userMenuOpen=!_userMenuOpen;
+    dd.classList.toggle('hide', !_userMenuOpen);
+  });
 }
 function renderMain(s){
   s = s || {};
