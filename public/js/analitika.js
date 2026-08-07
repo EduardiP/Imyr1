@@ -68,10 +68,44 @@ function mainAnalytics(m){
         '</div>'+
         '<div id="anaListaKategori" style="max-height:300px;overflow-y:auto;padding-right:4px;"><p class="small">Po ngarkoj…</p></div>'+
       '</div>'+
+    '</div>'+
+    '<div class="card" style="margin-top:16px;">'+
+      '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">'+
+        '<div style="flex:1;min-width:220px;">'+
+          '<div style="font-size:26px;font-weight:800;color:var(--acc);" id="anaPikatProfili">–</div>'+
+          '<div class="small mut" style="margin-top:4px;">Pikët e profilit. Sa më shumë u jep bizneseve të tjera (duke shfaqur reklamat e tyre te snippet-et e tua), aq më shumë rriten pikët e tua. Pikët e profilit rrisin sa shpesh shfaqet reklama jote te të tjerët.</div>'+
+        '</div>'+
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
+          '<button class="btn" onclick="anaPresetDhene(7)">7 ditët e fundit</button>'+
+          '<button class="btn" onclick="anaPresetDhene(30)">30 ditët e fundit</button>'+
+          '<button class="btn" onclick="anaPresetDhene(90)">90 ditët e fundit</button>'+
+          '<div style="position:relative;">'+
+            '<button type="button" id="anaKalBtn_dhene" class="btn" style="min-width:170px;"></button>'+
+            '<div id="anaKalPanel_dhene" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;width:230px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+          '</div>'+
+          '<input type="date" id="anaNgaDhene" style="display:none;">'+
+          '<input type="date" id="anaDeriDhene" style="display:none;">'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
+      '<div class="card" style="flex:2;min-width:340px;">'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Snippet-et e reklamave</h3>'+
+        '<p class="small mut" style="margin:0 0 12px;">Çfarë u ke dhënë bizneseve të tjera nëpërmjet snippet-eve tuaja.</p>'+
+        '<div id="anaSnipDheneLista" style="max-height:300px;overflow-y:auto;padding-right:4px;"><p class="small">Po ngarkoj…</p></div>'+
+      '</div>'+
+      '<div class="card" style="flex:1;min-width:220px;">'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Sipas kategorisë së biznesit</h3>'+
+        '<p class="small mut" style="margin:0 0 12px;">Çfarë u ke dhënë secilës kategori.</p>'+
+        '<div id="anaKatDheneMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
+        '<div id="anaKatDheneLegend" style="display:flex;flex-direction:column;gap:6px;max-height:80px;overflow-y:auto;padding-right:4px;margin-bottom:10px;"></div>'+
+        '<canvas id="anaKatDheneCanvas" height="110"></canvas>'+
+      '</div>'+
     '</div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
   $('anaNga').value=anaFmt(nga); $('anaDeri').value=anaFmt(sot);
   $('anaNgaKat').value=anaFmt(nga); $('anaDeriKat').value=anaFmt(sot);
+  $('anaNgaDhene').value=anaFmt(nga); $('anaDeriDhene').value=anaFmt(sot);
   anaKrijoKalendarRangu({
     id:'top', btnId:'anaKalBtn_top', panelId:'anaKalPanel_top',
     getNga:()=>$('anaNga').value, getDeri:()=>$('anaDeri').value,
@@ -83,6 +117,12 @@ function mainAnalytics(m){
     getNga:()=>$('anaNgaKat').value, getDeri:()=>$('anaDeriKat').value,
     setNga:v=>{ $('anaNgaKat').value=v; }, setDeri:v=>{ $('anaDeriKat').value=v; },
     onRuaj: anaNgarkoKategoriteTeGjitha
+  });
+  anaKrijoKalendarRangu({
+    id:'dhene', btnId:'anaKalBtn_dhene', panelId:'anaKalPanel_dhene',
+    getNga:()=>$('anaNgaDhene').value, getDeri:()=>$('anaDeriDhene').value,
+    setNga:v=>{ $('anaNgaDhene').value=v; }, setDeri:v=>{ $('anaDeriDhene').value=v; },
+    onRuaj: anaNgarkoDheneTeGjitha
   });
   $('anaRekBtn').addEventListener('click', function(e){
     e.stopPropagation();
@@ -110,9 +150,20 @@ function mainAnalytics(m){
   ngarkoAnalitika();
   ngarkoAnaKategorite();
   ngarkoAnaLista();
+  anaRenderKatDheneMetrika();
+  ngarkoAnaPikatProfili();
+  ngarkoAnaSnipDhene();
+  ngarkoAnaKatDhene();
 }
 function anaNgarkoTeGjitha(){ ngarkoAnalitika(); }
 function anaNgarkoKategoriteTeGjitha(){ ngarkoAnaKategorite(); ngarkoAnaLista(); }
+function anaNgarkoDheneTeGjitha(){ ngarkoAnaSnipDhene(); ngarkoAnaKatDhene(); }
+function anaPresetDhene(dite){
+  const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-(dite-1));
+  $('anaNgaDhene').value=anaFmt(nga); $('anaDeriDhene').value=anaFmt(sot);
+  if(window.__anaKalendaret && window.__anaKalendaret.dhene) window.__anaKalendaret.dhene.refreshLabel();
+  anaNgarkoDheneTeGjitha();
+}
 function anaPresetKat(dite){
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-(dite-1));
   $('anaNgaKat').value=anaFmt(nga); $('anaDeriKat').value=anaFmt(sot);
@@ -532,3 +583,88 @@ document.addEventListener('click', function(){
     if(p && !p.classList.contains('hide')) p.classList.add('hide');
   });
 });
+
+// ================= RRESHTI I RI: pikët e profilit + "çfarë u ke dhënë" (snippet-et + kategoritë) =================
+async function ngarkoAnaPikatProfili(){
+  const el=$('anaPikatProfili'); if(!el) return;
+  try{
+    const d=await(await fetch('/api/profili')).json();
+    el.textContent = (d.pike_profili!=null ? d.pike_profili : 0);
+  }catch(e){ el.textContent='–'; }
+}
+async function ngarkoAnaSnipDhene(){
+  const el=$('anaSnipDheneLista'), ngaEl=$('anaNgaDhene'), deriEl=$('anaDeriDhene');
+  if(!el||!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
+  let d;
+  try{ d=await(await fetch('/api/analytics/snippetet-dhene?nga='+ngaEl.value+'&deri='+deriEl.value)).json(); }
+  catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; return; }
+  const rows=d.snippetet||[];
+  if(!rows.length){ el.innerHTML='<button class="btn cta" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'lidhjaSnippet\'})">Lidh një snippet →</button>'; return; }
+  el.innerHTML = rows.map(s=>
+    '<div style="padding:10px 0;border-bottom:1px solid #20262f;">'+
+      '<div style="font-weight:600;font-size:13px;margin-bottom:6px;">'+esc(s.emri||('Hapësira '+s.id))+'</div>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--mut);">'+
+        '<span>Shfaqje: <b style="color:var(--txt);">'+s.shfaqje+'</b></span>'+
+        '<span>Shikime: <b style="color:var(--txt);">'+s.shikime+'</b></span>'+
+        '<span>Klikime: <b style="color:var(--txt);">'+s.klikime+'</b></span>'+
+        '<span>Konvertime: <b style="color:var(--txt);">'+s.konvertime+'</b></span>'+
+      '</div>'+
+    '</div>'
+  ).join('');
+}
+var _anaKatDheneMetrikaAktive='shikime', _anaKatDheneChart=null;
+function anaRenderKatDheneMetrika(){
+  const el=$('anaKatDheneMetrikaRow'); if(!el) return;
+  el.innerHTML='';
+  ANA_METRIKA.forEach(x=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.textContent=x.l;
+    const on=_anaKatDheneMetrikaAktive===x.k;
+    btn.style.cssText = on
+      ? 'padding:6px 12px;border-radius:20px;border:1px solid var(--acc);background:var(--acc);color:#06121f;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;'
+      : 'padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit;';
+    btn.addEventListener('click', function(){
+      _anaKatDheneMetrikaAktive=x.k;
+      anaRenderKatDheneMetrika();
+      ngarkoAnaKatDhene();
+    });
+    el.appendChild(btn);
+  });
+}
+function anaRenderKatDheneLegend(kategorite){
+  const el=$('anaKatDheneLegend'); if(!el) return;
+  if(!kategorite.length){ el.innerHTML='<p class="small mut" style="margin:0;">Asnjë kategori me të dhëna.</p>'; return; }
+  el.innerHTML = kategorite.map((k,i)=>
+    '<div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--txt);">'+
+      '<span style="width:10px;height:10px;border-radius:50%;background:'+anaKatPaleta(i)+';flex:0 0 auto;"></span>'+
+      '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(k.emri)+'</span>'+
+    '</div>'
+  ).join('');
+}
+async function ngarkoAnaKatDhene(){
+  const ngaEl=$('anaNgaDhene'), deriEl=$('anaDeriDhene');
+  if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
+  let d;
+  try{ d=await(await fetch('/api/analytics/kategorite-dhene?nga='+ngaEl.value+'&deri='+deriEl.value)).json(); }catch(e){ return; }
+  const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>p[_anaKatDheneMetrikaAktive]>0));
+  anaRenderKatDheneLegend(kategorite);
+  const canvas=$('anaKatDheneCanvas'); if(!canvas||typeof Chart==='undefined') return;
+  if(_anaKatDheneChart){ _anaKatDheneChart.destroy(); _anaKatDheneChart=null; }
+  if(!kategorite.length){
+    const ctx0=canvas.getContext('2d'); ctx0.clearRect(0,0,canvas.width,canvas.height);
+    return;
+  }
+  const labels=kategorite[0].pikat.map(p=>p.data);
+  const datasets=kategorite.map((k,i)=>({
+    label:k.emri, data:k.pikat.map(p=>p[_anaKatDheneMetrikaAktive]),
+    borderColor:anaKatPaleta(i), backgroundColor:'transparent',
+    tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:anaKatPaleta(i)
+  }));
+  const ctx=canvas.getContext('2d');
+  _anaKatDheneChart=new Chart(ctx,{type:'line',data:{labels,datasets},
+    options:{responsive:true,interaction:{mode:'index',intersect:false},
+      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
+      plugins:{legend:{display:false}}},
+    plugins:[anaMultiColorLinePlugin]
+  });
+}
