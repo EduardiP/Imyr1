@@ -27,16 +27,20 @@ function mainAnalytics(m){
     '<div class="card"><canvas id="anaCanvas" height="90"></canvas></div>'+
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
       '<div class="card" style="flex:2;min-width:340px;">'+
-        '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px;">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;">'+
           '<h3 class="h" style="font-size:15px;margin:0;">Sipas kategorisë së biznesit</h3>'+
           '<div style="position:relative;">'+
             '<button type="button" id="anaKatRekBtn" class="btn" style="min-width:140px;">Reklamat <span id="anaKatRekBtnCount"></span> ▾</button>'+
             '<div id="anaKatRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:230px;max-height:260px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
           '</div>'+
         '</div>'+
-        '<p class="small mut" style="margin:0 0 12px;">Kategoritë e bizneseve ku janë ngarkuar reklamat tuaja.</p>'+
-        '<div id="anaKatMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
-        '<div id="anaKatLegend" style="display:flex;gap:14px;overflow-x:auto;white-space:nowrap;padding:4px 2px 10px;"></div>'+
+        '<div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:14px;">'+
+          '<div id="anaKatMetrikaRow" style="flex:1;display:flex;gap:6px;flex-wrap:wrap;align-content:flex-start;"></div>'+
+          '<div style="flex:0 0 190px;">'+
+            '<div class="small mut" style="font-weight:600;margin-bottom:6px;">Kategoritë e bizneseve ku janë ngarkuar reklamat tuaja.</div>'+
+            '<div id="anaKatLegend" style="display:flex;flex-direction:column;gap:6px;max-height:90px;overflow-y:auto;padding-right:4px;"></div>'+
+          '</div>'+
+        '</div>'+
         '<canvas id="anaKatCanvas" height="110"></canvas>'+
       '</div>'+
       '<div class="card" style="flex:1;min-width:220px;"></div>'+
@@ -283,12 +287,12 @@ function anaKatUpdateBtnLabel(){
 }
 function anaRenderKatLegend(kategorite){
   const el=$('anaKatLegend'); if(!el) return;
-  if(!kategorite.length){ el.innerHTML='<p class="small mut">Asnjë kategori me të dhëna në këtë periudhë.</p>'; return; }
+  if(!kategorite.length){ el.innerHTML='<p class="small mut" style="margin:0;">Asnjë kategori me të dhëna.</p>'; return; }
   el.innerHTML = kategorite.map((k,i)=>
-    '<span style="display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:12px;color:var(--txt);">'+
+    '<div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--txt);">'+
       '<span style="width:10px;height:10px;border-radius:50%;background:'+anaKatPaleta(i)+';flex:0 0 auto;"></span>'+
-      esc(k.emri)+
-    '</span>'
+      '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(k.emri)+'</span>'+
+    '</div>'
   ).join('');
 }
 async function ngarkoAnaKategorite(){
