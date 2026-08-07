@@ -197,7 +197,7 @@ function anaUpdateRekBtnLabel(){
   const el=$('anaRekBtnCount'); if(!el) return;
   el.textContent = _anaSelectedAd ? '(1)' : '';
 }
-function anaFmt(d){ return d.toISOString().slice(0,10); }
+function anaFmt(d){ const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0'); return y+'-'+m+'-'+dd; }
 function anaMbyllDropdown(ddId, stateVarSetter){
   const dd=$(ddId); if(dd) dd.classList.add('hide');
   if(stateVarSetter==='_anaDropdownOpen') _anaDropdownOpen=false;
@@ -443,7 +443,7 @@ function anaKrijoKalendarRangu(cfg){
   let vm=new Date(); vm.setDate(1);
   let selStart=null, selEnd=null;
 
-  function fmt(d){ return d.toISOString().slice(0,10); }
+  function fmt(d){ const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0'); return y+'-'+m+'-'+dd; }
   function parse(s){ const p=s.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
   function fmtShkurt(d){ return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear(); }
   function emriMuajit(d){
