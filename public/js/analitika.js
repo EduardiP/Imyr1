@@ -72,8 +72,8 @@ function mainAnalytics(m){
     '<div class="card" style="margin-top:16px;">'+
       '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">'+
         '<div style="flex:1;min-width:220px;">'+
-          '<div style="font-size:26px;font-weight:800;color:var(--acc);" id="anaPikatProfili">–</div>'+
-          '<div class="small mut" style="margin-top:4px;">Pikët e profilit. Sa më shumë u jep bizneseve të tjera (duke shfaqur reklamat e tyre te snippet-et e tua), aq më shumë rriten pikët e tua. Pikët e profilit rrisin sa shpesh shfaqet reklama jote te të tjerët.</div>'+
+          '<div style="font-size:40px;font-weight:800;color:var(--acc);" id="anaPikatProfili">–</div>'+
+          '<div class="small mut" style="margin-top:4px;">Sa më shumë u jep bizneseve të tjera, aq më shumë rriten pikët — dhe aq më shpesh shfaqet reklama jote te të tjerët.</div>'+
         '</div>'+
         '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
           '<button class="btn" onclick="anaPresetDhene(7)">7 ditët e fundit</button>'+
@@ -91,7 +91,7 @@ function mainAnalytics(m){
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
       '<div class="card" style="flex:1;min-width:260px;">'+
         '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Snippet-et e reklamave</h3>'+
-        '<p class="small mut" style="margin:0 0 12px;">Çfarë u ke dhënë bizneseve të tjera nëpërmjet snippet-eve tuaja.</p>'+
+        '<p class="small mut" style="margin:0 0 12px;">Çfarë u ke dhënë bizneseve të tjera nëpërmjet snippet-eve tuaja. <span style="color:var(--acc);text-decoration:underline;cursor:pointer;" onclick="nav({v:\'profile\',nav:\'snippetet\'})">Shto snippet</span> për t\'u shfaqur edhe ti më shumë tek të tjerët.</p>'+
         '<div id="anaSnipDheneLista" style="max-height:300px;overflow-y:auto;padding-right:4px;"><p class="small">Po ngarkoj…</p></div>'+
       '</div>'+
       '<div class="card" style="flex:2;min-width:340px;">'+
