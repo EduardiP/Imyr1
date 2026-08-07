@@ -76,7 +76,7 @@ button.primary:disabled { opacity:.5; }
 h2.h { font-size:20px; margin:0 0 4px; }
 
 .appwrap { display:flex; align-items:stretch; min-height:calc(100vh - 58px); }
-.sidebar { width:250px; flex:0 0 auto; border-right:1px solid var(--line); padding:20px 14px; display:flex; flex-direction:column; }
+.sidebar { width:250px; flex:0 0 auto; border-right:1px solid var(--line); padding:20px 14px; display:flex; flex-direction:column; position:sticky; top:0; height:100vh; overflow-y:auto; }
 .snav button, #snavFoot button { display:block; width:100%; text-align:left; background:none; border:none; color:var(--txt); padding:10px; border-radius:8px; cursor:pointer; font-size:14px; margin-bottom:2px; }
 #snavFoot button:hover { background:#0e1116; }
 #snavFoot button.active { background:#0e1116; color:var(--acc); }
