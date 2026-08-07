@@ -434,7 +434,7 @@ app.get('/api/analytics/snippetet-dhene', iLoguar, async (req, res) => {
     if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
 
     const r = await pool.query(`
-      SELECT s.id, s.emri,
+      SELECT s.id, s.emri, s.snippet_active, s.pauzuar,
         COALESCE(v.n,0)::int  AS shfaqje,
         COALESCE(sh.n,0)::int AS shikime,
         COALESCE(k.n,0)::int  AS klikime,
