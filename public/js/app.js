@@ -1410,7 +1410,7 @@ async function ngarkoAnalitika(){
   });
 }
 // Kur disa linja ndjekin te njejten rruge (vlera te barabarta), ndan trashesine e linjes
-// ne shirita paralele, nje per secilen ngjyre, ne vend qe njera te fshehe tjetren.
+// ne shirita paralele te lakuar (Catmull-Rom), nje per secilen ngjyre, ne vend qe njera te fshehe tjetren.
 var anaMultiColorLinePlugin={
   id:'anaMultiColorLine',
   afterDatasetsDraw:function(chart){
@@ -1421,7 +1421,14 @@ var anaMultiColorLinePlugin={
       if(!meta.hidden) active.push({meta, color:chart.data.datasets[i].borderColor, data:chart.data.datasets[i].data});
     }
     if(!active.length) return;
-    const n=active[0].data.length, totalWidth=2;
+    const n=active[0].data.length, totalWidth=2, STEPS=12;
+    function catmull(p0,p1,p2,p3,t){
+      const t2=t*t, t3=t2*t;
+      return {
+        x:0.5*((2*p1.x)+(-p0.x+p2.x)*t+(2*p0.x-5*p1.x+4*p2.x-p3.x)*t2+(-p0.x+3*p1.x-3*p2.x+p3.x)*t3),
+        y:0.5*((2*p1.y)+(-p0.y+p2.y)*t+(2*p0.y-5*p1.y+4*p2.y-p3.y)*t2+(-p0.y+3*p1.y-3*p2.y+p3.y)*t3)
+      };
+    }
     for(let p=0;p<n-1;p++){
       const groups={};
       active.forEach(a=>{
@@ -1430,17 +1437,25 @@ var anaMultiColorLinePlugin={
       });
       Object.values(groups).forEach(function(group){
         const g=group.length;
-        const pt0=group[0].meta.data[p], pt1=group[0].meta.data[p+1];
-        if(!pt0||!pt1) return;
-        const dx=pt1.x-pt0.x, dy=pt1.y-pt0.y, len=Math.sqrt(dx*dx+dy*dy)||1;
-        const nx=-dy/len, ny=dx/len, bandW=totalWidth/g;
+        const pref=group[0].meta.data;
+        const P1=pref[p], P2=pref[p+1];
+        if(!P1||!P2) return;
+        const P0=pref[p-1]||P1, P3=pref[p+2]||P2;
+        const pts=[];
+        for(let s=0;s<=STEPS;s++){ pts.push(catmull(P0,P1,P2,P3,s/STEPS)); }
+        const bandW=totalWidth/g;
         group.forEach(function(a,gi){
           const off=(gi-(g-1)/2)*bandW;
           ctx.save();
-          ctx.strokeStyle=a.color; ctx.lineWidth=bandW; ctx.lineCap='butt';
+          ctx.strokeStyle=a.color; ctx.lineWidth=bandW; ctx.lineCap='round'; ctx.lineJoin='round';
           ctx.beginPath();
-          ctx.moveTo(pt0.x+nx*off, pt0.y+ny*off);
-          ctx.lineTo(pt1.x+nx*off, pt1.y+ny*off);
+          for(let s=0;s<pts.length;s++){
+            const cur=pts[s], nxt=pts[s+1]||pts[s], prv=pts[s-1]||pts[s];
+            const dx=nxt.x-prv.x, dy=nxt.y-prv.y, len=Math.sqrt(dx*dx+dy*dy)||1;
+            const nx=-dy/len, ny=dx/len;
+            const px=cur.x+nx*off, py=cur.y+ny*off;
+            if(s===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+          }
           ctx.stroke();
           ctx.restore();
         });
