@@ -1276,9 +1276,9 @@ function mainAnalytics(m){
         '<button class="btn" onclick="anaPreset(30)">30 ditët e fundit</button>'+
         '<button class="btn" onclick="anaPreset(90)">90 ditët e fundit</button>'+
         '<span style="flex:1"></span>'+
-        '<input type="date" id="anaNga" style="width:auto;color-scheme:dark;" onchange="ngarkoAnalitika()">'+
+        '<input type="date" id="anaNga" style="width:auto;" onchange="ngarkoAnalitika()">'+
         '<span class="small">deri</span>'+
-        '<input type="date" id="anaDeri" style="width:auto;color-scheme:dark;" onchange="ngarkoAnalitika()">'+
+        '<input type="date" id="anaDeri" style="width:auto;" onchange="ngarkoAnalitika()">'+
       '</div>'+
       '<div style="display:flex;justify-content:flex-end;margin-top:10px;">'+
         '<div style="position:relative;">'+
@@ -1392,12 +1392,8 @@ async function ngarkoAnalitika(){
   const rows=d.rows||[];
   const labels=rows.map(r=>r.data);
   const datasets=[];
-  let _i=0;
   ANA_METRIKA.forEach(x=>{
-    if(_anaMetrikaAktive[x.k]){
-      datasets.push({label:x.l, data:rows.map(r=>r[x.k]), borderColor:x.c, backgroundColor:'transparent', tension:.25, borderWidth:2, borderDash:[2,6], borderDashOffset:_i*2});
-      _i++;
-    }
+    if(_anaMetrikaAktive[x.k]) datasets.push({label:x.l, data:rows.map(r=>r[x.k]), borderColor:x.c, backgroundColor:'transparent', tension:.25, borderWidth:2});
   });
   const canvas=$('anaCanvas'); if(!canvas||typeof Chart==='undefined') return;
   const ctx=canvas.getContext('2d');
