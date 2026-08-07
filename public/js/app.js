@@ -448,6 +448,7 @@ function mainDashboard(m){
           '<div id="dashKatRekDropdown" class="hide" style="position:absolute;top:110%;left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;max-height:220px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
         '</div>'+
         '<div id="dashKategoriLista" style="max-height:140px;overflow-y:auto;padding-right:4px;"><p class="small">Po ngarkoj…</p></div>'+
+        '<button class="btn" style="width:100%;margin-top:12px;" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'analytics\'})">Shiko më shumë →</button>'+
       '</div>'+
     '</div>'+
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
