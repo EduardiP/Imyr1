@@ -440,9 +440,14 @@ function mainDashboard(m){
         '<h3 class="h" style="font-size:15px;margin:0 0 10px;">Reklamat</h3>'+
         '<div id="dashReklamatList"><p class="small">Po ngarkoj…</p></div>'+
       '</div>'+
-      '<div class="card" id="dashSnippetet" style="flex:1;min-width:220px;cursor:pointer;">'+
-        '<h3 class="h" style="font-size:15px;margin:0 0 10px;">Snippet-et e reklamave</h3>'+
-        '<div id="dashSnippetetList"><p class="small">Po ngarkoj…</p></div>'+
+      '<div class="card" id="dashKategori" style="flex:1;min-width:220px;">'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Kategoritë e bizneseve</h3>'+
+        '<p class="small mut" style="margin:0 0 10px;">Ku janë ngarkuar reklamat tuaja.</p>'+
+        '<div style="position:relative;margin-bottom:12px;">'+
+          '<button type="button" id="dashKatRekBtn" class="btn" style="width:100%;">Reklamat <span id="dashKatRekBtnCount"></span> ▾</button>'+
+          '<div id="dashKatRekDropdown" class="hide" style="position:absolute;top:110%;left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;max-height:220px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+        '</div>'+
+        '<div id="dashKategoriLista" style="max-height:140px;overflow-y:auto;padding-right:4px;"><p class="small">Po ngarkoj…</p></div>'+
       '</div>'+
     '</div>'+
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
@@ -460,6 +465,7 @@ function mainDashboard(m){
   ngarkoDashReklamat();
   ngarkoDashSnippetet();
   ngarkoDashKonvertimet();
+  ngarkoDashKategori();
 }
 async function ngarkoDashReklamat(){
   const card=$('dashReklamat'), el=$('dashReklamatList');
@@ -486,17 +492,14 @@ async function ngarkoDashReklamat(){
   }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; }
 }
 async function ngarkoDashSnippetet(){
-  const c1=$('dashSnippetet'), c2=$('dashSnippetet2');
-  if(c1) c1.onclick=()=>nav({v:'profile', nav:'snippetet'});
+  const c2=$('dashSnippetet2');
   if(c2) c2.onclick=()=>nav({v:'profile', nav:'snippetet'});
   try{
     const r=await(await fetch('/api/snippetet')).json();
     const rows=r.snippetet||[];
-    renderDashSnippetList('dashSnippetetList', rows);
     renderDashSnippetList('dashSnippetet2List', rows);
   }catch(e){
-    const a=$('dashSnippetetList'), b=$('dashSnippetet2List');
-    if(a) a.innerHTML='<p class="small">Gabim.</p>';
+    const b=$('dashSnippetet2List');
     if(b) b.innerHTML='<p class="small">Gabim.</p>';
   }
 }
@@ -537,6 +540,67 @@ async function ngarkoDashKonvertimet(){
       '</div>';
     }).join('');
   }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; }
+}
+// ================= DASHBOARD: Kategoritë e bizneseve (njësoj si tek Analytics, pa filtër date — 30 ditët e fundit) =================
+var _dashKatSelectedAd=null, _dashKatRekAll=[], _dashKatDropdownOpen=false;
+async function ngarkoDashKategori(){
+  const btn=$('dashKatRekBtn'); if(!btn) return;
+  btn.addEventListener('click', function(e){
+    e.stopPropagation();
+    const dd=$('dashKatRekDropdown'); if(!dd) return;
+    _dashKatDropdownOpen=!_dashKatDropdownOpen;
+    dd.classList.toggle('hide', !_dashKatDropdownOpen);
+  });
+  try{ _dashKatRekAll=await(await fetch('/api/reklamat')).json(); }catch(e){ _dashKatRekAll=[]; }
+  dashKatRenderDropdown();
+  dashKatNgarkoListen();
+}
+document.addEventListener('click', function(){
+  const dd=$('dashKatRekDropdown');
+  if(dd && _dashKatDropdownOpen){ dd.classList.add('hide'); _dashKatDropdownOpen=false; }
+});
+function dashKatRenderDropdown(){
+  const dd=$('dashKatRekDropdown'); if(!dd) return;
+  dd.innerHTML='';
+  dd.appendChild(anaRekRresht('Të gjitha', !_dashKatSelectedAd, true, dashKatZgjidhTeGjitha));
+  if(!_dashKatRekAll.length){ const p=document.createElement('p'); p.className='small mut'; p.style.padding='6px'; p.textContent="S'ke ende reklama."; dd.appendChild(p); dashKatUpdateBtnLabel(); return; }
+  const hr=document.createElement('div'); hr.style.cssText='height:1px;background:var(--line);margin:4px 2px;'; dd.appendChild(hr);
+  _dashKatRekAll.forEach(r=>{
+    const thumb=anaRekThumbHTML(r);
+    const html=thumb+'<span style="overflow:hidden;text-overflow:ellipsis;">'+esc(r.emri||('#'+r.id))+'</span>';
+    dd.appendChild(anaRekRresht(html, _dashKatSelectedAd===r.id, false, function(){ dashKatZgjidhReklam(r.id); }));
+  });
+  dashKatUpdateBtnLabel();
+}
+function dashKatZgjidhTeGjitha(){ _dashKatSelectedAd=null; dashKatRenderDropdown(); dashKatNgarkoListen(); const dd=$('dashKatRekDropdown'); if(dd) dd.classList.add('hide'); _dashKatDropdownOpen=false; }
+function dashKatZgjidhReklam(id){ _dashKatSelectedAd=id; dashKatRenderDropdown(); dashKatNgarkoListen(); const dd=$('dashKatRekDropdown'); if(dd) dd.classList.add('hide'); _dashKatDropdownOpen=false; }
+function dashKatUpdateBtnLabel(){
+  const el=$('dashKatRekBtnCount'); if(!el) return;
+  el.textContent = _dashKatSelectedAd ? '(1)' : '';
+}
+async function dashKatNgarkoListen(){
+  const el=$('dashKategoriLista'); if(!el) return;
+  const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
+  const fmt=d=>d.toISOString().slice(0,10);
+  let url='/api/analytics/kategorite?nga='+fmt(nga)+'&deri='+fmt(sot);
+  if(_dashKatSelectedAd) url+='&reklama_ids='+_dashKatSelectedAd;
+  let d;
+  try{ d=await(await fetch(url)).json(); }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; return; }
+  const kategorite=d.kategorite||[];
+  if(!kategorite.length){ el.innerHTML='<p class="small mut">Asnjë kategori me të dhëna.</p>'; return; }
+  el.innerHTML = kategorite.map(k=>{
+    const tot={shfaqje:0,shikime:0,klikime:0,konvertime:0};
+    k.pikat.forEach(p=>{ tot.shfaqje+=p.shfaqje; tot.shikime+=p.shikime; tot.klikime+=p.klikime; tot.konvertime+=p.konvertime; });
+    return '<div style="padding:8px 0;border-bottom:1px solid #20262f;">'+
+      '<div style="font-weight:600;font-size:12px;margin-bottom:4px;">'+esc(k.emri)+'</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--mut);">'+
+        '<span>Shfaqje: <b style="color:var(--txt);">'+tot.shfaqje+'</b></span>'+
+        '<span>Shikime: <b style="color:var(--txt);">'+tot.shikime+'</b></span>'+
+        '<span>Klikime: <b style="color:var(--txt);">'+tot.klikime+'</b></span>'+
+        '<span>Konvertime: <b style="color:var(--txt);">'+tot.konvertime+'</b></span>'+
+      '</div>'+
+    '</div>';
+  }).join('');
 }
 async function ngarkoDashAnalitika(){
   const card=$('dashAnalitika'); if(!card) return;
