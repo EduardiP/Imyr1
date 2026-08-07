@@ -49,7 +49,7 @@ function mainAnalytics(m){
           '<button type="button" id="anaListRekBtn" class="btn" style="width:100%;">Reklamat <span id="anaListRekBtnCount"></span> ▾</button>'+
           '<div id="anaListRekDropdown" class="hide" style="position:absolute;top:110%;left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;max-height:240px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
         '</div>'+
-        '<div id="anaListaKategori"><p class="small">Po ngarkoj…</p></div>'+
+        '<div id="anaListaKategori" style="max-height:300px;overflow-y:auto;padding-right:4px;"><p class="small">Po ngarkoj…</p></div>'+
       '</div>'+
     '</div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
@@ -154,13 +154,19 @@ function anaRenderRekDropdown(){
   });
   anaUpdateRekBtnLabel();
 }
-function anaZgjidhTeGjitha(){ _anaSelectedAd=null; anaRenderRekDropdown(); ngarkoAnalitika(); }
-function anaZgjidhReklam(id){ _anaSelectedAd=id; anaRenderRekDropdown(); ngarkoAnalitika(); }
+function anaZgjidhTeGjitha(){ _anaSelectedAd=null; anaRenderRekDropdown(); ngarkoAnalitika(); anaMbyllDropdown('anaRekDropdown','_anaDropdownOpen'); }
+function anaZgjidhReklam(id){ _anaSelectedAd=id; anaRenderRekDropdown(); ngarkoAnalitika(); anaMbyllDropdown('anaRekDropdown','_anaDropdownOpen'); }
 function anaUpdateRekBtnLabel(){
   const el=$('anaRekBtnCount'); if(!el) return;
   el.textContent = _anaSelectedAd ? '(1)' : '';
 }
 function anaFmt(d){ return d.toISOString().slice(0,10); }
+function anaMbyllDropdown(ddId, stateVarSetter){
+  const dd=$(ddId); if(dd) dd.classList.add('hide');
+  if(stateVarSetter==='_anaDropdownOpen') _anaDropdownOpen=false;
+  else if(stateVarSetter==='_anaKatDropdownOpen') _anaKatDropdownOpen=false;
+  else if(stateVarSetter==='_anaListDropdownOpen') _anaListDropdownOpen=false;
+}
 function anaPreset(dite){
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-(dite-1));
   $('anaNga').value=anaFmt(nga); $('anaDeri').value=anaFmt(sot);
@@ -296,8 +302,8 @@ function anaRenderKatRekDropdown(){
   });
   anaKatUpdateBtnLabel();
 }
-function anaKatZgjidhTeGjitha(){ _anaKatSelectedAd=null; anaRenderKatRekDropdown(); ngarkoAnaKategorite(); }
-function anaKatZgjidhReklam(id){ _anaKatSelectedAd=id; anaRenderKatRekDropdown(); ngarkoAnaKategorite(); }
+function anaKatZgjidhTeGjitha(){ _anaKatSelectedAd=null; anaRenderKatRekDropdown(); ngarkoAnaKategorite(); anaMbyllDropdown('anaKatRekDropdown','_anaKatDropdownOpen'); }
+function anaKatZgjidhReklam(id){ _anaKatSelectedAd=id; anaRenderKatRekDropdown(); ngarkoAnaKategorite(); anaMbyllDropdown('anaKatRekDropdown','_anaKatDropdownOpen'); }
 function anaKatUpdateBtnLabel(){
   const el=$('anaKatRekBtnCount'); if(!el) return;
   el.textContent = _anaKatSelectedAd ? '(1)' : '';
@@ -363,8 +369,8 @@ function anaRenderListRekDropdown(){
   });
   anaListUpdateBtnLabel();
 }
-function anaListZgjidhTeGjitha(){ _anaListSelectedAd=null; anaRenderListRekDropdown(); ngarkoAnaLista(); }
-function anaListZgjidhReklam(id){ _anaListSelectedAd=id; anaRenderListRekDropdown(); ngarkoAnaLista(); }
+function anaListZgjidhTeGjitha(){ _anaListSelectedAd=null; anaRenderListRekDropdown(); ngarkoAnaLista(); anaMbyllDropdown('anaListRekDropdown','_anaListDropdownOpen'); }
+function anaListZgjidhReklam(id){ _anaListSelectedAd=id; anaRenderListRekDropdown(); ngarkoAnaLista(); anaMbyllDropdown('anaListRekDropdown','_anaListDropdownOpen'); }
 function anaListUpdateBtnLabel(){
   const el=$('anaListRekBtnCount'); if(!el) return;
   el.textContent = _anaListSelectedAd ? '(1)' : '';
