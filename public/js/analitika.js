@@ -26,6 +26,17 @@ function mainAnalytics(m){
       '<div id="anaMetrikaRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;"></div>'+
     '</div>'+
     '<div class="card"><canvas id="anaCanvas" height="90"></canvas></div>'+
+    '<div class="card" style="margin-top:16px;">'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
+        '<button class="btn" onclick="anaPresetKat(7)">7 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetKat(30)">30 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetKat(90)">90 ditët e fundit</button>'+
+        '<span style="flex:1"></span>'+
+        '<input type="date" id="anaNgaKat" style="width:auto;color-scheme:dark;" onchange="anaNgarkoKategoriteTeGjitha()">'+
+        '<span class="small">deri</span>'+
+        '<input type="date" id="anaDeriKat" style="width:auto;color-scheme:dark;" onchange="anaNgarkoKategoriteTeGjitha()">'+
+      '</div>'+
+    '</div>'+
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
       '<div class="card" style="flex:2;min-width:340px;">'+
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:14px;">'+
@@ -54,6 +65,7 @@ function mainAnalytics(m){
     '</div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
   $('anaNga').value=anaFmt(nga); $('anaDeri').value=anaFmt(sot);
+  $('anaNgaKat').value=anaFmt(nga); $('anaDeriKat').value=anaFmt(sot);
   $('anaRekBtn').addEventListener('click', function(e){
     e.stopPropagation();
     const dd=$('anaRekDropdown'); if(!dd) return;
@@ -81,7 +93,13 @@ function mainAnalytics(m){
   ngarkoAnaKategorite();
   ngarkoAnaLista();
 }
-function anaNgarkoTeGjitha(){ ngarkoAnalitika(); ngarkoAnaKategorite(); ngarkoAnaLista(); }
+function anaNgarkoTeGjitha(){ ngarkoAnalitika(); }
+function anaNgarkoKategoriteTeGjitha(){ ngarkoAnaKategorite(); ngarkoAnaLista(); }
+function anaPresetKat(dite){
+  const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-(dite-1));
+  $('anaNgaKat').value=anaFmt(nga); $('anaDeriKat').value=anaFmt(sot);
+  anaNgarkoKategoriteTeGjitha();
+}
 document.addEventListener('click', function(){
   const dd=$('anaRekDropdown');
   if(dd && _anaDropdownOpen){ dd.classList.add('hide'); _anaDropdownOpen=false; }
@@ -319,7 +337,7 @@ function anaRenderKatLegend(kategorite){
   ).join('');
 }
 async function ngarkoAnaKategorite(){
-  const ngaEl=$('anaNga'), deriEl=$('anaDeri');
+  const ngaEl=$('anaNgaKat'), deriEl=$('anaDeriKat');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let url='/api/analytics/kategorite?nga='+ngaEl.value+'&deri='+deriEl.value;
   if(_anaKatSelectedAd) url+='&reklama_ids='+_anaKatSelectedAd;
@@ -376,7 +394,7 @@ function anaListUpdateBtnLabel(){
   el.textContent = _anaListSelectedAd ? '(1)' : '';
 }
 async function ngarkoAnaLista(){
-  const ngaEl=$('anaNga'), deriEl=$('anaDeri'), el=$('anaListaKategori');
+  const ngaEl=$('anaNgaKat'), deriEl=$('anaDeriKat'), el=$('anaListaKategori');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value||!el) return;
   let url='/api/analytics/kategorite?nga='+ngaEl.value+'&deri='+deriEl.value;
   if(_anaListSelectedAd) url+='&reklama_ids='+_anaListSelectedAd;
