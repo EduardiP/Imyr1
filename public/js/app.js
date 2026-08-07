@@ -1393,7 +1393,7 @@ async function ngarkoAnalitika(){
   const labels=rows.map(r=>r.data);
   const datasets=[];
   ANA_METRIKA.forEach(x=>{
-    if(_anaMetrikaAktive[x.k]) datasets.push({label:x.l, data:rows.map(r=>r[x.k]), borderColor:x.c, backgroundColor:'transparent', tension:.25, borderWidth:2});
+    if(_anaMetrikaAktive[x.k]) datasets.push({label:x.l, data:rows.map(r=>r[x.k]), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
   });
   const canvas=$('anaCanvas'); if(!canvas||typeof Chart==='undefined') return;
   const ctx=canvas.getContext('2d');
@@ -1401,9 +1401,53 @@ async function ngarkoAnalitika(){
   _anaChart=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
       scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}},
-      plugins:{legend:{labels:{color:'#e6edf3'}, onClick:function(){}}}}
+      plugins:{legend:{labels:{color:'#e6edf3', generateLabels:function(chart){
+        const items=Chart.defaults.plugins.legend.labels.generateLabels(chart);
+        items.forEach(it=>{ it.lineDash=[]; it.lineWidth=2; });
+        return items;
+      }}, onClick:function(){}}}},
+    plugins:[anaMultiColorLinePlugin]
   });
 }
+// Kur disa linja ndjekin te njejten rruge (vlera te barabarta), ndan trashesine e linjes
+// ne shirita paralele, nje per secilen ngjyre, ne vend qe njera te fshehe tjetren.
+var anaMultiColorLinePlugin={
+  id:'anaMultiColorLine',
+  afterDatasetsDraw:function(chart){
+    const ctx=chart.ctx;
+    const active=[];
+    for(let i=0;i<chart.data.datasets.length;i++){
+      const meta=chart.getDatasetMeta(i);
+      if(!meta.hidden) active.push({meta, color:chart.data.datasets[i].borderColor, data:chart.data.datasets[i].data});
+    }
+    if(!active.length) return;
+    const n=active[0].data.length, totalWidth=2;
+    for(let p=0;p<n-1;p++){
+      const groups={};
+      active.forEach(a=>{
+        const key=a.data[p]+'_'+a.data[p+1];
+        (groups[key]=groups[key]||[]).push(a);
+      });
+      Object.values(groups).forEach(function(group){
+        const g=group.length;
+        const pt0=group[0].meta.data[p], pt1=group[0].meta.data[p+1];
+        if(!pt0||!pt1) return;
+        const dx=pt1.x-pt0.x, dy=pt1.y-pt0.y, len=Math.sqrt(dx*dx+dy*dy)||1;
+        const nx=-dy/len, ny=dx/len, bandW=totalWidth/g;
+        group.forEach(function(a,gi){
+          const off=(gi-(g-1)/2)*bandW;
+          ctx.save();
+          ctx.strokeStyle=a.color; ctx.lineWidth=bandW; ctx.lineCap='butt';
+          ctx.beginPath();
+          ctx.moveTo(pt0.x+nx*off, pt0.y+ny*off);
+          ctx.lineTo(pt1.x+nx*off, pt1.y+ny*off);
+          ctx.stroke();
+          ctx.restore();
+        });
+      });
+    }
+  }
+};
 function renderVStep(){
   const nx=nextIncomplete(), el=$('vstep'); el.innerHTML='';
   STEPS.forEach((s,i)=>{
