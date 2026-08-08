@@ -1,5 +1,17 @@
 // app.js — PAS HYRJES: home + dashboard/profili + wizard-i me hapa
 
+// Mat lartesine reale te .topbar dhe e vendos si ndryshore CSS, qe .sidebar te dije
+// saktesisht sa hapesire te ze poshte tij (jo 100vh fiks, qe shkaktonte mbivendosje).
+(function(){
+  function vendosLartesineTopbar(){
+    const tb=document.querySelector('.topbar');
+    if(tb) document.documentElement.style.setProperty('--topbar-h', tb.offsetHeight+'px');
+  }
+  vendosLartesineTopbar();
+  window.addEventListener('resize', vendosLartesineTopbar);
+  window.addEventListener('load', vendosLartesineTopbar);
+})();
+
 // ---------- HOME ----------
 function renderHome(){
   const b=$('homeBody');
@@ -312,7 +324,7 @@ function renderNav(){
     if(n.k==='plani' || n.k==='suport') return;   // shkojne te menuja e re e perdoruesit, poshte
     const b=document.createElement('button');
     b.textContent=n.l; if(n.k===curNav) b.className='active';
-    b.onclick=()=>nav({v:'profile', nav:n.k});
+    b.onclick = (n.k==='analytics') ? (()=>nav({v:'analitika-full'})) : (()=>nav({v:'profile', nav:n.k}));
     el.appendChild(b);
   });
   renderUserMenu();
@@ -325,7 +337,7 @@ function renderUserMenu(){
   let foot=$('snavFoot');
   if(!foot){
     foot=document.createElement('div'); foot.id='snavFoot';
-    foot.style.cssText='margin-top:auto;padding-top:12px;padding-bottom:0px;border-top:1px solid var(--line);position:relative;';
+    foot.style.cssText='margin-top:auto;padding-top:12px;padding-bottom:28px;border-top:1px solid var(--line);position:relative;';
     const aside=$('snav').closest('.sidebar'); if(aside) aside.appendChild(foot);
   }
   const inic=((une&&une.emri)||'?').trim().charAt(0).toUpperCase();
