@@ -680,7 +680,7 @@ async function ngarkoAnaKatDhene(){
 var _anaLiveTimer=null;
 function renderAnalyticsFull(){
   const el=$('v-analitika-full'); if(!el) return;
-  el.innerHTML='<div style="max-width:1100px;margin:0 auto;padding:24px;">'+
+  el.innerHTML='<div style="padding:24px;">'+
     '<div id="analitikaFullContent"></div>'+
   '</div>';
   mainAnalytics($('analitikaFullContent'));
