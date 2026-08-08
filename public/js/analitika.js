@@ -675,3 +675,18 @@ async function ngarkoAnaKatDhene(){
     plugins:[anaMultiColorLinePlugin]
   });
 }
+
+// ================= FAQE E PLOTE (pa sidebar), me rifreskim "live" te grafiku kryesor =================
+var _anaLiveTimer=null;
+function renderAnalyticsFull(){
+  const el=$('v-analitika-full'); if(!el) return;
+  el.innerHTML='<div style="max-width:1100px;margin:0 auto;padding:24px;">'+
+    '<div id="analitikaFullContent"></div>'+
+  '</div>';
+  mainAnalytics($('analitikaFullContent'));
+  if(_anaLiveTimer) clearInterval(_anaLiveTimer);
+  _anaLiveTimer=setInterval(function(){
+    if(!history.state || history.state.v!=='analitika-full'){ clearInterval(_anaLiveTimer); _anaLiveTimer=null; return; }
+    ngarkoAnalitika();
+  }, 8000);
+}
