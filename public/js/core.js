@@ -27,7 +27,7 @@ function segHTML(id){ return '<label>Kujt nga vizitorët e faqes tënde u shërb
     '<button type="button" data-v="b2c" onclick="segPick(this)">Individëve</button>'+
     '<button type="button" data-v="b2b2c" onclick="segPick(this)">Të dyjave</button>'+
   '</div>'; }
-function showView(v){ ['hero','home','wizard','profile','analitika-full'].forEach(x=>$('v-'+x).classList.toggle('on', x===v)); }
+function showView(v){ ['hero','home','wizard','profile','analitika-full'].forEach(x=>{ const el=$('v-'+x); if(el) el.classList.toggle('on', x===v); }); }
 
 async function refreshProg(){
   try { prog = await (await fetch('/api/progres')).json(); }
