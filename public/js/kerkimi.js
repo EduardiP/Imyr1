@@ -1,46 +1,11 @@
-// kerkimi.js — Kerkim global: NAV2 (kategori/nenkategori) + Creative + Snippetet + Konvertimet/Zonat.
-// Hapet nga ikona e re ne header (krah zilja) ose Ctrl/Cmd+K. Rezultatet me ikone/miniature
-// sipas llojit — Creative ripërdor krThumbHTML() qe tashme ekziston, jo ikona te reja.
+// kerkimi.js — Kerkim global: hapesira e tekstit eshte NE VETE HEADER-IN (ndertuar nga
+// core.js/setHeaderLoggedIn, gjithmone e dukshme). Ky skedar vetem mbush #kerkRez si dropdown
+// direkt poshte hapesires, ASNJE panel/modal i ri. NAV2 + Creative + Snippetet + Konvertimet/Zonat.
 (function(){
-  var eHapur = false;
   var cache = null; // { kreative, snippetet, konvertimet, zonat }
 
   function el(id){ return document.getElementById(id); }
   function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-  function ndertoWidget(){
-    if(el('kerkWrap')) return;
-    var wrap = document.createElement('div');
-    wrap.id = 'kerkWrap';
-    wrap.className = 'hide';
-    wrap.innerHTML =
-      '<div id="kerkPanel">'+
-        '<div id="kerkInputRow">'+
-          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;color:var(--mut);"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>'+
-          '<input id="kerkInput" placeholder="Kërko…" autocomplete="off">'+
-          '<button id="kerkX" title="Mbyll" aria-label="Mbyll">✕</button>'+
-        '</div>'+
-        '<div id="kerkRez"></div>'+
-      '</div>';
-    document.body.appendChild(wrap);
-    el('kerkX').onclick = mbyllKerkimi;
-    el('kerkInput').oninput = function(){ kerkoRun(this.value); };
-    wrap.addEventListener('mousedown', function(e){ if(e.target===wrap) mbyllKerkimi(); });
-  }
-
-  function hapKerkimi(){
-    ndertoWidget();
-    el('kerkWrap').classList.remove('hide');
-    eHapur = true;
-    el('kerkInput').value='';
-    el('kerkRez').innerHTML='';
-    ngarkoCache();
-    setTimeout(function(){ var i=el('kerkInput'); if(i) i.focus(); }, 30);
-  }
-  function mbyllKerkimi(){
-    var w=el('kerkWrap'); if(w) w.classList.add('hide');
-    eHapur = false;
-  }
 
   async function ngarkoCache(){
     if(cache) return;
@@ -68,15 +33,20 @@
       (nenTitull ? '<span class="kerkS"></span>' : '')+'</span>';
     r.querySelector('.kerkT').textContent = titulli || '';
     if(nenTitull) r.querySelector('.kerkS').textContent = nenTitull;
-    r.onclick = onClick;
+    r.onclick = function(){
+      var inp=el('kerkInput'); if(inp) inp.value='';
+      var box=el('kerkRez'); if(box){ box.classList.add('hide'); box.innerHTML=''; }
+      onClick();
+    };
     return r;
   }
 
-  function kerkoRun(q){
+  async function kerkoRun(q){
     q = (q||'').toLowerCase().trim();
     var box = el('kerkRez'); if(!box) return;
-    box.innerHTML='';
-    if(!q) return;
+    if(!q){ box.classList.add('hide'); box.innerHTML=''; return; }
+
+    await ngarkoCache();
     var rezultate = [];
 
     // 1) NAV2 — kategori + nenkategori (struktura ekzistuese, jo hamendje)
@@ -86,7 +56,6 @@
         var etiketa = (n.l===s.l) ? s.l : (n.l+' '+s.l);
         if(etiketa.toLowerCase().indexOf(q)!==-1){
           rezultate.push(rreshti('<span style="color:var(--mut);">▸</span>', s.l, n.l, function(){
-            mbyllKerkimi();
             if(n.k==='analytics') nav({v:'analitika-full'});
             else nav({v:'profile', nav:s.nav||n.k, tab:s.tab});
           }));
@@ -99,7 +68,7 @@
       var teksti = (k.emri||'')+' '+(k.pershkrimi||'');
       if(teksti.toLowerCase().indexOf(q)!==-1){
         rezultate.push(rreshti(krIkonaKerkimi(k), k.emri||'(pa emër)', 'Creative · '+(k.lloji||''), function(){
-          mbyllKerkimi(); nav({v:'profile', nav:'kreative', tab:'lista'});
+          nav({v:'profile', nav:'kreative', tab:'lista'});
         }));
       }
     });
@@ -108,7 +77,7 @@
     (cache.snippetet||[]).forEach(function(sn){
       if((sn.emri||'').toLowerCase().indexOf(q)!==-1){
         rezultate.push(rreshti('📍', sn.emri||('Hapësira '+sn.id), 'Hapësira e reklamave', function(){
-          mbyllKerkimi(); nav({v:'profile', nav:'snippetet', sub:'detail', id:sn.id});
+          nav({v:'profile', nav:'snippetet', sub:'detail', id:sn.id});
         }));
       }
     });
@@ -117,7 +86,7 @@
     (cache.konvertimet||[]).forEach(function(kv){
       if((kv.url||'').toLowerCase().indexOf(q)!==-1){
         rezultate.push(rreshti('🔗', kv.url, 'Konvertim · URL', function(){
-          mbyllKerkimi(); nav({v:'profile', nav:'konvertimet'});
+          nav({v:'profile', nav:'konvertimet'});
         }));
       }
     });
@@ -126,25 +95,36 @@
     (cache.zonat||[]).forEach(function(z){
       if((z.emri||'').toLowerCase().indexOf(q)!==-1){
         rezultate.push(rreshti('🎯', z.emri, 'Konvertim · Zonë me kod', function(){
-          mbyllKerkimi(); nav({v:'profile', nav:'konvertimet'});
+          nav({v:'profile', nav:'konvertimet'});
         }));
       }
     });
 
+    box.innerHTML='';
     if(!rezultate.length){
       box.innerHTML='<p class="small mut" style="padding:12px 14px;">Asnjë rezultat.</p>';
-      return;
+    } else {
+      rezultate.slice(0,20).forEach(function(r){ box.appendChild(r); });
     }
-    rezultate.slice(0,20).forEach(function(r){ box.appendChild(r); });
+    box.classList.remove('hide');
   }
 
+  // Ctrl/Cmd+K — fokuson hapesiren ekzistuese, s'hap asgje te re
   document.addEventListener('keydown', function(e){
     if((e.metaKey||e.ctrlKey) && (e.key==='k'||e.key==='K')){
       e.preventDefault();
-      if(eHapur) mbyllKerkimi(); else hapKerkimi();
+      var i=el('kerkInput'); if(i) i.focus();
     }
-    if(e.key==='Escape' && eHapur) mbyllKerkimi();
+    if(e.key==='Escape'){
+      var box=el('kerkRez'); if(box) box.classList.add('hide');
+    }
+  });
+  // Mbyll dropdown-in kur klikon jashte tij/hapesires
+  document.addEventListener('click', function(e){
+    var box=el('kerkRez'), inp=el('kerkInput');
+    if(!box || !inp) return;
+    if(e.target!==inp && !box.contains(e.target)) box.classList.add('hide');
   });
 
-  window.hapKerkimi = hapKerkimi;
+  window.kerkoRun = kerkoRun;
 })();
