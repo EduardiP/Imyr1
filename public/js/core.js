@@ -8,34 +8,12 @@ const STEPS = [
   { key:'lidhja',     label:'Lidhja' }
 ];
 const NAV = [
-{ k:'dashboard', l:'Dashboard', subs:[
-  {l:'Overview', nav:'dashboard'},
-  {l:'Exchange Status', nav:'dashboard'},
-  {l:'Balanca e shkëmbimit', nav:'dashboard'},
-  {l:'Pika e profilit', nav:'dashboard'}
-]},
-{ k:'snippetet', l:'Ad Space', subs:[
-  {l:'Placement', nav:'snippetet'},
-  {l:'Installation', nav:'snippetet'},
-  {l:'Preview', nav:'snippetet'},
-  {l:'Status', nav:'snippetet'}
-]},
-{ k:'kreative', l:'Creative', subs:[
-  {l:'Krijo', nav:'kreative', tab:'krijo'},
-  {l:'Reklamat e mia', nav:'kreative', tab:'lista'}
-]},
+{ k:'dashboard', l:'Dashboard' },
+{ k:'snippetet', l:'Hapësira e reklamave' },
+{ k:'kreative', l:'Creative' },
 { k:'reklamat', l:'My Ads' },
-{ k:'konvertimet', l:'Conversions', subs:[
-  {l:'Konfigurimi', nav:'konvertimet'},
-  {l:'Historiku', nav:'konvertimet'}
-]},
-{ k:'analytics', l:'Analytics', subs:[
-  {l:'Traffic', nav:'analytics'},
-  {l:'Ads', nav:'analytics'},
-  {l:'Conversions', nav:'analytics'},
-  {l:'Trends', nav:'analytics'}
-]},
-{ k:'insights', l:'Insights' },
+{ k:'konvertimet', l:'Konvertimet' },
+{ k:'analytics', l:'Analytics' },
 { k:'plani', l:'Plani', ndaresi:true },
 { k:'suport', l:'Ndihmë & Suport' }
 ];
