@@ -993,6 +993,42 @@ function mainKreative(m, s){
   ngarkoKreativet();
   ngarkoKreativetGati();
 }
+
+// ═══ VERSION I RI ME TABS (test) — origjinali sipër mbetet aktiv derisa te konfirmohet ═══
+function mainKreative_NEW(m, s){
+  s = s || {};
+  const tab = s.tab || 'krijo';
+  const zgjedhur = s.lloji || null;
+  m.innerHTML = '<h2 class="h">Creative</h2>'+
+    '<p class="small" style="margin:8px 0 16px;">Krijo reklama me AI: imazh, video, ose HTML5.</p>'+
+    '<div class="tabs" style="max-width:320px;">'+
+      '<div class="tab '+(tab==='krijo'?'active':'')+'" onclick="krTab(\'krijo\')">Krijo</div>'+
+      '<div class="tab '+(tab==='lista'?'active':'')+'" onclick="krTab(\'lista\')">Reklamat e mia</div>'+
+    '</div>'+
+    (tab==='krijo' ? (
+      '<div id="krGatiWrap" style="display:none;margin:18px 0;">'+
+        '<label>Krijimet e gatshme</label>'+
+        '<div id="krGatiLista" style="max-height:160px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:6px 8px;margin-top:8px;"></div>'+
+      '</div>'+
+      '<label>Cfare do te krijosh?</label>'+
+      '<div class="krTip">'+
+        '<button class="krT '+(zgjedhur==='imazh'?'sel':'')+'" onclick="krZgjidh(\'imazh\')">'+
+          '<div class="krIco">🖼️</div><div>Imazh</div></button>'+
+        '<button class="krT '+(zgjedhur==='video'?'sel':'')+'" onclick="krZgjidh(\'video\')">'+
+          '<div class="krIco">🎬</div><div>Video</div></button>'+
+        '<button class="krT '+(zgjedhur==='html5'?'sel':'')+'" onclick="krZgjidh(\'html5\')">'+
+          '<div class="krIco">💻</div><div>HTML5</div></button>'+
+      '</div>'+
+      (zgjedhur ? formaKreative(zgjedhur) : '<p class="small mut" style="margin-top:16px;">Zgjidh nje lloj për të vazhduar.</p>')
+    ) : (
+      '<div id="krLista" style="margin-top:18px;"></div>'
+    ));
+  if(tab==='krijo'){ ngarkoKreativetGati(); }
+  else { ngarkoKreativet(); }
+}
+function krTab(t){ nav({v:'profile', nav:'kreative', tab:t}); }
+
+
 function krThumbHTML(k){
   const wrap='width:30px;height:30px;border-radius:6px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#0e1116;border:1px solid var(--line);';
   if(k.lloji==='imazh' && (k.output_url||k.skedari_url)) return '<div style="'+wrap+'"><img src="'+esc(k.output_url||k.skedari_url)+'" style="width:100%;height:100%;object-fit:cover;"></div>';
