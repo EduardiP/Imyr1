@@ -14,25 +14,33 @@
 
 const NAV2 = [
   { k:'dashboard', l:'Dashboard', subs:[
-    {l:'Overview', nav:'dashboard'},{l:'Exchange Status', nav:'dashboard'},
-    {l:'Balanca e shkëmbimit', nav:'dashboard'},{l:'Pika e profilit', nav:'dashboard'}
+    {l:'Përmbledhje', nav:'dashboard'},
+    {l:'Statusi i shkëmbimit', nav:'dashboard'},
+    {l:'Balanca e shkëmbimit', nav:'dashboard'},
+    {l:'Pika e profilit', nav:'dashboard'}
   ]},
-  { k:'snippetet', l:'Ad Space', subs:[
-    {l:'Placement', nav:'snippetet'},{l:'Installation', nav:'snippetet'},
-    {l:'Preview', nav:'snippetet'},{l:'Status', nav:'snippetet'}
+  { k:'snippetet', l:'Hapësira e reklamave', subs:[
+    {l:'Vendosja', nav:'snippetet'},
+    {l:'Instalimi', nav:'snippetet'},
+    {l:'Pamja paraprake', nav:'snippetet'},
+    {l:'Statusi', nav:'snippetet'}
   ]},
   { k:'kreative', l:'Creative', subs:[
-    {l:'Krijo', nav:'kreative', tab:'krijo'},{l:'Reklamat e mia', nav:'kreative', tab:'lista'}
+    {l:'Krijo', nav:'kreative', tab:'krijo'},
+    {l:'Reklamat e mia', nav:'kreative', tab:'lista'}
   ]},
   { k:'reklamat', l:'My Ads' },
-  { k:'konvertimet', l:'Conversions', subs:[
-    {l:'Konfigurimi', nav:'konvertimet'},{l:'Historiku', nav:'konvertimet'}
+  { k:'konvertimet', l:'Konvertimet', subs:[
+    {l:'Konfigurimi', nav:'konvertimet'},
+    {l:'Historiku', nav:'konvertimet'}
   ]},
   { k:'analytics', l:'Analytics', subs:[
-    {l:'Traffic', nav:'analytics'},{l:'Ads', nav:'analytics'},
-    {l:'Conversions', nav:'analytics'},{l:'Trends', nav:'analytics'}
+    {l:'Trafiku', nav:'analytics'},
+    {l:'Reklamat', nav:'analytics'},
+    {l:'Konvertimet', nav:'analytics'},
+    {l:'Tendencat', nav:'analytics'}
   ]},
-  { k:'insights', l:'Insights' }
+  { k:'insights', l:'Vështrime' }
 ];
 var _nav2Open = {};
 function renderNav2(){
