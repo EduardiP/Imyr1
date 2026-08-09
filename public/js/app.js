@@ -387,10 +387,10 @@ async function ngarkoImazh(){
 function renderProfile(s){
   s = s || {};
   curNav = s.nav || 'dashboard';
-  // Karta e vjetër e krye — fshihet, zhvendoset poshte si menuja e re
   const oldCard = document.querySelector('.pcard');
   if(oldCard) oldCard.style.display='none';
   renderNav();
+  renderNav2();
   renderMain(s);
 }
 var _navOpen = {};
