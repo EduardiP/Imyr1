@@ -392,7 +392,7 @@ function renderMain(s){
   if(curNav==='lidhja')     return mainLidhja(m);
   if(curNav==='snippetet')  return mainSnippetet(m, s);
   if(curNav==='dashboard')  return mainDashboard(m);
-  if(curNav==='kreative')   return mainKreative(m, s);
+  if(curNav==='kreative')   return mainKreative_NEW(m, s);
   if(curNav==='reklamat')   return mainReklamat(m, s);
   if(curNav==='analytics')  return mainAnalytics(m);
 }
