@@ -6,726 +6,736 @@
 <title>Imyr · Admin</title>
 <link rel="stylesheet" href="/css/style.css">
 <style>
-  .kerkesaTbl { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
-  .kerkesaTr { display:grid; grid-template-columns:1.5fr 2fr auto; gap:12px; align-items:center; padding:12px 14px; border-bottom:1px solid #20262f; }
-  .kerkesaTr:last-child { border-bottom:none; }
-  .kerkesaIdent { display:flex; align-items:center; gap:10px; min-width:0; }
-  .kerkesaTxt { font-size:13px; line-height:1.4; }
-  .rekBizTbl { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
-  .rekBizTr { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid #20262f; cursor:pointer; }
-  .rekBizTr:last-child { border-bottom:none; }
-  .rekBizTr:hover { background:#131820; }
-  .rekNumri { color:var(--mut); font-size:13px; }
-  .rekTbl { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
-  .rekThead, .rekTr { display:grid; grid-template-columns:2.2fr .9fr .7fr .8fr .8fr .9fr; align-items:center; gap:8px; padding:11px 14px; }
-  .rekThead { background:#0e1116; color:var(--mut); font-size:11px; text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--line); }
-  .rekTr { border-bottom:1px solid #20262f; cursor:pointer; font-size:13px; }
-  .rekTr:last-child { border-bottom:none; }
-  .rekTr:hover { background:#131820; }
-  .rekTip2 { text-transform:uppercase; font-size:11px; color:#7aa2ff; }
-  .njToolbar { display:flex; gap:12px; align-items:center; margin:6px 0 10px; flex-wrap:wrap; }
-  .njFiltra { display:flex; gap:6px; }
-  .njFbtn { padding:6px 12px; border-radius:8px; border:1px solid var(--line); background:#0e1116; color:var(--txt); cursor:pointer; font-size:12px; font-family:inherit; }
-  .njFbtn.active { background:#3b82f6; color:#fff; border-color:#3b82f6; }
-  .njTblWrap { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
-  .njTbl { max-height:320px; overflow-y:auto; }
-  .njThead, .njTr { display:grid; grid-template-columns:32px 2.2fr .8fr .7fr .8fr .8fr; align-items:center; gap:8px; padding:10px 12px; }
-  .njThead { position:sticky; top:0; background:#0e1116; color:var(--mut); font-size:11px; text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--line); z-index:1; }
-  .njTr { border-bottom:1px solid #20262f; cursor:pointer; font-size:13px; }
-  .njTr:last-child { border-bottom:none; }
-  .njTr:hover { background:#131820; }
-  .njIdent { display:flex; align-items:center; gap:10px; min-width:0; }
-  .njBizLogo { width:34px; height:34px; border-radius:8px; object-fit:cover; flex:0 0 auto; }
-  .njBizLogoTxt { display:flex; align-items:center; justify-content:center; background:#1c2430; color:#7aa2ff; font-weight:700; font-size:14px; }
-  .njId2 { display:flex; flex-direction:column; min-width:0; }
-  .njBizNm { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .njBizEm { font-size:11px; color:var(--mut); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .njBizTip { text-transform:uppercase; font-size:11px; color:#7aa2ff; }
-  .njChk { width:17px; height:17px; cursor:pointer; }
-  .njBizRresht { display:flex; align-items:center; gap:12px; padding:10px 12px; cursor:pointer; border-radius:8px; transition:.12s; }
-  .njBizRresht:hover { background:#131820; }
-  .njBizLogo { width:32px; height:32px; border-radius:8px; background:#1c2430; color:#7aa2ff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex:0 0 auto; }
-  .njBizInfo { display:flex; flex-direction:column; }
-  .njBizNm { font-weight:600; font-size:14px; }
-  .njBizTip { font-size:12px; color:var(--mut); text-transform:uppercase; }
-  .njChk { width:18px; height:18px; cursor:pointer; flex:0 0 auto; }
-  .bizGrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; align-content:start; }
-  .bizCard { display:flex; gap:12px; align-items:center; padding:14px; border:1px solid var(--line); border-radius:12px; background:#0e1116; cursor:pointer; transition:.15s; }
-  .bizCard:hover { border-color:var(--acc,#3b82f6); background:#131820; }
-  .bizLogo { width:44px; height:44px; border-radius:10px; object-fit:cover; flex:0 0 auto; }
-  .bizLogoTxt { display:flex; align-items:center; justify-content:center; background:#1c2430; color:#7aa2ff; font-weight:700; font-size:18px; }
-  .bizCardBody { min-width:0; flex:1; }
-  .bizCardName { font-weight:600; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .bizCardEmail { font-size:12px; color:var(--mut); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
-  .bizCardStats { display:flex; gap:12px; margin-top:8px; font-size:12px; color:#8b93a7; }
-  .anavbar { border-bottom:1px solid var(--line); padding:8px 20px; }
-  .anav { display:flex; gap:6px; flex-wrap:wrap; }
-  .anav button { background:none; border:1px solid transparent; color:var(--mut); padding:7px 12px; border-radius:8px; cursor:pointer; font-size:14px; }
-  .anav button:hover { color:var(--txt); }
-  .anav button.active { background:#0e1116; color:var(--acc); border-color:var(--line); }
-  .subnav { display:block; width:100%; text-align:left; background:none; border:none; color:var(--txt); padding:10px; border-radius:8px; cursor:pointer; font-size:14px; margin-bottom:2px; }
-  .subnav:hover { background:#0e1116; }
-  .subnav.active { background:#0e1116; color:var(--acc); }
-  .bizrow { display:flex; align-items:center; gap:12px; padding:11px 10px; border-radius:10px; cursor:pointer; border-bottom:1px solid #20262f; }
-  .bizrow:hover { background:#0e1116; }
-  .circle { width:38px; height:38px; border-radius:50%; background:#0a1b2e; color:var(--acc); border:1px solid #1e3a5f; display:flex; align-items:center; justify-content:center; font-weight:600; flex:0 0 auto; }
-  .bizrow .bn { font-size:14px; font-weight:500; }
-  .bizrow .be { font-size:12px; color:var(--mut); }
-  .sect { margin-bottom:20px; }
-  .sect h3 { font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--mut); border-bottom:1px solid var(--line); padding-bottom:6px; margin:0 0 8px; }
-  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
-  .stat { background:#0e1116; border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
-  .stat .v { font-size:22px; font-weight:700; color:var(--acc); }
-  .stat .l { font-size:12px; color:var(--mut); margin-top:2px; }
-  .back { background:none; border:none; color:var(--mut); cursor:pointer; font-size:14px; padding:0 0 12px; }
-  .drow { display:grid; grid-template-columns:180px 1fr; gap:14px; padding:9px 0; border-bottom:1px solid #20262f; font-size:14px; align-items:start; }
-  .drow .k { color:var(--mut); }
-  .drow .v { word-break:break-word; }
-  @media (max-width:700px){ .drow{ grid-template-columns:1fr; gap:2px; } .drow .k{ font-size:12px; } }
-  @media (max-width:700px){
-    .anav { overflow-x:auto; flex-wrap:nowrap; -webkit-overflow-scrolling:touch; }
-    .anav button { flex:0 0 auto; white-space:nowrap; }
-    #bizNav { display:flex; overflow-x:auto; gap:8px; -webkit-overflow-scrolling:touch; }
-    .subnav { width:auto; white-space:nowrap; flex:0 0 auto; margin-bottom:0; }
-  }
-  .kfilter{ display:flex; gap:12px; }
-  .kbtn{ flex:1; padding:14px; background:transparent; border:1px solid #2a313c; border-radius:10px;
-    color:#e6edf3; font-size:15px; font-weight:700; letter-spacing:.05em; cursor:pointer; font-family:inherit; }
-  .kbtn:hover{ border-color:#4a9eff; }
-  .kbtn.active{ border-color:#4a9eff; background:#4a9eff18; color:#4a9eff; }
-  .kcols{ display:flex; gap:16px; }
-  .kcol{ flex:1; }
-  .ksmall{ font-size:12px; color:#8b949e; margin-bottom:8px; }
-  .kinput{ width:100%; box-sizing:border-box; padding:9px 12px; background:#0e1116; border:1px solid #2a313c;
-    border-radius:8px; color:#e6edf3; font-size:14px; font-family:inherit; margin-bottom:8px; }
-  .kcarousel{ max-height:200px; overflow-y:auto; border:1px solid #2a313c; border-radius:10px; background:#0e1116; }
-  .kitem{ padding:10px 14px; border-bottom:1px solid #1c2230; cursor:pointer; font-size:14px; }
-  .kitem:last-child{ border-bottom:none; }
-  .kitem:hover{ background:#161b22; }
-  .kitem.sel{ background:#4a9eff22; color:#4a9eff; font-weight:600; }
-  .kitem.disabled{ opacity:.35; cursor:not-allowed; }
-  .ktabela{ border:1px solid #2a313c; border-radius:10px; overflow:hidden; }
-  .krow{ display:flex; align-items:center; padding:11px 14px; border-bottom:1px solid #1c2230; font-size:14px; }
-  .krow:last-child{ border-bottom:none; }
-  .krow.khead{ background:#161b22; color:#8b949e; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
-  .kc1{ flex:1; }
-  .kc2{ width:70px; text-align:center; font-weight:700; color:#4a9eff; }
-  .kc3{ width:56px; text-align:center; font-size:13px; }
-  .khead .kc2{ color:#8b949e; font-weight:600; }
-  .kright{ text-align:right; }
+.kerkesaTbl { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+.kerkesaTr { display:grid; grid-template-columns:1.5fr 2fr auto; gap:12px; align-items:center; padding:12px 14px; border-bottom:1px solid #20262f; }
+.kerkesaTr:last-child { border-bottom:none; }
+.kerkesaIdent { display:flex; align-items:center; gap:10px; min-width:0; }
+.kerkesaTxt { font-size:13px; line-height:1.4; }
+.rekBizTbl { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+.rekBizTr { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid #20262f; cursor:pointer; }
+.rekBizTr:last-child { border-bottom:none; }
+.rekBizTr:hover { background:#131820; }
+.rekNumri { color:var(--mut); font-size:13px; }
+.rekTbl { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+.rekThead, .rekTr { display:grid; grid-template-columns:2.2fr .9fr .7fr .8fr .8fr .9fr; align-items:center; gap:8px; padding:11px 14px; }
+.rekThead { background:#0e1116; color:var(--mut); font-size:11px; text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--line); }
+.rekTr { border-bottom:1px solid #20262f; cursor:pointer; font-size:13px; }
+.rekTr:last-child { border-bottom:none; }
+.rekTr:hover { background:#131820; }
+.rekTip2 { text-transform:uppercase; font-size:11px; color:#7aa2ff; }
+.njToolbar { display:flex; gap:12px; align-items:center; margin:6px 0 10px; flex-wrap:wrap; }
+.njFiltra { display:flex; gap:6px; }
+.njFbtn { padding:6px 12px; border-radius:8px; border:1px solid var(--line); background:#0e1116; color:var(--txt); cursor:pointer; font-size:12px; font-family:inherit; }
+.njFbtn.active { background:#3b82f6; color:#fff; border-color:#3b82f6; }
+.njTblWrap { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+.njTbl { max-height:320px; overflow-y:auto; }
+.njThead, .njTr { display:grid; grid-template-columns:32px 2.2fr .8fr .7fr .8fr .8fr; align-items:center; gap:8px; padding:10px 12px; }
+.njThead { position:sticky; top:0; background:#0e1116; color:var(--mut); font-size:11px; text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--line); z-index:1; }
+.njTr { border-bottom:1px solid #20262f; cursor:pointer; font-size:13px; }
+.njTr:last-child { border-bottom:none; }
+.njTr:hover { background:#131820; }
+.njIdent { display:flex; align-items:center; gap:10px; min-width:0; }
+.njBizLogo { width:34px; height:34px; border-radius:8px; object-fit:cover; flex:0 0 auto; }
+.njBizLogoTxt { display:flex; align-items:center; justify-content:center; background:#1c2430; color:#7aa2ff; font-weight:700; font-size:14px; }
+.njId2 { display:flex; flex-direction:column; min-width:0; }
+.njBizNm { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.njBizEm { font-size:11px; color:var(--mut); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.njBizTip { text-transform:uppercase; font-size:11px; color:#7aa2ff; }
+.njChk { width:17px; height:17px; cursor:pointer; }
+.njBizRresht { display:flex; align-items:center; gap:12px; padding:10px 12px; cursor:pointer; border-radius:8px; transition:.12s; }
+.njBizRresht:hover { background:#131820; }
+.njBizLogo { width:32px; height:32px; border-radius:8px; background:#1c2430; color:#7aa2ff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex:0 0 auto; }
+.njBizInfo { display:flex; flex-direction:column; }
+.njBizNm { font-weight:600; font-size:14px; }
+.njBizTip { font-size:12px; color:var(--mut); text-transform:uppercase; }
+.njChk { width:18px; height:18px; cursor:pointer; flex:0 0 auto; }
+.bizGrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; align-content:start; }
+.bizCard { display:flex; gap:12px; align-items:center; padding:14px; border:1px solid var(--line); border-radius:12px; background:#0e1116; cursor:pointer; transition:.15s; }
+.bizCard:hover { border-color:var(--acc,#3b82f6); background:#131820; }
+.bizLogo { width:44px; height:44px; border-radius:10px; object-fit:cover; flex:0 0 auto; }
+.bizLogoTxt { display:flex; align-items:center; justify-content:center; background:#1c2430; color:#7aa2ff; font-weight:700; font-size:18px; }
+.bizCardBody { min-width:0; flex:1; }
+.bizCardName { font-weight:600; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bizCardEmail { font-size:12px; color:var(--mut); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+.bizCardStats { display:flex; gap:12px; margin-top:8px; font-size:12px; color:#8b93a7; }
+.anavbar { border-bottom:1px solid var(--line); padding:8px 20px; }
+.anav { display:flex; gap:6px; flex-wrap:wrap; }
+.anav button { background:none; border:1px solid transparent; color:var(--mut); padding:7px 12px; border-radius:8px; cursor:pointer; font-size:14px; }
+.anav button:hover { color:var(--txt); }
+.anav button.active { background:#0e1116; color:var(--acc); border-color:var(--line); }
+.subnav { display:block; width:100%; text-align:left; background:none; border:none; color:var(--txt); padding:10px; border-radius:8px; cursor:pointer; font-size:14px; margin-bottom:2px; }
+.subnav:hover { background:#0e1116; }
+.subnav.active { background:#0e1116; color:var(--acc); }
+.bizrow { display:flex; align-items:center; gap:12px; padding:11px 10px; border-radius:10px; cursor:pointer; border-bottom:1px solid #20262f; }
+.bizrow:hover { background:#0e1116; }
+.circle { width:38px; height:38px; border-radius:50%; background:#0a1b2e; color:var(--acc); border:1px solid #1e3a5f; display:flex; align-items:center; justify-content:center; font-weight:600; flex:0 0 auto; }
+.bizrow .bn { font-size:14px; font-weight:500; }
+.bizrow .be { font-size:12px; color:var(--mut); }
+.sect { margin-bottom:20px; }
+.sect h3 { font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--mut); border-bottom:1px solid var(--line); padding-bottom:6px; margin:0 0 8px; }
+.stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+.stat { background:#0e1116; border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+.stat .v { font-size:22px; font-weight:700; color:var(--acc); }
+.stat .l { font-size:12px; color:var(--mut); margin-top:2px; }
+.back { background:none; border:none; color:var(--mut); cursor:pointer; font-size:14px; padding:0 0 12px; }
+.drow { display:grid; grid-template-columns:180px 1fr; gap:14px; padding:9px 0; border-bottom:1px solid #20262f; font-size:14px; align-items:start; }
+.drow .k { color:var(--mut); }
+.drow .v { word-break:break-word; }
+@media (max-width:700px){ .drow{ grid-template-columns:1fr; gap:2px; } .drow .k{ font-size:12px; } }
+@media (max-width:700px){
+.anav { overflow-x:auto; flex-wrap:nowrap; -webkit-overflow-scrolling:touch; }
+.anav button { flex:0 0 auto; white-space:nowrap; }
+#bizNav { display:flex; overflow-x:auto; gap:8px; -webkit-overflow-scrolling:touch; }
+.subnav { width:auto; white-space:nowrap; flex:0 0 auto; margin-bottom:0; }
+}
+.kfilter{ display:flex; gap:12px; }
+.kbtn{ flex:1; padding:14px; background:transparent; border:1px solid #2a313c; border-radius:10px;
+color:#e6edf3; font-size:15px; font-weight:700; letter-spacing:.05em; cursor:pointer; font-family:inherit; }
+.kbtn:hover{ border-color:#4a9eff; }
+.kbtn.active{ border-color:#4a9eff; background:#4a9eff18; color:#4a9eff; }
+.kcols{ display:flex; gap:16px; }
+.kcol{ flex:1; }
+.ksmall{ font-size:12px; color:#8b949e; margin-bottom:8px; }
+.kinput{ width:100%; box-sizing:border-box; padding:9px 12px; background:#0e1116; border:1px solid #2a313c;
+border-radius:8px; color:#e6edf3; font-size:14px; font-family:inherit; margin-bottom:8px; }
+.kcarousel{ max-height:200px; overflow-y:auto; border:1px solid #2a313c; border-radius:10px; background:#0e1116; }
+.kitem{ padding:10px 14px; border-bottom:1px solid #1c2230; cursor:pointer; font-size:14px; }
+.kitem:last-child{ border-bottom:none; }
+.kitem:hover{ background:#161b22; }
+.kitem.sel{ background:#4a9eff22; color:#4a9eff; font-weight:600; }
+.kitem.disabled{ opacity:.35; cursor:not-allowed; }
+.ktabela{ border:1px solid #2a313c; border-radius:10px; overflow:hidden; }
+.krow{ display:flex; align-items:center; padding:11px 14px; border-bottom:1px solid #1c2230; font-size:14px; }
+.krow:last-child{ border-bottom:none; }
+.krow.khead{ background:#161b22; color:#8b949e; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+.kc1{ flex:1; }
+.kc2{ width:70px; text-align:center; font-weight:700; color:#4a9eff; }
+.kc3{ width:56px; text-align:center; font-size:13px; }
+.khead .kc2{ color:#8b949e; font-weight:600; }
+.kright{ text-align:right; }
 </style>
 </head>
 <body>
-
 <header class="topbar">
-  <div class="logo">IMYR·ADMIN</div>
-  <div id="aright"></div>
+<div class="logo">IMYR·ADMIN</div>
+<div id="aright"></div>
 </header>
 <div class="anavbar hide" id="anavbar"><div class="anav" id="anav"></div></div>
 
 <!-- LOGIN -->
 <div class="wrap" id="loginBox">
-  <div class="card" style="max-width:380px;margin:40px auto;">
-    <h2 class="h">Admin — Hyr</h2>
-    <p class="small" style="margin:2px 0 8px;">Vetëm për administratorin.</p>
-    <label>Fjalëkalimi</label>
-    <input id="pass" type="password" placeholder="••••••">
-    <button class="primary" id="btn" onclick="hyr()">Hyr</button>
-    <div class="msg" id="msg"></div>
-  </div>
+<div class="card" style="max-width:380px;margin:40px auto;">
+<h2 class="h">Admin — Hyr</h2>
+<p class="small" style="margin:2px 0 8px;">Vetëm për administratorin.</p>
+<label>Fjalëkalimi</label>
+<input id="pass" type="password" placeholder="••••••">
+<button class="primary" id="btn" onclick="hyr()">Hyr</button>
+<div class="msg" id="msg"></div>
+</div>
 </div>
 
 <!-- APP -->
 <div id="app" class="hide"><div id="content"></div></div>
 
 <script>
-  const $ = id => document.getElementById(id);
-  const SECTIONS = [
-    { k:'bizneset', l:'Bizneset' },
-    { k:'b1', l:'Kombinimet AI' }, { k:'b2', l:'Njoftime' },
-    { k:'b3', l:'Buton 3' }, { k:'b4', l:'Buton 4' }
-  ];
-  const BIZ_SUB = [
-    { k:'bizneset', l:'Llogaritë' },
-    { k:'r2', l:'Ankandet' }, { k:'r3', l:'Reklamat' }, { k:'r4', l:'Rreshti 4' }
-  ];
-  let curSec = 'bizneset', curBizSub = 'bizneset';
+const $ = id => document.getElementById(id);
+const SECTIONS = [
+{ k:'bizneset', l:'Bizneset' },
+{ k:'b1', l:'Kombinimet AI' }, { k:'b2', l:'Njoftime' },
+{ k:'b3', l:'Buton 3' }, { k:'b4', l:'Buton 4' }
+];
+const BIZ_SUB = [
+{ k:'bizneset', l:'Llogaritë' },
+{ k:'r2', l:'Ankandet' }, { k:'r3', l:'Reklamat' }, { k:'r4', l:'Rreshti 4' }
+];
+let curSec = 'bizneset', curBizSub = 'bizneset';
 
-  // ---- LOGIN ----
-  async function hyr(){
-    $('btn').disabled=true; $('msg').textContent='';
-    try{
-      const r=await(await fetch('/api/admin/hyr',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({password:$('pass').value})})).json();
-      if(r.error){ $('msg').className='msg err'; $('msg').textContent=r.error; $('btn').disabled=false; return; }
-      showApp();
-    }catch(e){ $('msg').className='msg err'; $('msg').textContent='Gabim: '+e.message; }
-    $('btn').disabled=false;
-  }
-  async function dil(){ await fetch('/api/admin/dil',{method:'POST'}); location.reload(); }
+// ---- LOGIN ----
+async function hyr(){
+$('btn').disabled=true; $('msg').textContent='';
+try{
+const r=await(await fetch('/api/admin/hyr',{method:'POST',headers:{'Content-Type':'application/json'},
+body:JSON.stringify({password:$('pass').value})})).json();
+if(r.error){ $('msg').className='msg err'; $('msg').textContent=r.error; $('btn').disabled=false; return; }
+showApp();
+}catch(e){ $('msg').className='msg err'; $('msg').textContent='Gabim: '+e.message; }
+$('btn').disabled=false;
+}
+async function dil(){ await fetch('/api/admin/dil',{method:'POST'}); location.reload(); }
+function showApp(){
+$('loginBox').classList.add('hide');
+$('app').classList.remove('hide');
+$('anavbar').classList.remove('hide');
+$('aright').innerHTML='<button class="btn ghost" onclick="dil()">Log out</button>';
+renderNav(); selectSection('bizneset');
+}
+function renderNav(){
+const n=$('anav'); n.innerHTML='';
+SECTIONS.forEach(s=>{
+const b=document.createElement('button');
+b.textContent=s.l; if(s.k===curSec) b.className='active';
+b.onclick=()=>selectSection(s.k);
+n.appendChild(b);
+});
+}
+function selectSection(k){ curSec=k; renderNav(); renderContent(); }
+function renderContent(){
+const c=$('content');
+if(curSec==='bizneset'){ renderBizneset(c); return; }
+if(curSec==='b1'){ renderKombinimet(c); return; }
+if(curSec==='b2'){ renderNjoftime(c); return; }
+const lbl=(SECTIONS.find(s=>s.k===curSec)||{}).l||'';
+c.innerHTML='<div class="wrap"><h2 class="h">'+lbl+'</h2><p class="small" style="margin-top:8px;">Së shpejti.</p></div>';
+}
 
-  function showApp(){
-    $('loginBox').classList.add('hide');
-    $('app').classList.remove('hide');
-    $('anavbar').classList.remove('hide');
-    $('aright').innerHTML='<button class="btn ghost" onclick="dil()">Log out</button>';
-    renderNav(); selectSection('bizneset');
-  }
-  function renderNav(){
-    const n=$('anav'); n.innerHTML='';
-    SECTIONS.forEach(s=>{
-      const b=document.createElement('button');
-      b.textContent=s.l; if(s.k===curSec) b.className='active';
-      b.onclick=()=>selectSection(s.k);
-      n.appendChild(b);
-    });
-  }
-  function selectSection(k){ curSec=k; renderNav(); renderContent(); }
-  function renderContent(){
-    const c=$('content');
-    if(curSec==='bizneset'){ renderBizneset(c); return; }
-    if(curSec==='b1'){ renderKombinimet(c); return; }
-    if(curSec==='b2'){ renderNjoftime(c); return; }
-    const lbl=(SECTIONS.find(s=>s.k===curSec)||{}).l||'';
-    c.innerHTML='<div class="wrap"><h2 class="h">'+lbl+'</h2><p class="small" style="margin-top:8px;">Së shpejti.</p></div>';
-  }
+// ================= NJOFTIME (manuale nga admin) =================
+var njBizneset = [];
+async function renderNjoftime(c){
+c.innerHTML=
+'<div class="wrap" style="max-width:760px;">'+
+'<h2 class="h">Kërkesat nga asistenti virtual</h2>'+
+'<p class="small" style="margin:2px 0 12px;">Klientët që kërkuan të kontaktojnë ekipin përmes chat-it.</p>'+
+'<div id="kerkesatLista" style="margin-bottom:28px;"><p class="small">Po ngarkoj…</p></div>'+
+'<h2 class="h">Dërgo njoftim</h2>'+
+'<p class="small" style="margin:2px 0 18px;">Zgjidh një ose disa biznese dhe dërgo një njoftim te ikona e ziles së tyre.</p>'+
+'<label>Titulli *</label><input id="njTit" placeholder="Titulli i njoftimit">'+
+'<label style="margin-top:12px;">Teksti</label><textarea id="njTek" placeholder="Përmbajtja e njoftimit" style="min-height:90px;"></textarea>'+
+'<label style="margin-top:12px;">Buton (opsional)</label>'+
+'<div style="display:flex;gap:10px;">'+
+'<input id="njBtnLbl" placeholder="Teksti i butonit (p.sh. Rregullo)" style="flex:1;">'+
+'<select id="njBtnVep" style="flex:1;background:#0e1116;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px;">'+
+'<option value="">— pa buton —</option>'+
+'<option value="reklamat">My Ads</option>'+
+'<option value="snippetet">Hapësira e reklamave</option>'+
+'<option value="konvertimi">Konvertimet</option>'+
+'<option value="creatives">Krijo reklamë</option>'+
+'</select>'+
+'</div>'+
+'<p class="small mut" style="margin-top:4px;">Nëse vendos buton, njoftimi qëndron derisa përdoruesi ta klikojë. Pa buton, largohet kur e lexon.</p>'+
+'<label style="margin-top:16px;">Zgjidh bizneset *</label>'+
+'<div class="njToolbar">'+
+'<input class="kinput" id="njKerkim" placeholder="Kërko me emër…" oninput="njSetKerkim(this.value)">'+
+'<div class="njFiltra">'+
+'<button class="njFbtn active" onclick="njSetTip(\'\',this)">Të gjitha</button>'+
+'<button class="njFbtn" onclick="njSetTip(\'b2b\',this)">B2B</button>'+
+'<button class="njFbtn" onclick="njSetTip(\'b2c\',this)">B2C</button>'+
+'<button class="njFbtn" onclick="njSetTip(\'b2b2c\',this)">B2B2C</button>'+
+'</div>'+
+'</div>'+
+'<div class="njTblWrap"><div class="njTbl">'+
+'<div class="njThead"><span></span><span>Biznesi</span><span>Tipi</span><span>Pikët</span><span>Sjellë</span><span>Marrë</span></div>'+
+'<div id="njLista"><p class="small" style="padding:14px;">Po ngarkoj…</p></div>'+
+'</div></div>'+
+'<button class="primary" style="margin-top:16px;" onclick="njDergo(this)">Dërgo njoftimin</button>'+
+'<span class="small" id="njStat" style="margin-left:10px;"></span>'+
 
-  // ================= NJOFTIME (manuale nga admin) =================
-  var njBizneset = [];
-  async function renderNjoftime(c){
-    c.innerHTML=
-      '<div class="wrap" style="max-width:760px;">'+
-        '<h2 class="h">Kërkesat nga asistenti virtual</h2>'+
-        '<p class="small" style="margin:2px 0 12px;">Klientët që kërkuan të kontaktojnë ekipin përmes chat-it.</p>'+
-        '<div id="kerkesatLista" style="margin-bottom:28px;"><p class="small">Po ngarkoj…</p></div>'+
-        '<h2 class="h">Dërgo njoftim</h2>'+
-        '<p class="small" style="margin:2px 0 18px;">Zgjidh një ose disa biznese dhe dërgo një njoftim te ikona e ziles së tyre.</p>'+
-        '<label>Titulli *</label><input id="njTit" placeholder="Titulli i njoftimit">'+
-        '<label style="margin-top:12px;">Teksti</label><textarea id="njTek" placeholder="Përmbajtja e njoftimit" style="min-height:90px;"></textarea>'+
-        '<label style="margin-top:12px;">Buton (opsional)</label>'+
-        '<div style="display:flex;gap:10px;">'+
-          '<input id="njBtnLbl" placeholder="Teksti i butonit (p.sh. Rregullo)" style="flex:1;">'+
-          '<select id="njBtnVep" style="flex:1;background:#0e1116;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px;">'+
-            '<option value="">— pa buton —</option>'+
-            '<option value="reklamat">My Ads</option>'+
-            '<option value="snippetet">Hapësira e reklamave</option>'+
-            '<option value="konvertimi">Konvertimet</option>'+
-            '<option value="creatives">Krijo reklamë</option>'+
-          '</select>'+
-        '</div>'+
-        '<p class="small mut" style="margin-top:4px;">Nëse vendos buton, njoftimi qëndron derisa përdoruesi ta klikojë. Pa buton, largohet kur e lexon.</p>'+
-        '<label style="margin-top:16px;">Zgjidh bizneset *</label>'+
-        '<div class="njToolbar">'+
-          '<input class="kinput" id="njKerkim" placeholder="Kërko me emër…" oninput="njSetKerkim(this.value)">'+
-          '<div class="njFiltra">'+
-            '<button class="njFbtn active" onclick="njSetTip(\'\',this)">Të gjitha</button>'+
-            '<button class="njFbtn" onclick="njSetTip(\'b2b\',this)">B2B</button>'+
-            '<button class="njFbtn" onclick="njSetTip(\'b2c\',this)">B2C</button>'+
-            '<button class="njFbtn" onclick="njSetTip(\'b2b2c\',this)">B2B2C</button>'+
-          '</div>'+
-        '</div>'+
-        '<div class="njTblWrap"><div class="njTbl">'+
-          '<div class="njThead"><span></span><span>Biznesi</span><span>Tipi</span><span>Pikët</span><span>Sjellë</span><span>Marrë</span></div>'+
-          '<div id="njLista"><p class="small" style="padding:14px;">Po ngarkoj…</p></div>'+
-        '</div></div>'+
-        '<button class="primary" style="margin-top:16px;" onclick="njDergo(this)">Dërgo njoftimin</button>'+
-        '<span class="small" id="njStat" style="margin-left:10px;"></span>'+
-      '</div>';
-    try{
-      njBizneset = await(await fetch('/api/admin/njoftime/bizneset')).json();
-      njRenderLista();
-    }catch(e){ $('njLista').innerHTML='<p class="small" style="padding:14px;">Gabim.</p>'; }
-    ngarkoKerkesat();
-  }
-  var _njKerkim='', _njTip='';
-  function njSetKerkim(v){ _njKerkim=(v||'').toLowerCase().trim(); njRenderLista(); }
-  function njSetTip(t, btn){
-    _njTip=t;
-    document.querySelectorAll('.njFbtn').forEach(x=>x.classList.remove('active'));
-    if(btn) btn.classList.add('active');
-    njRenderLista();
-  }
-  function njRenderLista(){
-    const el=$('njLista'); if(!el) return;
-    const f=(njBizneset||[]).filter(b=>{
-      const okEmri=!_njKerkim||(b.emri||'').toLowerCase().includes(_njKerkim);
-      const okTip=!_njTip||(b.tipi||'')===_njTip;
-      return okEmri && okTip;
-    });
-    if(!f.length){ el.innerHTML='<p class="small" style="padding:14px;">S\'ka biznese që përputhen.</p>'; return; }
-    el.innerHTML = f.map(b=>{
-      const ini=((b.emri||'?').trim().charAt(0)||'?').toUpperCase();
-      const logo = b.logo_url ? '<img src="'+esc(b.logo_url)+'" class="njBizLogo">' : '<span class="njBizLogo njBizLogoTxt">'+esc(ini)+'</span>';
-      return '<label class="njTr">'+
-        '<input type="checkbox" class="njChk" value="'+b.id+'">'+
-        '<span class="njIdent">'+logo+'<span class="njId2"><span class="njBizNm">'+esc(b.emri||('#'+b.id))+'</span><span class="njBizEm">'+esc(b.email||'—')+'</span></span></span>'+
-        '<span class="njBizTip">'+esc(b.tipi||'—')+'</span>'+
-        '<span>'+(b.pike_profili||0)+'</span>'+
-        '<span>'+(b.shfaqje_dhene||0)+'</span>'+
-        '<span>'+(b.shfaqje_marre||0)+'</span>'+
-      '</label>';
-    }).join('');
-  }
-  async function njDergo(btn){
-    const titulli=($('njTit')||{}).value||'';
-    const teksti=($('njTek')||{}).value||'';
-    const veprim=($('njBtnVep')||{}).value||'';
-    const veprim_label=($('njBtnLbl')||{}).value||'';
-    const ids=Array.prototype.map.call(document.querySelectorAll('.njChk:checked'),x=>parseInt(x.value,10));
-    const stat=$('njStat');
-    if(!titulli.trim()){ if(stat){stat.textContent='Vendos titullin.';} return; }
-    if(!ids.length){ if(stat){stat.textContent='Zgjidh të paktën një biznes.';} return; }
-    btn.disabled=true;
-    try{
-      const r=await(await fetch('/api/admin/njoftime/dergo',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({biznes_ids:ids, titulli, teksti, veprim, veprim_label})})).json();
-      if(r.error){ if(stat)stat.textContent=r.error; btn.disabled=false; return; }
-      if(stat)stat.textContent='✓ U dërgua te '+r.derguar+' biznese.';
-      $('njTit').value=''; $('njTek').value=''; $('njBtnLbl').value='';
-      document.querySelectorAll('.njChk:checked').forEach(x=>x.checked=false);
-    }catch(e){ if(stat)stat.textContent='Gabim: '+e.message; }
-    btn.disabled=false;
-  }
+'<h2 class="h" style="margin-top:36px;padding-top:24px;border-top:1px solid var(--line);">Çfarë të re (publik)</h2>'+
+'<p class="small" style="margin:2px 0 18px;">I ndryshëm nga njoftimi më lart — ky shfaqet te widget-i global (ikona e re, jo zilja), i dukshëm për çdo klient, pa zgjedhje biznesesh. Për ndryshime të vogla të platformës, jo veçori të reja të mëdha.</p>'+
+'<label>Titulli *</label><input id="ndrTit" placeholder="p.sh. Insights u shtua">'+
+'<label style="margin-top:12px;">Teksti</label><textarea id="ndrTek" placeholder="Përshkrim i shkurtër" style="min-height:70px;"></textarea>'+
+'<button class="primary" style="margin-top:16px;" onclick="ndrAdminDergo(this)">Dërgo te widget</button>'+
+'<span class="small" id="ndrStat" style="margin-left:10px;"></span>'+
+'</div>';
+try{
+njBizneset = await(await fetch('/api/admin/njoftime/bizneset')).json();
+njRenderLista();
+}catch(e){ $('njLista').innerHTML='<p class="small" style="padding:14px;">Gabim.</p>'; }
+ngarkoKerkesat();
+}
 
-  async function ngarkoKerkesat(){
-    const el=$('kerkesatLista'); if(!el) return;
-    try{
-      const rows=await(await fetch('/api/admin/kerkesat-suport')).json();
-      if(!rows.length){ el.innerHTML='<p class="small mut">S\'ka kërkesa.</p>'; return; }
-      el.innerHTML='<div class="kerkesaTbl">'+rows.map(r=>{
-        const ini=((r.emri||'?').trim().charAt(0)||'?').toUpperCase();
-        const logo=r.logo_url?'<img src="'+esc(r.logo_url)+'" class="njBizLogo">':'<span class="njBizLogo njBizLogoTxt">'+esc(ini)+'</span>';
-        const stil=r.trajtuar?'opacity:.5;':'';
-        return '<div class="kerkesaTr" style="'+stil+'">'+
-          '<div class="kerkesaIdent">'+logo+'<div><div class="njBizNm">'+esc(r.emri||'—')+'</div><div class="njBizEm">'+esc(r.email||'—')+'</div></div></div>'+
-          '<div class="kerkesaTxt">'+esc(r.shqetesimi)+'</div>'+
-          (r.trajtuar?'<span class="small mut">✓ Trajtuar</span>':'<button class="btn" onclick="trajtoKerkesen('+r.id+')">Shëno si e trajtuar</button>')+
-        '</div>';
-      }).join('')+'</div>';
-    }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; }
-  }
-  async function trajtoKerkesen(id){
-    try{
-      await fetch('/api/admin/kerkesat-suport/'+id+'/trajto',{method:'POST'});
-      ngarkoKerkesat();
-    }catch(e){}
-  }
-  
-  // ================= KOMBINIMET AI =================
-  var kFiltri=null, kA=null, kB=null, kBizneset=[];
-  function renderKombinimet(c){
-    c.innerHTML=
-      '<div class="wrap" style="max-width:1040px;">'+
-        '<h2 class="h">Kombinimet AI</h2>'+
-        '<p class="small" style="margin:2px 0 18px;">Zgjidh një tip. Tabela poshtë tregon të gjitha kombinimet e asaj kategorie. Zgjidh dy biznese për të parë vetëm atë çift.</p>'+
-        '<div style="margin-bottom:16px;"><button class="btn" onclick="kNisEkzistueset(this)">Nis kombinimin për bizneset ekzistuese</button> <span class="small" id="kNisStat"></span></div>'+
-        '<div class="kfilter">'+
-          '<button class="kbtn" data-t="b2b"   onclick="kSetFiltri(\'b2b\')">B2B</button>'+
-          '<button class="kbtn" data-t="b2c"   onclick="kSetFiltri(\'b2c\')">B2C</button>'+
-          '<button class="kbtn" data-t="b2b2c" onclick="kSetFiltri(\'b2b2c\')">B2B2C</button>'+
-        '</div>'+
-        '<div id="kZgjedhesit" style="margin-top:18px;">'+
-          '<div class="kcols">'+
-            '<div class="kcol">'+
-              '<div class="ksmall">Biznesi A</div>'+
-              '<input class="kinput" id="kKerkimA" placeholder="Kërko…" oninput="kFiltroLista(\'A\',this.value)">'+
-              '<div class="kcarousel" id="kListaA"><p class="small" style="padding:10px;">Zgjidh një tip lart.</p></div>'+
-            '</div>'+
-            '<div class="kcol">'+
-              '<div class="ksmall">Biznesi B</div>'+
-              '<input class="kinput" id="kKerkimB" placeholder="Kërko…" oninput="kFiltroLista(\'B\',this.value)">'+
-              '<div class="kcarousel" id="kListaB"><p class="small" style="padding:10px;">Zgjidh një tip lart.</p></div>'+
-            '</div>'+
-          '</div>'+
-          '<button class="btn ghost" style="margin-top:10px;" onclick="kPastro()">Pastro zgjedhjen</button>'+
-        '</div>'+
-        '<div class="ktabela" style="margin-top:20px;">'+
-          '<div class="krow khead"><span class="kc1">Biznesi A</span><span class="kc2">A→B</span><span class="kc2">B→A</span><span class="kc1 kright">Biznesi B</span></div>'+
-          '<div id="kRows"><p class="small" style="padding:14px;">Zgjidh një tip lart për të parë kombinimet.</p></div>'+
-        '</div>'+
-      '</div>';
-    kFiltri=null; kA=null; kB=null;
-  }
-  async function kNisEkzistueset(btn){
-    if(btn) btn.disabled=true;
-    const st=$('kNisStat'); if(st) st.textContent='Po nis…';
-    try{
-      const r=await(await fetch('/api/admin/kombinim/nis',{method:'POST'})).json();
-      if(st) st.textContent = r.error ? ('Gabim: '+r.error) : ('U nis për '+r.nisur+' biznese. Prit pak, pastaj zgjidh tipin për të parë pikët.');
-    }catch(e){ if(st) st.textContent='Gabim.'; }
-    if(btn) btn.disabled=false;
-  }
-  function kSetFiltri(t){
-    kFiltri=t; kA=null; kB=null;
-    document.querySelectorAll('.kbtn').forEach(b=>b.classList.toggle('active', b.getAttribute('data-t')===t));
-    kNgarkoBizneset();
-  }
-  async function kNgarkoBizneset(){
-    $('kListaA').innerHTML='<p class="small" style="padding:10px;">Po ngarkoj…</p>';
-    $('kListaB').innerHTML=''; $('kRows').innerHTML='<p class="small" style="padding:14px;">Po ngarkoj…</p>';
-    try{
-      const rows=await(await fetch('/api/admin/kombinim/bizneset')).json();
-      kBizneset=(rows||[]).filter(b=>{
-        if(kFiltri==='b2b')   return b.tipi==='b2b'  || b.tipi==='b2b2c';
-        if(kFiltri==='b2c')   return b.tipi==='b2c'  || b.tipi==='b2b2c';
-        if(kFiltri==='b2b2c') return true;
-        return true;
-      });
-      kFiltroLista('A',''); kFiltroLista('B','');
-      kRenderTabela();
-    }catch(e){ $('kListaA').innerHTML='<p class="small" style="padding:10px;">Gabim.</p>'; }
-  }
-  function kFiltroLista(cili, kerkim){
-    const q=(kerkim||'').toLowerCase().trim();
-    const lista=kBizneset.filter(b=>!q || (b.emri||'').toLowerCase().includes(q));
-    const el=$(cili==='A'?'kListaA':'kListaB');
-    const zgjedhur=cili==='A'?kA:kB;
-    const tjetri=cili==='A'?kB:kA;   // s'lejohet i njejti biznes ne te dyja
-    if(!lista.length){ el.innerHTML='<p class="small" style="padding:10px;">Asnjë biznes.</p>'; return; }
-    el.innerHTML='';
-    lista.forEach(b=>{
-      const eZene=(b.id===tjetri);
-      const d=document.createElement('div');
-      d.className='kitem'+(zgjedhur===b.id?' sel':'')+(eZene?' disabled':'');
-      d.textContent=b.emri;
-      if(!eZene) d.onclick=()=>kZgjidh(cili, b.id);
-      el.appendChild(d);
-    });
-  }
-  function kZgjidh(cili, id){
-    if(cili==='A'){ kA=(kA===id?null:id); } else { kB=(kB===id?null:id); }
-    kFiltroLista('A', ($('kKerkimA')||{}).value||'');
-    kFiltroLista('B', ($('kKerkimB')||{}).value||'');
-    kRenderTabela();
-  }
-  function kPastro(){ kA=null; kB=null; kFiltroLista('A',''); kFiltroLista('B',''); kRenderTabela(); }
-  function kEmri(id){ const b=kBizneset.find(x=>x.id===id); return b?b.emri:('#'+id); }
+var _njKerkim='', _njTip='';
+function njSetKerkim(v){ _njKerkim=(v||'').toLowerCase().trim(); njRenderLista(); }
+function njSetTip(t, btn){
+_njTip=t;
+document.querySelectorAll('.njFbtn').forEach(x=>x.classList.remove('active'));
+if(btn) btn.classList.add('active');
+njRenderLista();
+}
+function njRenderLista(){
+const el=$('njLista'); if(!el) return;
+const f=(njBizneset||[]).filter(b=>{
+const okEmri=!_njKerkim||(b.emri||'').toLowerCase().includes(_njKerkim);
+const okTip=!_njTip||(b.tipi||'')===_njTip;
+return okEmri && okTip;
+});
+if(!f.length){ el.innerHTML='<p class="small" style="padding:14px;">S\'ka biznese që përputhen.</p>'; return; }
+el.innerHTML = f.map(b=>{
+const ini=((b.emri||'?').trim().charAt(0)||'?').toUpperCase();
+const logo = b.logo_url ? '<img src="'+esc(b.logo_url)+'" class="njBizLogo">' : '<span class="njBizLogo njBizLogoTxt">'+esc(ini)+'</span>';
+return '<label class="njTr">'+
+'<input type="checkbox" class="njChk" value="'+b.id+'">'+
+'<span class="njIdent">'+logo+'<span class="njId2"><span class="njBizNm">'+esc(b.emri||('#'+b.id))+'</span><span class="njBizEm">'+esc(b.email||'—')+'</span></span></span>'+
+'<span class="njBizTip">'+esc(b.tipi||'—')+'</span>'+
+'<span>'+(b.pike_profili||0)+'</span>'+
+'<span>'+(b.shfaqje_dhene||0)+'</span>'+
+'<span>'+(b.shfaqje_marre||0)+'</span>'+
+'</label>';
+}).join('');
+}
+async function njDergo(btn){
+const titulli=($('njTit')||{}).value||'';
+const teksti=($('njTek')||{}).value||'';
+const veprim=($('njBtnVep')||{}).value||'';
+const veprim_label=($('njBtnLbl')||{}).value||'';
+const ids=Array.prototype.map.call(document.querySelectorAll('.njChk:checked'),x=>parseInt(x.value,10));
+const stat=$('njStat');
+if(!titulli.trim()){ if(stat){stat.textContent='Vendos titullin.';} return; }
+if(!ids.length){ if(stat){stat.textContent='Zgjidh të paktën një biznes.';} return; }
+btn.disabled=true;
+try{
+const r=await(await fetch('/api/admin/njoftime/dergo',{method:'POST',headers:{'Content-Type':'application/json'},
+body:JSON.stringify({biznes_ids:ids, titulli, teksti, veprim, veprim_label})})).json();
+if(r.error){ if(stat)stat.textContent=r.error; btn.disabled=false; return; }
+if(stat)stat.textContent='✓ U dërgua te '+r.derguar+' biznese.';
+$('njTit').value=''; $('njTek').value=''; $('njBtnLbl').value='';
+document.querySelectorAll('.njChk:checked').forEach(x=>x.checked=false);
+}catch(e){ if(stat)stat.textContent='Gabim: '+e.message; }
+btn.disabled=false;
+}
 
-  async function kRenderTabela(){
-    const el=$('kRows'); if(!el) return;
-    // Nese zgjedhur te dy → vetem ai cift. Perndryshe → te gjitha ciftet e kategorise.
-    if(kA && kB){
-      el.innerHTML='<p class="small" style="padding:14px;">Po ngarkoj…</p>';
-      const r=await kCift(kA,kB);
-      el.innerHTML=kRreshti(kA,kB,r.a_per_b,r.b_per_a);
-      return;
-    }
-    // Te gjitha ciftet unike (pa dublikate, pa vetveten)
-    const b=kBizneset;
-    if(b.length<2){ el.innerHTML='<p class="small" style="padding:14px;">S\'ka mjaftueshëm biznese në këtë kategori.</p>'; return; }
-    let h='';
-    for(let i=0;i<b.length;i++){
-      for(let j=i+1;j<b.length;j++){
-        h+=kRreshti(b[i].id,b[j].id,null,null,true);
-      }
-    }
-    el.innerHTML=h;
-    // Mbush skoret nje nga nje (nese ekzistojne)
-    for(let i=0;i<b.length;i++){
-      for(let j=i+1;j<b.length;j++){
-        kCift(b[i].id,b[j].id).then(r=>{
-          const ab=document.getElementById('sc_'+b[i].id+'_'+b[j].id+'_ab');
-          const ba=document.getElementById('sc_'+b[i].id+'_'+b[j].id+'_ba');
-          if(ab) ab.textContent=(r.a_per_b==null?'—':r.a_per_b);
-          if(ba) ba.textContent=(r.b_per_a==null?'—':r.b_per_a);
-        }).catch(()=>{});
-      }
-    }
-  }
-  function kRreshti(aId,bId,ab,ba,meId){
-    const idAB = meId?(' id="sc_'+aId+'_'+bId+'_ab"'):'';
-    const idBA = meId?(' id="sc_'+aId+'_'+bId+'_ba"'):'';
-    return '<div class="krow">'+
-      '<span class="kc1">'+kEmri(aId)+'</span>'+
-      '<span class="kc2"'+idAB+'>'+(ab==null?'—':ab)+'</span>'+
-      '<span class="kc2"'+idBA+'>'+(ba==null?'—':ba)+'</span>'+
-      '<span class="kc1 kright">'+kEmri(bId)+'</span>'+
-    '</div>';
-  }
-  async function kCift(a,b){
-    try{ return await(await fetch('/api/admin/kombinim/cift?a='+a+'&b='+b)).json(); }
-    catch(e){ return {a_per_b:null,b_per_a:null}; }
-  }
+// ── "Çfarë të re" (widget publik, jo lidhur me biznes) ──
+async function ndrAdminDergo(btn){
+const titull=($('ndrTit')||{}).value||'';
+const teksti=($('ndrTek')||{}).value||'';
+const stat=$('ndrStat');
+if(!titull.trim()){ if(stat){stat.textContent='Vendos titullin.';} return; }
+btn.disabled=true;
+try{
+const r=await(await fetch('/api/admin/ndryshime/dergo',{method:'POST',headers:{'Content-Type':'application/json'},
+body:JSON.stringify({titull, teksti})})).json();
+if(r.error){ if(stat)stat.textContent=r.error; btn.disabled=false; return; }
+if(stat)stat.textContent='✓ U dërgua te widget-i.';
+$('ndrTit').value=''; $('ndrTek').value='';
+}catch(e){ if(stat)stat.textContent='Gabim: '+e.message; }
+btn.disabled=false;
+}
 
-  // ---- SEKSIONI BIZNESET: menu majtas + permbajtja djathtas ----
-  function renderBizneset(c){
-    c.innerHTML=
-      '<div class="appwrap">'+
-        '<aside class="sidebar"><div id="bizNav"></div></aside>'+
-        '<main class="main" id="bizMain"></main>'+
-      '</div>';
-    renderBizNav(); renderBizMain();
-  }
-  function renderBizNav(){
-    const n=$('bizNav'); n.innerHTML='';
-    BIZ_SUB.forEach(s=>{
-      const b=document.createElement('button');
-      b.className='subnav'+(s.k===curBizSub?' active':'');
-      b.textContent=s.l; b.onclick=()=>{ curBizSub=s.k; renderBizNav(); renderBizMain(); };
-      n.appendChild(b);
-    });
-  }
-  function renderBizMain(){
-    const m=$('bizMain');
-    if(curBizSub==='bizneset'){ loadBizList(m); return; }
-    if(curBizSub==='r2'){ renderAnkandet(m); return; }
-    if(curBizSub==='r3'){ renderReklamat(m); return; }
-    const lbl=(BIZ_SUB.find(s=>s.k===curBizSub)||{}).l||'';
-    m.innerHTML='<h2 class="h">'+lbl+'</h2><p class="small" style="margin-top:8px;">Së shpejti.</p>';
-  }
+async function ngarkoKerkesat(){
+const el=$('kerkesatLista'); if(!el) return;
+try{
+const rows=await(await fetch('/api/admin/kerkesat-suport')).json();
+if(!rows.length){ el.innerHTML='<p class="small mut">S\'ka kërkesa.</p>'; return; }
+el.innerHTML='<div class="kerkesaTbl">'+rows.map(r=>{
+const ini=((r.emri||'?').trim().charAt(0)||'?').toUpperCase();
+const logo=r.logo_url?'<img src="'+esc(r.logo_url)+'" class="njBizLogo">':'<span class="njBizLogo njBizLogoTxt">'+esc(ini)+'</span>';
+const stil=r.trajtuar?'opacity:.5;':'';
+return '<div class="kerkesaTr" style="'+stil+'">'+
+'<div class="kerkesaIdent">'+logo+'<div><div class="njBizNm">'+esc(r.emri||'—')+'</div><div class="njBizEm">'+esc(r.email||'—')+'</div></div></div>'+
+'<div class="kerkesaTxt">'+esc(r.shqetesimi)+'</div>'+
+(r.trajtuar?'<span class="small mut">✓ Trajtuar</span>':'<button class="btn" onclick="trajtoKerkesen('+r.id+')">Shëno si e trajtuar</button>')+
+'</div>';
+}).join('')+'</div>';
+}catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; }
+}
+async function trajtoKerkesen(id){
+try{
+await fetch('/api/admin/kerkesat-suport/'+id+'/trajto',{method:'POST'});
+ngarkoKerkesat();
+}catch(e){}
+}
 
-  // ============ ANKANDET ============
-  var ankBizneset=[];
-  async function renderAnkandet(m){
-    m.innerHTML='<h2 class="h">Ankandet</h2>'+
-      '<p class="small" style="margin:2px 0 14px;">Kliko një biznes për të parë sa herë faqja e tij (si host) ka kërkuar reklamë, cilat reklama garuan, peshat e tyre, dhe sa herë secila fitoi.</p>'+
-      '<input class="kinput" id="ankKerkim" placeholder="Kërko biznes…" oninput="ankFiltro(this.value)" style="max-width:360px;">'+
-      '<div id="ankLista" style="margin-top:12px;"><p class="small">Po ngarkoj…</p></div>'+
-      '<div id="ankDetaje" style="margin-top:18px;"></div>';
-    try{
-      ankBizneset=await(await fetch('/api/admin/bizneset')).json();
-      ankRenderLista(ankBizneset);
-    }catch(e){ $('ankLista').innerHTML='<p class="small">Gabim.</p>'; }
-  }
-  // ============ REKLAMAT (lista e bizneseve → reklamat e secilit) ============
-  var _rekBiz=[];
-  async function renderReklamat(m){
-    m.innerHTML='<h2 class="h">Reklamat</h2>'+
-      '<input class="kinput" id="rekKerkim" placeholder="Kërko biznes me emër…" oninput="rekFiltro(this.value)" style="max-width:360px;margin:6px 0 12px;">'+
-      '<div id="rekBizLista"><p class="small">Po ngarkoj…</p></div>';
-    try{
-      _rekBiz=await(await fetch('/api/admin/bizneset')).json();
-      rekRenderBiz(_rekBiz);
-    }catch(e){ $('rekBizLista').innerHTML='<p class="small">Gabim.</p>'; }
-  }
-  function rekFiltro(q){
-    q=(q||'').toLowerCase().trim();
-    rekRenderBiz(_rekBiz.filter(b=>!q||(b.emri||'').toLowerCase().includes(q)));
-  }
-  function rekRenderBiz(rows){
-    const el=$('rekBizLista'); if(!el) return;
-    if(!rows.length){ el.innerHTML='<p class="small">S\'ka biznese.</p>'; return; }
-    el.innerHTML='<div class="rekBizTbl">'+rows.map(b=>{
-      const ini=((b.emri||'?').trim().charAt(0)||'?').toUpperCase();
-      const logo=b.logo_url?'<img src="'+esc(b.logo_url)+'" class="njBizLogo">':'<span class="njBizLogo njBizLogoTxt">'+esc(ini)+'</span>';
-      return '<div class="rekBizTr" onclick="hapReklamatBiz('+b.id+',\''+esc((b.emri||'').replace(/\x27/g,""))+'\')">'+
-        '<span class="njIdent">'+logo+'<span class="njId2"><span class="njBizNm">'+esc(b.emri||'—')+'</span><span class="njBizEm">'+esc(b.email||'—')+'</span></span></span>'+
-        '<span class="rekNumri" id="rekNr'+b.id+'">…</span>'+
-      '</div>';
-    }).join('')+'</div>';
-    // Ngarko numrin e reklamave per secilin
-    rows.forEach(b=>{
-      fetch('/api/admin/biznes/'+b.id+'/reklamat').then(r=>r.json()).then(a=>{
-        const el=$('rekNr'+b.id); if(el) el.textContent=(a.length||0)+' reklama';
-      }).catch(()=>{});
-    });
-  }
-  async function hapReklamatBiz(id, emri){
-    const m=$('bizMain');
-    m.innerHTML='<button class="back" onclick="renderReklamat($(\'bizMain\'))">← Reklamat</button>'+
-      '<h2 class="h">'+esc(emri)+' — Reklamat</h2><div id="rekLista"><p class="small">Po ngarkoj…</p></div>';
-    try{
-      const a=await(await fetch('/api/admin/biznes/'+id+'/reklamat')).json();
-      const el=$('rekLista');
-      if(!a.length){ el.innerHTML='<p class="small">S\'ka reklama.</p>'; return; }
-      el.innerHTML='<div class="rekTbl">'+
-        '<div class="rekThead"><span>Reklama</span><span>Formati</span><span>Pikët</span><span>Shikime</span><span>Klikime</span><span>Konvertime</span></div>'+
-        a.map(r=>
-          '<div class="rekTr" onclick="alert(\'Detajet vijnë së shpejti.\')">'+
-            '<span class="njBizNm">'+esc(r.emri)+'</span>'+
-            '<span class="rekTip2">'+esc(r.lloji)+'</span>'+
-            '<span>'+r.pike+'</span>'+
-            '<span>'+r.shikime+'</span>'+
-            '<span>'+(r.klikime||0)+'</span>'+
-            '<span>'+r.konvertime+'</span>'+
-          '</div>').join('')+'</div>';
-    }catch(e){ $('rekLista').innerHTML='<p class="small">Gabim.</p>'; }
-  }
-  
-  function ankFiltro(q){
-    q=(q||'').toLowerCase().trim();
-    ankRenderLista(ankBizneset.filter(b=>!q||(b.emri||'').toLowerCase().includes(q)||(b.email||'').toLowerCase().includes(q)));
-  }
-  function ankRenderLista(lista){
-    const el=$('ankLista'); if(!el) return;
-    if(!lista.length){ el.innerHTML='<p class="small">Asnjë biznes.</p>'; return; }
-    el.innerHTML='<div class="ktabela">'+lista.map(b=>
-      '<div class="krow" style="cursor:pointer;" onclick="ankHap('+b.id+')"><span class="kc1">'+
-      (b.emri||'(pa emër)')+'</span><span class="small">'+(b.email||'')+'</span></div>'
-    ).join('')+'</div>';
-  }
-  function fmt(n){ if(n==null) return '—'; const x=Math.round(n*10)/10; return x; }
-  async function ankHap(id){
-    const d=$('ankDetaje'); if(!d) return;
-    d.innerHTML='<p class="small">Po ngarkoj…</p>';
-    try{
-      // Treguesi i URL-ve te konvertimit (numri i fresket + statusi)
-      let konvHtml='';
-      try{
-        const kv=await(await fetch('/api/admin/konvertimet/'+id)).json();
-        if(kv && kv.total!=null){
-          konvHtml='<div class="ktabela" style="margin-bottom:16px;">'+
-            '<div class="krow khead"><span class="kc1">URL-t e konvertimit: '+kv.total+' — të lidhura: '+kv.lidhur+'/'+kv.total+'</span></div>';
-          (kv.urlat||[]).forEach(u=>{
-            const st = u.track_active ? '<span style="color:var(--good);">● I lidhur</span>' : '<span style="color:var(--mut);">○ Pa lidhur</span>';
-            konvHtml+='<div class="krow"><span class="kc1">'+esc(u.url)+'</span><span class="kc3">'+st+'</span></div>';
-          });
-          konvHtml+='</div>';
-        }
-      }catch(e){}
-      const r=await(await fetch('/api/admin/ankandet/'+id)).json();
-      if(r.error){ d.innerHTML=konvHtml+'<p class="small">'+r.error+'</p>'; return; }
-      const snips = r.snippetet || [];
-      const pg = r.pergjithshem || null;
-      if(!snips.length && !pg){ d.innerHTML=konvHtml+'<div style="font-weight:600;margin:6px 0 12px;">'+(r.emri||'')+'</div><p class="small">Ende s\'ka ankande të regjistruara për këtë biznes.</p>'; return; }
-      let h=konvHtml+'<div style="font-weight:600;margin:6px 0 12px;">'+(r.emri||'')+'</div>';
-      // Treguesi i pergjithshem (te gjithe snippet-et bashke)
-      function tabela(titull, kerkesa, kandidatet){
-        let t='<div class="ktabela" style="margin-bottom:16px;">'+
-          '<div class="krow khead"><span class="kc1">'+esc(titull)+' — kërkesa për reklamë: '+kerkesa+'</span></div>'+
-          '<div class="krow khead"><span class="kc1">Reklamuesi</span><span class="kc3">AI</span><span class="kc3">Profili</span><span class="kc3">Ndihma</span><span class="kc3">Zbritur</span><span class="kc3">Peshë</span><span class="kc3">Fitore</span></div>';
-        if(!kandidatet.length){
-          t+='<div class="krow"><span class="small">Ende s\'ka ankande.</span></div>';
-        } else {
-          kandidatet.forEach(k=>{
-            const zbritur = (k.ndihma_bruto!=null && k.ndihma!=null) ? (Math.round((k.ndihma_bruto-k.ndihma)*10)/10) : null;
-            t+='<div class="krow"><span class="kc1">'+(k.emri||('#'+k.reklamues_id))+'</span>'+
-               '<span class="kc3">'+fmt(k.ai)+'</span>'+
-               '<span class="kc3">'+fmt(k.profili)+'</span>'+
-               '<span class="kc3">'+fmt(k.ndihma)+'</span>'+
-               '<span class="kc3">'+fmt(zbritur)+'</span>'+
-               '<span class="kc3" style="font-weight:600;">'+fmt(k.pesha)+'</span>'+
-               '<span class="kc3">'+k.fitore+'</span></div>';
-          });
-        }
-        t+='</div>';
-        return t;
-      }
-      if(pg){ h+='<div style="color:#4a9eff;font-size:13px;font-weight:600;margin-bottom:6px;">CIKLI I PËRGJITHSHËM (të gjithë snippet-et)</div>'+tabela('Të gjithë', pg.kerkesa, pg.kandidatet); }
-      if(snips.length){ h+='<div style="color:var(--mut);font-size:13px;font-weight:600;margin:18px 0 6px;">SIPAS SNIPPET-IT</div>'; }
-      snips.forEach(sn=>{ h+=tabela(sn.emri, sn.kerkesa, sn.kandidatet); });
-      d.innerHTML=h;
-    }catch(e){ d.innerHTML='<p class="small">Gabim.</p>'; }
-  }
+// ================= KOMBINIMET AI =================
+var kFiltri=null, kA=null, kB=null, kBizneset=[];
+function renderKombinimet(c){
+c.innerHTML=
+'<div class="wrap" style="max-width:1040px;">'+
+'<h2 class="h">Kombinimet AI</h2>'+
+'<p class="small" style="margin:2px 0 18px;">Zgjidh një tip. Tabela poshtë tregon të gjitha kombinimet e asaj kategorie. Zgjidh dy biznese për të parë vetëm atë çift.</p>'+
+'<div style="margin-bottom:16px;"><button class="btn" onclick="kNisEkzistueset(this)">Nis kombinimin për bizneset ekzistuese</button> <span class="small" id="kNisStat"></span></div>'+
+'<div class="kfilter">'+
+'<button class="kbtn" data-t="b2b" onclick="kSetFiltri(\'b2b\')">B2B</button>'+
+'<button class="kbtn" data-t="b2c" onclick="kSetFiltri(\'b2c\')">B2C</button>'+
+'<button class="kbtn" data-t="b2b2c" onclick="kSetFiltri(\'b2b2c\')">B2B2C</button>'+
+'</div>'+
+'<div id="kZgjedhesit" style="margin-top:18px;">'+
+'<div class="kcols">'+
+'<div class="kcol">'+
+'<div class="ksmall">Biznesi A</div>'+
+'<input class="kinput" id="kKerkimA" placeholder="Kërko…" oninput="kFiltroLista(\'A\',this.value)">'+
+'<div class="kcarousel" id="kListaA"><p class="small" style="padding:10px;">Zgjidh një tip lart.</p></div>'+
+'</div>'+
+'<div class="kcol">'+
+'<div class="ksmall">Biznesi B</div>'+
+'<input class="kinput" id="kKerkimB" placeholder="Kërko…" oninput="kFiltroLista(\'B\',this.value)">'+
+'<div class="kcarousel" id="kListaB"><p class="small" style="padding:10px;">Zgjidh një tip lart.</p></div>'+
+'</div>'+
+'</div>'+
+'<button class="btn ghost" style="margin-top:10px;" onclick="kPastro()">Pastro zgjedhjen</button>'+
+'</div>'+
+'<div class="ktabela" style="margin-top:20px;">'+
+'<div class="krow khead"><span class="kc1">Biznesi A</span><span class="kc2">A→B</span><span class="kc2">B→A</span><span class="kc1 kright">Biznesi B</span></div>'+
+'<div id="kRows"><p class="small" style="padding:14px;">Zgjidh një tip lart për të parë kombinimet.</p></div>'+
+'</div>'+
+'</div>';
+kFiltri=null; kA=null; kB=null;
+}
+async function kNisEkzistueset(btn){
+if(btn) btn.disabled=true;
+const st=$('kNisStat'); if(st) st.textContent='Po nis…';
+try{
+const r=await(await fetch('/api/admin/kombinim/nis',{method:'POST'})).json();
+if(st) st.textContent = r.error ? ('Gabim: '+r.error) : ('U nis për '+r.nisur+' biznese. Prit pak, pastaj zgjidh tipin për të parë pikët.');
+}catch(e){ if(st) st.textContent='Gabim.'; }
+if(btn) btn.disabled=false;
+}
+function kSetFiltri(t){
+kFiltri=t; kA=null; kB=null;
+document.querySelectorAll('.kbtn').forEach(b=>b.classList.toggle('active', b.getAttribute('data-t')===t));
+kNgarkoBizneset();
+}
+async function kNgarkoBizneset(){
+$('kListaA').innerHTML='<p class="small" style="padding:10px;">Po ngarkoj…</p>';
+$('kListaB').innerHTML=''; $('kRows').innerHTML='<p class="small" style="padding:14px;">Po ngarkoj…</p>';
+try{
+const rows=await(await fetch('/api/admin/kombinim/bizneset')).json();
+kBizneset=(rows||[]).filter(b=>{
+if(kFiltri==='b2b') return b.tipi==='b2b' || b.tipi==='b2b2c';
+if(kFiltri==='b2c') return b.tipi==='b2c' || b.tipi==='b2b2c';
+if(kFiltri==='b2b2c') return true;
+return true;
+});
+kFiltroLista('A',''); kFiltroLista('B','');
+kRenderTabela();
+}catch(e){ $('kListaA').innerHTML='<p class="small" style="padding:10px;">Gabim.</p>'; }
+}
+function kFiltroLista(cili, kerkim){
+const q=(kerkim||'').toLowerCase().trim();
+const lista=kBizneset.filter(b=>!q || (b.emri||'').toLowerCase().includes(q));
+const el=$(cili==='A'?'kListaA':'kListaB');
+const zgjedhur=cili==='A'?kA:kB;
+const tjetri=cili==='A'?kB:kA;
+if(!lista.length){ el.innerHTML='<p class="small" style="padding:10px;">Asnjë biznes.</p>'; return; }
+el.innerHTML='';
+lista.forEach(b=>{
+const eZene=(b.id===tjetri);
+const d=document.createElement('div');
+d.className='kitem'+(zgjedhur===b.id?' sel':'')+(eZene?' disabled':'');
+d.textContent=b.emri;
+if(!eZene) d.onclick=()=>kZgjidh(cili, b.id);
+el.appendChild(d);
+});
+}
+function kZgjidh(cili, id){
+if(cili==='A'){ kA=(kA===id?null:id); } else { kB=(kB===id?null:id); }
+kFiltroLista('A', ($('kKerkimA')||{}).value||'');
+kFiltroLista('B', ($('kKerkimB')||{}).value||'');
+kRenderTabela();
+}
+function kPastro(){ kA=null; kB=null; kFiltroLista('A',''); kFiltroLista('B',''); kRenderTabela(); }
+function kEmri(id){ const b=kBizneset.find(x=>x.id===id); return b?b.emri:('#'+id); }
+async function kRenderTabela(){
+const el=$('kRows'); if(!el) return;
+if(kA && kB){
+el.innerHTML='<p class="small" style="padding:14px;">Po ngarkoj…</p>';
+const r=await kCift(kA,kB);
+el.innerHTML=kRreshti(kA,kB,r.a_per_b,r.b_per_a);
+return;
+}
+const b=kBizneset;
+if(b.length<2){ el.innerHTML='<p class="small" style="padding:14px;">S\'ka mjaftueshëm biznese në këtë kategori.</p>'; return; }
+let h='';
+for(let i=0;i<b.length;i++){
+for(let j=i+1;j<b.length;j++){
+h+=kRreshti(b[i].id,b[j].id,null,null,true);
+}
+}
+el.innerHTML=h;
+for(let i=0;i<b.length;i++){
+for(let j=i+1;j<b.length;j++){
+kCift(b[i].id,b[j].id).then(r=>{
+const ab=document.getElementById('sc_'+b[i].id+'_'+b[j].id+'_ab');
+const ba=document.getElementById('sc_'+b[i].id+'_'+b[j].id+'_ba');
+if(ab) ab.textContent=(r.a_per_b==null?'—':r.a_per_b);
+if(ba) ba.textContent=(r.b_per_a==null?'—':r.b_per_a);
+}).catch(()=>{});
+}
+}
+}
+function kRreshti(aId,bId,ab,ba,meId){
+const idAB = meId?(' id="sc_'+aId+'_'+bId+'_ab"'):'';
+const idBA = meId?(' id="sc_'+aId+'_'+bId+'_ba"'):'';
+return '<div class="krow">'+
+'<span class="kc1">'+kEmri(aId)+'</span>'+
+'<span class="kc2"'+idAB+'>'+(ab==null?'—':ab)+'</span>'+
+'<span class="kc2"'+idBA+'>'+(ba==null?'—':ba)+'</span>'+
+'<span class="kc1 kright">'+kEmri(bId)+'</span>'+
+'</div>';
+}
+async function kCift(a,b){
+try{ return await(await fetch('/api/admin/kombinim/cift?a='+a+'&b='+b)).json(); }
+catch(e){ return {a_per_b:null,b_per_a:null}; }
+}
 
-  var _bizList=[];
-  async function loadBizList(m){
-    m.innerHTML='<h2 class="h">Bizneset</h2>'+
-      '<input class="kinput" id="bizKerkim" placeholder="Kërko biznes me emër…" oninput="bizFiltro(this.value)" style="max-width:360px;margin-top:10px;">'+
-      '<div id="bizGrid" class="bizGrid" style="margin-top:14px;"><p class="small">Po ngarkoj…</p></div>';
-    try{
-      _bizList=await(await fetch('/api/admin/bizneset')).json();
-      bizRenderGrid(_bizList, m);
-    }catch(e){ const el=$('bizGrid'); if(el) el.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
-  }
-  function bizFiltro(q){
-    q=(q||'').toLowerCase().trim();
-    const f=_bizList.filter(b=>!q||(b.emri||'').toLowerCase().includes(q));
-    bizRenderGrid(f, $('bizMain'));
-  }
-  function bizRenderGrid(rows, m){
-    const el=$('bizGrid'); if(!el) return; el.innerHTML='';
-    if(!rows.length){ el.innerHTML='<p class="small">S\'ka biznese.</p>'; return; }
-    rows.forEach(b=>{
-      const ini=((b.emri||'?').trim().charAt(0)||'?').toUpperCase();
-      const logo = b.logo_url
-        ? '<img src="'+esc(b.logo_url)+'" class="bizLogo">'
-        : '<div class="bizLogo bizLogoTxt">'+esc(ini)+'</div>';
-      const d=document.createElement('div'); d.className='bizCard';
-      d.innerHTML=
-        logo+
-        '<div class="bizCardBody">'+
-          '<div class="bizCardName">'+esc(b.emri||'—')+'</div>'+
-          '<div class="bizCardEmail">'+esc(b.email||'—')+'</div>'+
-          '<div class="bizCardStats">'+
-            '<span title="Shfaqje të marra">▲ '+(b.shfaqje_marre||0)+'</span>'+
-            '<span title="Shfaqje të dhëna">▼ '+(b.shfaqje_dhene||0)+'</span>'+
-          '</div>'+
-        '</div>';
-      d.onclick=()=>loadBizDetail(b.id, m);
-      el.appendChild(d);
-    });
-  }
+// ---- SEKSIONI BIZNESET: menu majtas + permbajtja djathtas ----
+function renderBizneset(c){
+c.innerHTML=
+'<div class="appwrap">'+
+'<aside class="sidebar"><div id="bizNav"></div></aside>'+
+'<main class="main" id="bizMain"></main>'+
+'</div>';
+renderBizNav(); renderBizMain();
+}
+function renderBizNav(){
+const n=$('bizNav'); n.innerHTML='';
+BIZ_SUB.forEach(s=>{
+const b=document.createElement('button');
+b.className='subnav'+(s.k===curBizSub?' active':'');
+b.textContent=s.l; b.onclick=()=>{ curBizSub=s.k; renderBizNav(); renderBizMain(); };
+n.appendChild(b);
+});
+}
+function renderBizMain(){
+const m=$('bizMain');
+if(curBizSub==='bizneset'){ loadBizList(m); return; }
+if(curBizSub==='r2'){ renderAnkandet(m); return; }
+if(curBizSub==='r3'){ renderReklamat(m); return; }
+const lbl=(BIZ_SUB.find(s=>s.k===curBizSub)||{}).l||'';
+m.innerHTML='<h2 class="h">'+lbl+'</h2><p class="small" style="margin-top:8px;">Së shpejti.</p>';
+}
 
-  async function loadBizDetail(id, m){
-    m.innerHTML='<p class="small">Po ngarkoj…</p>';
-    try{
-      const r=await(await fetch('/api/admin/biznes/'+id)).json();
-      if(r.error){ m.innerHTML='<button class="back" onclick="renderBizMain()">← Bizneset</button><p class="small">'+r.error+'</p>'; return; }
-      const b=r.biznes, s=r.statistika;
-      m.innerHTML=
-        '<button class="back" onclick="renderBizMain()">← Bizneset</button>'+
-        '<h2 class="h">'+esc(b.emri)+'</h2>'+
-        '<div class="sect"><h3>Statistika</h3><div class="stats">'+
-          stat(s.reklama_krijuara,'Reklama të krijuara')+
-          stat(s.shfaqje_te_reklamave_te_tij,'Shfaqje të reklamave të tij')+
-          stat(s.shikime_te_reklamave_te_tij,'Shikime reale (parë 1 sek)')+
-          stat(s.shfaqje_ne_webin_e_tij,'Shfaqje në webin e tij')+
-          stat(s.klikime_ne_webin_e_tij,'Klikime në webin e tij')+
-          stat(s.snippet_vende,'Vende ku ka futur snippet')+
-        '</div></div>'+
-        '<div class="sect"><h3>Lidhja</h3>'+
-          row2('Snippet i lidhur', b.snippet_active?'Po':'Jo')+
-          row2('URL-ja e lidhjes', b.origjina||'—')+
-          row2('URL e kapur', b.kandidat_url||'—')+
-          row2('Parë së pari', dt(b.first_seen_at))+
-          row2('Parë së fundi', dt(b.last_seen_at))+
-        '</div>'+
-        '<div class="sect"><h3>Të dhënat e regjistrimit</h3>'+
-          row2('Emri', esc(b.emri))+
-          row2('Email', esc(b.email))+
-          row2('Faqja', (b.website ? esc(b.website)+' <button onclick="zbuloPlatformen('+b.id+')" style="margin-left:8px;font-size:11px;padding:2px 8px;cursor:pointer;">Shfaq platformën</button><div id="platRez" style="margin-top:8px;"></div>' : '—'))+
-          row2('Plani', b.plani||'—')+
-          row2('Regjistruar', dt(b.created_at))+
-          row2('Çelësi', b.celes||'—')+
-        '</div>'+
-        '<div class="sect"><h3>Analiza (AI)</h3>'+
-          row2('Kategoria kryesore', b.kategoria_kryesore||'—')+
-          row2('Nënkategoritë', b.nenkategorite||'—')+
-          row2('Përshkrimi i dhënë', b.pershkrimi||'—')+
-          row2('Përmbledhja', b.permbledhje||'—')+
-        '</div>';
-    }catch(e){ m.innerHTML='<button class="back" onclick="renderBizMain()">← Bizneset</button><p class="small">Gabim: '+e.message+'</p>'; }
-  }
+// ============ ANKANDET ============
+var ankBizneset=[];
+async function renderAnkandet(m){
+m.innerHTML='<h2 class="h">Ankandet</h2>'+
+'<p class="small" style="margin:2px 0 14px;">Kliko një biznes për të parë sa herë faqja e tij (si host) ka kërkuar reklamë, cilat reklama garuan, peshat e tyre, dhe sa herë secila fitoi.</p>'+
+'<input class="kinput" id="ankKerkim" placeholder="Kërko biznes…" oninput="ankFiltro(this.value)" style="max-width:360px;">'+
+'<div id="ankLista" style="margin-top:12px;"><p class="small">Po ngarkoj…</p></div>'+
+'<div id="ankDetaje" style="margin-top:18px;"></div>';
+try{
+ankBizneset=await(await fetch('/api/admin/bizneset')).json();
+ankRenderLista(ankBizneset);
+}catch(e){ $('ankLista').innerHTML='<p class="small">Gabim.</p>'; }
+}
 
-  function stat(v,l){ return '<div class="stat"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>'; }
-  function row2(k,v){ return '<div class="drow"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>'; }
-
-  async function zbuloPlatformen(bizId){
-    const box=document.getElementById('platRez');
-    if(box) box.innerHTML='<span style="color:#889;font-size:12px;">Po marr të dhënat…</span>';
-    try{
-      const r=await(await fetch('/api/admin/platforma?bizId='+encodeURIComponent(bizId))).json();
-      if(!box) return;
-      if(!r.arritur){
-        box.innerHTML='<div style="border:1px solid #d0d4e0;border-radius:8px;padding:10px;font-size:12px;color:#a33;background:#fff;">'+esc(r.mesazh||'S\'u arrit faqja.')+'</div>';
-        return;
-      }
-      let h='<div style="border:1px solid #d0d4e0;border-radius:8px;padding:12px;font-size:12px;background:#fff;color:#1a1a2e;">';
-      h+='<div style="font-size:13px;"><b>Platforma:</b> '+esc(r.platforma)+' <span style="color:#667;">(siguria '+r.siguria+'%)</span></div>';
-      // Detajet teknike (primaret)
-      if(r.detaje && r.detaje.length){
-        h+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid #eee;"><b>Detaje teknike:</b></div>';
-        h+='<table style="width:100%;margin-top:4px;border-collapse:collapse;">';
-        r.detaje.forEach(d=>{ h+='<tr><td style="color:#556;padding:2px 8px 2px 0;white-space:nowrap;vertical-align:top;">'+esc(d.etiketa)+'</td><td style="color:#1a1a2e;padding:2px 0;">'+esc(d.vlera)+'</td></tr>'; });
-        h+='</table>';
-      }
-      if(r.udhezime){
-        h+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid #eee;"><b>Udhëzime për vendosjen e kodit:</b></div>';
-        h+='<div style="margin-top:4px;color:#1a1a2e;"><b style="color:#3552d6;">Gjurmimi:</b> '+esc(r.udhezime.tracking)+'</div>';
-        h+='<div style="margin-top:4px;color:#1a1a2e;"><b style="color:#3552d6;">Reklama:</b> '+esc(r.udhezime.reklama)+'</div>';
-        h+='<div style="margin-top:4px;color:#1a1a2e;"><b style="color:#3552d6;">Konvertim (URL):</b> '+esc(r.udhezime.konvertim_url)+'</div>';
-        h+='<div style="margin-top:4px;color:#1a1a2e;"><b style="color:#3552d6;">Konvertim (kod):</b> '+esc(r.udhezime.konvertim_kod)+'</div>';
-      }
-      h+='</div>';
-      box.innerHTML=h;
-    }catch(e){ if(box) box.innerHTML='<span style="color:#a55;font-size:12px;">Gabim: '+esc(e.message)+'</span>'; }
-  }
-  function esc(t){ const d=document.createElement('div'); d.textContent=(t==null?'':t); return d.innerHTML; }
-  function dt(x){ if(!x) return '—'; try{ return new Date(x).toLocaleString('sq'); }catch(e){ return x; } }
-
-  async function boot(){ try{ const r=await fetch('/api/admin/une'); if(r.ok) showApp(); }catch(e){} }
-  boot();
+// ============ REKLAMAT (lista e bizneseve → reklamat e secilit) ============
+var _rekBiz=[];
+async function renderReklamat(m){
+m.innerHTML='<h2 class="h">Reklamat</h2>'+
+'<input class="kinput" id="rekKerkim" placeholder="Kërko biznes me emër…" oninput="rekFiltro(this.value)" style="max-width:360px;margin:6px 0 12px;">'+
+'<div id="rekBizLista"><p class="small">Po ngarkoj…</p></div>';
+try{
+_rekBiz=await(await fetch('/api/admin/bizneset')).json();
+rekRenderBiz(_rekBiz);
+}catch(e){ $('rekBizLista').innerHTML='<p class="small">Gabim.</p>'; }
+}
+function rekFiltro(q){
+q=(q||'').toLowerCase().trim();
+rekRenderBiz(_rekBiz.filter(b=>!q||(b.emri||'').toLowerCase().includes(q)));
+}
+function rekRenderBiz(rows){
+const el=$('rekBizLista'); if(!el) return;
+if(!rows.length){ el.innerHTML='<p class="small">S\'ka biznese.</p>'; return; }
+el.innerHTML='<div class="rekBizTbl">'+rows.map(b=>{
+const ini=((b.emri||'?').trim().charAt(0)||'?').toUpperCase();
+const logo=b.logo_url?'<img src="'+esc(b.logo_url)+'" class="njBizLogo">':'<span class="njBizLogo njBizLogoTxt">'+esc(ini)+'</span>';
+return '<div class="rekBizTr" onclick="hapReklamatBiz('+b.id+',\''+esc((b.emri||'').replace(/\x27/g,""))+'\')">'+
+'<span class="njIdent">'+logo+'<span class="njId2"><span class="njBizNm">'+esc(b.emri||'—')+'</span><span class="njBizEm">'+esc(b.email||'—')+'</span></span></span>'+
+'<span class="rekNumri" id="rekNr'+b.id+'">…</span>'+
+'</div>';
+}).join('')+'</div>';
+rows.forEach(b=>{
+fetch('/api/admin/biznes/'+b.id+'/reklamat').then(r=>r.json()).then(a=>{
+const el=$('rekNr'+b.id); if(el) el.textContent=(a.length||0)+' reklama';
+}).catch(()=>{});
+});
+}
+async function hapReklamatBiz(id, emri){
+const m=$('bizMain');
+m.innerHTML='<button class="back" onclick="renderReklamat($(\'bizMain\'))">← Reklamat</button>'+
+'<h2 class="h">'+esc(emri)+' — Reklamat</h2><div id="rekLista"><p class="small">Po ngarkoj…</p></div>';
+try{
+const a=await(await fetch('/api/admin/biznes/'+id+'/reklamat')).json();
+const el=$('rekLista');
+if(!a.length){ el.innerHTML='<p class="small">S\'ka reklama.</p>'; return; }
+el.innerHTML='<div class="rekTbl">'+
+'<div class="rekThead"><span>Reklama</span><span>Formati</span><span>Pikët</span><span>Shikime</span><span>Klikime</span><span>Konvertime</span></div>'+
+a.map(r=>
+'<div class="rekTr" onclick="alert(\'Detajet vijnë së shpejti.\')">'+
+'<span class="njBizNm">'+esc(r.emri)+'</span>'+
+'<span class="rekTip2">'+esc(r.lloji)+'</span>'+
+'<span>'+r.pike+'</span>'+
+'<span>'+r.shikime+'</span>'+
+'<span>'+(r.klikime||0)+'</span>'+
+'<span>'+r.konvertime+'</span>'+
+'</div>').join('')+'</div>';
+}catch(e){ $('rekLista').innerHTML='<p class="small">Gabim.</p>'; }
+}
+function ankFiltro(q){
+q=(q||'').toLowerCase().trim();
+ankRenderLista(ankBizneset.filter(b=>!q||(b.emri||'').toLowerCase().includes(q)||(b.email||'').toLowerCase().includes(q)));
+}
+function ankRenderLista(lista){
+const el=$('ankLista'); if(!el) return;
+if(!lista.length){ el.innerHTML='<p class="small">Asnjë biznes.</p>'; return; }
+el.innerHTML='<div class="ktabela">'+lista.map(b=>
+'<div class="krow" style="cursor:pointer;" onclick="ankHap('+b.id+')"><span class="kc1">'+
+(b.emri||'(pa emër)')+'</span><span class="small">'+(b.email||'')+'</span></div>'
+).join('')+'</div>';
+}
+function fmt(n){ if(n==null) return '—'; const x=Math.round(n*10)/10; return x; }
+async function ankHap(id){
+const d=$('ankDetaje'); if(!d) return;
+d.innerHTML='<p class="small">Po ngarkoj…</p>';
+try{
+let konvHtml='';
+try{
+const kv=await(await fetch('/api/admin/konvertimet/'+id)).json();
+if(kv && kv.total!=null){
+konvHtml='<div class="ktabela" style="margin-bottom:16px;">'+
+'<div class="krow khead"><span class="kc1">URL-t e konvertimit: '+kv.total+' — të lidhura: '+kv.lidhur+'/'+kv.total+'</span></div>';
+(kv.urlat||[]).forEach(u=>{
+const st = u.track_active ? '<span style="color:var(--good);">● I lidhur</span>' : '<span style="color:var(--mut);">○ Pa lidhur</span>';
+konvHtml+='<div class="krow"><span class="kc1">'+esc(u.url)+'</span><span class="kc3">'+st+'</span></div>';
+});
+konvHtml+='</div>';
+}
+}catch(e){}
+const r=await(await fetch('/api/admin/ankandet/'+id)).json();
+if(r.error){ d.innerHTML=konvHtml+'<p class="small">'+r.error+'</p>'; return; }
+const snips = r.snippetet || [];
+const pg = r.pergjithshem || null;
+if(!snips.length && !pg){ d.innerHTML=konvHtml+'<div style="font-weight:600;margin:6px 0 12px;">'+(r.emri||'')+'</div><p class="small">Ende s\'ka ankande të regjistruara për këtë biznes.</p>'; return; }
+let h=konvHtml+'<div style="font-weight:600;margin:6px 0 12px;">'+(r.emri||'')+'</div>';
+function tabela(titull, kerkesa, kandidatet){
+let t='<div class="ktabela" style="margin-bottom:16px;">'+
+'<div class="krow khead"><span class="kc1">'+esc(titull)+' — kërkesa për reklamë: '+kerkesa+'</span></div>'+
+'<div class="krow khead"><span class="kc1">Reklamuesi</span><span class="kc3">AI</span><span class="kc3">Profili</span><span class="kc3">Ndihma</span><span class="kc3">Zbritur</span><span class="kc3">Peshë</span><span class="kc3">Fitore</span></div>';
+if(!kandidatet.length){
+t+='<div class="krow"><span class="small">Ende s\'ka ankande.</span></div>';
+} else {
+kandidatet.forEach(k=>{
+const zbritur = (k.ndihma_bruto!=null && k.ndihma!=null) ? (Math.round((k.ndihma_bruto-k.ndihma)*10)/10) : null;
+t+='<div class="krow"><span class="kc1">'+(k.emri||('#'+k.reklamues_id))+'</span>'+
+'<span class="kc3">'+fmt(k.ai)+'</span>'+
+'<span class="kc3">'+fmt(k.profili)+'</span>'+
+'<span class="kc3">'+fmt(k.ndihma)+'</span>'+
+'<span class="kc3">'+fmt(zbritur)+'</span>'+
+'<span class="kc3" style="font-weight:600;">'+fmt(k.pesha)+'</span>'+
+'<span class="kc3">'+k.fitore+'</span></div>';
+});
+}
+t+='</div>';
+return t;
+}
+if(pg){ h+='<div style="color:#4a9eff;font-size:13px;font-weight:600;margin-bottom:6px;">CIKLI I PËRGJITHSHËM (të gjithë snippet-et)</div>'+tabela('Të gjithë', pg.kerkesa, pg.kandidatet); }
+if(snips.length){ h+='<div style="color:var(--mut);font-size:13px;font-weight:600;margin:18px 0 6px;">SIPAS SNIPPET-IT</div>'; }
+snips.forEach(sn=>{ h+=tabela(sn.emri, sn.kerkesa, sn.kandidatet); });
+d.innerHTML=h;
+}catch(e){ d.innerHTML='<p class="small">Gabim.</p>'; }
+}
+var _bizList=[];
+async function loadBizList(m){
+m.innerHTML='<h2 class="h">Bizneset</h2>'+
+'<input class="kinput" id="bizKerkim" placeholder="Kërko biznes me emër…" oninput="bizFiltro(this.value)" style="max-width:360px;margin-top:10px;">'+
+'<div id="bizGrid" class="bizGrid" style="margin-top:14px;"><p class="small">Po ngarkoj…</p></div>';
+try{
+_bizList=await(await fetch('/api/admin/bizneset')).json();
+bizRenderGrid(_bizList, m);
+}catch(e){ const el=$('bizGrid'); if(el) el.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
+}
+function bizFiltro(q){
+q=(q||'').toLowerCase().trim();
+const f=_bizList.filter(b=>!q||(b.emri||'').toLowerCase().includes(q));
+bizRenderGrid(f, $('bizMain'));
+}
+function bizRenderGrid(rows, m){
+const el=$('bizGrid'); if(!el) return; el.innerHTML='';
+if(!rows.length){ el.innerHTML='<p class="small">S\'ka biznese.</p>'; return; }
+rows.forEach(b=>{
+const ini=((b.emri||'?').trim().charAt(0)||'?').toUpperCase();
+const logo = b.logo_url
+? '<img src="'+esc(b.logo_url)+'" class="bizLogo">'
+: '<div class="bizLogo bizLogoTxt">'+esc(ini)+'</div>';
+const d=document.createElement('div'); d.className='bizCard';
+d.innerHTML=
+logo+
+'<div class="bizCardBody">'+
+'<div class="bizCardName">'+esc(b.emri||'—')+'</div>'+
+'<div class="bizCardEmail">'+esc(b.email||'—')+'</div>'+
+'<div class="bizCardStats">'+
+'<span title="Shfaqje të marra">▲ '+(b.shfaqje_marre||0)+'</span>'+
+'<span title="Shfaqje të dhëna">▼ '+(b.shfaqje_dhene||0)+'</span>'+
+'</div>'+
+'</div>';
+d.onclick=()=>loadBizDetail(b.id, m);
+el.appendChild(d);
+});
+}
+async function loadBizDetail(id, m){
+m.innerHTML='<p class="small">Po ngarkoj…</p>';
+try{
+const r=await(await fetch('/api/admin/biznes/'+id)).json();
+if(r.error){ m.innerHTML='<button class="back" onclick="renderBizMain()">← Bizneset</button><p class="small">'+r.error+'</p>'; return; }
+const b=r.biznes, s=r.statistika;
+m.innerHTML=
+'<button class="back" onclick="renderBizMain()">← Bizneset</button>'+
+'<h2 class="h">'+esc(b.emri)+'</h2>'+
+'<div class="sect"><h3>Statistika</h3><div class="stats">'+
+stat(s.reklama_krijuara,'Reklama të krijuara')+
+stat(s.shfaqje_te_reklamave_te_tij,'Shfaqje të reklamave të tij')+
+stat(s.shikime_te_reklamave_te_tij,'Shikime reale (parë 1 sek)')+
+stat(s.shfaqje_ne_webin_e_tij,'Shfaqje në webin e tij')+
+stat(s.klikime_ne_webin_e_tij,'Klikime në webin e tij')+
+stat(s.snippet_vende,'Vende ku ka futur snippet')+
+'</div></div>'+
+'<div class="sect"><h3>Lidhja</h3>'+
+row2('Snippet i lidhur', b.snippet_active?'Po':'Jo')+
+row2('URL-ja e lidhjes', b.origjina||'—')+
+row2('URL e kapur', b.kandidat_url||'—')+
+row2('Parë së pari', dt(b.first_seen_at))+
+row2('Parë së fundi', dt(b.last_seen_at))+
+'</div>'+
+'<div class="sect"><h3>Të dhënat e regjistrimit</h3>'+
+row2('Emri', esc(b.emri))+
+row2('Email', esc(b.email))+
+row2('Faqja', (b.website ? esc(b.website)+' <button onclick="zbuloPlatformen('+b.id+')" style="margin-left:8px;font-size:11px;padding:2px 8px;cursor:pointer;">Shfaq platformën</button><div id="platRez" style="margin-top:8px;"></div>' : '—'))+
+row2('Plani', b.plani||'—')+
+row2('Regjistruar', dt(b.created_at))+
+row2('Çelësi', b.celes||'—')+
+'</div>'+
+'<div class="sect"><h3>Analiza (AI)</h3>'+
+row2('Kategoria kryesore', b.kategoria_kryesore||'—')+
+row2('Nënkategoritë', b.nenkategorite||'—')+
+row2('Përshkrimi i dhënë', b.pershkrimi||'—')+
+row2('Përmbledhja', b.permbledhje||'—')+
+'</div>';
+}catch(e){ m.innerHTML='<button class="back" onclick="renderBizMain()">← Bizneset</button><p class="small">Gabim: '+e.message+'</p>'; }
+}
+function stat(v,l){ return '<div class="stat"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>'; }
+function row2(k,v){ return '<div class="drow"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>'; }
+async function zbuloPlatformen(bizId){
+const box=document.getElementById('platRez');
+if(box) box.innerHTML='<span style="color:#889;font-size:12px;">Po marr të dhënat…</span>';
+try{
+const r=await(await fetch('/api/admin/platforma?bizId='+encodeURIComponent(bizId))).json();
+if(!box) return;
+if(!r.arritur){
+box.innerHTML='<div style="border:1px solid #d0d4e0;border-radius:8px;padding:10px;font-size:12px;color:#a33;background:#fff;">'+esc(r.mesazh||'S\'u arrit faqja.')+'</div>';
+return;
+}
+let h='<div style="border:1px solid #d0d4e0;border-radius:8px;padding:12px;font-size:12px;background:#fff;color:#1a1a2e;">';
+h+='<div style="font-size:13px;"><b>Platforma:</b> '+esc(r.platforma)+' <span style="color:#667;">(siguria '+r.siguria+'%)</span></div>';
+if(r.detaje && r.detaje.length){
+h+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid #eee;"><b>Detaje teknike:</b></div>';
+h+='<table style="width:100%;margin-top:4px;border-collapse:collapse;">';
+r.detaje.forEach(d=>{ h+='<tr><td style="color:#556;padding:2px 8px 2px 0;white-space:nowrap;vertical-align:top;">'+esc(d.etiketa)+'</td><td style="color:#1a1a2e;padding:2px 0;">'+esc(d.vlera)+'</td></tr>'; });
+h+='</table>';
+}
+if(r.udhezime){
+h+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid #eee;"><b>Udhëzime për vendosjen e kodit:</b></div>';
+h+='<div style="margin-top:4px;color:#1a1a2e;"><b style="color:#3552d6;">Gjurmimi:</b> '+esc(r.udhezime.tracking)+'</div>';
+h+='<div style="margin-top:4px;color:#1a1a2e;"><b style="color:#3552d6;">Reklama:</b> '+esc(r.udhezime.reklama)+'</div>';
+h+='<div style="margin-top:4px;color:#1a1a2e;"><b style="color:#3552d6;">Konvertim (URL):</b> '+esc(r.udhezime.konvertim_url)+'</div>';
+h+='<div style="margin-top:4px;color:#1a1a2e;"><b style="color:#3552d6;">Konvertim (kod):</b> '+esc(r.udhezime.konvertim_kod)+'</div>';
+}
+h+='</div>';
+box.innerHTML=h;
+}catch(e){ if(box) box.innerHTML='<span style="color:#a55;font-size:12px;">Gabim: '+esc(e.message)+'</span>'; }
+}
+function esc(t){ const d=document.createElement('div'); d.textContent=(t==null?'':t); return d.innerHTML; }
+function dt(x){ if(!x) return '—'; try{ return new Date(x).toLocaleString('sq'); }catch(e){ return x; } }
+async function boot(){ try{ const r=await fetch('/api/admin/une'); if(r.ok) showApp(); }catch(e){} }
+boot();
 </script>
 </body>
 </html>
