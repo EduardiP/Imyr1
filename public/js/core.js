@@ -8,14 +8,21 @@ const STEPS = [
   { key:'lidhja',     label:'Lidhja' }
 ];
 const NAV = [
-  { k:'dashboard', l:'Dashboard' },
-  { k:'snippetet', l:'Hapësira e reklamave' },
-  { k:'kreative',  l:'Creative' },
-  { k:'reklamat',  l:'My Ads' },
-  { k:'konvertimet', l:'Konvertimet' },
-  { k:'analytics', l:'Analytics' },
-  { k:'plani', l:'Plani', ndaresi:true },
-  { k:'suport', l:'Ndihmë & Suport' }
+{ k:'dashboard', l:'Dashboard' },
+{ k:'snippetet', l:'Hapësira e reklamave' },
+{ k:'kreative', l:'Creative' },
+{ k:'reklamat', l:'My Ads' },
+{ k:'konvertimet', l:'Konvertimet' },
+{ k:'analytics', l:'Analytics' },
+{ k:'dashboard2', l:'Dashboard', ndaresi:true },
+{ k:'adspace2', l:'Ad Space' },
+{ k:'kreative2', l:'Creative' },
+{ k:'reklamat2', l:'My Ads' },
+{ k:'konvertimet2', l:'Conversions' },
+{ k:'analytics2', l:'Analytics' },
+{ k:'insights2', l:'Insights' },
+{ k:'plani', l:'Plani', ndaresi:true },
+{ k:'suport', l:'Ndihmë & Suport' }
 ];
 
 function esc(t){ const d=document.createElement('div'); d.textContent=(t==null?'':t); return d.innerHTML; }
