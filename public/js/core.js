@@ -45,12 +45,12 @@ function pasHyrjes(){
 // ---------- HEADER (i loguar) ----------
 function setHeaderLoggedIn(){
   $('hdrLeft').innerHTML='<button class="btn ghost" onclick="goHome()">Home</button>';
-  $('hdrLeft').innerHTML='<button class="btn ghost" onclick="goHome()">Home</button>'+
+  $('hdrRight').innerHTML=
     '<div id="kerkWrap">'+
+      '<svg class="kerkSvgIco" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>'+
       '<input id="kerkInput" placeholder="Kërko…" autocomplete="off" oninput="kerkoRun(this.value)">'+
       '<div id="kerkRez" class="hide"></div>'+
-    '</div>';
-  $('hdrRight').innerHTML=
+    '</div>'+
     '<div class="zile-wrap"><button class="zile" onclick="toggleNjoftimet(event)" aria-label="Njoftimet">'+
       '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>'+
       '<span id="zileBadge" class="zile-badge hide">0</span>'+
