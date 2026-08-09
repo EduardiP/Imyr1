@@ -324,14 +324,38 @@ function renderProfile(s){
   renderNav();
   renderMain(s);
 }
+var _navOpen = {};
 function renderNav(){
   const el=$('snav'); el.innerHTML='';
   NAV.forEach(n=>{
-    if(n.k==='plani' || n.k==='suport') return;   // shkojne te menuja e re e perdoruesit, poshte
+    if(n.k==='plani' || n.k==='suport') return;
+    const goMain = (n.k==='analytics') ? (()=>nav({v:'analitika-full'})) : (()=>nav({v:'profile', nav:n.k}));
     const b=document.createElement('button');
-    b.textContent=n.l; if(n.k===curNav) b.className='active';
-    b.onclick = (n.k==='analytics') ? (()=>nav({v:'analitika-full'})) : (()=>nav({v:'profile', nav:n.k}));
+    b.style.cssText='display:flex;align-items:center;justify-content:space-between;width:100%;';
+    if(n.k===curNav) b.className='active';
+    const lbl=document.createElement('span'); lbl.textContent=n.l; b.appendChild(lbl);
+    if(n.subs && n.subs.length){
+      const arrow=document.createElement('span');
+      arrow.textContent = _navOpen[n.k] ? '▾' : '▸';
+      arrow.style.cssText='margin-left:8px;font-size:11px;color:var(--mut);';
+      b.appendChild(arrow);
+      b.onclick=function(){ _navOpen[n.k]=!_navOpen[n.k]; renderNav(); };
+    } else {
+      b.onclick=goMain;
+    }
     el.appendChild(b);
+    if(n.subs && n.subs.length && _navOpen[n.k]){
+      n.subs.forEach(function(s){
+        const sb=document.createElement('button');
+        sb.textContent=s.l;
+        sb.style.cssText='font-size:13px;color:var(--mut);padding-left:24px;';
+        sb.onclick=function(){
+          if(n.k==='analytics') nav({v:'analitika-full'});
+          else nav({v:'profile', nav:s.nav||n.k, tab:s.tab});
+        };
+        el.appendChild(sb);
+      });
+    }
   });
   renderUserMenu();
 }
