@@ -378,8 +378,9 @@ function renderUserMenu(){
     _userMenuOpen=!_userMenuOpen;
     if(_userMenuOpen){
       const rect=this.getBoundingClientRect();
-      dd.style.left=(rect.right+8)+'px';
-      dd.style.bottom=(window.innerHeight-rect.bottom)+'px';
+      dd.style.left=''; dd.style.bottom='';
+      dd.style.right=(window.innerWidth-rect.right)+'px';
+      dd.style.top=(rect.bottom+8)+'px';
     }
     dd.classList.toggle('hide', !_userMenuOpen);
   });
