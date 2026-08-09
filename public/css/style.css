@@ -425,11 +425,11 @@ CSS-ja e suportit është right:20px/bottom:20px, jo poshtë-majtas siç thotë 
 #ndrWrap { position:fixed; right:20px; bottom:94px; z-index:9997; }
 #ndrBtn {
 width:60px; height:60px; border-radius:50%; border:none; cursor:pointer;
-background:linear-gradient(135deg,#3552d6,#5b7cff); box-shadow:0 6px 20px rgba(53,82,214,.45);
+background:#fff; box-shadow:0 6px 20px rgba(0,0,0,.3);
 display:flex; align-items:center; justify-content:center; transition:transform .15s, box-shadow .15s;
 position:relative;
 }
-#ndrBtn:hover { transform:scale(1.08); box-shadow:0 8px 26px rgba(53,82,214,.6); }
+#ndrBtn:hover { transform:scale(1.08); box-shadow:0 8px 26px rgba(0,0,0,.4); }
 #ndrBtn.hide, #ndrPanel.hide { display:none; }
 #ndrBadge {
 position:absolute; top:2px; right:2px; width:12px; height:12px; border-radius:50%;
