@@ -26,9 +26,10 @@ const NAV2 = [
   ]},
   { k:'kreative', l:'Creative', subs:[
     {l:'Krijo', nav:'kreative', tab:'krijo'},
-    {l:'Aseti krijues', nav:'kreative', tab:'lista'}
+    {l:'Krijimet e mia', nav:'kreative', tab:'lista'}
   ]},
   { k:'reklamat', l:'My Ads', subs:[
+    {l:'Krijo', nav:'reklamat'},
     {l:'Performanca', nav:'reklamat'},
     {l:'Pikët & renditja', nav:'reklamat'}
   ]},
