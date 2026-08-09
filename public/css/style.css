@@ -459,9 +459,10 @@ border-radius:6px; cursor:pointer; font-size:14px; display:flex; align-items:cen
 #ndrWrap { right:12px; bottom:82px; }
 #ndrPanel { width:calc(100vw - 24px); }
 }
-/* ===== Kerkimi global — brenda header-it, jo panel/modal ===== */
-#kerkWrap { position:relative; flex:1; max-width:320px; margin-left:8px; }
-#kerkInput { width:100%; padding:8px 12px; background:#0e1116; border:1px solid var(--line);
+/* ===== Kerkimi global — brenda header-it (djathtas, krah ziljes), jo panel/modal ===== */
+#kerkWrap { position:relative; width:220px; margin-right:6px; }
+.kerkSvgIco { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--mut); pointer-events:none; }
+#kerkInput { width:100%; padding:8px 12px 8px 32px; background:#0e1116; border:1px solid var(--line);
 border-radius:8px; color:var(--txt); font-size:14px; font-family:inherit; }
 #kerkInput:focus { border-color:var(--acc); outline:none; }
 #kerkRez { position:absolute; top:calc(100% + 6px); left:0; right:0; max-height:60vh; overflow-y:auto;
@@ -476,5 +477,5 @@ display:flex; align-items:center; justify-content:center; background:#0e1116; bo
 .kerkT { font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .kerkS { font-size:12px; color:var(--mut); }
 @media (max-width:700px){
-#kerkWrap { max-width:none; }
+#kerkWrap { width:150px; }
 }
