@@ -389,6 +389,7 @@ function renderMain(s){
   if(curNav==='konvertimet') return mainKonvertimi(m);
   if(curNav==='lidhjaSnippet') return mainLidhjaSnippet(m);
   if(curNav==='biznesi')    return mainBiznesi(m);
+  if(curNav==='ekipi')      return mainEkipi(m);
   if(curNav==='pershkrimi') return mainPershkrimi(m);
   if(curNav==='lidhja')     return mainLidhja(m);
   if(curNav==='snippetet')  return mainSnippetet(m, s);
