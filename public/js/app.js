@@ -397,6 +397,13 @@ function renderMain(s){
   if(curNav==='kreative')   return mainKreative_NEW(m, s);
   if(curNav==='reklamat')   return mainReklamat(m, s);
   if(curNav==='analytics')  return mainAnalytics(m);
+  if(curNav==='dashboard2')   return mainDashboard(m);
+  if(curNav==='adspace2')     return mainSnippetet(m, s);
+  if(curNav==='kreative2')    return mainKreative_NEW(m, s);
+  if(curNav==='reklamat2')    return mainReklamat(m, s);
+  if(curNav==='konvertimet2') return mainKonvertimi(m);
+  if(curNav==='analytics2')   return mainAnalytics(m);
+  if(curNav==='insights2')    return mainInsights(m);
 }
 async function mainProfili(m){
   m.innerHTML='<p class="small">Po ngarkoj…</p>';
