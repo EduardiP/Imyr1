@@ -479,3 +479,11 @@ display:flex; align-items:center; justify-content:center; background:#0e1116; bo
 @media (max-width:700px){
 #kerkWrap { width:150px; }
 }
+
+/* ===== Menyja publike e header-it (para hyrjes) ===== */
+.pubnav { display:flex; gap:22px; align-items:center; }
+.pubnav a { color:var(--mut); font-size:14px; text-decoration:none; transition:.15s; white-space:nowrap; }
+.pubnav a:hover { color:var(--txt); }
+@media (max-width:760px){
+.pubnav { display:none; }
+}
