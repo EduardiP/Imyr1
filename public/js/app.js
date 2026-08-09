@@ -462,9 +462,8 @@ function renderUserMenu(){
     { l:'Profili',           fn:function(){ nav({v:'profile', nav:'profili'}); } },
     { l:'Ekipi & Rolet',     fn:function(){ nav({v:'profile', nav:'ekipi'}); } },
     { l:'Faturimi & Plani',  fn:function(){ nav({v:'profile', nav:'plani'}); } },
-    { l:'Plani',             fn:function(){ nav({v:'profile', nav:'plani'}); } },
-    { l:'Ndihmë & Suport',   fn:function(){ nav({v:'profile', nav:'suport'}); } },
     { l:'Cilësimet',         fn:function(){ nav({v:'profile', nav:'cilesimet'}); } },
+    { l:'Ndihmë & Suport',   fn:function(){ nav({v:'profile', nav:'suport'}); } },
     { l:'Dil',               fn:function(){ dil(); }, err:true }
   ];
   const dd=$('userMenuDropdown');
