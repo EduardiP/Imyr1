@@ -1421,6 +1421,14 @@ function mainCilesimet(m){
       '<p class="small" style="margin:0;">Së shpejti.</p>'+
     '</div>';
 }
+
+function mainEkipi(m){
+  m.innerHTML='<h2 class="h">Ekipi & Rolet</h2>'+
+    '<p class="small" style="margin:8px 0 16px;">Ftoj kolegë të menaxhojnë llogarinë me role të ndryshme (admin/editor/lexues).</p>'+
+    '<div class="card"><p class="small mut">Kjo veçori vjen së shpejti.</p></div>';
+}
+
+
 function mainPlani(m){
   m.innerHTML='<h2 class="h">Plani</h2>'+
     '<div style="border:1px solid var(--line);border-radius:12px;padding:20px;margin-top:14px;">'+
