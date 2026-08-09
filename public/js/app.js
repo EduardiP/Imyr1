@@ -343,8 +343,8 @@ function renderUserMenu(){
   let foot=$('snavFoot');
   if(!foot){
     foot=document.createElement('div'); foot.id='snavFoot';
-    foot.style.cssText='margin-top:auto;padding-top:12px;padding-bottom:28px;border-top:1px solid var(--line);position:relative;';
-    const aside=$('snav').closest('.sidebar'); if(aside) aside.appendChild(foot);
+    foot.style.cssText='position:relative;';
+    const hdr=$('hdrRight'); if(hdr) hdr.appendChild(foot);
   }
   const inic=((une&&une.emri)||'?').trim().charAt(0).toUpperCase();
   const avatarHTML = (une&&une.logo_url)
