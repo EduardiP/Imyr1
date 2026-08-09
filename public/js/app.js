@@ -14,33 +14,39 @@
 
 const NAV2 = [
   { k:'dashboard', l:'Dashboard', subs:[
-    {l:'Përmbledhje', nav:'dashboard'},
-    {l:'Statusi i shkëmbimit', nav:'dashboard'},
-    {l:'Balanca e shkëmbimit', nav:'dashboard'},
-    {l:'Pika e profilit', nav:'dashboard'}
+    {l:'Statusi i integrimit', nav:'dashboard'},
+    {l:'Pika e profilit & efikasiteti', nav:'dashboard'}
   ]},
   { k:'snippetet', l:'Hapësira e reklamave', subs:[
-    {l:'Vendosja', nav:'snippetet'},
+    {l:'Konfigurimi i madhësisë', nav:'snippetet'},
     {l:'Instalimi', nav:'snippetet'},
     {l:'Pamja paraprake', nav:'snippetet'},
-    {l:'Statusi', nav:'snippetet'}
+    {l:'Statusi', nav:'snippetet'},
+    {l:'Kontrollet e sigurisë', nav:'snippetet'}
   ]},
   { k:'kreative', l:'Creative', subs:[
     {l:'Krijo', nav:'kreative', tab:'krijo'},
-    {l:'Reklamat e mia', nav:'kreative', tab:'lista'}
+    {l:'Aseti krijues', nav:'kreative', tab:'lista'}
   ]},
-  { k:'reklamat', l:'My Ads' },
+  { k:'reklamat', l:'My Ads', subs:[
+    {l:'Performanca', nav:'reklamat'},
+    {l:'Pikët & renditja', nav:'reklamat'}
+  ]},
   { k:'konvertimet', l:'Konvertimet', subs:[
     {l:'Konfigurimi', nav:'konvertimet'},
     {l:'Historiku', nav:'konvertimet'}
   ]},
   { k:'analytics', l:'Analytics', subs:[
     {l:'Trafiku', nav:'analytics'},
-    {l:'Reklamat', nav:'analytics'},
-    {l:'Konvertimet', nav:'analytics'},
+    {l:'Sipas kategorisë', nav:'analytics'},
+    {l:'Snippet-et', nav:'analytics'},
     {l:'Tendencat', nav:'analytics'}
   ]},
-  { k:'insights', l:'Vështrime' }
+  { k:'insights', l:'Vështrime', subs:[
+    {l:'Pika AI & kombinimet kryesore', nav:'insights'},
+    {l:'Faza e ndihmës', nav:'insights'},
+    {l:'Shëndeti i reklamave', nav:'insights'}
+  ]}
 ];
 var _nav2OpenKey = null; // cila kategori NAV2 ka panelin e nenkategorive te hapur (vetem nje njekohesisht)
 
