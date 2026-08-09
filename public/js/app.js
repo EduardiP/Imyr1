@@ -12,6 +12,67 @@
   window.addEventListener('load', vendosLartesineTopbar);
 })();
 
+const NAV2 = [
+  { k:'dashboard', l:'Dashboard', subs:[
+    {l:'Overview', nav:'dashboard'},{l:'Exchange Status', nav:'dashboard'},
+    {l:'Balanca e shkëmbimit', nav:'dashboard'},{l:'Pika e profilit', nav:'dashboard'}
+  ]},
+  { k:'snippetet', l:'Ad Space', subs:[
+    {l:'Placement', nav:'snippetet'},{l:'Installation', nav:'snippetet'},
+    {l:'Preview', nav:'snippetet'},{l:'Status', nav:'snippetet'}
+  ]},
+  { k:'kreative', l:'Creative', subs:[
+    {l:'Krijo', nav:'kreative', tab:'krijo'},{l:'Reklamat e mia', nav:'kreative', tab:'lista'}
+  ]},
+  { k:'reklamat', l:'My Ads' },
+  { k:'konvertimet', l:'Conversions', subs:[
+    {l:'Konfigurimi', nav:'konvertimet'},{l:'Historiku', nav:'konvertimet'}
+  ]},
+  { k:'analytics', l:'Analytics', subs:[
+    {l:'Traffic', nav:'analytics'},{l:'Ads', nav:'analytics'},
+    {l:'Conversions', nav:'analytics'},{l:'Trends', nav:'analytics'}
+  ]},
+  { k:'insights', l:'Insights' }
+];
+var _nav2Open = {};
+function renderNav2(){
+  let wrap=$('snav2');
+  if(!wrap){
+    wrap=document.createElement('nav'); wrap.id='snav2'; wrap.className='snav';
+    wrap.style.cssText='margin-top:14px;padding-top:14px;border-top:1px solid var(--line);';
+    const s1=$('snav'); if(s1 && s1.parentNode) s1.parentNode.insertBefore(wrap, s1.nextSibling);
+  }
+  wrap.innerHTML='';
+  NAV2.forEach(function(n){
+    const b=document.createElement('button');
+    b.style.cssText='display:flex;align-items:center;justify-content:space-between;width:100%;';
+    const lbl=document.createElement('span'); lbl.textContent=n.l; b.appendChild(lbl);
+    if(n.subs && n.subs.length){
+      const arrow=document.createElement('span');
+      arrow.textContent = _nav2Open[n.k] ? '▾' : '▸';
+      arrow.style.cssText='margin-left:8px;font-size:11px;color:var(--mut);';
+      b.appendChild(arrow);
+      b.onclick=function(){ _nav2Open[n.k]=!_nav2Open[n.k]; renderNav2(); };
+    } else {
+      b.onclick=function(){ nav({v:'profile', nav:n.k}); };
+    }
+    wrap.appendChild(b);
+    if(n.subs && n.subs.length && _nav2Open[n.k]){
+      n.subs.forEach(function(s){
+        const sb=document.createElement('button');
+        sb.textContent=s.l;
+        sb.style.cssText='font-size:13px;color:var(--mut);padding-left:24px;';
+        sb.onclick=function(){
+          if(n.k==='analytics') nav({v:'analitika-full'});
+          else nav({v:'profile', nav:s.nav||n.k, tab:s.tab});
+        };
+        wrap.appendChild(sb);
+      });
+    }
+  });
+}
+
+
 // ---------- HOME ----------
 function renderHome(){
   const b=$('homeBody');
