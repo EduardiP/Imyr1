@@ -42,7 +42,8 @@ const NAV2 = [
   ]},
   { k:'insights', l:'Vështrime' }
 ];
-var _nav2Open = {};
+var _nav2OpenKey = null; // cila kategori NAV2 ka panelin e nenkategorive te hapur (vetem nje njekohesisht)
+
 function renderNav2(){
   let wrap=$('snav2');
   if(!wrap){
@@ -53,32 +54,62 @@ function renderNav2(){
   wrap.innerHTML='';
   NAV2.forEach(function(n){
     const b=document.createElement('button');
+    b.type='button';
     b.style.cssText='display:flex;align-items:center;justify-content:space-between;width:100%;';
     const lbl=document.createElement('span'); lbl.textContent=n.l; b.appendChild(lbl);
     if(n.subs && n.subs.length){
       const arrow=document.createElement('span');
-      arrow.textContent = _nav2Open[n.k] ? '▾' : '▸';
+      arrow.textContent = (_nav2OpenKey===n.k) ? '▾' : '▸';
       arrow.style.cssText='margin-left:8px;font-size:11px;color:var(--mut);';
       b.appendChild(arrow);
-      b.onclick=function(){ _nav2Open[n.k]=!_nav2Open[n.k]; renderNav2(); };
+      b.onclick=function(e){
+        e.stopPropagation();
+        if(_nav2OpenKey===n.k){ mbyllNav2Dropdown(); }
+        else { hapNav2Dropdown(n, b); }
+      };
     } else {
-      b.onclick=function(){ nav({v:'profile', nav:n.k}); };
+      b.onclick=function(){ mbyllNav2Dropdown(); nav({v:'profile', nav:n.k}); };
     }
     wrap.appendChild(b);
-    if(n.subs && n.subs.length && _nav2Open[n.k]){
-      n.subs.forEach(function(s){
-        const sb=document.createElement('button');
-        sb.textContent=s.l;
-        sb.style.cssText='font-size:13px;color:var(--mut);padding-left:24px;';
-        sb.onclick=function(){
-          if(n.k==='analytics') nav({v:'analitika-full'});
-          else nav({v:'profile', nav:s.nav||n.k, tab:s.tab});
-        };
-        wrap.appendChild(sb);
-      });
-    }
   });
 }
+
+// Nenkategorite shfaqen si PANEL PLUSKUES (tabelë), jo zgjerim brenda listës —
+// njësoj si userMenuDropdown (renderUserMenu): position:fixed, pozicionuar me
+// getBoundingClientRect(), mbyllet kur klikon jashtë.
+function mbyllNav2Dropdown(){
+  const dd=$('nav2Dropdown'); if(dd) dd.remove();
+  if(_nav2OpenKey){ _nav2OpenKey=null; renderNav2(); }
+}
+function hapNav2Dropdown(n, btn){
+  const dd0=$('nav2Dropdown'); if(dd0) dd0.remove();
+  _nav2OpenKey=n.k;
+
+  const dd=document.createElement('div');
+  dd.id='nav2Dropdown';
+  dd.style.cssText='position:fixed;width:200px;background:var(--card);border:1px solid var(--line);border-radius:0;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:9999;';
+  n.subs.forEach(function(s){
+    const sb=document.createElement('button');
+    sb.type='button';
+    sb.textContent=s.l;
+    sb.style.cssText='display:block;width:100%;background:none;border:none;padding:9px 10px;cursor:pointer;font-family:inherit;font-size:13px;border-radius:6px;text-align:left;color:var(--txt);';
+    sb.addEventListener('click', function(e){
+      e.stopPropagation();
+      mbyllNav2Dropdown();
+      if(n.k==='analytics') nav({v:'analitika-full'});
+      else nav({v:'profile', nav:s.nav||n.k, tab:s.tab});
+    });
+    dd.appendChild(sb);
+  });
+  document.body.appendChild(dd);
+
+  const rect=btn.getBoundingClientRect();
+  dd.style.left=(rect.right+8)+'px';
+  dd.style.top=rect.top+'px';
+
+  renderNav2(); // rifresko shigjetën (▾) e butonit te hapur
+}
+document.addEventListener('click', function(){ mbyllNav2Dropdown(); });
 
 
 // ---------- HOME ----------
