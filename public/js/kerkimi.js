@@ -41,21 +41,34 @@
     return r;
   }
 
+  // "Fillon me" — jo "përmban diku". q është tashmë lowercase+trim.
+  function fillonMe(teksti, q){
+    return (teksti||'').toLowerCase().indexOf(q) === 0;
+  }
+
   async function kerkoRun(q){
     q = (q||'').toLowerCase().trim();
     var box = el('kerkRez'); if(!box) return;
     if(!q){ box.classList.add('hide'); box.innerHTML=''; return; }
 
     await ngarkoCache();
-    var rezultate = [];
 
-    // 1) NAV2 — kategori + nenkategori (struktura ekzistuese, jo hamendje)
+    // Grupe te ndara, bashkuar ne fund NE KETE RADHE FIKSE:
+    // kategori -> nenkategori -> reklama (Creative) -> snippet -> gjithcka tjeter
+    var gKategori=[], gNenkategori=[], gCreative=[], gSnippet=[], gTjeter=[];
+
     (typeof NAV2!=='undefined' ? NAV2 : []).forEach(function(n){
-      var listaSub = (n.subs && n.subs.length) ? n.subs : [{l:n.l, nav:n.k}];
-      listaSub.forEach(function(s){
-        var etiketa = (n.l===s.l) ? s.l : (n.l+' '+s.l);
-        if(etiketa.toLowerCase().indexOf(q)!==-1){
-          rezultate.push(rreshti('<span style="color:var(--mut);">▸</span>', s.l, n.l, function(){
+      // Vetë kategoria (niveli i pare) — kerkueshme me vete
+      if(fillonMe(n.l, q)){
+        gKategori.push(rreshti('<span style="color:var(--mut);">▸</span>', n.l, 'Kategori', function(){
+          if(n.k==='analytics') nav({v:'analitika-full'});
+          else nav({v:'profile', nav:n.k});
+        }));
+      }
+      // Nenkategorite
+      (n.subs||[]).forEach(function(s){
+        if(fillonMe(s.l, q)){
+          gNenkategori.push(rreshti('<span style="color:var(--mut);">▸</span>', s.l, n.l, function(){
             if(n.k==='analytics') nav({v:'analitika-full'});
             else nav({v:'profile', nav:s.nav||n.k, tab:s.tab});
           }));
@@ -63,42 +76,42 @@
       });
     });
 
-    // 2) Creative
+    // Reklama (Creative — imazh/video/html5)
     (cache.kreative||[]).forEach(function(k){
-      var teksti = (k.emri||'')+' '+(k.pershkrimi||'');
-      if(teksti.toLowerCase().indexOf(q)!==-1){
-        rezultate.push(rreshti(krIkonaKerkimi(k), k.emri||'(pa emër)', 'Creative · '+(k.lloji||''), function(){
+      if(fillonMe(k.emri, q)){
+        gCreative.push(rreshti(krIkonaKerkimi(k), k.emri||'(pa emër)', 'Creative · '+(k.lloji||''), function(){
           nav({v:'profile', nav:'kreative', tab:'lista'});
         }));
       }
     });
 
-    // 3) Snippetet (Hapësira e reklamave)
+    // Snippetet
     (cache.snippetet||[]).forEach(function(sn){
-      if((sn.emri||'').toLowerCase().indexOf(q)!==-1){
-        rezultate.push(rreshti('📍', sn.emri||('Hapësira '+sn.id), 'Hapësira e reklamave', function(){
+      var emri = sn.emri||('Hapësira '+sn.id);
+      if(fillonMe(emri, q)){
+        gSnippet.push(rreshti('📍', emri, 'Hapësira e reklamave', function(){
           nav({v:'profile', nav:'snippetet', sub:'detail', id:sn.id});
         }));
       }
     });
 
-    // 4) Konvertimet — URL
+    // Gjithçka tjetër — Konvertimet (URL) + Zonat (kod)
     (cache.konvertimet||[]).forEach(function(kv){
-      if((kv.url||'').toLowerCase().indexOf(q)!==-1){
-        rezultate.push(rreshti('🔗', kv.url, 'Konvertim · URL', function(){
+      if(fillonMe(kv.url, q)){
+        gTjeter.push(rreshti('🔗', kv.url, 'Konvertim · URL', function(){
+          nav({v:'profile', nav:'konvertimet'});
+        }));
+      }
+    });
+    (cache.zonat||[]).forEach(function(z){
+      if(fillonMe(z.emri, q)){
+        gTjeter.push(rreshti('🎯', z.emri, 'Konvertim · Zonë me kod', function(){
           nav({v:'profile', nav:'konvertimet'});
         }));
       }
     });
 
-    // 5) Zonat — kod
-    (cache.zonat||[]).forEach(function(z){
-      if((z.emri||'').toLowerCase().indexOf(q)!==-1){
-        rezultate.push(rreshti('🎯', z.emri, 'Konvertim · Zonë me kod', function(){
-          nav({v:'profile', nav:'konvertimet'});
-        }));
-      }
-    });
+    var rezultate = gKategori.concat(gNenkategori, gCreative, gSnippet, gTjeter);
 
     box.innerHTML='';
     if(!rezultate.length){
