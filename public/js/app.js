@@ -21,6 +21,12 @@ function renderHome(){
   $('homeHi').textContent = une.emri;
 }
 
+function mainInsights(m){
+  m.innerHTML='<h2 class="h">Insights</h2>'+
+    '<p class="small" style="margin:8px 0 16px;">Statistika agregate nga motori AI.</p>'+
+    '<div class="card"><p class="small mut">Kjo veçori vjen së shpejti.</p></div>';
+}
+
 async function ngarkoHtml5(){
   const titull=($('up_title')||{}).value||'';
   const link=($('up_link')||{}).value||'';
