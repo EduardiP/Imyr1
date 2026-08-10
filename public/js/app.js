@@ -427,21 +427,10 @@ function renderProfile(s){
   curNav = s.nav || 'dashboard';
   const oldCard = document.querySelector('.pcard');
   if(oldCard) oldCard.style.display='none';
-  renderNav();
+  const snavEl=$('snav'); if(snavEl) snavEl.innerHTML=''; // kategoria e vjetër u hoq — #snav mbetet bosh, vetëm si spirancë pozicioni për renderNav2()
+  renderUserMenu();
   renderNav2();
   renderMain(s);
-}
-var _navOpen = {};
-function renderNav(){
-  const el=$('snav'); el.innerHTML='';
-  NAV.forEach(n=>{
-    if(n.k==='plani' || n.k==='suport') return;
-    const b=document.createElement('button');
-    b.textContent=n.l; if(n.k===curNav) b.className='active';
-    b.onclick = (n.k==='analytics') ? (()=>nav({v:'analitika-full'})) : (()=>nav({v:'profile', nav:n.k}));
-    el.appendChild(b);
-  });
-  renderUserMenu();
 }
 var _userMenuOpen=false;
 document.addEventListener('click', function(){
