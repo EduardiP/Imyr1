@@ -268,21 +268,3 @@ async function ekipiAktiviteti(body) {
   } catch (e) { body.innerHTML += '<p class="small">Gabim gjatë ngarkimit.</p>'; }
 }
 
-// Nese dikush fut /ekipi direkt te browser-i (jo klikim), hape pas qe boot() te kete
-// perfunduar VERTET (pret 'une' te caktohet, jo kohe fikse qe humb garen me boot()).
-// Rithirret nje here shtese si siguri, sepse boot() mund te vazhdoje edhe pas qe 'une'
-// eshte caktuar, dhe te mbishkruaje pamjen mbrapsht.
-if (location.pathname === '/ekipi') {
-  var _ekPritjeProvat = 0;
-  function _ekPritDheHap() {
-    _ekPritjeProvat++;
-    if (typeof une !== 'undefined' && une) {
-      hapEkipin();
-      setTimeout(function () { if (location.pathname === '/ekipi' || history.state && history.state.ekipi) hapEkipin(_ekTab); }, 250);
-      return;
-    }
-    if (_ekPritjeProvat > 40) { return; } // ~4 sekonda max, s'je i loguar → mos hap fare
-    setTimeout(_ekPritDheHap, 100);
-  }
-  document.addEventListener('DOMContentLoaded', function () { setTimeout(_ekPritDheHap, 50); });
-}
