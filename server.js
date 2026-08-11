@@ -1683,6 +1683,7 @@ app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'public', 'ter
 app.get('/contact', (req, res) => res.sendFile(path.join(__dirname, 'public', 'contact.html')));
 app.get('/about', (req, res) => res.sendFile(path.join(__dirname, 'public', 'about.html')));
 app.get('/si-funksionon', (req, res) => res.sendFile(path.join(__dirname, 'public', 'si-funksionon.html')));
+app.get('/ekipi', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 // --- 5 SAAS PROVE (demo-*.js — secili i pavarur; fshiji kur te mbarosh) ---
 const demot = {
   paguar: require('./demo-paguar'),
