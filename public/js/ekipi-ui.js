@@ -47,11 +47,6 @@ function ekipiNdertoSkeleten() {
   ekipiShkoTek(_ekTab);
 }
 
-function ekipiDil() {
-  history.pushState({}, '', '/');
-  document.getElementById('v-ekipi').classList.remove('on');
-  var p = document.getElementById('v-profile'); if (p) p.classList.add('on');
-}
 
 function ekipiRenderNav() {
   var el = document.getElementById('ekSnav'); if (!el) return;
