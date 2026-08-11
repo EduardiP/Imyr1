@@ -44,7 +44,7 @@ function ekipiNdertoSkeleten() {
   v.innerHTML =
     '<div class="appwrap">' +
     '<aside class="sidebar">' +
-    '<div class="pcard"><button class="btn ghost" onclick="ekipiDil()">← Kthehu te Dashboard</button></div>' +
+    '<div class="pcard"></div>' +
     '<nav class="snav" id="ekSnav"></nav>' +
     '</aside>' +
     '<main class="main"><div id="ekBody"></div></main>' +
