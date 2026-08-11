@@ -1636,6 +1636,8 @@ require('./njoftime-admin')(app, pool, iLoguar, iAdmin);
 
 require('./ndryshime-admin')(app, pool, iLoguar, iAdmin);
 
+require('./ekipi')(app, pool, iLoguar, null);
+
 require('./pike-reklama').rregjistroRoutet(app, pool, iAdmin);
 
 require('./suport-human')(app, pool, iLoguar, iAdmin);
