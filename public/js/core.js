@@ -150,6 +150,10 @@ async function boot(){
   const params = new URLSearchParams(location.search);
   const loginRez = params.get('login');
   await loadMe();
+  if(location.pathname==='/ekipi' && une && !history.state){
+    applyState({v:'ekipi'}, true);
+    return;
+  }
   if(loginRez){
     // Pastro parametrin nga URL-ja
     history.replaceState(null,'',location.pathname);
