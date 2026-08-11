@@ -139,6 +139,7 @@ function applyState(s, replace){
   else if(s.v==='profile' && une){ renderProfile(s); showView('profile'); }
   else if(s.v==='home' && une){ renderHome(); showView('home'); }
   else if(s.v==='analitika-full' && une){ renderAnalyticsFull(); showView('analitika-full'); }
+  else if(s.v==='ekipi' && une){ ekipiNdertoSkeleten(); showView('ekipi'); }
   else { showView('hero'); }
   if(replace) history.replaceState(s,'');
 }
