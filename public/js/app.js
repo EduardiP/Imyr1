@@ -1534,10 +1534,202 @@ function mainCilesimet(m){
     '</div>';
 }
 
-function mainEkipi(m){
-  m.innerHTML='<h2 class="h">Ekipi & Rolet</h2>'+
-    '<p class="small" style="margin:8px 0 16px;">Ftoj kolegë të menaxhojnë llogarinë me role të ndryshme (admin/editor/lexues).</p>'+
-    '<div class="card"><p class="small mut">Kjo veçori vjen së shpejti.</p></div>';
+// ZËVENDËSO funksionin ekzistues mainEkipi(m) (placeholder "vjen së shpejti") me këtë.
+// Asgjë tjetër te app.js s'ka nevojë të ndryshojë — rrjedha e navigimit (avatar → nav({v:'profile',nav:'ekipi'}))
+// mbetet identike, thjesht vetë funksioni tani ndërton interface të vërtetë brenda 'm'.
+
+var _ekipiTab = 'permbledhje';
+var _ekipiCache = { anetaret: null, rolet: null, ftesat: null, aktiviteti: null };
+
+function mainEkipi(m) {
+  m.innerHTML =
+    '<h2 class="h">Ekipi & Rolet</h2>' +
+    '<div class="tabs" id="ekipiTabs" style="margin:14px 0 20px;flex-wrap:wrap;"></div>' +
+    '<div id="ekipiBody"><p class="small mut">Po ngarkoj…</p></div>';
+  renderEkipiTabs();
+  ekipiShkoTek(_ekipiTab);
+}
+
+function renderEkipiTabs() {
+  var TABS = [
+    { k: 'permbledhje', l: 'Përmbledhje' },
+    { k: 'anetaret', l: 'Anëtarët' },
+    { k: 'rolet', l: 'Rolet' },
+    { k: 'ftesat', l: 'Ftesat' },
+    { k: 'aktiviteti', l: 'Regjistri i aktivitetit' }
+  ];
+  var el = document.getElementById('ekipiTabs'); if (!el) return;
+  el.innerHTML = '';
+  TABS.forEach(function (t) {
+    var b = document.createElement('div');
+    b.className = 'tab' + (t.k === _ekipiTab ? ' active' : '');
+    b.textContent = t.l;
+    b.onclick = function () { ekipiShkoTek(t.k); };
+    el.appendChild(b);
+  });
+}
+
+function ekipiShkoTek(tab) {
+  _ekipiTab = tab;
+  renderEkipiTabs();
+  var body = document.getElementById('ekipiBody'); if (!body) return;
+  body.innerHTML = '<p class="small mut">Po ngarkoj…</p>';
+  if (tab === 'permbledhje') return ekipiPermbledhje(body);
+  if (tab === 'anetaret') return ekipiAnetaret(body);
+  if (tab === 'rolet') return ekipiRolet(body);
+  if (tab === 'ftesat') return ekipiFtesat(body);
+  if (tab === 'aktiviteti') return ekipiAktiviteti(body);
+}
+
+function ekipiEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function ekipiDt(x) { if (!x) return '—'; try { return new Date(x).toLocaleDateString('sq'); } catch (e) { return x; } }
+
+// ═══ PËRMBLEDHJE ═══
+async function ekipiPermbledhje(body) {
+  try {
+    var [anetaretR, ftesatR] = await Promise.all([
+      fetch('/api/ekipi/anetaret').then(r => r.json()),
+      fetch('/api/ekipi/ftesat').then(r => r.json())
+    ]);
+    var anetaret = anetaretR.anetaret || [];
+    var aktive = anetaret.filter(a => a.statusi === 'aktiv').length;
+    var pezulluar = anetaret.filter(a => a.statusi === 'pezulluar').length;
+    var nePritje = (ftesatR.ftesat || []).filter(f => !f.pranuar).length;
+
+    body.innerHTML =
+      '<div class="stats" style="margin-bottom:20px;">' +
+      '<div class="stat"><div class="v">' + aktive + '</div><div class="l">Anëtarë aktivë</div></div>' +
+      '<div class="stat"><div class="v">' + pezulluar + '</div><div class="l">Të pezulluar</div></div>' +
+      '<div class="stat"><div class="v">' + nePritje + '</div><div class="l">Ftesa në pritje</div></div>' +
+      '</div>' +
+      '<button class="btn cta" onclick="ekipiShkoTek(\'ftesat\')">+ Fto dikë të ri</button>';
+  } catch (e) { body.innerHTML = '<p class="small">Gabim gjatë ngarkimit.</p>'; }
+}
+
+// ═══ ANËTARËT ═══
+async function ekipiAnetaret(body) {
+  try {
+    var r = await (await fetch('/api/ekipi/anetaret')).json();
+    var lista = r.anetaret || [];
+    if (!lista.length) { body.innerHTML = '<p class="small mut">Ende s\'ka anëtarë.</p>'; return; }
+    body.innerHTML = '<div class="ktabela">' +
+      '<div class="krow khead"><span class="kc1">Emri / Email</span><span class="kc3">Roli</span><span class="kc3">Statusi</span><span class="kc3"></span></div>' +
+      lista.map(function (a) {
+        var statusEtiketa = a.statusi === 'aktiv' ? '<span style="color:var(--good);">● Aktiv</span>'
+          : a.statusi === 'pezulluar' ? '<span style="color:var(--err);">● Pezulluar</span>'
+          : '<span class="mut">○ Ftesë në pritje</span>';
+        var veprime = a.eshte_pronar ? '<span class="small mut">Pronar</span>' :
+          (a.statusi === 'aktiv'
+            ? '<button class="btn" onclick="ekipiPezullo(' + a.id + ')">Pezullo</button> <button class="btn" onclick="ekipiHiq(' + a.id + ')">Hiq</button>'
+            : a.statusi === 'pezulluar'
+              ? '<button class="btn" onclick="ekipiAktivizo(' + a.id + ')">Aktivizo</button> <button class="btn" onclick="ekipiHiq(' + a.id + ')">Hiq</button>'
+              : '');
+        return '<div class="krow"><span class="kc1">' + ekipiEsc(a.emri || a.email) + '<br><span class="small mut">' + ekipiEsc(a.email) + '</span></span>' +
+          '<span class="kc3">' + ekipiEsc(a.roli || '—') + '</span>' +
+          '<span class="kc3">' + statusEtiketa + '</span>' +
+          '<span class="kc3">' + veprime + '</span></div>';
+      }).join('') + '</div>';
+  } catch (e) { body.innerHTML = '<p class="small">Gabim gjatë ngarkimit.</p>'; }
+}
+async function ekipiPezullo(id) { await fetch('/api/ekipi/anetaret/' + id + '/pezullo', { method: 'POST' }); ekipiShkoTek('anetaret'); }
+async function ekipiAktivizo(id) { await fetch('/api/ekipi/anetaret/' + id + '/aktivizo', { method: 'POST' }); ekipiShkoTek('anetaret'); }
+async function ekipiHiq(id) { if (!confirm('Ta heqësh këtë anëtar?')) return; await fetch('/api/ekipi/anetaret/' + id, { method: 'DELETE' }); ekipiShkoTek('anetaret'); }
+
+// ═══ ROLET (shabllone + matricë lejesh) ═══
+var EKIPI_LEJE_ETIKETA = {
+  creative_krijo: 'Krijo Creative', creative_shiko: 'Shiko Creative',
+  snippet_ndrysho: 'Ndrysho Ad Space', faturimi_shiko: 'Shiko Faturimin',
+  ekipi_menaxho: 'Menaxho Ekipin', analytics_shiko: 'Shiko Analytics',
+  konvertimet_shiko: 'Shiko Konvertimet'
+};
+async function ekipiRolet(body) {
+  try {
+    var r = await (await fetch('/api/ekipi/rolet')).json();
+    var rolet = r.rolet || [];
+    var kolonat = Object.keys(EKIPI_LEJE_ETIKETA);
+    var html = '<p class="small mut" style="margin-bottom:14px;">Matrica e lejeve — çka lejon çdo rol. Kliko një kutizë për ta ndryshuar.</p>';
+    html += '<div class="ktabela"><div class="krow khead"><span class="kc1">Leja</span>' +
+      rolet.map(ro => '<span class="kc3">' + ekipiEsc(ro.emri) + '</span>').join('') + '</div>';
+    kolonat.forEach(function (k) {
+      html += '<div class="krow"><span class="kc1">' + EKIPI_LEJE_ETIKETA[k] + '</span>' +
+        rolet.map(function (ro) {
+          var aktive = ro.leje && ro.leje[k];
+          return '<span class="kc3"><input type="checkbox" ' + (aktive ? 'checked' : '') +
+            ' onchange="ekipiNdryshoLeje(' + ro.id + ',\'' + k + '\',this.checked)"></span>';
+        }).join('') + '</div>';
+    });
+    html += '</div>';
+    body.innerHTML = html;
+  } catch (e) { body.innerHTML = '<p class="small">Gabim gjatë ngarkimit.</p>'; }
+}
+async function ekipiNdryshoLeje(rolId, celesi, vlera) {
+  var r = await (await fetch('/api/ekipi/rolet')).json();
+  var roli = (r.rolet || []).find(x => x.id === rolId);
+  if (!roli) return;
+  var lejeReja = Object.assign({}, roli.leje, {}); lejeReja[celesi] = vlera;
+  await fetch('/api/ekipi/rolet/' + rolId, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ leje: lejeReja })
+  });
+}
+
+// ═══ FTESAT ═══
+async function ekipiFtesat(body) {
+  try {
+    var [ftesatR, roletR] = await Promise.all([
+      fetch('/api/ekipi/ftesat').then(r => r.json()),
+      fetch('/api/ekipi/rolet').then(r => r.json())
+    ]);
+    var ftesat = ftesatR.ftesat || [], rolet = roletR.rolet || [];
+    var html = '<div class="card" style="margin-bottom:20px;">' +
+      '<label>Email</label><input id="ekFtEmail" placeholder="kolegu@email.com">' +
+      '<label style="margin-top:10px;">Roli</label>' +
+      '<select id="ekFtRol" style="width:100%;padding:9px;background:#0e1116;border:1px solid var(--line);border-radius:8px;color:var(--txt);">' +
+      rolet.map(ro => '<option value="' + ro.id + '">' + ekipiEsc(ro.emri) + '</option>').join('') +
+      '</select>' +
+      '<button class="primary" style="margin-top:14px;" onclick="ekipiDergoFtese(this)">Dërgo ftesën</button>' +
+      '<span class="small" id="ekFtStat" style="margin-left:10px;"></span>' +
+      '</div>';
+    html += '<div class="ktabela"><div class="krow khead"><span class="kc1">Email</span><span class="kc3">Roli</span><span class="kc3">Skadon</span><span class="kc3"></span></div>';
+    if (!ftesat.length) html += '<div class="krow"><span class="small mut">S\'ka ftesa.</span></div>';
+    ftesat.forEach(function (f) {
+      html += '<div class="krow"><span class="kc1">' + ekipiEsc(f.email) + '</span>' +
+        '<span class="kc3">' + ekipiEsc(f.roli || '—') + '</span>' +
+        '<span class="kc3">' + (f.pranuar ? 'U pranua' : ekipiDt(f.skadon_at)) + '</span>' +
+        '<span class="kc3">' + (!f.pranuar ? '<button class="btn" onclick="ekipiAnuloFtesen(' + f.id + ')">Anulo</button>' : '') + '</span></div>';
+    });
+    html += '</div>';
+    body.innerHTML = html;
+  } catch (e) { body.innerHTML = '<p class="small">Gabim gjatë ngarkimit.</p>'; }
+}
+async function ekipiDergoFtese(btn) {
+  var email = (document.getElementById('ekFtEmail') || {}).value || '';
+  var rolId = (document.getElementById('ekFtRol') || {}).value || '';
+  var stat = document.getElementById('ekFtStat');
+  if (!email.trim()) { if (stat) stat.textContent = 'Vendos email-in.'; return; }
+  btn.disabled = true;
+  try {
+    var r = await (await fetch('/api/ekipi/ftesat/dergo', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, rol_id: rolId })
+    })).json();
+    if (r.error) { if (stat) stat.textContent = r.error; btn.disabled = false; return; }
+    ekipiShkoTek('ftesat');
+  } catch (e) { if (stat) stat.textContent = 'Gabim: ' + e.message; btn.disabled = false; }
+}
+async function ekipiAnuloFtesen(id) { await fetch('/api/ekipi/ftesat/' + id + '/anullo', { method: 'POST' }); ekipiShkoTek('ftesat'); }
+
+// ═══ REGJISTRI I AKTIVITETIT ═══
+async function ekipiAktiviteti(body) {
+  try {
+    var r = await (await fetch('/api/ekipi/aktiviteti')).json();
+    var lista = r.aktiviteti || [];
+    if (!lista.length) { body.innerHTML = '<p class="small mut">Ende s\'ka aktivitet.</p>'; return; }
+    body.innerHTML = '<div class="ktabela">' + lista.map(function (a) {
+      return '<div class="krow"><span class="kc1">' + ekipiEsc(a.aktori_email) + ' — ' + ekipiEsc(a.veprimi) + '</span>' +
+        '<span class="kc3 small mut">' + ekipiDt(a.krijuar_at) + '</span></div>';
+    }).join('') + '</div>';
+  } catch (e) { body.innerHTML = '<p class="small">Gabim gjatë ngarkimit.</p>'; }
 }
 
 
