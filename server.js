@@ -48,6 +48,10 @@ const pool = new Pool({
 // Migrim: snippet_id te ngjarjet (per te ditur cili snippet i biznesit shfaqi reklamen qe solli shikimin/klikimin/konvertimin)
 pool.query(`ALTER TABLE ngjarjet ADD COLUMN IF NOT EXISTS snippet_id INTEGER`).catch(e => console.error('migrim snippet_id:', e.message));
 
+// Migrim: logjika e shperndarjes (ankand | barazi) — parazgjedhje 'ankand' per te GJITHA (ekzistueset + te reja)
+pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS logjika_shperndarjes TEXT NOT NULL DEFAULT 'ankand'`).catch(e => console.error('migrim logjika_shperndarjes (bizneset):', e.message));
+pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS logjika_shperndarjes TEXT NOT NULL DEFAULT 'ankand'`).catch(e => console.error('migrim logjika_shperndarjes (promovimet):', e.message));
+
 // --- Ruajtja e skedareve (Cloudflare R2) ---
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 const s3 = process.env.R2_ENDPOINT ? new S3Client({
@@ -90,6 +94,7 @@ async function iLoguar(req, res, next) {
 app.post('/api/regjistrohu', async (req, res) => {
   const { emri, email, fjalekalimi, kategoria, website } = req.body;
   const tipi = ['b2b','b2c','b2b2c'].includes(req.body.tipi) ? req.body.tipi : null;
+  const logjika = ['ankand','barazi'].includes(req.body.logjika_shperndarjes) ? req.body.logjika_shperndarjes : 'ankand';
   const oferta = !!req.body.oferta;
   if (!emri || !email || !fjalekalimi) {
     return res.status(400).json({ error: 'Emri, email dhe fjalekalimi jane te detyrueshem.' });
@@ -104,9 +109,9 @@ app.post('/api/regjistrohu', async (req, res) => {
     const hash = await bcrypt.hash(fjalekalimi, 10);
     const celes = beCeles();
     const r = await pool.query(
-      `INSERT INTO bizneset (emri, email, fjalekalimi, kategoria, website, celes, tipi, pranoi_kushtet, pranoi_oferta, pranoi_kushtet_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,true,$8,now()) RETURNING id`,
-      [emri, email.toLowerCase().trim(), hash, kategoria || null, website || null, celes, tipi, oferta]
+      `INSERT INTO bizneset (emri, email, fjalekalimi, kategoria, website, celes, tipi, logjika_shperndarjes, pranoi_kushtet, pranoi_oferta, pranoi_kushtet_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,true,$9,now()) RETURNING id`,
+      [emri, email.toLowerCase().trim(), hash, kategoria || null, website || null, celes, tipi, logjika, oferta]
     );
     // krijo seance (login automatik pas regjistrimit)
     const token = crypto.randomBytes(24).toString('hex');
@@ -282,9 +287,10 @@ app.post('/api/biz-baza', iLoguar, async (req, res) => {
   const emri = (req.body.emri || '').trim();
   const website = (req.body.website || '').trim();
   const tipi = ['b2b','b2c','b2b2c'].includes(req.body.tipi) ? req.body.tipi : null;
+  const logjika = ['ankand','barazi'].includes(req.body.logjika_shperndarjes) ? req.body.logjika_shperndarjes : 'ankand';
   if (!emri || !website || !tipi) return res.status(400).json({ error: 'Emri, website dhe tipi jane te detyrueshem.' });
   try {
-    await pool.query('UPDATE bizneset SET emri=$2, website=$3, tipi=$4 WHERE id=$1', [req.biznesId, emri, website, tipi]);
+    await pool.query('UPDATE bizneset SET emri=$2, website=$3, tipi=$4, logjika_shperndarjes=$5 WHERE id=$1', [req.biznesId, emri, website, tipi, logjika]);
     res.json({ ok: true });
     // Studjo platformen ne sfond (pa e bllokuar pergjigjen) dhe ruaje
     platforma.ruajPlatformen(pool, req.biznesId, website).catch(() => {});
@@ -304,7 +310,7 @@ app.get('/api/une', iLoguar, async (req, res) => {
   try {
     const r = await pool.query(
       `SELECT id, emri, email, kategoria, plani, website, celes, tipi, url_konvertimi, logo_url,
-              kategoria_kryesore, nenkategorite, permbledhje, pershkrimi
+              kategoria_kryesore, nenkategorite, permbledhje, pershkrimi, logjika_shperndarjes
        FROM bizneset WHERE id=$1`, [req.biznesId]);
     res.json(r.rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -813,9 +819,12 @@ app.post('/api/ngarko', iLoguar, upload.single('file'), async (req, res) => {
     let link = (req.body.link || '').trim();
     if (!link) return res.status(400).json({ error: 'Fut linkun e destinacionit.' });
     if (!/^https?:\/\//i.test(link)) link = 'https://' + link;
+    let logjika = 'ankand';
+    try { const b = await pool.query('SELECT logjika_shperndarjes FROM bizneset WHERE id=$1', [req.biznesId]); logjika = (b.rows[0] && b.rows[0].logjika_shperndarjes) || 'ankand'; } catch (e) {}
+    if (['ankand','barazi'].includes(req.body.logjika_shperndarjes)) logjika = req.body.logjika_shperndarjes;
     await pool.query(
-      'INSERT INTO promovimet (biznes_id, titulli, imazh_url, link, aktiv) VALUES ($1,$2,$3,$4,true)',
-      [req.biznesId, titulli, url, link]);
+      'INSERT INTO promovimet (biznes_id, titulli, imazh_url, link, aktiv, logjika_shperndarjes) VALUES ($1,$2,$3,$4,true,$5)',
+      [req.biznesId, titulli, url, link, logjika]);
     res.json({ ok: true, url });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -842,7 +851,7 @@ app.post('/api/ngarko-logo', iLoguar, upload.single('file'), async (req, res) =>
 app.get('/api/reklamat', iLoguar, async (req, res) => {
   try {
     const r = await pool.query(
-      'SELECT id, titulli, teksti, imazh_url, video_url, html5_url, pauzuar, created_at FROM promovimet WHERE biznes_id=$1 AND aktiv=true ORDER BY id DESC',
+      'SELECT id, titulli, teksti, imazh_url, video_url, html5_url, pauzuar, logjika_shperndarjes, created_at FROM promovimet WHERE biznes_id=$1 AND aktiv=true ORDER BY id DESC',
       [req.biznesId]);
     const st = await pool.query(
       `SELECT reklama_id,
@@ -861,6 +870,7 @@ app.get('/api/reklamat', iLoguar, async (req, res) => {
       html5_url: x.html5_url || null,
       teksti: x.teksti || null,
       pauzuar: x.pauzuar,
+      logjika_shperndarjes: x.logjika_shperndarjes || 'ankand',
       shikime:    (m[x.id] && m[x.id].shikime)    || 0,
       klikime:    (m[x.id] && m[x.id].klikime)    || 0,
       konvertime: (m[x.id] && m[x.id].konvertime) || 0
