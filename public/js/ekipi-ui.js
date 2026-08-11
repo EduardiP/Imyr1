@@ -22,15 +22,9 @@ var EKIPI_TABS = [
 var _ekTab = 'permbledhje';
 
 function hapEkipin(tabFillestar) {
-  history.pushState({ ekipi: true }, '', '/ekipi');
-  document.querySelectorAll('.view.on').forEach(function (v) { v.classList.remove('on'); });
-  var v = document.getElementById('v-ekipi');
-  if (!v) { console.error('#v-ekipi mungon te index.html — shiko udhëzimin në krye të ekipi-ui.js'); return; }
-  v.classList.add('on');
-  _ekTab = tabFillestar || 'permbledhje';
-  ekipiNdertoSkeleten();
+  if(tabFillestar) _ekTab = tabFillestar;
+  nav({v:'ekipi'});
 }
-
 // Kapet Back/Forward i browser-it — nëse largohet nga /ekipi, kthehu te dashboard normal
 window.addEventListener('popstate', function () {
   if (location.pathname !== '/ekipi') {
