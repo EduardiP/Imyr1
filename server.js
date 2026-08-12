@@ -1798,6 +1798,8 @@ app.get('/api/admin/bizneset', iAdmin, async (req, res) => {
 // --- BALANCAT: dhene/marra (shfaqje, burimi='barazi') per cdo biznes ne logjiken Balance ---
 // Perdoret nga admin.html per grafikun "male/kodra" — kolona te vogla katroresh per biznes,
 // neto = marra - dhene (pozitiv = ka marre me shume se ka dhene, negativ = anasjelltas).
+// Biznesi konsiderohet "ne Balance" nese: (a) ka logjika_shperndarjes='barazi' te bizneset,
+// OSE (b) ka te pakten nje reklame ne promovimet me logjika_shperndarjes='barazi'.
 app.get('/api/admin/balancat', iAdmin, async (req, res) => {
   try {
     const r = await pool.query(`
@@ -1814,6 +1816,8 @@ app.get('/api/admin/balancat', iAdmin, async (req, res) => {
         WHERE lloji='view' AND burimi='barazi' GROUP BY reklamues_id
       ) marra ON marra.reklamues_id = b.id
       WHERE b.logjika_shperndarjes='barazi'
+         OR EXISTS (SELECT 1 FROM promovimet p
+                    WHERE p.biznes_id=b.id AND p.aktiv=true AND p.logjika_shperndarjes='barazi')
       ORDER BY b.id`);
     res.json(r.rows.map(x => ({
       id: x.id, emri: x.emri,
@@ -1824,6 +1828,8 @@ app.get('/api/admin/balancat', iAdmin, async (req, res) => {
 });
 
 // --- BALANCET (ANALITIKE): lista e bizneseve Balance me numra permbledhes te vendimeve ---
+// Biznesi konsiderohet "ne Balance" nese: (a) ka logjika_shperndarjes='barazi' te bizneset,
+// OSE (b) ka te pakten nje reklame ne promovimet me logjika_shperndarjes='barazi'.
 app.get('/api/admin/balancet-lista', iAdmin, async (req, res) => {
   try {
     const r = await pool.query(`
@@ -1840,6 +1846,8 @@ app.get('/api/admin/balancet-lista', iAdmin, async (req, res) => {
         FROM balancet GROUP BY reklamues_id
       ) v ON v.reklamues_id = b.id
       WHERE b.logjika_shperndarjes='barazi'
+         OR EXISTS (SELECT 1 FROM promovimet p
+                    WHERE p.biznes_id=b.id AND p.aktiv=true AND p.logjika_shperndarjes='barazi')
       ORDER BY b.emri`);
     res.json(r.rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
