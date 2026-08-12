@@ -59,6 +59,10 @@ pool.query(`CREATE TABLE IF NOT EXISTS analizo_perdorimi (
   krijuar_at TIMESTAMPTZ DEFAULT now()
 )`).catch(e => console.error('migrim analizo_perdorimi:', e.message));
 
+// Migrim: burimi i ngjarjes ('ankand' | 'barazi') — infrastrukture per llogarine Balance,
+// e mbushet vetem kur te ndertohet mekanizmi real i shperndarjes Balance ne /ad.
+pool.query(`ALTER TABLE ngjarjet ADD COLUMN IF NOT EXISTS burimi TEXT`).catch(e => console.error('migrim burimi:', e.message));
+
 // --- Ruajtja e skedareve (Cloudflare R2) ---
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 const s3 = process.env.R2_ENDPOINT ? new S3Client({
@@ -572,6 +576,24 @@ app.get('/api/profili', iLoguar, async (req, res) => {
       marra: marraQ.rows[0],
       snippets: perSnippet.rows
     });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- PROFILI-BALANCE: sa ka dhene / sa ka marre, VETEM per burimin 'barazi' ---
+// (0 legjitimisht derisa te ndertohet mekanizmi real i shperndarjes Balance ne /ad)
+app.get('/api/profili-balance', iLoguar, async (req, res) => {
+  try {
+    const dheneQ = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE lloji='view')::int      AS shfaqje,
+              COUNT(*) FILTER (WHERE lloji='click')::int     AS klikime,
+              COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
+       FROM ngjarjet WHERE biznes_id=$1 AND burimi='barazi'`, [req.biznesId]);
+    const marraQ = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE lloji='view')::int      AS shfaqje,
+              COUNT(*) FILTER (WHERE lloji='click')::int     AS klikime,
+              COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
+       FROM ngjarjet WHERE reklamues_id=$1 AND burimi='barazi'`, [req.biznesId]);
+    res.json({ dhene: dheneQ.rows[0], marra: marraQ.rows[0] });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
