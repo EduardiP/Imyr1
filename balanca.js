@@ -4,22 +4,19 @@
 // RREGULLI (siç u percaktua):
 // 1) Fiton biznesi me DEFICITIN me te madh — dhene (burimi='barazi') minus marre (burimi='barazi').
 //    Deficit pozitiv = ka dhene me shume se ka marre = "i eshte borxh" nga rrjeti.
-// 2) Barazim (disa kandidate me te njejtin deficit maksimal):
-//    - Nese ka te dhena historike (30 dite) te "dhenies" per te pakten njerin prej tyre,
-//      fiton ai me historikun me te larte te dhenies ne ate periudhe.
-//    - Nese s'ka fare te dhena historike per asnjerin, zgjidhet RASTESISHT mes te barabarteve.
+//    Nese vetem NJE kandidat ka deficitin maksimal → fiton menjehere, pa asnje llogaritje tjeter.
+// 2) Barazim (dy ose me shume kandidate me te njejtin deficit maksimal):
+//    - Merren piket AI reklamues→host (nga tabela perputhjet) per secilin.
+//    - Fiton ai me piket me te larta AI — statistikisht do te konvertoje me mire per kete host.
+// 3) Barazim edhe ne pikat AI (rast shume i rralle, shkalla 0-1000):
+//    - Zgjidhet RASTESISHT mes te barabarteve, si mase sigurie.
 //
 // Server.js e therret: const balanca = require('./balanca')(pool);
-// balanca.zgjidhFituesinBalance([id1, id2, id3, ...]) → kthen ID-ne fituese (ose null).
+// balanca.zgjidhFituesinBalance(kandidatIds, hostId) → kthen ID-ne fituese (ose null).
 //
 // SHENIM: ky modul eshte VETEM zgjedhja e biznesit fitues (niveli i pare, njesoj si ankandi
 // kryesor). Niveli i dyte (cila reklame konkrete e biznesit fitues shfaqet, mes atyre te
 // etiketuara 'barazi') mbetet pergjegjesi e pike-reklama.js ekzistues — ripërdoret, jo i ri.
-//
-// PENDING (hapi tjeter, s'eshte ndertuar ende): VETE lidhja brenda /ad — pra si vendoset
-// nese nje kerkese konkrete i shkon fare ketij moduli (Balance) apo mekanizmit te Ankandit.
-// Kjo varet nga cilesimet e "Hosting" (perqindja Ankand/Balance per snippet), qe sot ende
-// s'ka funksion real backend (vetem UI). Duhet ndertuar para se ky modul te therritet realisht.
 
 module.exports = function (pool) {
 
@@ -47,26 +44,27 @@ module.exports = function (pool) {
     return rez;
   }
 
-  // Historiku i "dhenies" ne 30 ditet e fundit, per tie-break
-  async function merrHistorikun1Mujor(kandidatIds) {
-    if (!kandidatIds || !kandidatIds.length) return {};
+  // Piket AI reklamues→host per nje liste reklamuesish kundrejt te njejtit host.
+  // Perdoret VETEM per tie-break kur >1 kandidat ka te njejtin deficit maksimal.
+  async function merrPiketAI(kandidatIds, hostId) {
+    if (!kandidatIds || !kandidatIds.length || !hostId) return {};
     const r = await pool.query(`
-      SELECT biznes_id, COUNT(*)::int AS n FROM ngjarjet
-      WHERE lloji='view' AND burimi='barazi' AND biznes_id = ANY($1::int[])
-        AND created_at > now() - interval '30 days'
-      GROUP BY biznes_id`, [kandidatIds]);
+      SELECT reklamues_id, skori FROM perputhjet
+      WHERE host_id = $1 AND reklamues_id = ANY($2::int[]) AND skori IS NOT NULL`,
+      [hostId, kandidatIds]);
     const rez = {};
-    kandidatIds.forEach(id => { rez[id] = 0; });
-    r.rows.forEach(x => { rez[x.biznes_id] = x.n; });
+    kandidatIds.forEach(id => { rez[id] = 0; }); // parazgjedhje 0 nese s'ka skor
+    r.rows.forEach(x => { rez[x.reklamues_id] = x.skori; });
     return rez;
   }
 
   // FUNKSIONI KRYESOR: nga nje liste kandidatesh (biznes_id te pershtatshem per kete host),
-  // zgjidh fituesin sipas defiçitit + tie-break historik/rastesi.
-  async function zgjidhFituesinBalance(kandidatIds) {
+  // zgjidh fituesin sipas deficitit → tie-break me AI → tie-break rastesor.
+  async function zgjidhFituesinBalance(kandidatIds, hostId) {
     if (!kandidatIds || !kandidatIds.length) return null;
     if (kandidatIds.length === 1) return kandidatIds[0];
 
+    // HAPI 1 — Llogarit deficitet dhe gjej maksimumin
     const deficitet = await merrDeficitet(kandidatIds);
     let maksDeficit = -Infinity;
     kandidatIds.forEach(id => {
@@ -74,21 +72,24 @@ module.exports = function (pool) {
       if (d > maksDeficit) maksDeficit = d;
     });
 
+    // HAPI 2 — Kush ka deficitin maksimal
     const teBarabarte = kandidatIds.filter(id => (deficitet[id] ? deficitet[id].deficit : 0) === maksDeficit);
+
+    // Nese vetem nje — fiton menjehere, pa llogaritje tjeter
     if (teBarabarte.length === 1) return teBarabarte[0];
 
-    // Barazim mes disa kandidatesh — kontrollo historikun 1-mujor te dhenies
-    const historiku = await merrHistorikun1Mujor(teBarabarte);
-    const kaHistorik = teBarabarte.some(id => historiku[id] > 0);
-    if (!kaHistorik) {
-      // Asnje te dhene historike per asnjerin — rastesisht mes te barabarteve
-      return teBarabarte[Math.floor(Math.random() * teBarabarte.length)];
-    }
-    // Fiton ai me historikun me te larte te dhenies ne 30 dite
-    let fitues = teBarabarte[0];
-    teBarabarte.forEach(id => { if (historiku[id] > historiku[fitues]) fitues = id; });
-    return fitues;
+    // HAPI 3 — Barazim ne deficit: perdor piket AI reklamues→host
+    const piketAI = await merrPiketAI(teBarabarte, hostId);
+    let maksAI = -Infinity;
+    teBarabarte.forEach(id => { if (piketAI[id] > maksAI) maksAI = piketAI[id]; });
+    const teBarabarteAI = teBarabarte.filter(id => piketAI[id] === maksAI);
+
+    // Nese vetem nje ka piken me te larte AI — fiton
+    if (teBarabarteAI.length === 1) return teBarabarteAI[0];
+
+    // HAPI 4 — Edhe piket AI jane te barabarta (rast shume i rralle) → rastesisht
+    return teBarabarteAI[Math.floor(Math.random() * teBarabarteAI.length)];
   }
 
-  return { zgjidhFituesinBalance, merrDeficitet, merrHistorikun1Mujor };
+  return { zgjidhFituesinBalance, merrDeficitet, merrPiketAI };
 };
