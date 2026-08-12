@@ -802,9 +802,20 @@ app.all('/konvertim', async (req, res) => {
 // --- RUAJ PERMBLEDHJEN (klienti editon vetem permbledhjen; kategoria mbetet nga AI) ---
 app.post('/api/permbledhje', iLoguar, async (req, res) => {
   const perm = (req.body.permbledhje || '').trim() || null;
+  const rikombinim = !!req.body.rikombinim;
   try {
     await pool.query('UPDATE bizneset SET permbledhje=$2 WHERE id=$1', [req.biznesId, perm]);
-    res.json({ ok: true });
+    if (!rikombinim) return res.json({ ok: true });
+
+    // Rikombinim vetem nese kerkohet eksplicit (Cilesimet / Dashboard-pershkrimi standalone,
+    // jo wizard-i i pare) DHE vetem nese ka snippet aktiv (qe u shfaq REKLAMAT E TE TJEREVE).
+    const b = await pool.query('SELECT snippet_active FROM bizneset WHERE id=$1', [req.biznesId]);
+    const kaSnippetAktiv = !!(b.rows[0] && b.rows[0].snippet_active);
+    if (!kaSnippetAktiv) {
+      return res.json({ ok: true, kombinim: false, arsyeja: 'snippet' });
+    }
+    kombinimi.kombinoBiznesin(req.biznesId).catch(() => {});
+    res.json({ ok: true, kombinim: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
