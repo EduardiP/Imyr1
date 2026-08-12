@@ -467,7 +467,7 @@ function renderUserMenu(){
 
   const items = [
     { l:'Profili',           fn:function(){ nav({v:'profile', nav:'profili'}); } },
-    { l: (window.__llogariaModaliteti==='balance' ? 'Switch to Ankand Account' : 'Switch to Balance Account'),
+    { l: (window.__llogariaModaliteti==='balance' ? 'Switch to Auction Account' : 'Switch to Balance Account'),
       fn:function(){ switchLlogaria(); } },
     { l:'Ekipi & Rolet',     fn:function(){ hapEkipin(); } },
     { l:'Faturimi & Plani',  fn:function(){ nav({v:'profile', nav:'plani'}); } },
@@ -497,7 +497,7 @@ function renderUserMenu(){
 function renderMain(s){
   s = s || {};
   const m=$('mainPanel');
-  if(curNav==='profili')    return s.edit ? profiliRenderEdit(m) : mainProfili(m);
+  if(curNav==='profili')    return s.edit ? profiliRenderEdit(m) : (window.__llogariaModaliteti==='balance' ? mainProfiliBalance(m) : mainProfili(m));
   if(curNav==='cilesimet')  return mainCilesimet(m);
   if(curNav==='plani')      return mainPlani(m);
   if(curNav==='suport')     return mainSuport(m);
@@ -535,19 +535,6 @@ function profiliRenderPamje(m, d){
     ? '<div class="avatar" style="overflow:hidden;"><img src="'+esc(d.logo_url)+'" style="width:100%;height:100%;object-fit:cover;"></div>'
     : '<div class="avatar">'+esc(inic)+'</div>';
   const tipiTekst = d.tipi==='b2b'?'Bizneseve (B2B)':(d.tipi==='b2c'?'Individëve (B2C)':'Të dyjave');
-  const konvLidhur = !!(une && une.url_konvertimi);
-  let snip='';
-  if(d.snippets && d.snippets.length){
-    snip='<div class="rektbl" style="margin-top:10px;"><div class="rekhead"><span>Faqja (snippet)</span><span>Shfaqje</span><span>Klikime</span><span>Konvertime</span></div>';
-    d.snippets.forEach(x=>{
-      const konvQel = '<span>'+x.konvertime+'</span>';
-      snip+='<div class="rekrow" style="cursor:default;"><span class="rekname"><span class="nm">'+esc(x.origjina)+'</span></span>'+
-            '<span>'+x.shfaqje+'</span><span>'+x.klikime+'</span>'+konvQel+'</div>';
-    });
-    snip+='</div>';
-  } else {
-    snip='<p class="small" style="margin-top:8px;">Ende s\'ka të dhëna nga asnjë snippet.</p>';
-  }
   const konvMini =
     '<div class="miniStat"><div class="mv">'+(d.pike?d.pike.konvertime:0)+'</div><div class="small">konvertime → '+(d.pike?d.pike.pike_nga_konvertimet:0)+' pikë</div><div class="small mut">(1 konvertim = 1 pikë)</div></div>';
   m.innerHTML=
@@ -569,8 +556,7 @@ function profiliRenderPamje(m, d){
       '<div class="miniStat"><div class="mv">'+(d.pike?d.pike.shfaqje:0)+'</div><div class="small">shfaqje → '+(d.pike?d.pike.pike_nga_shfaqjet:0)+' pikë</div><div class="small mut">('+(d.pike?d.pike.rate:0)+' shfaqje = 1 pikë)</div></div>'+
       konvMini+
     '</div>'+
-    '<p class="small mut" style="margin:6px 0 18px;">Pikët e profilit rrisin sa shpesh shfaqet reklama jote te rrjeti. Mblidhen nga shfaqjet dhe konvertimet që sjell faqja jote.</p>'+
-    '<h3 class="h" style="font-size:16px;margin:0 0 4px;">Sipas snippet-it</h3>'+snip;
+    '<p class="small mut" style="margin:6px 0 18px;">Pikët e profilit rrisin sa shpesh shfaqet reklama jote te rrjeti. Mblidhen nga shfaqjet dhe konvertimet që sjell faqja jote.</p>';
 }
 function profiliHapEdit(){
   nav({v:'profile', nav:'profili', edit:true});
