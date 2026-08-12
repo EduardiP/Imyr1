@@ -287,10 +287,15 @@ app.post('/api/biz-baza', iLoguar, async (req, res) => {
   const emri = (req.body.emri || '').trim();
   const website = (req.body.website || '').trim();
   const tipi = ['b2b','b2c','b2b2c'].includes(req.body.tipi) ? req.body.tipi : null;
-  const logjika = ['ankand','barazi'].includes(req.body.logjika_shperndarjes) ? req.body.logjika_shperndarjes : 'ankand';
   if (!emri || !website || !tipi) return res.status(400).json({ error: 'Emri, website dhe tipi jane te detyrueshem.' });
   try {
-    await pool.query('UPDATE bizneset SET emri=$2, website=$3, tipi=$4, logjika_shperndarjes=$5 WHERE id=$1', [req.biznesId, emri, website, tipi, logjika]);
+    if (['ankand','barazi'].includes(req.body.logjika_shperndarjes)) {
+      await pool.query('UPDATE bizneset SET emri=$2, website=$3, tipi=$4, logjika_shperndarjes=$5 WHERE id=$1',
+        [req.biznesId, emri, website, tipi, req.body.logjika_shperndarjes]);
+    } else {
+      // Nese s'dergohet eksplicit, mos e prek fare — mos rivendos aksidentalisht ne 'ankand'
+      await pool.query('UPDATE bizneset SET emri=$2, website=$3, tipi=$4 WHERE id=$1', [req.biznesId, emri, website, tipi]);
+    }
     res.json({ ok: true });
     // Studjo platformen ne sfond (pa e bllokuar pergjigjen) dhe ruaje
     platforma.ruajPlatformen(pool, req.biznesId, website).catch(() => {});
@@ -518,7 +523,7 @@ app.get('/api/analytics/kategorite-dhene', iLoguar, async (req, res) => {
 app.get('/api/profili', iLoguar, async (req, res) => {
   try {
     const bq = await pool.query(
-      'SELECT emri, email, tipi, url_konvertimi, created_at, logo_url, logjika_shperndarjes FROM bizneset WHERE id=$1', [req.biznesId]);
+      'SELECT emri, email, tipi, url_konvertimi, created_at, logo_url, logjika_shperndarjes, website FROM bizneset WHERE id=$1', [req.biznesId]);
     const biz = bq.rows[0] || {};
     const tipi = biz.tipi || 'b2c';
 
@@ -550,7 +555,7 @@ app.get('/api/profili', iLoguar, async (req, res) => {
        FROM ngjarjet WHERE reklamues_id=$1`, [req.biznesId]);
 
     res.json({
-      emri: biz.emri, email: biz.email, tipi, logo_url: biz.logo_url || null,
+      emri: biz.emri, email: biz.email, tipi, logo_url: biz.logo_url || null, website: biz.website || null,
       logjika_shperndarjes: biz.logjika_shperndarjes || 'ankand',
       pike_profili: Math.round(pikeTotal * 10) / 10,
       pike: {
