@@ -59,9 +59,12 @@ pool.query(`CREATE TABLE IF NOT EXISTS analizo_perdorimi (
   krijuar_at TIMESTAMPTZ DEFAULT now()
 )`).catch(e => console.error('migrim analizo_perdorimi:', e.message));
 
-// Migrim: burimi i ngjarjes ('ankand' | 'barazi') — infrastrukture per llogarine Balance,
-// e mbushet vetem kur te ndertohet mekanizmi real i shperndarjes Balance ne /ad.
+// Migrim: burimi i ngjarjes ('ankand' | 'barazi') — tani mbushet realisht nga /track,/klik,/konvertim,
+// duke lexuar logjika_shperndarjes te vete reklames se treguar (jo nga snippet-i i klientit).
 pool.query(`ALTER TABLE ngjarjet ADD COLUMN IF NOT EXISTS burimi TEXT`).catch(e => console.error('migrim burimi:', e.message));
+
+// Migrim: perqindja Ankand/Balance per HOST (sa nga kerkesat e snippet-eve te tij shkojne te Balance)
+pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS barazi_perqindje INTEGER NOT NULL DEFAULT 50`).catch(e => console.error('migrim barazi_perqindje:', e.message));
 
 // --- Ruajtja e skedareve (Cloudflare R2) ---
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
@@ -673,15 +676,15 @@ app.get('/klik', async (req, res) => {
     const h = { rows: snK ? [{ id: snK.biznes_id }] : [] };
     if (h.rows.length && rid) {
       const p = await pool.query(
-        `SELECT p.id, p.biznes_id, COALESCE(p.link, b.website) AS dest
+        `SELECT p.id, p.biznes_id, p.logjika_shperndarjes, COALESCE(p.link, b.website) AS dest
          FROM promovimet p JOIN bizneset b ON b.id = p.biznes_id
          WHERE p.id=$1 AND p.aktiv=true`, [rid]);
       if (p.rows.length) {
         const kod = crypto.randomBytes(9).toString('hex');
         await pool.query(
-          `INSERT INTO ngjarjet (biznes_id, lloji, origjina, reklama_id, reklamues_id, klik_kod, snippet_id)
-           VALUES ($1,'click',$2,$3,$4,$5,$6)`,
-          [h.rows[0].id, req.headers.referer || null, p.rows[0].id, p.rows[0].biznes_id, kod, snK ? snK.snippet_id : null]);
+          `INSERT INTO ngjarjet (biznes_id, lloji, origjina, reklama_id, reklamues_id, klik_kod, snippet_id, burimi)
+           VALUES ($1,'click',$2,$3,$4,$5,$6,$7)`,
+          [h.rows[0].id, req.headers.referer || null, p.rows[0].id, p.rows[0].biznes_id, kod, snK ? snK.snippet_id : null, p.rows[0].logjika_shperndarjes || 'ankand']);
         dest = p.rows[0].dest;
         if (dest) {
           if (!/^https?:\/\//i.test(dest)) dest = 'https://' + dest;
@@ -752,7 +755,7 @@ app.all('/konvertim', async (req, res) => {
   if (!kod) return res.status(204).end();
   try {
     const k = await pool.query(
-      `SELECT reklama_id, reklamues_id, created_at, origjina, snippet_id FROM ngjarjet
+      `SELECT reklama_id, reklamues_id, created_at, origjina, snippet_id, burimi FROM ngjarjet
        WHERE klik_kod=$1 AND lloji='click' LIMIT 1`, [kod]);
     if (!k.rows.length) return res.status(204).end();           // kod i panjohur
     const kl = k.rows[0];
@@ -802,10 +805,10 @@ app.all('/konvertim', async (req, res) => {
        AND COALESCE(origjina,'') = COALESCE($2,'') LIMIT 1`, [kod, zona ? ('zona:' + zona) : '']);
     if (ekz.rows.length) return res.status(204).end();
     await pool.query(
-      `INSERT INTO ngjarjet (biznes_id, lloji, origjina, reklama_id, reklamues_id, klik_kod, snippet_id)
-       VALUES ($1,'konvertim',$2,$3,$4,$5,$6)`,
+      `INSERT INTO ngjarjet (biznes_id, lloji, origjina, reklama_id, reklamues_id, klik_kod, snippet_id, burimi)
+       VALUES ($1,'konvertim',$2,$3,$4,$5,$6,$7)`,
       [kl.reklamues_id, zona ? ('zona:' + zona) : (req.headers.origin || req.headers.referer || null),
-       kl.reklama_id, kl.reklamues_id, kod, kl.snippet_id]);
+       kl.reklama_id, kl.reklamues_id, kod, kl.snippet_id, kl.burimi]);
     // Nje konvertim REAL eshte prova qe snippet-i i gjurmimit eshte aktiv → rivendos track_active.
     await pool.query('UPDATE bizneset SET track_active=true, track_seen_at=now() WHERE id=$1', [kl.reklamues_id]);
     // Nje konvertim REAL me zone → lidhe. Nese s'ekziston, krijoje si te lidhur (por jo e fshire).
@@ -1539,14 +1542,14 @@ app.all('/track', async (req, res) => {
     const snK2 = await snippetet.ngaCelesi(pool, key);
     const b = { rows: snK2 ? [{ id: snK2.biznes_id }] : [] };
     if (b.rows.length) {
-      let reklamuesId = null;
+      let reklamuesId = null, burimi = null;
       if (rid) {
-        const pr = await pool.query('SELECT biznes_id FROM promovimet WHERE id=$1', [rid]);
-        if (pr.rows.length) reklamuesId = pr.rows[0].biznes_id;
+        const pr = await pool.query('SELECT biznes_id, logjika_shperndarjes FROM promovimet WHERE id=$1', [rid]);
+        if (pr.rows.length) { reklamuesId = pr.rows[0].biznes_id; burimi = pr.rows[0].logjika_shperndarjes || 'ankand'; }
       }
       await pool.query(
-        'INSERT INTO ngjarjet (biznes_id, lloji, origjina, reklama_id, reklamues_id, snippet_id) VALUES ($1,$2,$3,$4,$5,$6)',
-        [b.rows[0].id, lloji, req.headers.origin || req.headers.referer || null, rid, reklamuesId, snK2.snippet_id || null]
+        'INSERT INTO ngjarjet (biznes_id, lloji, origjina, reklama_id, reklamues_id, snippet_id, burimi) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+        [b.rows[0].id, lloji, req.headers.origin || req.headers.referer || null, rid, reklamuesId, snK2.snippet_id || null, burimi]
       );
     }
   } catch (e) {}
@@ -1747,33 +1750,7 @@ app.get('/api/admin/bizneset', iAdmin, async (req, res) => {
   } catch(e){ res.status(500).json({ error: e.message }); }
 });
 
-// --- BALANCAT: dhene/marra (shfaqje, burimi='barazi') per cdo biznes ne logjiken Balance ---
-// Perdoret nga admin.html per grafikun "male/kodra" — kolona te vogla katroresh per biznes,
-// neto = marra - dhene (pozitiv = ka marre me shume se ka dhene, negativ = anasjelltas).
-app.get('/api/admin/balancat', iAdmin, async (req, res) => {
-  try {
-    const r = await pool.query(`
-      SELECT b.id, b.emri,
-        COALESCE(dhene.n,0)::int AS dhene_shfaqje,
-        COALESCE(marra.n,0)::int AS marra_shfaqje
-      FROM bizneset b
-      LEFT JOIN (
-        SELECT biznes_id, COUNT(*)::int AS n FROM ngjarjet
-        WHERE lloji='view' AND burimi='barazi' GROUP BY biznes_id
-      ) dhene ON dhene.biznes_id = b.id
-      LEFT JOIN (
-        SELECT reklamues_id, COUNT(*)::int AS n FROM ngjarjet
-        WHERE lloji='view' AND burimi='barazi' GROUP BY reklamues_id
-      ) marra ON marra.reklamues_id = b.id
-      WHERE b.logjika_shperndarjes='barazi'
-      ORDER BY b.id`);
-    res.json(r.rows.map(x => ({
-      id: x.id, emri: x.emri,
-      dhene: x.dhene_shfaqje, marra: x.marra_shfaqje,
-      neto: x.marra_shfaqje - x.dhene_shfaqje
-    })));
-  } catch(e){ res.status(500).json({ error: e.message }); }
-});
+// Detajet e nje biznesi + statistika
 app.get('/api/admin/biznes/:id', iAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   try {
@@ -1796,7 +1773,6 @@ app.get('/contact', (req, res) => res.sendFile(path.join(__dirname, 'public', 'c
 app.get('/about', (req, res) => res.sendFile(path.join(__dirname, 'public', 'about.html')));
 app.get('/si-funksionon', (req, res) => res.sendFile(path.join(__dirname, 'public', 'si-funksionon.html')));
 app.get('/ekipi', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-app.get('/cilesimet', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 // --- 5 SAAS PROVE (demo-*.js — secili i pavarur; fshiji kur te mbarosh) ---
 const demot = {
   paguar: require('./demo-paguar'),
