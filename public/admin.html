@@ -516,44 +516,41 @@ balRenderGrafik(lista);
 balRenderLegjende(lista);
 }catch(e){}
 }
+var BAL_QELIZA_PER_ANE=20; // te pakten 20 poshte X, njesoj siper per simetri — te krijuara qe ne fillim
 function balRenderGrafik(lista){
 const el=$('balGrafiku'); if(!el) return;
-const LARTESIA=680;
 if(!lista.length){ el.innerHTML='<div style="padding:40px;text-align:center;" class="small mut">Ende s\'ka biznese në logjikën Balance.</div>'; return; }
 const n=lista.length;
 const MADH = n<=5?36 : n<=10?26 : n<=20?19 : n<=40?13 : 9;
-const HAPESIRE = Math.max(2, Math.round(MADH*0.18));
-const KROK = MADH+HAPESIRE; // hapi i plote i rrjetit — vijat e rrjetit perputhen me kufijte e katroreve
-const rrjetiCSS='background-image:'+
-  'repeating-linear-gradient(0deg, rgba(255,255,255,.07) 0, rgba(255,255,255,.07) 1px, transparent 1px, transparent '+KROK+'px),'+
-  'repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0, rgba(255,255,255,.05) 1px, transparent 1px, transparent '+KROK+'px);'+
-  'background-position:50px calc(50% + '+Math.round(KROK/2)+'px);';
+const RRESHTA = BAL_QELIZA_PER_ANE*2+1; // +20 ... 0 ... -20
+const LARTESIA = RRESHTA*MADH;
 let h='<div style="display:flex;">';
-// Etiketat e boshtit Y — çdo 5 njësi, sipër dhe poshtë
+// Etiketat e boshtit Y — çdo 5 njësi, sipër dhe poshtë, saktesisht sipas lartesise se qelizes (MADH)
 h+='<div style="flex:0 0 40px;position:relative;height:'+LARTESIA+'px;">';
-for(let yy=5; yy*KROK < LARTESIA/2; yy+=5){
-h+='<div class="small mut" style="position:absolute;right:6px;top:calc(50% - '+(yy*KROK)+'px);transform:translateY(-50%);">'+yy+'</div>';
-h+='<div class="small mut" style="position:absolute;right:6px;top:calc(50% + '+(yy*KROK)+'px);transform:translateY(-50%);">-'+yy+'</div>';
+for(let yy=5; yy<=BAL_QELIZA_PER_ANE; yy+=5){
+h+='<div class="small mut" style="position:absolute;right:6px;top:'+((BAL_QELIZA_PER_ANE-yy)*MADH)+'px;transform:translateY(-50%);">'+yy+'</div>';
+h+='<div class="small mut" style="position:absolute;right:6px;top:'+((BAL_QELIZA_PER_ANE+yy)*MADH)+'px;transform:translateY(-50%);">-'+yy+'</div>';
 }
-h+='<div class="small mut" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);">0</div>';
+h+='<div class="small mut" style="position:absolute;right:6px;top:'+(BAL_QELIZA_PER_ANE*MADH)+'px;transform:translateY(-50%);">0</div>';
 h+='</div>';
-// Vetë rrjeti + kolonat
-h+='<div style="position:relative;height:'+LARTESIA+'px;border:1px solid var(--line);border-radius:10px;background:#0e1116;overflow-x:auto;overflow-y:hidden;flex:1;'+rrjetiCSS+'">'+
-'<div style="position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(255,255,255,.25);z-index:0;"></div>'+
-'<div style="display:flex;align-items:center;height:100%;gap:'+HAPESIRE+'px;padding:0 16px;position:relative;z-index:1;">';
+// Vetë rrjeti — QELIZA TE VERTETA DOM, cep-me-cep (asnje background CSS te veçantë, keshtu s'ka mbivendosje)
+h+='<div style="position:relative;height:'+LARTESIA+'px;border:1px solid var(--line);border-radius:10px;background:#0e1116;overflow-x:auto;overflow-y:hidden;flex:1;">'+
+'<div style="display:flex;height:100%;padding:0 16px;">';
 lista.forEach(function(b,i){
 const ngjyra=BAL_NGJYRA[i%BAL_NGJYRA.length];
 const neto=b.neto;
-h+='<div title="'+esc(b.emri)+' ('+(neto>0?'+':'')+neto+')" style="display:flex;flex-direction:column;align-items:center;width:'+MADH+'px;height:100%;justify-content:center;flex:0 0 auto;">';
-const siperN=neto>0?neto:0, poshteN=neto<0?-neto:0;
-h+='<div style="display:flex;flex-direction:column-reverse;">';
-for(let s=0;s<siperN;s++) h+='<div style="width:'+MADH+'px;height:'+MADH+'px;background:'+ngjyra+';border-radius:2px;margin-bottom:'+HAPESIRE+'px;"></div>';
-h+='</div>';
-// Katrori blu i pranishem GJITHMONE, pikerisht ne vijen zero — "toka e rrafshet" (baraspesha)
-h+='<div style="width:'+MADH+'px;height:'+MADH+'px;background:#4a9eff;border-radius:2px;flex:0 0 auto;"></div>';
-h+='<div style="display:flex;flex-direction:column;">';
-for(let p=0;p<poshteN;p++) h+='<div style="width:'+MADH+'px;height:'+MADH+'px;background:'+ngjyra+';border-radius:2px;margin-top:'+HAPESIRE+'px;"></div>';
-h+='</div>';
+h+='<div title="'+esc(b.emri)+' ('+(neto>0?'+':'')+neto+')" style="display:flex;flex-direction:column;width:'+MADH+'px;flex:0 0 auto;">';
+for(let r=0; r<RRESHTA; r++){
+const niveli = BAL_QELIZA_PER_ANE - r; // +20 ne krye te kolonës, -20 ne fund
+if(niveli===0){
+// Sfera e biznesit — GJITHMONE e pranishme, pikerisht ne qelizen zero (jo vetem kur neto=0)
+h+='<div style="width:'+MADH+'px;height:'+MADH+'px;box-sizing:border-box;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
+'<div style="width:'+Math.round(MADH*0.55)+'px;height:'+Math.round(MADH*0.55)+'px;border-radius:50%;background:'+ngjyra+';"></div></div>';
+continue;
+}
+const mbushur = (niveli>0 && niveli<=neto) || (niveli<0 && niveli>=neto);
+h+='<div style="width:'+MADH+'px;height:'+MADH+'px;box-sizing:border-box;border:1px solid rgba(255,255,255,.08);flex:0 0 auto;'+(mbushur?'background:'+ngjyra+';':'background:transparent;')+'"></div>';
+}
 h+='</div>';
 });
 h+='</div></div></div>';
