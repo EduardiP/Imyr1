@@ -948,9 +948,12 @@ app.post('/api/ngarko-logo', iLoguar, upload.single('file'), async (req, res) =>
 // --- LISTA E REKLAMAVE TE BIZNESIT (Creatives) ---
 app.get('/api/reklamat', iLoguar, async (req, res) => {
   try {
+    const logjikaFiltri = ['ankand','barazi'].includes(req.query.logjika) ? req.query.logjika : null;
+    const params = logjikaFiltri ? [req.biznesId, logjikaFiltri] : [req.biznesId];
+    const filtriSql = logjikaFiltri ? ' AND COALESCE(logjika_shperndarjes,\'ankand\')=$2' : '';
     const r = await pool.query(
-      'SELECT id, titulli, teksti, imazh_url, video_url, html5_url, pauzuar, logjika_shperndarjes, created_at FROM promovimet WHERE biznes_id=$1 AND aktiv=true ORDER BY id DESC',
-      [req.biznesId]);
+      'SELECT id, titulli, teksti, imazh_url, video_url, html5_url, pauzuar, logjika_shperndarjes, created_at FROM promovimet WHERE biznes_id=$1 AND aktiv=true' + filtriSql + ' ORDER BY id DESC',
+      params);
     const st = await pool.query(
       `SELECT reklama_id,
               COUNT(*) FILTER (WHERE lloji='view')::int      AS shikime,
