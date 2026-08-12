@@ -438,9 +438,9 @@ function renderProfile(s){
   curNav = s.nav || 'dashboard';
   const oldCard = document.querySelector('.pcard');
   if(oldCard) oldCard.style.display='none';
-  const snavEl=$('snav'); if(snavEl) snavEl.innerHTML=''; // kategoria e vjetër u hoq — #snav mbetet bosh, vetëm si spirancë pozicioni për renderNav2()
+  const snavEl=$('snav'); if(snavEl) snavEl.innerHTML='';
   renderUserMenu();
-  renderNav2();
+  if(curNav==='cilesimet') renderCilesimetNav(); else renderNav2();
   renderMain(s);
 }
 var _userMenuOpen=false;
@@ -1589,43 +1589,37 @@ function krijoReklame(m, s){
 }
 var _cilTab = 'account';
 
+function renderCilesimetNav(){
+  const el=$('snav'); if(!el) return;
+  el.innerHTML=
+    '<div style="padding:8px 10px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);">Cilësimet</div>'+
+    '<button class="'+(_cilTab==='account'?'active':'')+'" onclick="cilShkoTek(\'account\')">Account</button>'+
+    '<button class="'+(_cilTab==='delivery'?'active':'')+'" onclick="cilShkoTek(\'delivery\')">Ad Delivery</button>';
+}
+
 function mainCilesimet(m){
   window.__pamjeVecante=true;
-  m.innerHTML='<h2 class="h">Cilësimet</h2>'+
-    '<div style="display:flex;gap:32px;margin-top:16px;align-items:flex-start;flex-wrap:wrap;">'+
-      '<div class="snav" style="flex:0 0 180px;" id="cilSnav"></div>'+
-      '<div style="flex:1;min-width:280px;" id="cilBody"></div>'+
-    '</div>';
-  renderCilNav();
+  m.innerHTML='<div id="cilBody"></div>';
   cilShkoTek(_cilTab);
 }
-function renderCilNav(){
-  var TABS=[{k:'account',l:'Account'},{k:'delivery',l:'Delivery'}];
-  var el=$('cilSnav'); if(!el) return; el.innerHTML='';
-  TABS.forEach(function(t){
-    var b=document.createElement('button');
-    b.textContent=t.l;
-    if(t.k===_cilTab) b.className='active';
-    b.onclick=function(){ cilShkoTek(t.k); };
-    el.appendChild(b);
-  });
-}
 function cilShkoTek(tab){
-  _cilTab=tab; renderCilNav();
-  var body=$('cilBody'); if(!body) return;
+  _cilTab=tab; renderCilesimetNav();
+  const body=$('cilBody'); if(!body) return;
   if(tab==='account') return cilAccount(body);
   if(tab==='delivery') return cilDelivery(body);
 }
 function cilAccount(body){
-  body.innerHTML='<div class="card" id="cl_pershkrimi_wrap"></div>';
-  stepPershkrimi($('cl_pershkrimi_wrap'));
-}
-function cilDelivery(body){
-  body.innerHTML='<div class="card">'+
+  body.innerHTML='<h2 class="h">Account</h2>'+
+    '<div class="card" style="margin:14px 0 16px;">'+
       logjikaHTML('cl_logjika', une && une.logjika_shperndarjes)+
       '<button class="btn" id="cl_logjika_btn" onclick="ruajLogjikaCilesime()" style="margin-top:10px;">Ruaj</button>'+
       '<span class="small" id="cl_logjika_msg" style="margin-left:10px;"></span>'+
-    '</div>';
+    '</div>'+
+    '<div class="card" id="cl_pershkrimi_wrap"></div>';
+  stepPershkrimi($('cl_pershkrimi_wrap'));
+}
+function cilDelivery(body){
+  body.innerHTML='<h2 class="h">Ad Delivery</h2>';
 }
 async function ruajLogjikaCilesime(){
   const v = segVal('cl_logjika')||'ankand';
