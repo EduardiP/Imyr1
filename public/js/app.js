@@ -234,7 +234,6 @@ function ngarkoVideoUI(){
     '<input id="up_video" placeholder="https://www.youtube.com/watch?v=..." inputmode="url">'+
     '<div class="small mut" style="margin-top:3px;">Kopjo linkun e videos nga YouTube.</div>'+
     '<div id="up_prev" style="margin-top:12px;"></div>'+
-    logjikaHTML('up_logjika', une && une.logjika_shperndarjes)+
     '<button class="primary" id="up_btn" onclick="ngarkoVideo()" style="margin-top:14px;">Shto →</button>'+
     '<div class="msg" id="up_msg"></div>';
   $('up_video').addEventListener('blur', function(){
@@ -259,7 +258,7 @@ async function ngarkoVideo(){
   $('up_btn').disabled=true;
   try{
     const r=await (await fetch('/api/reklama/video',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({titull, link, youtube_id:ytId, logjika_shperndarjes:segVal('up_logjika')||'ankand'})})).json();
+      body:JSON.stringify({titull, link, youtube_id:ytId, logjika_shperndarjes:(window.__llogariaModaliteti||'ankand')})})).json();
     if(r.error){ if(msg){msg.className='msg err';msg.textContent=r.error;} $('up_btn').disabled=false; return; }
     if(msg){msg.className='msg ok';msg.textContent='✓ Video u shtua.';}
     setTimeout(()=>nav({v:'profile',nav:'reklamat'}),800);
@@ -297,7 +296,6 @@ function ngarkoHtml5UI(){
     '</div>'+
     '<div id="up_prev" style="margin-top:12px;"></div>'+
     '<input type="hidden" id="up_creative_id">'+
-    logjikaHTML('up_logjika', une && une.logjika_shperndarjes)+
     '<button class="primary" id="up_btn" onclick="ngarkoHtml5()" style="margin-top:14px;">Ngarko →</button>'+
     '<div class="msg" id="up_msg"></div>';
   $('up_file').addEventListener('change', function(){
@@ -369,7 +367,6 @@ function ngarkoImazhUI(){
     '</div>'+
     '<div id="up_prev" style="margin-top:12px;"></div>'+
     '<input type="hidden" id="up_creative_id">'+
-    logjikaHTML('up_logjika', une && une.logjika_shperndarjes)+
     '<button class="primary" id="up_btn" onclick="ngarkoImazh()" style="margin-top:14px;">Ngarko →</button>'+
     '<div class="msg" id="up_msg"></div>';
   $('up_file').addEventListener('change', function(){
@@ -423,7 +420,7 @@ async function ngarkoImazh(){
   if(!/^https?:\/\//i.test(link)) link='https://'+link;
   $('up_btn').disabled=true; $('up_msg').className='msg'; $('up_msg').innerHTML='<span class="spin"></span> Po ngarkoj…';
   try{
-    const fd=new FormData(); fd.append('file', f); fd.append('titulli', ($('up_title').value||'').trim()); fd.append('link', link); fd.append('logjika_shperndarjes', segVal('up_logjika')||'ankand');
+    const fd=new FormData(); fd.append('file', f); fd.append('titulli', ($('up_title').value||'').trim()); fd.append('link', link); fd.append('logjika_shperndarjes', window.__llogariaModaliteti||'ankand');
     const r=await(await fetch('/api/ngarko',{method:'POST',body:fd})).json();
     if(r.error){ $('up_msg').className='msg err'; $('up_msg').textContent=r.error; $('up_btn').disabled=false; return; }
     window.__reklamat=null;
@@ -684,7 +681,7 @@ async function ngarkoDashReklamat(){
   if(card) card.onclick=()=>nav({v:'profile', nav:'reklamat'});
   if(!el) return;
   try{
-    const rows=await(await fetch('/api/reklamat')).json();
+    const rows=await(await fetch('/api/reklamat?logjika='+(window.__llogariaModaliteti||'ankand'))).json();
     if(!rows.length){ el.innerHTML='<button class="btn cta" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">Krijo një reklamë →</button>'; return; }
     el.innerHTML = rows.map(r=>{
       const thumb = r.imazh_url
@@ -1503,20 +1500,16 @@ async function rekKontrolloSnippet(){
 async function loadReklamat(){
   const el=$('reklamaList'); if(!el) return;
   try{
-    const rows=await(await fetch('/api/reklamat')).json();
+    const rows=await(await fetch('/api/reklamat?logjika='+(window.__llogariaModaliteti||'ankand'))).json();
     window.__reklamat = rows;
     if(!rows.length){ el.innerHTML='<p class="small">Ende s\'ke krijuar reklama. Kliko “+ Create”.</p>'; return; }
-    let h='<div class="rektbl"><div class="rekhead"><span>Reklama</span><span>Logjika</span><span>Shikime</span><span>Klikime</span><span>Konvertime</span><span></span><span></span></div>';
+    let h='<div class="rektbl"><div class="rekhead"><span>Reklama</span><span>Shikime</span><span>Klikime</span><span>Konvertime</span><span></span><span></span></div>';
     rows.forEach(r=>{
       const thumb = r.imazh_url ? '<span class="rekthumb"><img src="'+esc(r.imazh_url)+'"></span>' : '<span class="rekthumb">▦</span>';
       const tgl = '<label class="tgl" title="'+(r.pauzuar?'E pauzuar':'Aktive')+'" onclick="event.stopPropagation()"><input type="checkbox" '+(r.pauzuar?'':'checked')+' onchange="reklamaPauza('+r.id+',this.checked)"><span class="slider"></span></label>';
       const xbtn = '<button class="btn" style="padding:4px 9px;" title="Fshi" onclick="event.stopPropagation();reklamaKonfirmoFshi('+r.id+',\''+esc((r.emri||'').replace(/\x27/g,""))+'\')">✕</button>';
-      const logjikaEtiketa = r.logjika_shperndarjes==='barazi'
-        ? '<span class="small" style="color:#a78bfa;">Barazi</span>'
-        : '<span class="small mut">Ankand</span>';
       h+='<div class="rekrow" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'detail\',id:'+r.id+'})">'+
          '<span class="rekname">'+thumb+'<span class="nm">'+esc(r.emri)+'</span></span>'+
-         '<span>'+logjikaEtiketa+'</span>'+
          '<span>'+r.shikime+'</span><span>'+r.klikime+'</span><span>'+r.konvertime+'</span>'+
          '<span>'+tgl+'</span><span>'+xbtn+'</span></div>';
     });
@@ -2134,7 +2127,6 @@ function stepLlogaria(b){
         '</div>'+
         '<label>Faqja (website)</label><input id="a_web" placeholder="https://saasi-im.com" value="'+esc(une.website||'')+'">'+
         segHTML('a_tipi')+
-        logjikaHTML('a_logjika', une.logjika_shperndarjes)+
         '<button class="primary" id="a_btn" onclick="wizPlotesoBiz()">Vazhdo →</button><div class="msg" id="a_msg"></div>';
       if(une.tipi){ const btn=document.querySelector('#a_tipi button[data-v="'+une.tipi+'"]'); if(btn) segPick(btn); }
       return;
@@ -2150,7 +2142,6 @@ function stepLlogaria(b){
     '<label>Fjalëkalimi (min 6)</label><input id="a_pass" type="password" placeholder="••••••">'+
     '<label>Faqja / linku i SaaS-it</label><input id="a_web" placeholder="https://saasi-im.com">'+
     segHTML('a_tipi')+
-    logjikaHTML('a_logjika', 'ankand')+
     '<button class="primary" id="a_btn" onclick="wizKrijo()">Vazhdo →</button><div class="msg" id="a_msg"></div>';
 }
 async function ngarkoLogo(inp){
@@ -2168,16 +2159,15 @@ async function wizPlotesoBiz(){
   const emri=($('a_emri').value||'').trim();
   const web=($('a_web').value||'').trim();
   const tipi=segVal('a_tipi');
-  const logjika=segVal('a_logjika')||'ankand';
   if(!emri){ $('a_msg').className='msg err'; $('a_msg').textContent='Shkruaj emrin e biznesit.'; return; }
   if(!web){ $('a_msg').className='msg err'; $('a_msg').textContent='Shkruaj adresën e faqes.'; return; }
   if(!tipi){ $('a_msg').className='msg err'; $('a_msg').textContent='Zgjidh kujt i shërben platforma.'; return; }
   $('a_btn').disabled=true;
   try{
     const r=await(await fetch('/api/biz-baza',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({emri,website:web,tipi,logjika_shperndarjes:logjika})})).json();
+      body:JSON.stringify({emri,website:web,tipi})})).json();
     if(r.error){ $('a_msg').className='msg err'; $('a_msg').textContent=r.error; $('a_btn').disabled=false; return; }
-    if(une){ une.emri=emri; une.website=web; une.tipi=tipi; une.logjika_shperndarjes=logjika; }
+    if(une){ une.emri=emri; une.website=web; une.tipi=tipi; }
     await refreshProg();
     if(window.__pamjeVecante){ window.__pamjeVecante=false; nav({v:'profile',nav:'dashboard'}); return; }
     openWizard(1);
@@ -2186,14 +2176,13 @@ async function wizPlotesoBiz(){
 async function wizKrijo(){
   const emri=$('a_emri').value.trim(),email=$('a_email').value.trim(),pass=$('a_pass').value,web=$('a_web').value.trim();
   const tipi=segVal('a_tipi');
-  const logjika=segVal('a_logjika')||'ankand';
   if(!emri||!email||!pass){ $('a_msg').className='msg err'; $('a_msg').textContent='Plotëso emrin, email-in dhe fjalëkalimin.'; return; }
   if(pass.length<6){ $('a_msg').className='msg err'; $('a_msg').textContent='Fjalëkalimi min 6 shkronja.'; return; }
   if(!tipi){ $('a_msg').className='msg err'; $('a_msg').textContent='Zgjidh kujt i shërben platforma.'; return; }
   $('a_btn').disabled=true;
   try{
     const r=await(await fetch('/api/regjistrohu',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({emri,email,fjalekalimi:pass,website:web,tipi,logjika_shperndarjes:logjika})})).json();
+      body:JSON.stringify({emri,email,fjalekalimi:pass,website:web,tipi})})).json();
     if(r.error){ $('a_msg').className='msg err'; $('a_msg').textContent=r.error; $('a_btn').disabled=false; return; }
     await loadMe();
     await advance();
