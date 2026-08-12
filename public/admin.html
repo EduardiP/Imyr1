@@ -545,17 +545,15 @@ lista.forEach(function(b,i){
 const ngjyra=BAL_NGJYRA[i%BAL_NGJYRA.length];
 const neto=b.neto;
 h+='<div title="'+esc(b.emri)+' ('+(neto>0?'+':'')+neto+')" style="display:flex;flex-direction:column;align-items:center;width:'+MADH+'px;height:100%;justify-content:center;flex:0 0 auto;">';
-if(neto===0){
-// neto=0 — asnje ngjarje reale ende: vetem nje shenje e vogel PIKERISHT mbi vije, jo katror i plote
-h+='<div style="width:'+Math.round(MADH*0.55)+'px;height:'+Math.round(MADH*0.55)+'px;border-radius:50%;background:'+ngjyra+';"></div>';
-} else {
 const siperN=neto>0?neto:0, poshteN=neto<0?-neto:0;
 h+='<div style="display:flex;flex-direction:column-reverse;">';
 for(let s=0;s<siperN;s++) h+='<div style="width:'+MADH+'px;height:'+MADH+'px;background:'+ngjyra+';border-radius:2px;margin-bottom:'+HAPESIRE+'px;"></div>';
-h+='</div><div style="display:flex;flex-direction:column;">';
+h+='</div>';
+// Katrori blu i pranishem GJITHMONE, pikerisht ne vijen zero — "toka e rrafshet" (baraspesha)
+h+='<div style="width:'+MADH+'px;height:'+MADH+'px;background:#4a9eff;border-radius:2px;flex:0 0 auto;"></div>';
+h+='<div style="display:flex;flex-direction:column;">';
 for(let p=0;p<poshteN;p++) h+='<div style="width:'+MADH+'px;height:'+MADH+'px;background:'+ngjyra+';border-radius:2px;margin-top:'+HAPESIRE+'px;"></div>';
 h+='</div>';
-}
 h+='</div>';
 });
 h+='</div></div></div>';
