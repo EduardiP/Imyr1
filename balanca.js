@@ -1,26 +1,46 @@
-// balanca.js — Logjika e shperndarjes BALANCE (jo Ankand): zgjedh CILIT BIZNES i shkon
-// shfaqja e ardhshme, mes disa kandidatesh te pershtatshem per te njejtin snippet/host.
+// balanca.js — Logjika e shperndarjes BALANCE + regjistrimi i vendimeve per analitike.
 //
-// RREGULLI (siç u percaktua):
-// 1) Fiton biznesi me DEFICITIN me te madh — dhene (burimi='barazi') minus marre (burimi='barazi').
-//    Deficit pozitiv = ka dhene me shume se ka marre = "i eshte borxh" nga rrjeti.
-//    Nese vetem NJE kandidat ka deficitin maksimal → fiton menjehere, pa asnje llogaritje tjeter.
-// 2) Barazim (dy ose me shume kandidate me te njejtin deficit maksimal):
-//    - Merren piket AI reklamues→host (nga tabela perputhjet) per secilin.
-//    - Fiton ai me piket me te larta AI — statistikisht do te konvertoje me mire per kete host.
-// 3) Barazim edhe ne pikat AI (rast shume i rralle, shkalla 0-1000):
-//    - Zgjidhet RASTESISHT mes te barabarteve, si mase sigurie.
+// RREGULLI:
+// 1) Fiton biznesi me DEFICITIN me te madh — dhene (burimi='barazi') minus marre.
+//    Nese vetem NJE kandidat ka deficitin maksimal → fiton menjehere, pa llogaritje tjeter.
+// 2) Barazim (dy ose me shume me te njejtin deficit):
+//    - Merren piket AI reklamues→host, fiton ai me pikat me te larta.
+// 3) Barazim edhe ne AI (rast shume i rralle): rastesisht mes te barabarteve.
 //
-// Server.js e therret: const balanca = require('./balanca')(pool);
-// balanca.zgjidhFituesinBalance(kandidatIds, hostId) → kthen ID-ne fituese (ose null).
+// REGJISTRIMI:
+// - Cdo vendim regjistrohet te tabela `balancet` me nje `vendim_id` unik (sekuencë).
+// - Rast "fitues i vetem" → nje rresht i vetem me me_barazim=false.
+// - Rast "barazim" → nje rresht per SECILIN kandidat te barabartë ne deficit,
+//   me me_barazim=true, dhe fitoi=true vetem per fituesin.
 //
-// SHENIM: ky modul eshte VETEM zgjedhja e biznesit fitues (niveli i pare, njesoj si ankandi
-// kryesor). Niveli i dyte (cila reklame konkrete e biznesit fitues shfaqet, mes atyre te
-// etiketuara 'barazi') mbetet pergjegjesi e pike-reklama.js ekzistues — ripërdoret, jo i ri.
+// THIRRJET:
+//   const balanca = require('./balanca')(pool);
+//   await balanca.init();  // nje here ne fillim (nga server.js)
+//   balanca.zgjidhFituesinBalance([id1, id2, ...], hostId, snippetId) → kthen ID-ne fituese
 
 module.exports = function (pool) {
 
-  // Deficitet (dhene - marre, VETEM burimi='barazi') per nje liste bizneshesh
+  // Migrimi i tabelave — thirret nje here nga server.js
+  async function init() {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS balancet (
+        id SERIAL PRIMARY KEY,
+        vendim_id   BIGINT NOT NULL,
+        host_id     INTEGER NOT NULL,
+        reklamues_id INTEGER NOT NULL,
+        deficit     INTEGER,
+        ai_skori    NUMERIC,
+        fitoi       BOOLEAN DEFAULT false,
+        me_barazim  BOOLEAN DEFAULT false,
+        snippet_id  INTEGER,
+        created_at  TIMESTAMPTZ DEFAULT now()
+      )`);
+    await pool.query(`CREATE SEQUENCE IF NOT EXISTS balancet_vendim_seq`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_balancet_reklamues ON balancet(reklamues_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_balancet_vendim ON balancet(vendim_id)`);
+  }
+
+  // Deficitet (dhene - marre, burimi='barazi') per nje liste bizneshesh
   async function merrDeficitet(kandidatIds) {
     if (!kandidatIds || !kandidatIds.length) return {};
     const r = await pool.query(`
@@ -45,7 +65,6 @@ module.exports = function (pool) {
   }
 
   // Piket AI reklamues→host per nje liste reklamuesish kundrejt te njejtit host.
-  // Perdoret VETEM per tie-break kur >1 kandidat ka te njejtin deficit maksimal.
   async function merrPiketAI(kandidatIds, hostId) {
     if (!kandidatIds || !kandidatIds.length || !hostId) return {};
     const r = await pool.query(`
@@ -58,11 +77,32 @@ module.exports = function (pool) {
     return rez;
   }
 
-  // FUNKSIONI KRYESOR: nga nje liste kandidatesh (biznes_id te pershtatshem per kete host),
-  // zgjidh fituesin sipas deficitit → tie-break me AI → tie-break rastesor.
-  async function zgjidhFituesinBalance(kandidatIds, hostId) {
+  // Regjistron nje vendim ne tabelen `balancet`
+  async function regjistroVendim(hostId, snippetId, kandidatet, fituesId, meBarazim, deficitet, piketAI) {
+    try {
+      const vRes = await pool.query("SELECT nextval('balancet_vendim_seq') AS v");
+      const vendimId = vRes.rows[0].v;
+      for (const id of kandidatet) {
+        const deficit = deficitet[id] ? deficitet[id].deficit : 0;
+        const aiSkori = (piketAI && piketAI[id] != null) ? piketAI[id] : null;
+        await pool.query(
+          `INSERT INTO balancet (vendim_id, host_id, reklamues_id, deficit, ai_skori, fitoi, me_barazim, snippet_id)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+          [vendimId, hostId, id, deficit, aiSkori, id === fituesId, meBarazim, snippetId || null]);
+      }
+    } catch (e) { /* mos e ndal vendimin nese regjistrimi deshton */ }
+  }
+
+  // FUNKSIONI KRYESOR
+  async function zgjidhFituesinBalance(kandidatIds, hostId, snippetId) {
     if (!kandidatIds || !kandidatIds.length) return null;
-    if (kandidatIds.length === 1) return kandidatIds[0];
+
+    // Rast me nje kandidat te vetem — regjistrim minimal, fiton menjehere
+    if (kandidatIds.length === 1) {
+      const deficitet = await merrDeficitet(kandidatIds);
+      regjistroVendim(hostId, snippetId, kandidatIds, kandidatIds[0], false, deficitet, {}).catch(()=>{});
+      return kandidatIds[0];
+    }
 
     // HAPI 1 — Llogarit deficitet dhe gjej maksimumin
     const deficitet = await merrDeficitet(kandidatIds);
@@ -75,8 +115,11 @@ module.exports = function (pool) {
     // HAPI 2 — Kush ka deficitin maksimal
     const teBarabarte = kandidatIds.filter(id => (deficitet[id] ? deficitet[id].deficit : 0) === maksDeficit);
 
-    // Nese vetem nje — fiton menjehere, pa llogaritje tjeter
-    if (teBarabarte.length === 1) return teBarabarte[0];
+    // Fitues i vetem (rasti me i shpeshte)
+    if (teBarabarte.length === 1) {
+      regjistroVendim(hostId, snippetId, teBarabarte, teBarabarte[0], false, deficitet, {}).catch(()=>{});
+      return teBarabarte[0];
+    }
 
     // HAPI 3 — Barazim ne deficit: perdor piket AI reklamues→host
     const piketAI = await merrPiketAI(teBarabarte, hostId);
@@ -85,11 +128,18 @@ module.exports = function (pool) {
     const teBarabarteAI = teBarabarte.filter(id => piketAI[id] === maksAI);
 
     // Nese vetem nje ka piken me te larte AI — fiton
-    if (teBarabarteAI.length === 1) return teBarabarteAI[0];
+    let fitues;
+    if (teBarabarteAI.length === 1) {
+      fitues = teBarabarteAI[0];
+    } else {
+      // HAPI 4 — Edhe piket AI jane te barabarta (rast shume i rralle) → rastesisht
+      fitues = teBarabarteAI[Math.floor(Math.random() * teBarabarteAI.length)];
+    }
 
-    // HAPI 4 — Edhe piket AI jane te barabarta (rast shume i rralle) → rastesisht
-    return teBarabarteAI[Math.floor(Math.random() * teBarabarteAI.length)];
+    // Regjistrim: te gjithe te barabartet ne deficit, me AI dhe shenjen e fituesit
+    regjistroVendim(hostId, snippetId, teBarabarte, fitues, true, deficitet, piketAI).catch(()=>{});
+    return fitues;
   }
 
-  return { zgjidhFituesinBalance, merrDeficitet, merrPiketAI };
+  return { init, zgjidhFituesinBalance, merrDeficitet, merrPiketAI };
 };
