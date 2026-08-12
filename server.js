@@ -52,6 +52,13 @@ pool.query(`ALTER TABLE ngjarjet ADD COLUMN IF NOT EXISTS snippet_id INTEGER`).c
 pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS logjika_shperndarjes TEXT NOT NULL DEFAULT 'ankand'`).catch(e => console.error('migrim logjika_shperndarjes (bizneset):', e.message));
 pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS logjika_shperndarjes TEXT NOT NULL DEFAULT 'ankand'`).catch(e => console.error('migrim logjika_shperndarjes (promovimet):', e.message));
 
+// Migrim: gjurmimi i perdorimit te "Analizo me AI" (kufi 2/24 ore per biznes)
+pool.query(`CREATE TABLE IF NOT EXISTS analizo_perdorimi (
+  id SERIAL PRIMARY KEY,
+  biznes_id INTEGER NOT NULL REFERENCES bizneset(id) ON DELETE CASCADE,
+  krijuar_at TIMESTAMPTZ DEFAULT now()
+)`).catch(e => console.error('migrim analizo_perdorimi:', e.message));
+
 // --- Ruajtja e skedareve (Cloudflare R2) ---
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 const s3 = process.env.R2_ENDPOINT ? new S3Client({
@@ -1532,6 +1539,15 @@ const KATEGORITE = [
 ];
 
 // --- ANALIZO (AI): kategori kryesore + nenkategori + permbledhje per algoritmin ---
+app.get('/api/analizo/mbetur', iLoguar, async (req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT COUNT(*)::int n FROM analizo_perdorimi WHERE biznes_id=$1 AND krijuar_at > now() - interval '24 hours'`,
+      [req.biznesId]);
+    res.json({ mbetur: Math.max(0, 2 - r.rows[0].n) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.post('/api/analizo', iLoguar, async (req, res) => {
   const pershkrimi = (req.body.pershkrimi || '').trim();
   const lejo = !!req.body.lejo;
@@ -1558,6 +1574,15 @@ app.post('/api/analizo', iLoguar, async (req, res) => {
       // Pa AI: ruaj pershkrimin, kthe njoftim (kategorizimi behet me vone)
       return res.json({ ok: true, ai: false, note: "AI s'është konfiguruar ende (mungon OPENAI_API_KEY)." });
     }
+
+    // Kufi: max 2 analiza reale me AI ne 24 ore, per biznes (ruajtur ne DB — mbahet mend edhe kur kthehesh me vone)
+    const perdorimiQ = await pool.query(
+      `SELECT COUNT(*)::int n FROM analizo_perdorimi WHERE biznes_id=$1 AND krijuar_at > now() - interval '24 hours'`,
+      [req.biznesId]);
+    if (perdorimiQ.rows[0].n >= 2) {
+      return res.status(429).json({ error: 'Ke arritur kufirin: vetëm 2 analiza me AI në 24 orë. Provo më vonë.' });
+    }
+    await pool.query('INSERT INTO analizo_perdorimi (biznes_id) VALUES ($1)', [req.biznesId]);
 
     const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
     const sys = 'Je analist qe klasifikon biznese SaaS per nje rrjet cross-promotion. Kthe VETEM JSON, pa asnje tekst tjeter.';
