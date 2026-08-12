@@ -1587,17 +1587,45 @@ function krijoReklame(m, s){
     '<div id="adTypeWrap2"></div>';
   adTypeUI($('adTypeWrap2'));
 }
+var _cilTab = 'account';
+
 function mainCilesimet(m){
   window.__pamjeVecante=true;
   m.innerHTML='<h2 class="h">Cilësimet</h2>'+
-    '<p class="small" style="margin:10px 0 16px;">Këtu do të mund të aktivizosh ose çaktivizosh funksione të llogarisë tënde.</p>'+
-    '<div class="card" style="margin-bottom:16px;">'+
+    '<div style="display:flex;gap:32px;margin-top:16px;align-items:flex-start;flex-wrap:wrap;">'+
+      '<div class="snav" style="flex:0 0 180px;" id="cilSnav"></div>'+
+      '<div style="flex:1;min-width:280px;" id="cilBody"></div>'+
+    '</div>';
+  renderCilNav();
+  cilShkoTek(_cilTab);
+}
+function renderCilNav(){
+  var TABS=[{k:'account',l:'Account'},{k:'delivery',l:'Delivery'}];
+  var el=$('cilSnav'); if(!el) return; el.innerHTML='';
+  TABS.forEach(function(t){
+    var b=document.createElement('button');
+    b.textContent=t.l;
+    if(t.k===_cilTab) b.className='active';
+    b.onclick=function(){ cilShkoTek(t.k); };
+    el.appendChild(b);
+  });
+}
+function cilShkoTek(tab){
+  _cilTab=tab; renderCilNav();
+  var body=$('cilBody'); if(!body) return;
+  if(tab==='account') return cilAccount(body);
+  if(tab==='delivery') return cilDelivery(body);
+}
+function cilAccount(body){
+  body.innerHTML='<div class="card" id="cl_pershkrimi_wrap"></div>';
+  stepPershkrimi($('cl_pershkrimi_wrap'));
+}
+function cilDelivery(body){
+  body.innerHTML='<div class="card">'+
       logjikaHTML('cl_logjika', une && une.logjika_shperndarjes)+
       '<button class="btn" id="cl_logjika_btn" onclick="ruajLogjikaCilesime()" style="margin-top:10px;">Ruaj</button>'+
       '<span class="small" id="cl_logjika_msg" style="margin-left:10px;"></span>'+
-    '</div>'+
-    '<div class="card" id="cl_pershkrimi_wrap"></div>';
-  stepPershkrimi($('cl_pershkrimi_wrap'));
+    '</div>';
 }
 async function ruajLogjikaCilesime(){
   const v = segVal('cl_logjika')||'ankand';
