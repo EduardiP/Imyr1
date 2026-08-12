@@ -1587,15 +1587,78 @@ function krijoReklame(m, s){
     '<div id="adTypeWrap2"></div>';
   adTypeUI($('adTypeWrap2'));
 }
-var _cilTab = 'account';
+var _cilTab='account'; // 'account' | 'hosting' | 'advertising'
+var _cilOpenKey=null;   // 'delivery' kur "Ad Delivery" eshte hapur si dropdown
+
+var CIL_STRUKTURA=[
+  { k:'account', l:'Account' },
+  { k:'delivery', l:'Ad Delivery', subs:[
+    { k:'hosting', l:'Hosting' },
+    { k:'advertising', l:'Advertising' }
+  ]}
+];
 
 function renderCilesimetNav(){
   const el=$('snav'); if(!el) return;
-  el.innerHTML=
-    '<div style="padding:8px 10px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);">Cilësimet</div>'+
-    '<button class="'+(_cilTab==='account'?'active':'')+'" onclick="cilShkoTek(\'account\')">Account</button>'+
-    '<button class="'+(_cilTab==='delivery'?'active':'')+'" onclick="cilShkoTek(\'delivery\')">Ad Delivery</button>';
+  el.innerHTML='';
+  const header=document.createElement('div');
+  header.style.cssText='padding:8px 10px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);';
+  header.textContent='Cilësimet';
+  el.appendChild(header);
+
+  CIL_STRUKTURA.forEach(function(n){
+    const b=document.createElement('button');
+    b.type='button';
+    b.style.cssText='display:flex;align-items:center;justify-content:space-between;width:100%;';
+    const lbl=document.createElement('span'); lbl.textContent=n.l; b.appendChild(lbl);
+    const eshteAktiv=(n.k==='account' && _cilTab==='account')||(n.k==='delivery' && (_cilTab==='hosting'||_cilTab==='advertising'));
+    if(eshteAktiv) b.classList.add('active');
+
+    if(n.subs && n.subs.length){
+      const arrow=document.createElement('span');
+      arrow.textContent=(_cilOpenKey===n.k)?'▾':'▸';
+      arrow.style.cssText='margin-left:8px;font-size:11px;color:var(--mut);';
+      b.appendChild(arrow);
+      b.onclick=function(e){
+        e.stopPropagation();
+        if(_cilOpenKey===n.k){ mbyllCilDropdown(); }
+        else { hapCilDropdown(n, b); }
+      };
+    } else {
+      b.onclick=function(){ mbyllCilDropdown(); cilShkoTek(n.k); };
+    }
+    el.appendChild(b);
+  });
 }
+function mbyllCilDropdown(){
+  const dd=$('cilDropdown'); if(dd) dd.remove();
+  if(_cilOpenKey){ _cilOpenKey=null; renderCilesimetNav(); }
+}
+function hapCilDropdown(n, btn){
+  const dd0=$('cilDropdown'); if(dd0) dd0.remove();
+  _cilOpenKey=n.k;
+  const dd=document.createElement('div');
+  dd.id='cilDropdown';
+  dd.style.cssText='position:fixed;width:200px;background:var(--card);border:1px solid var(--line);border-radius:0;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:9999;';
+  n.subs.forEach(function(s){
+    const sb=document.createElement('button');
+    sb.type='button';
+    sb.textContent=s.l;
+    sb.style.cssText='display:block;width:100%;background:none;border:none;padding:9px 10px;cursor:pointer;font-family:inherit;font-size:13px;border-radius:6px;text-align:left;color:var(--txt);';
+    sb.addEventListener('click', function(e){
+      e.stopPropagation();
+      mbyllCilDropdown();
+      cilShkoTek(s.k);
+    });
+    dd.appendChild(sb);
+  });
+  document.body.appendChild(dd);
+  const rect=btn.getBoundingClientRect();
+  dd.style.left=(rect.right+8)+'px';
+  dd.style.top=rect.top+'px';
+  renderCilesimetNav();
+}
+document.addEventListener('click', function(){ mbyllCilDropdown(); });
 
 function mainCilesimet(m){
   window.__pamjeVecante=true;
@@ -1606,7 +1669,8 @@ function cilShkoTek(tab){
   _cilTab=tab; renderCilesimetNav();
   const body=$('cilBody'); if(!body) return;
   if(tab==='account') return cilAccount(body);
-  if(tab==='delivery') return cilDelivery(body);
+  if(tab==='hosting') return adDelHosting(body);
+  if(tab==='advertising') return adDelAdvertising(body);
 }
 function cilAccount(body){
   body.innerHTML='<h2 class="h">Account</h2>'+
@@ -1618,37 +1682,12 @@ function cilAccount(body){
     '<div class="card" id="cl_pershkrimi_wrap"></div>';
   stepPershkrimi($('cl_pershkrimi_wrap'));
 }
-function cilDelivery(body){
-  body.innerHTML='<h2 class="h">Ad Delivery</h2>'+
-    '<div class="tabs" id="adDelTabs" style="margin:14px 0 20px;"></div>'+
-    '<div id="adDelBody"></div>';
-  renderAdDelTabs();
-  adDelShkoTek(_adDelTab);
-}
-var _adDelTab='hosting';
-function renderAdDelTabs(){
-  var TABS=[{k:'hosting',l:'Hosting'},{k:'promotion',l:'Promotion'}];
-  var el=$('adDelTabs'); if(!el) return; el.innerHTML='';
-  TABS.forEach(function(t){
-    var b=document.createElement('div');
-    b.className='tab'+(t.k===_adDelTab?' active':'');
-    b.textContent=t.l;
-    b.onclick=function(){ adDelShkoTek(t.k); };
-    el.appendChild(b);
-  });
-}
-function adDelShkoTek(tab){
-  _adDelTab=tab; renderAdDelTabs();
-  var body=$('adDelBody'); if(!body) return;
-  if(tab==='hosting') return adDelHosting(body);
-  if(tab==='promotion') return adDelPromotion(body);
-}
 
 // ═══ HOSTING — struktura (pa funksion real ende) ═══
 var _hostMenyra='vecmas'; // 'vecmas' (parazgjedhur) | 'te-gjitha'
 async function adDelHosting(body){
-  body.innerHTML=
-    '<label>Si do t\'i caktosh përqindjet e shpërndarjes?</label>'+
+  body.innerHTML='<h2 class="h">Hosting</h2>'+
+    '<label style="margin-top:14px;">Si do t\'i caktosh përqindjet e shpërndarjes?</label>'+
     '<select id="hostMenyra" onchange="hostNdryshoMenyren(this.value)" style="width:100%;max-width:320px;padding:9px;background:#0e1116;border:1px solid var(--line);border-radius:8px;color:var(--txt);">'+
       '<option value="vecmas" selected>Snippet veç e veç</option>'+
       '<option value="te-gjitha">Të gjithë snippet-et</option>'+
@@ -1694,9 +1733,9 @@ async function hostRenderPercentazhet(){
   }catch(e){ el.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
 }
 
-// ═══ PROMOTION — ende bosh ═══
-function adDelPromotion(body){
-  body.innerHTML='<h2 class="h" style="font-size:16px;">Promotion</h2><p class="small mut" style="margin-top:8px;">Së shpejti.</p>';
+// ═══ ADVERTISING — ende bosh ═══
+function adDelAdvertising(body){
+  body.innerHTML='<h2 class="h">Advertising</h2><p class="small mut" style="margin-top:8px;">Së shpejti.</p>';
 }
 async function ruajLogjikaCilesime(){
   const v = segVal('cl_logjika')||'ankand';
