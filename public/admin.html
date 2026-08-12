@@ -301,7 +301,7 @@ const stat=$('ndrStat');
 if(!titull.trim()){ if(stat){stat.textContent='Vendos titullin.';} return; }
 btn.disabled=true;
 try{
-const r=await(await fetch('/api/admin/ndryshime/dergo',{method:'POST',headers:{'Content-Type':'application/json'},
+const r=await(await fetch('/api/admin/updates/send',{method:'POST',headers:{'Content-Type':'application/json'},
 body:JSON.stringify({titull, teksti})})).json();
 if(r.error){ if(stat)stat.textContent=r.error; btn.disabled=false; return; }
 if(stat)stat.textContent='✓ U dërgua te widget-i.';
