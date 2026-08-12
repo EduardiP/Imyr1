@@ -58,9 +58,20 @@ async function initGarat(pool) {
 
 async function zgjidhReklame(pool, hostId, pare, snippetId) {
   pare = Array.isArray(pare) ? pare : [];
-  const h = await pool.query('SELECT tipi, barazi_perqindje FROM bizneset WHERE id=$1', [hostId]);
+  const h = await pool.query('SELECT tipi, barazi_perqindje, hosting_menyra FROM bizneset WHERE id=$1', [hostId]);
   const hTipi = h.rows[0] && h.rows[0].tipi;
-  const baraziPerqindje = (h.rows[0] && h.rows[0].barazi_perqindje != null) ? h.rows[0].barazi_perqindje : 50;
+  const hostingMenyra = (h.rows[0] && h.rows[0].hosting_menyra) || 'te-gjitha';
+  let baraziPerqindje = (h.rows[0] && h.rows[0].barazi_perqindje != null) ? h.rows[0].barazi_perqindje : 50;
+
+  // VETEM menyra AKTUALE zbatohet — kurre te dyja njekohesisht.
+  // 'vecmas': perdor VETEM vleren e ketij snippet-i specifik (jo vleren e biznesit, edhe nese snippet-i s'ka te veten ende).
+  // 'te-gjitha': perdor VETEM vleren e biznesit — injoro plotesisht cdo vlere e vjeter individuale e snippet-eve.
+  if (hostingMenyra === 'vecmas' && snippetId) {
+    try {
+      const sn = await pool.query('SELECT barazi_perqindje FROM snippetet WHERE id=$1', [snippetId]);
+      baraziPerqindje = (sn.rows.length && sn.rows[0].barazi_perqindje != null) ? sn.rows[0].barazi_perqindje : 50;
+    } catch (e) { baraziPerqindje = 50; }
+  }
 
   // Vendos ne cilen pishine shkon KJO kerkese specifike (Ankand ose Balance)
   const shkoTeBarazi = (Math.random() * 100) < baraziPerqindje;
