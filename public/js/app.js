@@ -543,11 +543,6 @@ async function mainProfili(m){
         '<div class="small">'+esc(d.email||'')+'</div>'+
         '<div class="small">Audienca: '+tipiTekst+'</div></div>'+
     '</div>'+
-    '<div class="card" style="margin:16px 0;">'+
-      logjikaHTML('pr_logjika', d.logjika_shperndarjes)+
-      '<button class="btn" id="pr_logjika_btn" onclick="ruajLogjikaProfili()" style="margin-top:10px;">Ruaj</button>'+
-      '<span class="small" id="pr_logjika_msg" style="margin-left:10px;"></span>'+
-    '</div>'+
     '<div class="pikeCard">'+
       '<div class="pikeNr">'+(d.pike_profili||0)+'</div>'+
       '<div class="small">pikë profili</div>'+
@@ -559,20 +554,6 @@ async function mainProfili(m){
     '</div>'+
     '<p class="small mut" style="margin:6px 0 18px;">Pikët e profilit rrisin sa shpesh shfaqet reklama jote te rrjeti. Mblidhen nga shfaqjet dhe konvertimet që sjell faqja jote.</p>'+
     '<h3 class="h" style="font-size:16px;margin:0 0 4px;">Sipas snippet-it</h3>'+snip;
-}
-async function ruajLogjikaProfili(){
-  const v = segVal('pr_logjika')||'ankand';
-  const msg = $('pr_logjika_msg');
-  const btn = $('pr_logjika_btn');
-  if(btn) btn.disabled=true;
-  try{
-    const r = await (await fetch('/api/logjika-shperndarjes',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({logjika_shperndarjes:v})})).json();
-    if(r.error){ if(msg){msg.style.color='var(--err)';msg.textContent=r.error;} if(btn) btn.disabled=false; return; }
-    if(une) une.logjika_shperndarjes=v;
-    if(msg){ msg.style.color='var(--good)'; msg.textContent='✓ U ruajt.'; }
-  }catch(e){ if(msg){msg.style.color='var(--err)';msg.textContent='Gabim: '+e.message;} }
-  if(btn) btn.disabled=false;
 }
 async function mainNjoftimet(m){
   m.innerHTML='<h2 class="h">Njoftime</h2><div id="njLista" style="margin-top:12px;"><p class="small">Po ngarkoj…</p></div>';
@@ -1554,9 +1535,25 @@ function krijoReklame(m, s){
 function mainCilesimet(m){
   m.innerHTML='<h2 class="h">Cilësimet</h2>'+
     '<p class="small" style="margin:10px 0 16px;">Këtu do të mund të aktivizosh ose çaktivizosh funksione të llogarisë tënde.</p>'+
-    '<div style="border:1px solid var(--line);border-radius:12px;padding:20px;color:var(--mut);">'+
-      '<p class="small" style="margin:0;">Së shpejti.</p>'+
+    '<div class="card" style="margin-bottom:16px;">'+
+      logjikaHTML('cl_logjika', une && une.logjika_shperndarjes)+
+      '<button class="btn" id="cl_logjika_btn" onclick="ruajLogjikaCilesime()" style="margin-top:10px;">Ruaj</button>'+
+      '<span class="small" id="cl_logjika_msg" style="margin-left:10px;"></span>'+
     '</div>';
+}
+async function ruajLogjikaCilesime(){
+  const v = segVal('cl_logjika')||'ankand';
+  const msg = $('cl_logjika_msg');
+  const btn = $('cl_logjika_btn');
+  if(btn) btn.disabled=true;
+  try{
+    const r = await (await fetch('/api/logjika-shperndarjes',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({logjika_shperndarjes:v})})).json();
+    if(r.error){ if(msg){msg.style.color='var(--err)';msg.textContent=r.error;} if(btn) btn.disabled=false; return; }
+    if(une) une.logjika_shperndarjes=v;
+    if(msg){ msg.style.color='var(--good)'; msg.textContent='✓ U ruajt.'; }
+  }catch(e){ if(msg){msg.style.color='var(--err)';msg.textContent='Gabim: '+e.message;} }
+  if(btn) btn.disabled=false;
 }
 
 // ZËVENDËSO funksionin ekzistues mainEkipi(m) (placeholder "vjen së shpejti") me këtë.
