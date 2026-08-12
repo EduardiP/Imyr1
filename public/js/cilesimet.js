@@ -95,11 +95,6 @@ function cilShkoTek(tab){
 }
 function cilAccount(body){
   body.innerHTML='<h2 class="h">Account</h2>'+
-    '<div class="card" style="margin:14px 0 16px;">'+
-      logjikaHTML('cl_logjika', une && une.logjika_shperndarjes)+
-      '<button class="btn" id="cl_logjika_btn" onclick="ruajLogjikaCilesime()" style="margin-top:10px;">Ruaj</button>'+
-      '<span class="small" id="cl_logjika_msg" style="margin-left:10px;"></span>'+
-    '</div>'+
     '<div class="card" id="cl_pershkrimi_wrap"></div>';
   stepPershkrimi($('cl_pershkrimi_wrap'));
 }
