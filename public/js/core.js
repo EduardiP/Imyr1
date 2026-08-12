@@ -154,6 +154,10 @@ async function boot(){
     applyState({v:'ekipi'}, true);
     return;
   }
+  if(location.pathname==='/cilesimet' && une && !history.state){
+    applyState({v:'profile', nav:'cilesimet'}, true);
+    return;
+  }
   if(loginRez){
     // Pastro parametrin nga URL-ja
     history.replaceState(null,'',location.pathname);
