@@ -487,7 +487,7 @@ function renderUserMenu(){
 function renderMain(s){
   s = s || {};
   const m=$('mainPanel');
-  if(curNav==='profili')    return mainProfili(m);
+  if(curNav==='profili')    return s.edit ? profiliRenderEdit(m) : mainProfili(m);
   if(curNav==='cilesimet')  return mainCilesimet(m);
   if(curNav==='plani')      return mainPlani(m);
   if(curNav==='suport')     return mainSuport(m);
@@ -563,8 +563,11 @@ function profiliRenderPamje(m, d){
     '<h3 class="h" style="font-size:16px;margin:0 0 4px;">Sipas snippet-it</h3>'+snip;
 }
 function profiliHapEdit(){
-  const m=$('mainPanel'); if(!m) return;
-  const d=window.__profiliCache||{};
+  nav({v:'profile', nav:'profili', edit:true});
+}
+async function profiliRenderEdit(m){
+  let d=window.__profiliCache;
+  if(!d){ try{ d=await(await fetch('/api/profili')).json(); window.__profiliCache=d; }catch(e){ d={}; } }
   m.innerHTML=
     '<h2 class="h">Të dhënat e biznesit tënd</h2>'+
     '<label>Emri i biznesit (SaaS-it)</label><input id="pe_emri" placeholder="Biznesi im" value="'+esc(d.emri||'')+'">'+
@@ -605,7 +608,8 @@ async function profiliRuaj(){
       body:JSON.stringify({emri,website:web,tipi})})).json();
     if(r.error){ msg.className='msg err'; msg.textContent=r.error; $('pe_btn').disabled=false; return; }
     if(une){ une.emri=emri; une.website=web; une.tipi=tipi; }
-    mainProfili($('mainPanel'));
+    window.__profiliCache=null;   // detyro rifreskim te dhenash kur kthehet
+    history.back();
   }catch(e){ msg.className='msg err'; msg.textContent='Gabim: '+e.message; $('pe_btn').disabled=false; }
 }
 async function mainNjoftimet(m){
@@ -859,10 +863,10 @@ function renderDashStatus(){
   ];
   rreshtat.forEach(r=>{
     const d=document.createElement('div');
-    d.className='vs click'+(r.done?' done':'');
+    d.className='vs'+(r.done?' done':' click');
     d.innerHTML='<span class="vd">'+(r.done?'✓':'+')+'</span>'+
       '<span class="vl">'+r.label+(r.done?'':' — plotëso')+'</span>';
-    d.onclick=r.veprim;
+    if(!r.done) d.onclick=r.veprim;
     el.appendChild(d);
   });
 }
@@ -1592,7 +1596,9 @@ function mainCilesimet(m){
       logjikaHTML('cl_logjika', une && une.logjika_shperndarjes)+
       '<button class="btn" id="cl_logjika_btn" onclick="ruajLogjikaCilesime()" style="margin-top:10px;">Ruaj</button>'+
       '<span class="small" id="cl_logjika_msg" style="margin-left:10px;"></span>'+
-    '</div>';
+    '</div>'+
+    '<div class="card" id="cl_pershkrimi_wrap"></div>';
+  stepPershkrimi($('cl_pershkrimi_wrap'));
 }
 async function ruajLogjikaCilesime(){
   const v = segVal('cl_logjika')||'ankand';
@@ -2230,6 +2236,7 @@ function stepPershkrimi(b){
     '<textarea id="d_persh" placeholder="p.sh. Mjet email-marketing për dyqane online. Automatizon fushatat dhe rikthen blerësit.">'+(une.pershkrimi||'')+'</textarea>'+
     '<label class="chk"><input type="checkbox" id="d_lejo" checked><span>Lejo që linku i SaaS-it të studiohet automatikisht për saktësi më të madhe.</span></label>'+
     '<button class="btn" id="d_btn" onclick="wizAnalizo()">Analizo me AI</button>'+
+    '<span class="small mut" id="d_mbetur" style="margin-left:10px;"></span>'+
     '<div class="msg" id="d_msg"></div>'+
     '<div id="d_res" class="hide" style="margin-top:16px;">'+
       '<label>Përmbledhja (e editueshme)</label>'+
@@ -2238,6 +2245,14 @@ function stepPershkrimi(b){
       '<div class="msg" id="e_msg"></div>'+
     '</div>';
   if(une.permbledhje){ $('d_res').classList.remove('hide'); $('e_perm').value=une.permbledhje; }
+  ngarkoAnalizoMbetur();
+}
+async function ngarkoAnalizoMbetur(){
+  const el=$('d_mbetur'); if(!el) return;
+  try{
+    const r=await(await fetch('/api/analizo/mbetur')).json();
+    el.textContent = 'Të mbetura sot: '+r.mbetur+'/2';
+  }catch(e){}
 }
 async function wizAnalizo(){
   const pershkrimi=$('d_persh').value.trim(), lejo=$('d_lejo').checked;
@@ -2255,6 +2270,7 @@ async function wizAnalizo(){
     $('e_perm').value = r.permbledhje || pershkrimi;
     $('d_res').classList.remove('hide');
     une.pershkrimi=pershkrimi;
+    ngarkoAnalizoMbetur();
   }catch(e){ $('d_msg').className='msg err'; $('d_msg').textContent='Gabim: '+e.message; }
   $('d_btn').disabled=false;
 }
