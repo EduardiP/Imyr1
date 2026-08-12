@@ -520,9 +520,9 @@ var BAL_QELIZA_PER_ANE=20; // te pakten 20 poshte X, njesoj siper per simetri �
 function balRenderGrafik(lista){
 const el=$('balGrafiku'); if(!el) return;
 if(!lista.length){ el.innerHTML='<div style="padding:40px;text-align:center;" class="small mut">Ende s\'ka biznese në logjikën Balance.</div>'; return; }
-const n=lista.length;
-const MADH = n<=5?36 : n<=10?26 : n<=20?19 : n<=40?13 : 9;
 const RRESHTA = BAL_QELIZA_PER_ANE*2+1; // +20 ... 0 ... -20
+const LARTESIA_MAX = 460; // gjithe grafiku duhet te shihet pa scroll kur hapet
+const MADH = Math.max(4, Math.floor(LARTESIA_MAX / RRESHTA));
 const LARTESIA = RRESHTA*MADH;
 let h='<div style="display:flex;">';
 // Etiketat e boshtit Y — çdo 5 njësi, sipër dhe poshtë, saktesisht sipas lartesise se qelizes (MADH)
@@ -535,7 +535,9 @@ h+='<div class="small mut" style="position:absolute;right:6px;top:'+(BAL_QELIZA_
 h+='</div>';
 // Vetë rrjeti — QELIZA TE VERTETA DOM, cep-me-cep (asnje background CSS te veçantë, keshtu s'ka mbivendosje)
 h+='<div style="position:relative;height:'+LARTESIA+'px;border:1px solid var(--line);border-radius:10px;background:#0e1116;overflow-x:auto;overflow-y:hidden;flex:1;">'+
-'<div style="display:flex;height:100%;padding:0 16px;">';
+// Linja e vetme e zeros — vazhdon nëpër GJITHE biznesit, jo katror
+'<div style="position:absolute;left:0;right:0;top:'+(BAL_QELIZA_PER_ANE*MADH+MADH/2)+'px;height:1px;background:rgba(255,255,255,.35);z-index:0;"></div>'+
+'<div style="display:flex;height:100%;padding:0 16px;position:relative;z-index:1;">';
 lista.forEach(function(b,i){
 const ngjyra=BAL_NGJYRA[i%BAL_NGJYRA.length];
 const neto=b.neto;
@@ -543,8 +545,8 @@ h+='<div title="'+esc(b.emri)+' ('+(neto>0?'+':'')+neto+')" style="display:flex;
 for(let r=0; r<RRESHTA; r++){
 const niveli = BAL_QELIZA_PER_ANE - r; // +20 ne krye te kolonës, -20 ne fund
 if(niveli===0){
-// Sfera e biznesit — GJITHMONE e pranishme, pikerisht ne qelizen zero (jo vetem kur neto=0)
-h+='<div style="width:'+MADH+'px;height:'+MADH+'px;box-sizing:border-box;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
+// Sfera e biznesit — mbi vijen e zeros, pa kufi/katror rreth saj
+h+='<div style="width:'+MADH+'px;height:'+MADH+'px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
 '<div style="width:'+Math.round(MADH*0.55)+'px;height:'+Math.round(MADH*0.55)+'px;border-radius:50%;background:'+ngjyra+';"></div></div>';
 continue;
 }
