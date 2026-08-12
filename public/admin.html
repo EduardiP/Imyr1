@@ -525,7 +525,10 @@ const RRESHTA = BAL_QELIZA_PER_ANE*2+1; // +20 ... 0 ... -20
 // NJE madhesi e vetme per gjeresi DHE lartesi — katror i vertete, gjithmone barabrinjes.
 // Ngushtohet vetë me çdo shkallë të re biznesi; pas minimumit të lexueshëm, s'ngushtohet
 // më shumë — scroll horizontal (i pakufizuar) merr përsipër.
-const MADH = n<=5?36 : n<=10?26 : n<=20?19 : n<=40?13 : n<=80?9 : n<=150?6 : n<=400?4 : n<=1000?3 : 2;
+const SHKALLA_SIPAS_N = n<=5?36 : n<=10?26 : n<=20?19 : n<=40?13 : n<=80?9 : n<=150?6 : n<=400?4 : n<=1000?3 : 2;
+const LARTESIA_MAX = 460; // gjithe grafiku duhet te shihet pa scroll VERTIKAL, GJITHMONE, sido qe te jete n
+const KUFIRI_LARTESISE = Math.max(2, Math.floor(LARTESIA_MAX / RRESHTA));
+const MADH = Math.min(SHKALLA_SIPAS_N, KUFIRI_LARTESISE); // me i vogli fiton — te dyja kushtet respektohen njekohesisht
 const LARTESIA = RRESHTA*MADH;
 let h='<div style="display:flex;">';
 h+='<div style="flex:0 0 40px;position:relative;height:'+LARTESIA+'px;">';
