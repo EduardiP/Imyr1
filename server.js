@@ -1747,7 +1747,33 @@ app.get('/api/admin/bizneset', iAdmin, async (req, res) => {
   } catch(e){ res.status(500).json({ error: e.message }); }
 });
 
-// Detajet e nje biznesi + statistika
+// --- BALANCAT: dhene/marra (shfaqje, burimi='barazi') per cdo biznes ne logjiken Balance ---
+// Perdoret nga admin.html per grafikun "male/kodra" — kolona te vogla katroresh per biznes,
+// neto = marra - dhene (pozitiv = ka marre me shume se ka dhene, negativ = anasjelltas).
+app.get('/api/admin/balancat', iAdmin, async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT b.id, b.emri,
+        COALESCE(dhene.n,0)::int AS dhene_shfaqje,
+        COALESCE(marra.n,0)::int AS marra_shfaqje
+      FROM bizneset b
+      LEFT JOIN (
+        SELECT biznes_id, COUNT(*)::int AS n FROM ngjarjet
+        WHERE lloji='view' AND burimi='barazi' GROUP BY biznes_id
+      ) dhene ON dhene.biznes_id = b.id
+      LEFT JOIN (
+        SELECT reklamues_id, COUNT(*)::int AS n FROM ngjarjet
+        WHERE lloji='view' AND burimi='barazi' GROUP BY reklamues_id
+      ) marra ON marra.reklamues_id = b.id
+      WHERE b.logjika_shperndarjes='barazi'
+      ORDER BY b.id`);
+    res.json(r.rows.map(x => ({
+      id: x.id, emri: x.emri,
+      dhene: x.dhene_shfaqje, marra: x.marra_shfaqje,
+      neto: x.marra_shfaqje - x.dhene_shfaqje
+    })));
+  } catch(e){ res.status(500).json({ error: e.message }); }
+});
 app.get('/api/admin/biznes/:id', iAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   try {
