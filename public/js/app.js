@@ -516,6 +516,10 @@ async function mainProfili(m){
   m.innerHTML='<p class="small">Po ngarkoj…</p>';
   let d={};
   try{ d=await(await fetch('/api/profili')).json(); }catch(e){ m.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; return; }
+  window.__profiliCache = d;
+  profiliRenderPamje(m, d);
+}
+function profiliRenderPamje(m, d){
   const inic=(d.emri||'?').trim().charAt(0).toUpperCase();
   const avatarHTML = d.logo_url
     ? '<div class="avatar" style="overflow:hidden;"><img src="'+esc(d.logo_url)+'" style="width:100%;height:100%;object-fit:cover;"></div>'
@@ -537,11 +541,14 @@ async function mainProfili(m){
   const konvMini =
     '<div class="miniStat"><div class="mv">'+(d.pike?d.pike.konvertime:0)+'</div><div class="small">konvertime → '+(d.pike?d.pike.pike_nga_konvertimet:0)+' pikë</div><div class="small mut">(1 konvertim = 1 pikë)</div></div>';
   m.innerHTML=
-    '<div style="display:flex;align-items:center;gap:16px;margin-bottom:6px;">'+
-      avatarHTML+
-      '<div><div style="font-size:20px;font-weight:700;">'+esc(d.emri||'')+'</div>'+
-        '<div class="small">'+esc(d.email||'')+'</div>'+
-        '<div class="small">Audienca: '+tipiTekst+'</div></div>'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:6px;flex-wrap:wrap;">'+
+      '<div style="display:flex;align-items:center;gap:16px;">'+
+        avatarHTML+
+        '<div><div style="font-size:20px;font-weight:700;">'+esc(d.emri||'')+'</div>'+
+          '<div class="small">'+esc(d.email||'')+'</div>'+
+          '<div class="small">Audienca: '+tipiTekst+'</div></div>'+
+      '</div>'+
+      '<button class="btn" onclick="profiliHapEdit()">Edit Profile</button>'+
     '</div>'+
     '<div class="pikeCard">'+
       '<div class="pikeNr">'+(d.pike_profili||0)+'</div>'+
@@ -554,6 +561,52 @@ async function mainProfili(m){
     '</div>'+
     '<p class="small mut" style="margin:6px 0 18px;">Pikët e profilit rrisin sa shpesh shfaqet reklama jote te rrjeti. Mblidhen nga shfaqjet dhe konvertimet që sjell faqja jote.</p>'+
     '<h3 class="h" style="font-size:16px;margin:0 0 4px;">Sipas snippet-it</h3>'+snip;
+}
+function profiliHapEdit(){
+  const m=$('mainPanel'); if(!m) return;
+  const d=window.__profiliCache||{};
+  m.innerHTML=
+    '<h2 class="h">Të dhënat e biznesit tënd</h2>'+
+    '<label>Emri i biznesit (SaaS-it)</label><input id="pe_emri" placeholder="Biznesi im" value="'+esc(d.emri||'')+'">'+
+    '<label>Logo (opsionale)</label>'+
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">'+
+      '<div id="pe_logoPrev" class="avatar" style="width:52px;height:52px;font-size:22px;overflow:hidden;">'+(d.logo_url?'<img src="'+esc(d.logo_url)+'" style="width:100%;height:100%;object-fit:cover;">':esc((d.emri||'?').charAt(0).toUpperCase()))+'</div>'+
+      '<label class="btn" style="cursor:pointer;margin:0;">Ngarko<input type="file" id="pe_logo" accept="image/*" onchange="profiliNgarkoLogo(this)" style="display:none;"></label>'+
+    '</div>'+
+    '<label>Faqja (website)</label><input id="pe_web" placeholder="https://saasi-im.com" value="'+esc(d.website||'')+'">'+
+    segHTML('pe_tipi')+
+    '<button class="primary" id="pe_btn" onclick="profiliRuaj()" style="margin-top:14px;">Ruaj →</button>'+
+    '<div class="msg" id="pe_msg"></div>';
+  if(d.tipi){ const btn=document.querySelector('#pe_tipi button[data-v="'+d.tipi+'"]'); if(btn) segPick(btn); }
+}
+async function profiliNgarkoLogo(inp){
+  const f=inp.files&&inp.files[0]; if(!f) return;
+  const fd=new FormData(); fd.append('file', f);
+  try{
+    const r=await(await fetch('/api/ngarko-logo',{method:'POST',body:fd})).json();
+    if(r.url){
+      if(window.__profiliCache) window.__profiliCache.logo_url=r.url;
+      if(une) une.logo_url=r.url;
+      const prev=$('pe_logoPrev'); if(prev) prev.innerHTML='<img src="'+r.url+'" style="width:100%;height:100%;object-fit:cover;">';
+    }
+  }catch(e){}
+}
+async function profiliRuaj(){
+  const emri=($('pe_emri').value||'').trim();
+  const web=($('pe_web').value||'').trim();
+  const tipi=segVal('pe_tipi');
+  const msg=$('pe_msg');
+  if(!emri){ msg.className='msg err'; msg.textContent='Shkruaj emrin e biznesit.'; return; }
+  if(!web){ msg.className='msg err'; msg.textContent='Shkruaj adresën e faqes.'; return; }
+  if(!tipi){ msg.className='msg err'; msg.textContent='Zgjidh kujt i shërben platforma.'; return; }
+  $('pe_btn').disabled=true;
+  try{
+    const r=await(await fetch('/api/biz-baza',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({emri,website:web,tipi})})).json();
+    if(r.error){ msg.className='msg err'; msg.textContent=r.error; $('pe_btn').disabled=false; return; }
+    if(une){ une.emri=emri; une.website=web; une.tipi=tipi; }
+    mainProfili($('mainPanel'));
+  }catch(e){ msg.className='msg err'; msg.textContent='Gabim: '+e.message; $('pe_btn').disabled=false; }
 }
 async function mainNjoftimet(m){
   m.innerHTML='<h2 class="h">Njoftime</h2><div id="njLista" style="margin-top:12px;"><p class="small">Po ngarkoj…</p></div>';
