@@ -518,15 +518,20 @@ balRenderLegjende(lista);
 }
 function balRenderGrafik(lista){
 const el=$('balGrafiku'); if(!el) return;
-const MADH=12, HAPESIRE=2, LARTESIA=340;
+const LARTESIA=680;
 if(!lista.length){ el.innerHTML='<div style="padding:40px;text-align:center;" class="small mut">Ende s\'ka biznese në logjikën Balance.</div>'; return; }
+const n=lista.length;
+const MADH = n<=5?36 : n<=10?26 : n<=20?19 : n<=40?13 : 9;
+const HAPESIRE = Math.max(2, Math.round(MADH*0.18));
 let h='<div style="position:relative;height:'+LARTESIA+'px;border:1px solid var(--line);border-radius:10px;background:#0e1116;overflow-x:auto;overflow-y:hidden;">'+
 '<div style="position:absolute;left:0;right:0;top:50%;height:1px;background:var(--line);z-index:0;"></div>'+
-'<div style="display:flex;align-items:center;height:100%;gap:6px;padding:0 16px;position:relative;z-index:1;">';
+'<div style="display:flex;align-items:center;height:100%;gap:'+Math.max(4,Math.round(MADH*0.3))+'px;padding:0 16px;position:relative;z-index:1;">';
 lista.forEach(function(b,i){
 const ngjyra=BAL_NGJYRA[i%BAL_NGJYRA.length];
 const neto=b.neto;
-const siperN=neto>0?neto:0, poshteN=neto<0?-neto:0;
+// Gjithmone te pakten 1 katror i dukshem mbi bosht (edhe kur neto=0 — s'ka ngjarje reale ende)
+const siperN=neto>0?neto:(neto===0?1:0);
+const poshteN=neto<0?-neto:0;
 h+='<div title="'+esc(b.emri)+' ('+(neto>0?'+':'')+neto+')" style="display:flex;flex-direction:column;align-items:center;height:100%;justify-content:center;flex:0 0 auto;">';
 h+='<div style="display:flex;flex-direction:column-reverse;">';
 for(let s=0;s<siperN;s++) h+='<div style="width:'+MADH+'px;height:'+MADH+'px;background:'+ngjyra+';border-radius:2px;margin-bottom:'+HAPESIRE+'px;"></div>';
