@@ -297,6 +297,16 @@ app.post('/api/biz-baza', iLoguar, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// --- LOGJIKA E SHPERNDARJES (ndryshim i vetin, per llogari ekzistuese — Ankand ↔ Barazi) ---
+app.post('/api/logjika-shperndarjes', iLoguar, async (req, res) => {
+  const logjika = ['ankand','barazi'].includes(req.body.logjika_shperndarjes) ? req.body.logjika_shperndarjes : null;
+  if (!logjika) return res.status(400).json({ error: 'Vlerë e pavlefshme.' });
+  try {
+    await pool.query('UPDATE bizneset SET logjika_shperndarjes=$2 WHERE id=$1', [req.biznesId, logjika]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // --- DIL (logout) ---
 app.post('/api/dil', async (req, res) => {
   const token = req.cookies.imyr_session;
@@ -508,7 +518,7 @@ app.get('/api/analytics/kategorite-dhene', iLoguar, async (req, res) => {
 app.get('/api/profili', iLoguar, async (req, res) => {
   try {
     const bq = await pool.query(
-      'SELECT emri, email, tipi, url_konvertimi, created_at, logo_url FROM bizneset WHERE id=$1', [req.biznesId]);
+      'SELECT emri, email, tipi, url_konvertimi, created_at, logo_url, logjika_shperndarjes FROM bizneset WHERE id=$1', [req.biznesId]);
     const biz = bq.rows[0] || {};
     const tipi = biz.tipi || 'b2c';
 
@@ -541,6 +551,7 @@ app.get('/api/profili', iLoguar, async (req, res) => {
 
     res.json({
       emri: biz.emri, email: biz.email, tipi, logo_url: biz.logo_url || null,
+      logjika_shperndarjes: biz.logjika_shperndarjes || 'ankand',
       pike_profili: Math.round(pikeTotal * 10) / 10,
       pike: {
         shfaqje, pike_nga_shfaqjet: Math.round(pikeShfaqje * 10) / 10, rate,
