@@ -467,6 +467,8 @@ function renderUserMenu(){
 
   const items = [
     { l:'Profili',           fn:function(){ nav({v:'profile', nav:'profili'}); } },
+    { l: (window.__llogariaModaliteti==='balance' ? 'Switch to Ankand Account' : 'Switch to Balance Account'),
+      fn:function(){ switchLlogaria(); } },
     { l:'Ekipi & Rolet',     fn:function(){ hapEkipin(); } },
     { l:'Faturimi & Plani',  fn:function(){ nav({v:'profile', nav:'plani'}); } },
     { l:'Cilësimet',         fn:function(){ nav({v:'profile', nav:'cilesimet'}); } },
@@ -647,6 +649,7 @@ async function mainNjoftimet(m){
   }catch(e){ $('njLista').innerHTML='<p class="small">Gabim.</p>'; }
 }
 function mainDashboard(m){
+  if(window.__llogariaModaliteti==='balance') return mainDashboardBalance(m);
   m.innerHTML='<h2 class="h">Statusi i llogarisë</h2>'+
     '<p class="small" style="margin:2px 0 18px;">Këto tregojnë çfarë është gati dhe çfarë jo. Kliko një rresht për ta plotësuar.</p>'+
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;">'+
