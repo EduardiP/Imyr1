@@ -146,6 +146,7 @@ const SECTIONS = [
 ];
 const BIZ_SUB = [
 { k:'bizneset', l:'Llogaritë' },
+{ k:'balancat', l:'Balancat' },
 { k:'r2', l:'Ankandet' }, { k:'r3', l:'Reklamat' }, { k:'r4', l:'Rreshti 4' }
 ];
 let curSec = 'bizneset', curBizSub = 'bizneset';
@@ -301,7 +302,7 @@ const stat=$('ndrStat');
 if(!titull.trim()){ if(stat){stat.textContent='Vendos titullin.';} return; }
 btn.disabled=true;
 try{
-const r=await(await fetch('/api/admin/updates/send',{method:'POST',headers:{'Content-Type':'application/json'},
+const r=await(await fetch('/api/admin/ndryshime/dergo',{method:'POST',headers:{'Content-Type':'application/json'},
 body:JSON.stringify({titull, teksti})})).json();
 if(r.error){ if(stat)stat.textContent=r.error; btn.disabled=false; return; }
 if(stat)stat.textContent='✓ U dërgua te widget-i.';
@@ -486,11 +487,65 @@ n.appendChild(b);
 }
 function renderBizMain(){
 const m=$('bizMain');
+if(_balTimer && curBizSub!=='balancat'){ clearInterval(_balTimer); _balTimer=null; } // ndalo rifreskimin kur largohesh
 if(curBizSub==='bizneset'){ loadBizList(m); return; }
+if(curBizSub==='balancat'){ renderBalancat(m); return; }
 if(curBizSub==='r2'){ renderAnkandet(m); return; }
 if(curBizSub==='r3'){ renderReklamat(m); return; }
 const lbl=(BIZ_SUB.find(s=>s.k===curBizSub)||{}).l||'';
 m.innerHTML='<h2 class="h">'+lbl+'</h2><p class="small" style="margin-top:8px;">Së shpejti.</p>';
+}
+
+// ============ BALANCAT — "male/kodra" per bizneset ne logjiken Balance ============
+var BAL_NGJYRA=['#4a9eff','#f85149','#3fb950','#e3b341','#a371f7','#39c5cf','#f778ba','#ffa657','#56d4dd','#bc8cff','#7ee787','#ff9bce'];
+var _balTimer=null;
+async function renderBalancat(m){
+m.innerHTML='<h2 class="h">Balancat</h2>'+
+'<p class="small" style="margin:4px 0 16px;">Çdo kolonë = 1 biznes në logjikën Balance. Sipër boshtit = ka marrë më shumë se ka dhënë; poshtë = ka dhënë më shumë se ka marrë. Qëllimi: gjithçka të rrafshohet te boshti.</p>'+
+'<div id="balGrafiku"></div>'+
+'<div id="balLegjenda" style="margin-top:20px;"></div>';
+await balNgarko();
+if(_balTimer) clearInterval(_balTimer);
+_balTimer=setInterval(balNgarko, 5000);
+}
+async function balNgarko(){
+const el=$('balGrafiku'); if(!el) return;
+try{
+const lista=await(await fetch('/api/admin/balancat')).json();
+balRenderGrafik(lista);
+balRenderLegjende(lista);
+}catch(e){}
+}
+function balRenderGrafik(lista){
+const el=$('balGrafiku'); if(!el) return;
+const MADH=12, HAPESIRE=2, LARTESIA=340;
+if(!lista.length){ el.innerHTML='<div style="padding:40px;text-align:center;" class="small mut">Ende s\'ka biznese në logjikën Balance.</div>'; return; }
+let h='<div style="position:relative;height:'+LARTESIA+'px;border:1px solid var(--line);border-radius:10px;background:#0e1116;overflow-x:auto;overflow-y:hidden;">'+
+'<div style="position:absolute;left:0;right:0;top:50%;height:1px;background:var(--line);z-index:0;"></div>'+
+'<div style="display:flex;align-items:center;height:100%;gap:6px;padding:0 16px;position:relative;z-index:1;">';
+lista.forEach(function(b,i){
+const ngjyra=BAL_NGJYRA[i%BAL_NGJYRA.length];
+const neto=b.neto;
+const siperN=neto>0?neto:0, poshteN=neto<0?-neto:0;
+h+='<div title="'+esc(b.emri)+' ('+(neto>0?'+':'')+neto+')" style="display:flex;flex-direction:column;align-items:center;height:100%;justify-content:center;flex:0 0 auto;">';
+h+='<div style="display:flex;flex-direction:column-reverse;">';
+for(let s=0;s<siperN;s++) h+='<div style="width:'+MADH+'px;height:'+MADH+'px;background:'+ngjyra+';border-radius:2px;margin-bottom:'+HAPESIRE+'px;"></div>';
+h+='</div><div style="display:flex;flex-direction:column;">';
+for(let p=0;p<poshteN;p++) h+='<div style="width:'+MADH+'px;height:'+MADH+'px;background:'+ngjyra+';border-radius:2px;margin-top:'+HAPESIRE+'px;"></div>';
+h+='</div></div>';
+});
+h+='</div></div>';
+el.innerHTML=h;
+}
+function balRenderLegjende(lista){
+const el=$('balLegjenda'); if(!el) return;
+if(!lista.length){ el.innerHTML=''; return; }
+el.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:10px;">'+lista.map(function(b,i){
+const ngjyra=BAL_NGJYRA[i%BAL_NGJYRA.length];
+return '<div style="display:flex;align-items:center;gap:6px;font-size:13px;">'+
+'<span style="width:12px;height:12px;border-radius:3px;background:'+ngjyra+';display:inline-block;flex:0 0 auto;"></span>'+
+esc(b.emri)+' <span class="mut">('+(b.neto>0?'+':'')+b.neto+')</span></div>';
+}).join('')+'</div>';
 }
 
 // ============ ANKANDET ============
