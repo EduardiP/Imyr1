@@ -47,3 +47,42 @@ async function renderDashStatusBalance(){
     el.appendChild(d);
   });
 }
+
+// ================= PROFILI (Balance) — te njejtat te dhena bazë, statistika dhenie/marrje ne vend te pikëve =================
+async function mainProfiliBalance(m){
+  m.innerHTML='<p class="small">Po ngarkoj…</p>';
+  let d={}, bal={dhene:{shfaqje:0,klikime:0,konvertime:0}, marra:{shfaqje:0,klikime:0,konvertime:0}};
+  try{
+    d = await(await fetch('/api/profili')).json();
+    bal = await(await fetch('/api/profili-balance')).json();
+  }catch(e){ m.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; return; }
+  window.__profiliCache = d;
+  const inic=(d.emri||'?').trim().charAt(0).toUpperCase();
+  const avatarHTML = d.logo_url
+    ? '<div class="avatar" style="overflow:hidden;"><img src="'+esc(d.logo_url)+'" style="width:100%;height:100%;object-fit:cover;"></div>'
+    : '<div class="avatar">'+esc(inic)+'</div>';
+  const tipiTekst = d.tipi==='b2b'?'Bizneseve (B2B)':(d.tipi==='b2c'?'Individëve (B2C)':'Të dyjave');
+  m.innerHTML=
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:6px;flex-wrap:wrap;">'+
+      '<div style="display:flex;align-items:center;gap:16px;">'+
+        avatarHTML+
+        '<div><div style="font-size:20px;font-weight:700;">'+esc(d.emri||'')+'</div>'+
+          '<div class="small">'+esc(d.email||'')+'</div>'+
+          '<div class="small">Audienca: '+tipiTekst+'</div></div>'+
+      '</div>'+
+      '<button class="btn" onclick="profiliHapEdit()">Edit Profile</button>'+
+    '</div>'+
+    '<h3 class="h" style="font-size:16px;margin:22px 0 4px;">Ke dhënë (Balance)</h3>'+
+    '<div style="display:flex;gap:10px;margin:8px 0 4px;flex-wrap:wrap;">'+
+      '<div class="miniStat"><div class="mv">'+bal.dhene.shfaqje+'</div><div class="small">shfaqje</div></div>'+
+      '<div class="miniStat"><div class="mv">'+bal.dhene.klikime+'</div><div class="small">klikime</div></div>'+
+      '<div class="miniStat"><div class="mv">'+bal.dhene.konvertime+'</div><div class="small">konvertime</div></div>'+
+    '</div>'+
+    '<h3 class="h" style="font-size:16px;margin:22px 0 4px;">Ke marrë (Balance)</h3>'+
+    '<div style="display:flex;gap:10px;margin:8px 0 4px;flex-wrap:wrap;">'+
+      '<div class="miniStat"><div class="mv">'+bal.marra.shfaqje+'</div><div class="small">shfaqje</div></div>'+
+      '<div class="miniStat"><div class="mv">'+bal.marra.klikime+'</div><div class="small">klikime</div></div>'+
+      '<div class="miniStat"><div class="mv">'+bal.marra.konvertime+'</div><div class="small">konvertime</div></div>'+
+    '</div>'+
+    '<p class="small mut" style="margin:10px 0 4px;">Balance synon shfaqje = shfaqje: sa jep, aq merr. (Numrat mbeten 0 derisa mekanizmi i shpërndarjes Balance të fillojë.)</p>';
+}
