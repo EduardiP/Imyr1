@@ -503,8 +503,14 @@ async function renderBalancat(m){
 m.innerHTML='<h2 class="h">Balancat</h2>'+
 '<p class="small" style="margin:4px 0 16px;">Çdo kolonë = 1 biznes në logjikën Balance. Sipër boshtit = ka marrë më shumë se ka dhënë; poshtë = ka dhënë më shumë se ka marrë. Qëllimi: gjithçka të rrafshohet te boshti.</p>'+
 '<div id="balGrafiku"></div>'+
-'<div id="balLegjenda" style="margin-top:20px;"></div>';
+'<div id="balLegjenda" style="margin-top:20px;"></div>'+
+'<div style="margin-top:40px;">'+
+  '<h3 class="h" style="font-size:16px;">Detajet e vendimeve</h3>'+
+  '<p class="small mut" style="margin:2px 0 12px;">Kliko një biznes për të parë ku ka fituar si i vetëm dhe ku ka marrë pjesë në barazim.</p>'+
+  '<div id="balDetajeLista"><p class="small">Po ngarkoj…</p></div>'+
+'</div>';
 await balNgarko();
+await balNgarkoDetajet();
 if(_balTimer) clearInterval(_balTimer);
 _balTimer=setInterval(balNgarko, 5000);
 }
@@ -577,6 +583,83 @@ return '<div style="display:flex;align-items:center;gap:6px;font-size:13px;">'+
 '<span style="width:12px;height:12px;border-radius:3px;background:'+ngjyra+';display:inline-block;flex:0 0 auto;"></span>'+
 esc(b.emri)+' <span class="mut">('+(b.neto>0?'+':'')+b.neto+')</span></div>';
 }).join('')+'</div>';
+}
+
+// ============ BALANCET — DETAJET (lista e mbyllur me tabelat brenda) ============
+// Ngarkohet NJE HERE (jo ne interval — qe hapja/mbyllja te ruhet)
+async function balNgarkoDetajet(){
+const el=$('balDetajeLista'); if(!el) return;
+try{
+const lista=await(await fetch('/api/admin/balancet-lista')).json();
+if(!lista.length){ el.innerHTML='<p class="small mut">S\'ka biznese në Balance.</p>'; return; }
+el.innerHTML=lista.map(function(b){
+return '<div style="border:1px solid var(--line);border-radius:8px;margin-bottom:8px;overflow:hidden;">'+
+'<div onclick="balToggleBiz('+b.id+')" style="padding:11px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:#0e1116;">'+
+'<span style="font-weight:600;">'+esc(b.emri||'—')+'</span>'+
+'<span class="small mut">Fitore vetëm: <b style="color:var(--txt);">'+b.fitore_vetem+'</b> · Barazim: <b style="color:var(--txt);">'+b.fitore_barazim+'</b>/'+b.pjesemarrje_barazim+' &nbsp; <span id="balArr'+b.id+'">▸</span></span>'+
+'</div>'+
+'<div id="balBiz'+b.id+'" class="hide" style="padding:12px 14px;border-top:1px solid #20262f;background:#0a0d12;">Po ngarkoj…</div>'+
+'</div>';
+}).join('');
+}catch(e){ el.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
+}
+async function balToggleBiz(id){
+const box=$('balBiz'+id), arr=$('balArr'+id);
+if(!box) return;
+if(!box.classList.contains('hide')){
+box.classList.add('hide');
+if(arr) arr.textContent='▸';
+return;
+}
+box.classList.remove('hide');
+if(arr) arr.textContent='▾';
+// Nese eshte ngarkuar njehere, s'e ringarkon
+if(box.getAttribute('data-loaded')==='1') return;
+try{
+const r=await(await fetch('/api/admin/balancet/'+id)).json();
+let h='';
+// ═ Tabela 1 — Fitore si i vetem ═
+h+='<div style="margin-bottom:18px;">'+
+'<div style="font-weight:600;font-size:13px;margin-bottom:6px;color:var(--acc);">Fitore si i vetëm ('+r.vetem.length+')</div>';
+if(!r.vetem.length){
+h+='<p class="small mut">Ende s\'ka fitore si i vetëm.</p>';
+} else {
+h+='<div class="ktabela">'+
+'<div class="krow khead"><span class="kc1">Host</span><span class="kc3">Deficit</span><span class="kc3">Kur</span></div>'+
+r.vetem.map(function(v){
+return '<div class="krow"><span class="kc1">'+esc(v.host_emri||('#'+v.host_id))+'</span>'+
+'<span class="kc3" style="font-weight:600;color:var(--acc);">+'+v.deficit+'</span>'+
+'<span class="kc3" style="font-size:11px;">'+dt(v.created_at)+'</span></div>';
+}).join('')+
+'</div>';
+}
+h+='</div>';
+// ═ Tabela 2 — Rastet me barazim ═
+h+='<div>'+
+'<div style="font-weight:600;font-size:13px;margin-bottom:6px;color:var(--acc);">Rastet me barazim ('+r.me_barazim.length+')</div>';
+if(!r.me_barazim.length){
+h+='<p class="small mut">Ende s\'ka pjesëmarrje në barazim.</p>';
+} else {
+h+=r.me_barazim.map(function(g){
+return '<div class="ktabela" style="margin-bottom:12px;">'+
+'<div class="krow khead"><span class="kc1">Host: '+esc(g.host_emri||('#'+g.host_id))+' · '+dt(g.created_at)+'</span></div>'+
+'<div class="krow khead"><span class="kc1">Reklamues</span><span class="kc3">Deficit</span><span class="kc3">AI</span><span class="kc3">Fitoi</span></div>'+
+g.kandidatet.map(function(k){
+var evid = k.fitoi ? 'background:#0a2540;font-weight:600;' : '';
+return '<div class="krow" style="'+evid+'">'+
+'<span class="kc1">'+esc(k.reklamues_emri||('#'+k.reklamues_id))+'</span>'+
+'<span class="kc3">+'+k.deficit+'</span>'+
+'<span class="kc3">'+(k.ai_skori!=null?k.ai_skori:'—')+'</span>'+
+'<span class="kc3" style="color:var(--good);">'+(k.fitoi?'✓ +1':'')+'</span>'+
+'</div>';
+}).join('')+
+'</div>';
+}).join('');
+}
+h+='</div>';
+box.innerHTML=h;
+box.setAttribute('data-loaded','1');
+}catch(e){ box.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
 }
 
 // ============ ANKANDET ============
