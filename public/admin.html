@@ -618,39 +618,39 @@ if(box.getAttribute('data-loaded')==='1') return;
 try{
 const r=await(await fetch('/api/admin/balancet/'+id)).json();
 let h='';
-// ═ Tabela 1 — Fitore si i vetem ═
+// ═ Tabela 1 — Fitore si i vetem (AGREGUAR sipas host) ═
 h+='<div style="margin-bottom:18px;">'+
-'<div style="font-weight:600;font-size:13px;margin-bottom:6px;color:var(--acc);">Fitore si i vetëm ('+r.vetem.length+')</div>';
+'<div style="font-weight:600;font-size:13px;margin-bottom:6px;color:var(--acc);">Fitore si i vetëm ('+r.vetem.length+' host)</div>';
 if(!r.vetem.length){
 h+='<p class="small mut">Ende s\'ka fitore si i vetëm.</p>';
 } else {
 h+='<div class="ktabela">'+
-'<div class="krow khead"><span class="kc1">Host</span><span class="kc3">Deficit</span><span class="kc3">Kur</span></div>'+
+'<div class="krow khead"><span class="kc1">Host</span><span class="kc3">Shfaqje</span><span class="kc3">E fundit</span></div>'+
 r.vetem.map(function(v){
 return '<div class="krow"><span class="kc1">'+esc(v.host_emri||('#'+v.host_id))+'</span>'+
-'<span class="kc3" style="font-weight:600;color:var(--acc);">+'+v.deficit+'</span>'+
-'<span class="kc3" style="font-size:11px;">'+dt(v.created_at)+'</span></div>';
+'<span class="kc3" style="font-weight:600;color:var(--acc);">'+v.shfaqje+'</span>'+
+'<span class="kc3" style="font-size:11px;">'+dt(v.last_at)+'</span></div>';
 }).join('')+
 '</div>';
 }
 h+='</div>';
-// ═ Tabela 2 — Rastet me barazim ═
+// ═ Tabela 2 — Skenaret e barazimit (AGREGUAR sipas host+kandidatet) ═
 h+='<div>'+
-'<div style="font-weight:600;font-size:13px;margin-bottom:6px;color:var(--acc);">Rastet me barazim ('+r.me_barazim.length+')</div>';
-if(!r.me_barazim.length){
+'<div style="font-weight:600;font-size:13px;margin-bottom:6px;color:var(--acc);">Skenarët e barazimit ('+r.skenaret.length+')</div>';
+if(!r.skenaret.length){
 h+='<p class="small mut">Ende s\'ka pjesëmarrje në barazim.</p>';
 } else {
-h+=r.me_barazim.map(function(g){
+h+=r.skenaret.map(function(s){
 return '<div class="ktabela" style="margin-bottom:12px;">'+
-'<div class="krow khead"><span class="kc1">Host: '+esc(g.host_emri||('#'+g.host_id))+' · '+dt(g.created_at)+'</span></div>'+
-'<div class="krow khead"><span class="kc1">Reklamues</span><span class="kc3">Deficit</span><span class="kc3">AI</span><span class="kc3">Fitoi</span></div>'+
-g.kandidatet.map(function(k){
-var evid = k.fitoi ? 'background:#0a2540;font-weight:600;' : '';
-return '<div class="krow" style="'+evid+'">'+
+'<div class="krow khead"><span class="kc1">Host: '+esc(s.host_emri||('#'+s.host_id))+' · Ndodhi <b style="color:var(--txt);">'+s.ndodhi_here+'</b> herë · E fundit '+dt(s.last_at)+'</span></div>'+
+'<div class="krow khead"><span class="kc1">Reklamues</span><span class="kc3">AI (i fundit)</span><span class="kc3">Fitore</span></div>'+
+s.kandidatet.map(function(k){
+var isThisBiz = k.reklamues_id === id;
+var stil = isThisBiz ? 'background:#0a2540;font-weight:600;' : '';
+return '<div class="krow" style="'+stil+'">'+
 '<span class="kc1">'+esc(k.reklamues_emri||('#'+k.reklamues_id))+'</span>'+
-'<span class="kc3">+'+k.deficit+'</span>'+
-'<span class="kc3">'+(k.ai_skori!=null?k.ai_skori:'—')+'</span>'+
-'<span class="kc3" style="color:var(--good);">'+(k.fitoi?'✓ +1':'')+'</span>'+
+'<span class="kc3">'+(k.ai_skori_latest!=null?k.ai_skori_latest:'—')+'</span>'+
+'<span class="kc3" style="color:var(--good);">'+k.fitore+'</span>'+
 '</div>';
 }).join('')+
 '</div>';
