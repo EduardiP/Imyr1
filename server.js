@@ -1845,61 +1845,94 @@ app.get('/api/admin/balancet-lista', iAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// --- BALANCET (ANALITIKE): detajet e nje biznesi (dy grupime) ---
-//   vetem      → rreshtat ku ky biznes ka fituar si i vetem (pa barazim)
-//   me_barazim → vendimet ku ky biznes ishte pjesemarres ne barazim (grupimi i plote)
+// --- BALANCET (ANALITIKE): detajet e nje biznesi (dy grupime AGREGUAR) ---
+//   vetem    → nje rresht per HOST: sa here ka fituar ky biznes te ky host
+//   skenaret → nje rresht per skenar (host + set kandidatesh identike qe kane
+//              qene te barabarte): AI-ja e fundit + numri i fitoreve per secilin
 app.get('/api/admin/balancet/:id', iAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (!id) return res.status(400).json({ error: 'ID e pavlefshme' });
   try {
-    // Tabela 1 — fitore si i vetem
+    // Tabela 1 — Fitore si i vetem, AGREGUAR sipas host
     const vetemQ = await pool.query(`
-      SELECT b.host_id, b.deficit, b.created_at,
+      SELECT b.host_id,
+        COUNT(*)::int AS shfaqje,
+        MAX(b.created_at) AS last_at,
         (SELECT emri FROM bizneset WHERE id = b.host_id) AS host_emri
       FROM balancet b
       WHERE b.reklamues_id=$1 AND b.fitoi=true AND b.me_barazim=false
-      ORDER BY b.created_at DESC
-      LIMIT 200`, [id]);
+      GROUP BY b.host_id
+      ORDER BY shfaqje DESC`, [id]);
 
-    // Tabela 2 — vendimet me barazim ku ky biznes ka marre pjese
+    // Tabela 2 — Skenaret e barazimit. Marrim raw pastaj agregojme ne JS
+    // sipas (host_id + set i kandidateve te barabarte).
     const vendQ = await pool.query(`
       SELECT DISTINCT vendim_id FROM balancet
-      WHERE reklamues_id=$1 AND me_barazim=true
-      ORDER BY vendim_id DESC LIMIT 200`, [id]);
-
+      WHERE reklamues_id=$1 AND me_barazim=true`, [id]);
     const vendimIdet = vendQ.rows.map(x => x.vendim_id);
-    let meBarazim = [];
+    let skenaret = [];
     if (vendimIdet.length) {
       const detQ = await pool.query(`
-        SELECT b.vendim_id, b.host_id, b.reklamues_id, b.deficit, b.ai_skori, b.fitoi, b.created_at,
+        SELECT b.vendim_id, b.host_id, b.reklamues_id, b.ai_skori, b.fitoi, b.created_at,
           (SELECT emri FROM bizneset WHERE id = b.host_id)      AS host_emri,
           (SELECT emri FROM bizneset WHERE id = b.reklamues_id) AS reklamues_emri
         FROM balancet b
         WHERE b.vendim_id = ANY($1::bigint[])
-        ORDER BY b.vendim_id DESC, b.ai_skori DESC NULLS LAST`, [vendimIdet]);
+        ORDER BY b.vendim_id DESC, b.reklamues_id`, [vendimIdet]);
 
-      const grupet = {};
+      // Hapi 1: grupim per vendim_id
+      const vendimet = {};
       detQ.rows.forEach(r => {
-        if (!grupet[r.vendim_id]) grupet[r.vendim_id] = {
-          vendim_id: r.vendim_id,
+        if (!vendimet[r.vendim_id]) vendimet[r.vendim_id] = {
           host_id: r.host_id,
           host_emri: r.host_emri,
           created_at: r.created_at,
           kandidatet: []
         };
-        grupet[r.vendim_id].kandidatet.push({
+        vendimet[r.vendim_id].kandidatet.push({
           reklamues_id: r.reklamues_id,
           reklamues_emri: r.reklamues_emri,
-          deficit: r.deficit,
           ai_skori: r.ai_skori,
           fitoi: r.fitoi
         });
       });
-      // Ruaj renditjen sipas vendim_id DESC
-      meBarazim = vendimIdet.map(v => grupet[v]).filter(Boolean);
+
+      // Hapi 2: grupim per skenar = host_id + sorted candidate ids
+      const skenMap = {};
+      Object.values(vendimet).forEach(v => {
+        const kandIds = v.kandidatet.map(k => k.reklamues_id).sort((a,b) => a-b).join(',');
+        const skenId = v.host_id + ':' + kandIds;
+        if (!skenMap[skenId]) skenMap[skenId] = {
+          host_id: v.host_id,
+          host_emri: v.host_emri,
+          last_at: v.created_at,
+          ndodhi_here: 0,
+          kandidatet: {}
+        };
+        const s = skenMap[skenId];
+        s.ndodhi_here++;
+        if (new Date(v.created_at) > new Date(s.last_at)) s.last_at = v.created_at;
+        v.kandidatet.forEach(k => {
+          if (!s.kandidatet[k.reklamues_id]) s.kandidatet[k.reklamues_id] = {
+            reklamues_id: k.reklamues_id,
+            reklamues_emri: k.reklamues_emri,
+            ai_skori_latest: k.ai_skori,
+            fitore: 0
+          };
+          if (k.fitoi) s.kandidatet[k.reklamues_id].fitore++;
+        });
+      });
+
+      skenaret = Object.values(skenMap).map(s => ({
+        host_id: s.host_id,
+        host_emri: s.host_emri,
+        last_at: s.last_at,
+        ndodhi_here: s.ndodhi_here,
+        kandidatet: Object.values(s.kandidatet)
+      })).sort((a, b) => b.ndodhi_here - a.ndodhi_here);
     }
 
-    res.json({ vetem: vetemQ.rows, me_barazim: meBarazim });
+    res.json({ vetem: vetemQ.rows, skenaret });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
