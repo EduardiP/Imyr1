@@ -471,7 +471,7 @@ function renderUserMenu(){
       fn:function(){ switchLlogaria(); } },
     { l:'Ekipi & Rolet',     fn:function(){ hapEkipin(); } },
     { l:'Faturimi & Plani',  fn:function(){ nav({v:'profile', nav:'plani'}); } },
-    { l:'Cilësimet',         fn:function(){ nav({v:'profile', nav:'cilesimet'}); } },
+    { l:'Cilësimet',         fn:function(){ hapCilesimet(); } },
     { l:'Ndihmë & Suport',   fn:function(){ nav({v:'profile', nav:'suport'}); } },
     { l:'Dil',               fn:function(){ dil(); }, err:true }
   ];
@@ -1600,6 +1600,7 @@ var CIL_STRUKTURA=[
 
 function renderCilesimetNav(){
   const el=$('snav'); if(!el) return;
+  const snav2=$('snav2'); if(snav2) snav2.innerHTML=''; // fshi mbetjet e vjetra te NAV2, s'duhet te shfaqet ketu
   el.innerHTML='';
   const header=document.createElement('div');
   header.style.cssText='padding:8px 10px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);';
@@ -1660,6 +1661,11 @@ function hapCilDropdown(n, btn){
 }
 document.addEventListener('click', function(){ mbyllCilDropdown(); });
 
+function hapCilesimet(){
+  const s={v:'profile', nav:'cilesimet'};
+  history.pushState(s, '', '/cilesimet');
+  applyState(s);
+}
 function mainCilesimet(m){
   window.__pamjeVecante=true;
   m.innerHTML='<div id="cilBody"></div>';
