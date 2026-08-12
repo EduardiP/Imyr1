@@ -522,33 +522,31 @@ const el=$('balGrafiku'); if(!el) return;
 if(!lista.length){ el.innerHTML='<div style="padding:40px;text-align:center;" class="small mut">Ende s\'ka biznese në logjikën Balance.</div>'; return; }
 const n=lista.length;
 const RRESHTA = BAL_QELIZA_PER_ANE*2+1; // +20 ... 0 ... -20
-const LARTESIA_MAX = 460; // gjithe grafiku duhet te shihet pa scroll VERTIKAL kur hapet — fiks
-const MADH_H = Math.max(4, Math.floor(LARTESIA_MAX / RRESHTA));
-const LARTESIA = RRESHTA*MADH_H;
-// Gjeresia ngushtohet me çdo biznes te ri (te bej vend), deri ne minimumin e lexueshem;
-// pas asaj, kolonat vazhdojne pa u ngushtuar me shume — carousel/scroll horizontal i pakufizuar.
-const MADH_W = n<=5?36 : n<=10?26 : n<=20?19 : n<=30?13 : n<=50?9 : n<=80?6 : 4;
+// NJE madhesi e vetme per gjeresi DHE lartesi — katror i vertete, gjithmone barabrinjes.
+// Ngushtohet vetë me çdo shkallë të re biznesi; pas minimumit të lexueshëm, s'ngushtohet
+// më shumë — scroll horizontal (i pakufizuar) merr përsipër.
+const MADH = n<=5?36 : n<=10?26 : n<=20?19 : n<=40?13 : n<=80?9 : n<=150?6 : n<=400?4 : n<=1000?3 : 2;
+const LARTESIA = RRESHTA*MADH;
 let h='<div style="display:flex;">';
-// Etiketat e boshtit Y — çdo 5 njësi, sipër dhe poshtë, saktesisht sipas lartesise se qelizes (MADH_H)
 h+='<div style="flex:0 0 40px;position:relative;height:'+LARTESIA+'px;">';
 for(let yy=5; yy<=BAL_QELIZA_PER_ANE; yy+=5){
-h+='<div class="small mut" style="position:absolute;right:6px;top:'+((BAL_QELIZA_PER_ANE-yy)*MADH_H)+'px;transform:translateY(-50%);">'+yy+'</div>';
-h+='<div class="small mut" style="position:absolute;right:6px;top:'+((BAL_QELIZA_PER_ANE+yy)*MADH_H)+'px;transform:translateY(-50%);">-'+yy+'</div>';
+h+='<div class="small mut" style="position:absolute;right:6px;top:'+((BAL_QELIZA_PER_ANE-yy)*MADH)+'px;transform:translateY(-50%);">'+yy+'</div>';
+h+='<div class="small mut" style="position:absolute;right:6px;top:'+((BAL_QELIZA_PER_ANE+yy)*MADH)+'px;transform:translateY(-50%);">-'+yy+'</div>';
 }
-h+='<div class="small mut" style="position:absolute;right:6px;top:'+(BAL_QELIZA_PER_ANE*MADH_H)+'px;transform:translateY(-50%);">0</div>';
+h+='<div class="small mut" style="position:absolute;right:6px;top:'+(BAL_QELIZA_PER_ANE*MADH)+'px;transform:translateY(-50%);">0</div>';
 h+='</div>';
 h+='<div style="position:relative;height:'+LARTESIA+'px;border:1px solid var(--line);border-radius:10px;background:#0e1116;overflow-x:auto;overflow-y:hidden;flex:1;">'+
-'<div style="position:absolute;left:0;right:0;top:'+(BAL_QELIZA_PER_ANE*MADH_H+MADH_H/2)+'px;height:1px;background:rgba(255,255,255,.35);z-index:0;"></div>'+
-'<div style="display:flex;height:100%;padding:0 16px;gap:3px;position:relative;z-index:1;">';
+'<div style="position:absolute;left:0;right:0;top:'+(BAL_QELIZA_PER_ANE*MADH+MADH/2)+'px;height:1px;background:rgba(255,255,255,.35);z-index:0;"></div>'+
+'<div style="display:flex;height:100%;padding:0 16px;position:relative;z-index:1;">';
 lista.forEach(function(b,i){
 const ngjyra=BAL_NGJYRA[i%BAL_NGJYRA.length];
 const neto=b.neto;
-h+='<div title="'+esc(b.emri)+' ('+(neto>0?'+':'')+neto+')" style="display:flex;flex-direction:column;width:'+MADH_W+'px;flex:0 0 auto;">';
+h+='<div title="'+esc(b.emri)+' ('+(neto>0?'+':'')+neto+')" style="display:flex;flex-direction:column;width:'+MADH+'px;flex:0 0 auto;">';
 for(let r=0; r<RRESHTA; r++){
 const niveli = BAL_QELIZA_PER_ANE - r;
 if(niveli===0){
-const sferaD=Math.round(Math.min(MADH_W,MADH_H)*0.55);
-h+='<div style="width:'+MADH_W+'px;height:'+MADH_H+'px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
+const sferaD=Math.round(MADH*0.55);
+h+='<div style="width:'+MADH+'px;height:'+MADH+'px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
 '<div style="width:'+sferaD+'px;height:'+sferaD+'px;border-radius:50%;background:'+ngjyra+';"></div></div>';
 continue;
 }
@@ -560,7 +558,7 @@ stil = mbushur ? ('background:'+ngjyra+';') : 'background:transparent;';
 const eshteGropa = neto<0 && niveli>=neto;
 stil = eshteGropa ? 'background:transparent;' : 'background:#4a9eff;';
 }
-h+='<div style="width:'+MADH_W+'px;height:'+MADH_H+'px;box-sizing:border-box;border:1px solid rgba(255,255,255,.08);flex:0 0 auto;'+stil+'"></div>';
+h+='<div style="width:'+MADH+'px;height:'+MADH+'px;box-sizing:border-box;border:1px solid rgba(255,255,255,.08);flex:0 0 auto;'+stil+'"></div>';
 }
 h+='</div>';
 });
