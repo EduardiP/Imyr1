@@ -30,6 +30,7 @@ const NAV2 = [
   ]},
   { k:'reklamat', l:'My Ads', subs:[
     {l:'Krijo', nav:'reklamat'},
+    {l:'Reklamat', nav:'reklamat'},
     {l:'Performanca', nav:'reklamat'},
     {l:'Pikët & renditja', nav:'reklamat'}
   ]},
