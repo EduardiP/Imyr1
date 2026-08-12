@@ -550,8 +550,18 @@ h+='<div style="width:'+MADH+'px;height:'+MADH+'px;box-sizing:border-box;display
 '<div style="width:'+Math.round(MADH*0.55)+'px;height:'+Math.round(MADH*0.55)+'px;border-radius:50%;background:'+ngjyra+';"></div></div>';
 continue;
 }
-const mbushur = (niveli>0 && niveli<=neto) || (niveli<0 && niveli>=neto);
-h+='<div style="width:'+MADH+'px;height:'+MADH+'px;box-sizing:border-box;border:1px solid rgba(255,255,255,.08);flex:0 0 auto;'+(mbushur?'background:'+ngjyra+';':'background:transparent;')+'"></div>';
+let stil;
+if(niveli>0){
+// SIPER: kodra — mbushet me ngjyren e biznesit vetem sa e arrin neto pozitiv
+const mbushur = niveli<=neto;
+stil = mbushur ? ('background:'+ngjyra+';') : 'background:transparent;';
+} else {
+// POSHTE: toka e mbushur (blu) e PERHERSHME qe ne fillim; gropa hapet duke HEQUR ngjyren
+// pikerisht aty ku eshte neto negativ (jo duke shtuar katrore te rinj)
+const eshteGropa = neto<0 && niveli>=neto;
+stil = eshteGropa ? 'background:transparent;' : 'background:#4a9eff;';
+}
+h+='<div style="width:'+MADH+'px;height:'+MADH+'px;box-sizing:border-box;border:1px solid rgba(255,255,255,.08);flex:0 0 auto;'+stil+'"></div>';
 }
 h+='</div>';
 });
