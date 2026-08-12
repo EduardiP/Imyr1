@@ -179,12 +179,19 @@ async function ruajPershkrim(){
   $('e_next').disabled=true;
   try{
     const perm=$('e_perm').value.trim();
-    await fetch('/api/permbledhje',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({permbledhje:perm})});
+    const rikombinim = !!window.__pamjeVecante;   // vetem Cilesimet/Dashboard-standalone, jo wizard-i i pare
+    const r=await(await fetch('/api/permbledhje',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({permbledhje:perm, rikombinim})})).json();
     une.permbledhje=perm;
+    window.__permOrig=perm;
     const msg=$('e_msg');
-    if(msg){ msg.className='msg ok'; msg.textContent='✓ U ruajt.'; }
-    $('e_next').disabled=false;
-  }catch(e){ $('e_msg').className='msg err'; $('e_msg').textContent='Gabim: '+e.message; $('e_next').disabled=false; }
+    if(rikombinim && r.kombinim===false && r.arsyeja==='snippet'){
+      if(msg){ msg.className='msg err'; msg.textContent="U ruajt, por studimi AI u pengua sepse s'keni një snippet reklamë aktive (për shfaqjen e reklamave të të tjerëve)."; }
+    } else {
+      if(msg){ msg.className='msg ok'; msg.textContent='✓ U ruajt.'; }
+    }
+  }catch(e){ $('e_msg').className='msg err'; $('e_msg').textContent='Gabim: '+e.message; }
+  $('e_next').disabled=true;
 }
 
 // ---------- LLOJET E REKLAMES (Image / Video / HTML5) ----------
@@ -1590,6 +1597,7 @@ function krijoReklame(m, s){
   adTypeUI($('adTypeWrap2'));
 }
 function mainCilesimet(m){
+  window.__pamjeVecante=true;
   m.innerHTML='<h2 class="h">Cilësimet</h2>'+
     '<p class="small" style="margin:10px 0 16px;">Këtu do të mund të aktivizosh ose çaktivizosh funksione të llogarisë tënde.</p>'+
     '<div class="card" style="margin-bottom:16px;">'+
@@ -2245,6 +2253,12 @@ function stepPershkrimi(b){
       '<div class="msg" id="e_msg"></div>'+
     '</div>';
   if(une.permbledhje){ $('d_res').classList.remove('hide'); $('e_perm').value=une.permbledhje; }
+  window.__permOrig = une.permbledhje || '';
+  const enBtn=$('e_next');
+  if(enBtn) enBtn.disabled = true;
+  $('e_perm').addEventListener('input', function(){
+    if(enBtn) enBtn.disabled = (this.value.trim() === (window.__permOrig||'').trim());
+  });
   ngarkoAnalizoMbetur();
 }
 async function ngarkoAnalizoMbetur(){
@@ -2270,6 +2284,8 @@ async function wizAnalizo(){
     $('e_perm').value = r.permbledhje || pershkrimi;
     $('d_res').classList.remove('hide');
     une.pershkrimi=pershkrimi;
+    const enBtn2=$('e_next');
+    if(enBtn2) enBtn2.disabled = ($('e_perm').value.trim() === (window.__permOrig||'').trim());
     ngarkoAnalizoMbetur();
   }catch(e){ $('d_msg').className='msg err'; $('d_msg').textContent='Gabim: '+e.message; }
   $('d_btn').disabled=false;
