@@ -814,7 +814,7 @@ app.post('/api/permbledhje', iLoguar, async (req, res) => {
     if (!kaSnippetAktiv) {
       return res.json({ ok: true, kombinim: false, arsyeja: 'snippet' });
     }
-    kombinimi.kombinoBiznesin(req.biznesId).catch(() => {});
+    kombinimi.rikombinoBiznesin(req.biznesId).catch(() => {});
     res.json({ ok: true, kombinim: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
