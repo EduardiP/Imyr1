@@ -169,4 +169,30 @@ async function kombinoBiznesin(bizId) {
   }
 }
 
-module.exports = { init, kombinoBiznesin, tipetPerputhen };
+// --- FSHI çiftet EKZISTUESE te nje biznesi te vetem (te dyja drejtimet) ---
+async function fshiCiftetEBiznesit(bizId) {
+  await _pool.query('DELETE FROM perputhjet WHERE reklamues_id=$1 OR host_id=$1', [bizId]);
+}
+
+// --- RIKOMBINIM I PLOTE per nje biznes te vetem ---
+// Ndryshe nga kombinoBiznesin (qe anashkalon çiftet ekzistuese), kjo i FSHIN çiftet e
+// ketij biznesi specifik dhe i rillogarit te GJITHA nga e para (p.sh. pas ndryshimit te
+// pershkrimit). S'prek çiftet mes bizneseve te tjera me njeri-tjetrin.
+async function rikombinoBiznesin(bizId) {
+  if (!_pool) return;
+  try {
+    await fshiCiftetEBiznesit(bizId);
+    const vetja = await merrBiznesin(bizId);
+    if (!eshteGati(vetja)) return;
+    const tetjeret = await biznesetPerKombinim(vetja);
+    if (!tetjeret.length) return;
+    for (const tjetri of tetjeret) {
+      const skor = await skoroCiftin(vetja, tjetri);
+      if (skor) await ruajCiftin(vetja.id, tjetri.id, skor.ab, skor.ba);
+    }
+  } catch (e) {
+    console.error('rikombinoBiznesin deshtoi:', e.message);
+  }
+}
+
+module.exports = { init, kombinoBiznesin, rikombinoBiznesin, tipetPerputhen };
