@@ -69,6 +69,9 @@ pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS barazi_perqindje INTEG
 pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS hosting_menyra TEXT NOT NULL DEFAULT 'te-gjitha'`).catch(e => console.error('migrim hosting_menyra:', e.message));
 pool.query(`ALTER TABLE snippetet ADD COLUMN IF NOT EXISTS barazi_perqindje INTEGER`).catch(e => console.error('migrim barazi_perqindje (snippetet):', e.message));
 
+// Migrim: tabela `balancet` per regjistrimin e vendimeve ne logjiken Balance
+require('./balanca')(pool).init().catch(e => console.error('init balancet:', e.message));
+
 // --- Ruajtja e skedareve (Cloudflare R2) ---
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 const s3 = process.env.R2_ENDPOINT ? new S3Client({
@@ -1818,6 +1821,86 @@ app.get('/api/admin/balancat', iAdmin, async (req, res) => {
       neto: x.marra_shfaqje - x.dhene_shfaqje
     })));
   } catch(e){ res.status(500).json({ error: e.message }); }
+});
+
+// --- BALANCET (ANALITIKE): lista e bizneseve Balance me numra permbledhes te vendimeve ---
+app.get('/api/admin/balancet-lista', iAdmin, async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT b.id, b.emri, b.email,
+        COALESCE(v.vetem, 0)::int        AS fitore_vetem,
+        COALESCE(v.fit_barazim, 0)::int  AS fitore_barazim,
+        COALESCE(v.pjes_barazim, 0)::int AS pjesemarrje_barazim
+      FROM bizneset b
+      LEFT JOIN (
+        SELECT reklamues_id,
+          COUNT(*) FILTER (WHERE fitoi=true  AND me_barazim=false)::int AS vetem,
+          COUNT(*) FILTER (WHERE fitoi=true  AND me_barazim=true )::int AS fit_barazim,
+          COUNT(*) FILTER (WHERE                me_barazim=true )::int AS pjes_barazim
+        FROM balancet GROUP BY reklamues_id
+      ) v ON v.reklamues_id = b.id
+      WHERE b.logjika_shperndarjes='barazi'
+      ORDER BY b.emri`);
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- BALANCET (ANALITIKE): detajet e nje biznesi (dy grupime) ---
+//   vetem      → rreshtat ku ky biznes ka fituar si i vetem (pa barazim)
+//   me_barazim → vendimet ku ky biznes ishte pjesemarres ne barazim (grupimi i plote)
+app.get('/api/admin/balancet/:id', iAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.status(400).json({ error: 'ID e pavlefshme' });
+  try {
+    // Tabela 1 — fitore si i vetem
+    const vetemQ = await pool.query(`
+      SELECT b.host_id, b.deficit, b.created_at,
+        (SELECT emri FROM bizneset WHERE id = b.host_id) AS host_emri
+      FROM balancet b
+      WHERE b.reklamues_id=$1 AND b.fitoi=true AND b.me_barazim=false
+      ORDER BY b.created_at DESC
+      LIMIT 200`, [id]);
+
+    // Tabela 2 — vendimet me barazim ku ky biznes ka marre pjese
+    const vendQ = await pool.query(`
+      SELECT DISTINCT vendim_id FROM balancet
+      WHERE reklamues_id=$1 AND me_barazim=true
+      ORDER BY vendim_id DESC LIMIT 200`, [id]);
+
+    const vendimIdet = vendQ.rows.map(x => x.vendim_id);
+    let meBarazim = [];
+    if (vendimIdet.length) {
+      const detQ = await pool.query(`
+        SELECT b.vendim_id, b.host_id, b.reklamues_id, b.deficit, b.ai_skori, b.fitoi, b.created_at,
+          (SELECT emri FROM bizneset WHERE id = b.host_id)      AS host_emri,
+          (SELECT emri FROM bizneset WHERE id = b.reklamues_id) AS reklamues_emri
+        FROM balancet b
+        WHERE b.vendim_id = ANY($1::bigint[])
+        ORDER BY b.vendim_id DESC, b.ai_skori DESC NULLS LAST`, [vendimIdet]);
+
+      const grupet = {};
+      detQ.rows.forEach(r => {
+        if (!grupet[r.vendim_id]) grupet[r.vendim_id] = {
+          vendim_id: r.vendim_id,
+          host_id: r.host_id,
+          host_emri: r.host_emri,
+          created_at: r.created_at,
+          kandidatet: []
+        };
+        grupet[r.vendim_id].kandidatet.push({
+          reklamues_id: r.reklamues_id,
+          reklamues_emri: r.reklamues_emri,
+          deficit: r.deficit,
+          ai_skori: r.ai_skori,
+          fitoi: r.fitoi
+        });
+      });
+      // Ruaj renditjen sipas vendim_id DESC
+      meBarazim = vendimIdet.map(v => grupet[v]).filter(Boolean);
+    }
+
+    res.json({ vetem: vetemQ.rows, me_barazim: meBarazim });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Detajet e nje biznesi + statistika
