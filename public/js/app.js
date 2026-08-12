@@ -1619,7 +1619,84 @@ function cilAccount(body){
   stepPershkrimi($('cl_pershkrimi_wrap'));
 }
 function cilDelivery(body){
-  body.innerHTML='<h2 class="h">Ad Delivery</h2>';
+  body.innerHTML='<h2 class="h">Ad Delivery</h2>'+
+    '<div class="tabs" id="adDelTabs" style="margin:14px 0 20px;"></div>'+
+    '<div id="adDelBody"></div>';
+  renderAdDelTabs();
+  adDelShkoTek(_adDelTab);
+}
+var _adDelTab='hosting';
+function renderAdDelTabs(){
+  var TABS=[{k:'hosting',l:'Hosting'},{k:'promotion',l:'Promotion'}];
+  var el=$('adDelTabs'); if(!el) return; el.innerHTML='';
+  TABS.forEach(function(t){
+    var b=document.createElement('div');
+    b.className='tab'+(t.k===_adDelTab?' active':'');
+    b.textContent=t.l;
+    b.onclick=function(){ adDelShkoTek(t.k); };
+    el.appendChild(b);
+  });
+}
+function adDelShkoTek(tab){
+  _adDelTab=tab; renderAdDelTabs();
+  var body=$('adDelBody'); if(!body) return;
+  if(tab==='hosting') return adDelHosting(body);
+  if(tab==='promotion') return adDelPromotion(body);
+}
+
+// ═══ HOSTING — struktura (pa funksion real ende) ═══
+var _hostMenyra='vecmas'; // 'vecmas' (parazgjedhur) | 'te-gjitha'
+async function adDelHosting(body){
+  body.innerHTML=
+    '<label>Si do t\'i caktosh përqindjet e shpërndarjes?</label>'+
+    '<select id="hostMenyra" onchange="hostNdryshoMenyren(this.value)" style="width:100%;max-width:320px;padding:9px;background:#0e1116;border:1px solid var(--line);border-radius:8px;color:var(--txt);">'+
+      '<option value="vecmas" selected>Snippet veç e veç</option>'+
+      '<option value="te-gjitha">Të gjithë snippet-et</option>'+
+    '</select>'+
+    '<div id="hostPercentazhet" style="margin-top:20px;"></div>';
+  await hostRenderPercentazhet();
+}
+function hostNdryshoMenyren(v){ _hostMenyra=v; hostRenderPercentazhet(); }
+function hostSliderHTML(id, ankandFillestar){
+  ankandFillestar = ankandFillestar==null ? 50 : ankandFillestar;
+  return '<div style="margin-top:6px;">'+
+    '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">'+
+      '<span>Ankand: <b id="'+id+'_ankand_v">'+ankandFillestar+'%</b></span>'+
+      '<span>Balancë: <b id="'+id+'_bal_v">'+(100-ankandFillestar)+'%</b></span>'+
+    '</div>'+
+    '<input type="range" min="0" max="100" value="'+ankandFillestar+'" id="'+id+'" style="width:100%;" oninput="hostSliderNdrysho(\''+id+'\', this.value)">'+
+  '</div>';
+}
+function hostSliderNdrysho(id, v){
+  v=parseInt(v,10);
+  var a=$(id+'_ankand_v'), b=$(id+'_bal_v');
+  if(a) a.textContent=v+'%';
+  if(b) b.textContent=(100-v)+'%';
+}
+async function hostRenderPercentazhet(){
+  var el=$('hostPercentazhet'); if(!el) return;
+  if(_hostMenyra==='te-gjitha'){
+    el.innerHTML='<div class="card">'+hostSliderHTML('host_te_gjitha',50)+'</div>';
+    return;
+  }
+  el.innerHTML='<p class="small mut">Po ngarkoj snippet-et…</p>';
+  try{
+    var r=await (await fetch('/api/snippetet')).json();
+    var lista=r.snippetet||[];
+    if(!lista.length){ el.innerHTML='<p class="small mut">Ende s\'ke snippet-e.</p>'; return; }
+    el.innerHTML=lista.map(function(sn){
+      var id='host_sn_'+sn.id;
+      return '<div class="card" style="margin-bottom:12px;">'+
+        '<div style="font-weight:600;margin-bottom:4px;">'+esc(sn.emri||('Snippet #'+sn.id))+'</div>'+
+        hostSliderHTML(id,50)+
+      '</div>';
+    }).join('');
+  }catch(e){ el.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
+}
+
+// ═══ PROMOTION — ende bosh ═══
+function adDelPromotion(body){
+  body.innerHTML='<h2 class="h" style="font-size:16px;">Promotion</h2><p class="small mut" style="margin-top:8px;">Së shpejti.</p>';
 }
 async function ruajLogjikaCilesime(){
   const v = segVal('cl_logjika')||'ankand';
