@@ -90,7 +90,7 @@ module.exports = function (pool) {
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
           [vendimId, hostId, id, deficit, aiSkori, id === fituesId, meBarazim, snippetId || null]);
       }
-    } catch (e) { /* mos e ndal vendimin nese regjistrimi deshton */ }
+    } catch (e) { console.error('regjistroVendim DESHTOI:', e.message); }
   }
 
   // FUNKSIONI KRYESOR
