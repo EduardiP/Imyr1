@@ -96,7 +96,7 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
   if (shkoTeBarazi) {
     // ═══ PISHINA BALANCE: fiton biznesi me deficitin me te madh (jo weighted-random) ═══
     const modBalanca = balanca(pool);
-    fituesBizId = await modBalanca.zgjidhFituesinBalance(biznesetKand.map(k => k.biznes_id));
+    fituesBizId = await modBalanca.zgjidhFituesinBalance(biznesetKand.map(k => k.biznes_id), hostId, snippetId);
     if (!fituesBizId) return null;
   } else {
     // ═══ PISHINA ANKAND: pikerisht logjika ekzistuese, e paprekur ═══
