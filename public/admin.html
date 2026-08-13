@@ -590,7 +590,20 @@ esc(b.emri)+' <span class="mut">('+(b.neto>0?'+':'')+b.neto+')</span></div>';
 async function balNgarkoDetajet(){
 const el=$('balDetajeLista'); if(!el) return;
 try{
-const lista=await(await fetch('/api/admin/balancet-lista')).json();
+const resp=await fetch('/api/admin/balancet-lista');
+if(!resp.ok){
+  el.innerHTML='<p class="small" style="color:var(--err);">Endpoint-i s\'u gjet ose dështoi (HTTP '+resp.status+'). Rifresko serverin dhe provo prapë.</p>';
+  return;
+}
+const lista=await resp.json();
+if(lista && lista.error){
+  el.innerHTML='<p class="small" style="color:var(--err);">Gabim serveri: '+esc(lista.error)+'</p>';
+  return;
+}
+if(!Array.isArray(lista)){
+  el.innerHTML='<p class="small" style="color:var(--err);">Përgjigje e papritur nga serveri.</p>';
+  return;
+}
 if(!lista.length){ el.innerHTML='<p class="small mut">S\'ka biznese në Balance.</p>'; return; }
 el.innerHTML=lista.map(function(b){
 return '<div style="border:1px solid var(--line);border-radius:8px;margin-bottom:8px;overflow:hidden;">'+
@@ -601,7 +614,7 @@ return '<div style="border:1px solid var(--line);border-radius:8px;margin-bottom
 '<div id="balBiz'+b.id+'" class="hide" style="padding:12px 14px;border-top:1px solid #20262f;background:#0a0d12;">Po ngarkoj…</div>'+
 '</div>';
 }).join('');
-}catch(e){ el.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
+}catch(e){ el.innerHTML='<p class="small" style="color:var(--err);">Gabim rrjeti: '+esc(e.message)+'</p>'; }
 }
 async function balToggleBiz(id){
 const box=$('balBiz'+id), arr=$('balArr'+id);
