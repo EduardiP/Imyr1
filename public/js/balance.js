@@ -3,14 +3,51 @@
 // jane TE PERBASHKETA me llogarine Ankand — s'duplikohen. Vetem reklamat, Dashboard-i, My Ads,
 // dhe Analytics kane pamje te veçante, filtruar sipas logjika_shperndarjes==='barazi' / burimi='barazi'.
 //
-// Modaliteti ruhet ne nje ndryshore globale (jo ne history) — thjesht nderron cfare shfaqin
-// funksionet ekzistuese, njesoj si nje filter, jo nje llogari/login e re.
+// VLERAT: __llogariaModaliteti mban VETEM 'ankand' ose 'barazi' — te njejtat qe kupton serveri.
+// Nuk perdoret me vlera 'balance' — 'barazi' eshte vlera e sakte per DB dhe API.
+//
+// SINKRONIZIM ME SERVERIN:
+// Kur perdoruesi klikon "Switch to Balance Account", perditesohet edhe `bizneset.logjika_shperndarjes`
+// te DB-ja, keshtu qe:
+//   (a) Reklamat e krijuara pas kesaj marrin logjiken e re si default.
+//   (b) Biznesi shfaqet menjehere te admin panel → Balancat.
+//   (c) Modaliteti persiston nepër rifreskime — lexohet nga biznesi ne boot.
 
-window.__llogariaModaliteti = window.__llogariaModaliteti || 'ankand'; // 'ankand' | 'balance'
+// Vlera fillestare (do te perditesohet nga `une` sapo te jete e ngarkuar)
+window.__llogariaModaliteti = window.__llogariaModaliteti || 'ankand';
 
-function switchLlogaria(){
-  window.__llogariaModaliteti = (window.__llogariaModaliteti==='balance') ? 'ankand' : 'balance';
-  renderMain({nav:curNav});
+// Sinkronizim me `une` — thirret perpara se te ndertohet menyja
+function _sinkronizoModalitetin(){
+  if(window.une && window.une.logjika_shperndarjes){
+    window.__llogariaModaliteti = (window.une.logjika_shperndarjes==='barazi') ? 'barazi' : 'ankand';
+  }
+}
+
+// Monkey-patch renderUserMenu qe modaliteti te sinkronizohet nga `une` para se te lexohet labelli
+(function(){
+  if(typeof window.renderUserMenu === 'function'){
+    var _orig = window.renderUserMenu;
+    window.renderUserMenu = function(){
+      _sinkronizoModalitetin();
+      return _orig.apply(this, arguments);
+    };
+  }
+})();
+
+async function switchLlogaria(){
+  var iRi = (window.__llogariaModaliteti==='barazi') ? 'ankand' : 'barazi';
+  // Sinkronizo me serverin PARA se te ndryshohet UI-ja
+  try{
+    var r = await (await fetch('/api/logjika-shperndarjes',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({logjika_shperndarjes: iRi})})).json();
+    if(r.error){ alert('Gabim: '+r.error); return; }
+  }catch(e){ alert('Gabim gjatë ndërrimit të llogarisë: '+e.message); return; }
+  // Perditeso ndryshoret lokale
+  window.__llogariaModaliteti = iRi;
+  if(window.une) window.une.logjika_shperndarjes = iRi;
+  // Rifresko labelin e menyse dhe pamjen
+  if(typeof renderUserMenu === 'function') renderUserMenu();
+  renderMain({nav: curNav});
 }
 
 // ================= DASHBOARD (Balance) =================
@@ -27,8 +64,8 @@ async function renderDashStatusBalance(){
   const el=$('vstepBal'); if(!el) return; el.innerHTML='<p class="small mut">Po kontrolloj…</p>';
   let kaReklameBarazi=false;
   try{
-    const rows=await(await fetch('/api/reklamat')).json();
-    kaReklameBarazi = Array.isArray(rows) && rows.some(r=>r.logjika_shperndarjes==='barazi');
+    const rows=await(await fetch('/api/reklamat?logjika=barazi')).json();
+    kaReklameBarazi = Array.isArray(rows) && rows.length>0;
   }catch(e){}
   el.innerHTML='';
   const rreshtat=[
