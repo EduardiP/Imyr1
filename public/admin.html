@@ -596,7 +596,10 @@ el.innerHTML=lista.map(function(b){
 return '<div style="border:1px solid var(--line);border-radius:8px;margin-bottom:8px;overflow:hidden;">'+
 '<div onclick="balToggleBiz('+b.id+')" style="padding:11px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:#0e1116;">'+
 '<span style="font-weight:600;">'+esc(b.emri||'—')+'</span>'+
-'<span class="small mut">Fitore vetëm: <b style="color:var(--txt);">'+b.fitore_vetem+'</b> · Barazim: <b style="color:var(--txt);">'+b.fitore_barazim+'</b>/'+b.pjesemarrje_barazim+' &nbsp; <span id="balArr'+b.id+'">▸</span></span>'+
+'<span style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">'+
+'<span class="small mut">Si reklamues — Fitore: <b style="color:var(--txt);">'+b.fitore_vetem+'</b> · Barazim: <b style="color:var(--txt);">'+b.fitore_barazim+'</b>/'+b.pjesemarrje_barazim+'</span>'+
+'<span class="small mut">Si host — Fitore: <b style="color:var(--txt);">'+b.host_fitore_vetem+'</b> · Barazim: <b style="color:var(--txt);">'+b.host_fitore_barazim+'</b>/'+b.host_pjesemarrje_barazim+' &nbsp; <span id="balArr'+b.id+'">▸</span></span>'+
+'</span>'+
 '</div>'+
 '<div id="balBiz'+b.id+'" class="hide" style="padding:12px 14px;border-top:1px solid #20262f;background:#0a0d12;">Po ngarkoj…</div>'+
 '</div>';
