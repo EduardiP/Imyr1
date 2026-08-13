@@ -464,7 +464,7 @@ function renderUserMenu(){
 
   const items = [
     { l:'Profili',           fn:function(){ nav({v:'profile', nav:'profili'}); } },
-    { l: (window.__llogariaModaliteti==='balance' ? 'Switch to Auction Account' : 'Switch to Balance Account'),
+    { l: (window.__llogariaModaliteti==='barazi' ? 'Switch to Auction Account' : 'Switch to Balance Account'),
       fn:function(){ switchLlogaria(); } },
     { l:'Ekipi & Rolet',     fn:function(){ hapEkipin(); } },
     { l:'Faturimi & Plani',  fn:function(){ nav({v:'profile', nav:'plani'}); } },
@@ -494,7 +494,7 @@ function renderUserMenu(){
 function renderMain(s){
   s = s || {};
   const m=$('mainPanel');
-  if(curNav==='profili')    return s.edit ? profiliRenderEdit(m) : (window.__llogariaModaliteti==='balance' ? mainProfiliBalance(m) : mainProfili(m));
+  if(curNav==='profili')    return s.edit ? profiliRenderEdit(m) : (window.__llogariaModaliteti==='barazi' ? mainProfiliBalance(m) : mainProfili(m));
   if(curNav==='cilesimet')  return mainCilesimet(m);
   if(curNav==='plani')      return mainPlani(m);
   if(curNav==='suport')     return mainSuport(m);
@@ -632,7 +632,7 @@ async function mainNjoftimet(m){
   }catch(e){ $('njLista').innerHTML='<p class="small">Gabim.</p>'; }
 }
 function mainDashboard(m){
-  if(window.__llogariaModaliteti==='balance') return mainDashboardBalance(m);
+  if(window.__llogariaModaliteti==='barazi') return mainDashboardBalance(m);
   m.innerHTML='<h2 class="h">Statusi i llogarisë</h2>'+
     '<p class="small" style="margin:2px 0 18px;">Këto tregojnë çfarë është gati dhe çfarë jo. Kliko një rresht për ta plotësuar.</p>'+
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;">'+
