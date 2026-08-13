@@ -1836,10 +1836,7 @@ app.get('/api/admin/balancet-lista', iAdmin, async (req, res) => {
       SELECT b.id, b.emri, b.email,
         COALESCE(v.vetem, 0)::int        AS fitore_vetem,
         COALESCE(v.fit_barazim, 0)::int  AS fitore_barazim,
-        COALESCE(v.pjes_barazim, 0)::int AS pjesemarrje_barazim,
-        COALESCE(h.vetem, 0)::int        AS host_fitore_vetem,
-        COALESCE(h.fit_barazim, 0)::int  AS host_fitore_barazim,
-        COALESCE(h.pjes_barazim, 0)::int AS host_pjesemarrje_barazim
+        COALESCE(v.pjes_barazim, 0)::int AS pjesemarrje_barazim
       FROM bizneset b
       LEFT JOIN (
         SELECT reklamues_id,
@@ -1848,13 +1845,6 @@ app.get('/api/admin/balancet-lista', iAdmin, async (req, res) => {
           COUNT(*) FILTER (WHERE                me_barazim=true )::int AS pjes_barazim
         FROM balancet GROUP BY reklamues_id
       ) v ON v.reklamues_id = b.id
-      LEFT JOIN (
-        SELECT host_id,
-          COUNT(*) FILTER (WHERE fitoi=true  AND me_barazim=false)::int AS vetem,
-          COUNT(*) FILTER (WHERE fitoi=true  AND me_barazim=true )::int AS fit_barazim,
-          COUNT(*) FILTER (WHERE                me_barazim=true )::int AS pjes_barazim
-        FROM balancet GROUP BY host_id
-      ) h ON h.host_id = b.id
       WHERE b.logjika_shperndarjes='barazi'
          OR EXISTS (SELECT 1 FROM promovimet p
                     WHERE p.biznes_id=b.id AND p.aktiv=true AND p.logjika_shperndarjes='barazi')
@@ -1950,66 +1940,7 @@ app.get('/api/admin/balancet/:id', iAdmin, async (req, res) => {
       })).sort((a, b) => b.ndodhi_here - a.ndodhi_here);
     }
 
-    // ═══ PIKËPAMJA E HOST-IT: kush konkurroi PËR TRAFIKUN TIM (kur ky biznes ishte host) ═══
-    // Tabela 3 — Fitore te ky host, PA barazim (i vetmi kandidat) — AGREGUAR sipas reklamues
-    const hostVetemQ = await pool.query(`
-      SELECT b.reklamues_id,
-        COUNT(*)::int AS shfaqje,
-        MAX(b.created_at) AS last_at,
-        (SELECT emri FROM bizneset WHERE id = b.reklamues_id) AS reklamues_emri
-      FROM balancet b
-      WHERE b.host_id=$1 AND b.fitoi=true AND b.me_barazim=false
-      GROUP BY b.reklamues_id
-      ORDER BY shfaqje DESC`, [id]);
-
-    // Tabela 4 — Skenaret e barazimit TE KY HOST (host fiks = $1, grupuar vetem sipas setit te kandidateve)
-    const hostVendQ = await pool.query(`
-      SELECT DISTINCT vendim_id FROM balancet
-      WHERE host_id=$1 AND me_barazim=true`, [id]);
-    const hostVendimIdet = hostVendQ.rows.map(x => x.vendim_id);
-    let hostSkenaret = [];
-    if (hostVendimIdet.length) {
-      const hostDetQ = await pool.query(`
-        SELECT b.vendim_id, b.reklamues_id, b.ai_skori, b.fitoi, b.created_at,
-          (SELECT emri FROM bizneset WHERE id = b.reklamues_id) AS reklamues_emri
-        FROM balancet b
-        WHERE b.vendim_id = ANY($1::bigint[])
-        ORDER BY b.vendim_id DESC, b.reklamues_id`, [hostVendimIdet]);
-
-      const hostVendimet = {};
-      hostDetQ.rows.forEach(r => {
-        if (!hostVendimet[r.vendim_id]) hostVendimet[r.vendim_id] = { created_at: r.created_at, kandidatet: [] };
-        hostVendimet[r.vendim_id].kandidatet.push({
-          reklamues_id: r.reklamues_id, reklamues_emri: r.reklamues_emri,
-          ai_skori: r.ai_skori, fitoi: r.fitoi
-        });
-      });
-
-      const hostSkenMap = {};
-      Object.values(hostVendimet).forEach(v => {
-        const kandIds = v.kandidatet.map(k => k.reklamues_id).sort((a,b) => a-b).join(',');
-        if (!hostSkenMap[kandIds]) hostSkenMap[kandIds] = {
-          last_at: v.created_at, ndodhi_here: 0, kandidatet: {}
-        };
-        const s = hostSkenMap[kandIds];
-        s.ndodhi_here++;
-        if (new Date(v.created_at) > new Date(s.last_at)) s.last_at = v.created_at;
-        v.kandidatet.forEach(k => {
-          if (!s.kandidatet[k.reklamues_id]) s.kandidatet[k.reklamues_id] = {
-            reklamues_id: k.reklamues_id, reklamues_emri: k.reklamues_emri,
-            ai_skori_latest: k.ai_skori, fitore: 0
-          };
-          if (k.fitoi) s.kandidatet[k.reklamues_id].fitore++;
-        });
-      });
-
-      hostSkenaret = Object.values(hostSkenMap).map(s => ({
-        last_at: s.last_at, ndodhi_here: s.ndodhi_here,
-        kandidatet: Object.values(s.kandidatet)
-      })).sort((a, b) => b.ndodhi_here - a.ndodhi_here);
-    }
-
-    res.json({ vetem: vetemQ.rows, skenaret, host_vetem: hostVetemQ.rows, host_skenaret: hostSkenaret });
+    res.json({ vetem: vetemQ.rows, skenaret });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
