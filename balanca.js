@@ -95,6 +95,7 @@ module.exports = function (pool) {
 
   // FUNKSIONI KRYESOR
   async function zgjidhFituesinBalance(kandidatIds, hostId, snippetId) {
+    console.error('DIAGNOSTIK zgjidhFituesinBalance: hostId=', hostId, 'tipi=', typeof hostId, 'snippetId=', snippetId);
     if (!kandidatIds || !kandidatIds.length) return null;
 
     // Rast me nje kandidat te vetem — regjistrim minimal, fiton menjehere
