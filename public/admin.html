@@ -596,10 +596,7 @@ el.innerHTML=lista.map(function(b){
 return '<div style="border:1px solid var(--line);border-radius:8px;margin-bottom:8px;overflow:hidden;">'+
 '<div onclick="balToggleBiz('+b.id+')" style="padding:11px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:#0e1116;">'+
 '<span style="font-weight:600;">'+esc(b.emri||'—')+'</span>'+
-'<span style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">'+
-'<span class="small mut">Si reklamues — Fitore: <b style="color:var(--txt);">'+b.fitore_vetem+'</b> · Barazim: <b style="color:var(--txt);">'+b.fitore_barazim+'</b>/'+b.pjesemarrje_barazim+'</span>'+
-'<span class="small mut">Si host — Fitore: <b style="color:var(--txt);">'+b.host_fitore_vetem+'</b> · Barazim: <b style="color:var(--txt);">'+b.host_fitore_barazim+'</b>/'+b.host_pjesemarrje_barazim+' &nbsp; <span id="balArr'+b.id+'">▸</span></span>'+
-'</span>'+
+'<span class="small mut">Fitore vetëm: <b style="color:var(--txt);">'+b.fitore_vetem+'</b> · Barazim: <b style="color:var(--txt);">'+b.fitore_barazim+'</b>/'+b.pjesemarrje_barazim+' &nbsp; <span id="balArr'+b.id+'">▸</span></span>'+
 '</div>'+
 '<div id="balBiz'+b.id+'" class="hide" style="padding:12px 14px;border-top:1px solid #20262f;background:#0a0d12;">Po ngarkoj…</div>'+
 '</div>';
@@ -651,46 +648,6 @@ s.kandidatet.map(function(k){
 var isThisBiz = k.reklamues_id === id;
 var stil = isThisBiz ? 'background:#0a2540;font-weight:600;' : '';
 return '<div class="krow" style="'+stil+'">'+
-'<span class="kc1">'+esc(k.reklamues_emri||('#'+k.reklamues_id))+'</span>'+
-'<span class="kc3">'+(k.ai_skori_latest!=null?k.ai_skori_latest:'—')+'</span>'+
-'<span class="kc3" style="color:var(--good);">'+k.fitore+'</span>'+
-'</div>';
-}).join('')+
-'</div>';
-}).join('');
-}
-h+='</div>';
-// ═ Ndarëse: pikëpamja e host-it (kush konkurroi PËR TRAFIKUN E TIJ, jo ku KONKURROI VETË) ═
-h+='<div style="height:1px;background:var(--line);margin:16px 0;"></div>';
-h+='<div style="font-size:12px;color:var(--mut);margin-bottom:12px;text-transform:uppercase;letter-spacing:.04em;">Si host — kush konkurroi për trafikun e tij</div>';
-// ═ Tabela 3 — Fitore te ky host, pa barazim (AGREGUAR sipas reklamues) ═
-h+='<div style="margin-bottom:18px;">'+
-'<div style="font-weight:600;font-size:13px;margin-bottom:6px;color:var(--acc);">Fitore te kjo faqe, si i vetëm ('+r.host_vetem.length+' reklamues)</div>';
-if(!r.host_vetem.length){
-h+='<p class="small mut">Ende s\'ka fitore si i vetëm te kjo faqe.</p>';
-} else {
-h+='<div class="ktabela">'+
-'<div class="krow khead"><span class="kc1">Reklamues</span><span class="kc3">Shfaqje</span><span class="kc3">E fundit</span></div>'+
-r.host_vetem.map(function(v){
-return '<div class="krow"><span class="kc1">'+esc(v.reklamues_emri||('#'+v.reklamues_id))+'</span>'+
-'<span class="kc3" style="font-weight:600;color:var(--acc);">'+v.shfaqje+'</span>'+
-'<span class="kc3" style="font-size:11px;">'+dt(v.last_at)+'</span></div>';
-}).join('')+
-'</div>';
-}
-h+='</div>';
-// ═ Tabela 4 — Skenaret e barazimit te ky host (host fiks = ky biznes) ═
-h+='<div>'+
-'<div style="font-weight:600;font-size:13px;margin-bottom:6px;color:var(--acc);">Skenarët e barazimit te kjo faqe ('+r.host_skenaret.length+')</div>';
-if(!r.host_skenaret.length){
-h+='<p class="small mut">Ende s\'ka pjesëmarrje në barazim te kjo faqe.</p>';
-} else {
-h+=r.host_skenaret.map(function(s){
-return '<div class="ktabela" style="margin-bottom:12px;">'+
-'<div class="krow khead"><span class="kc1">Ndodhi <b style="color:var(--txt);">'+s.ndodhi_here+'</b> herë · E fundit '+dt(s.last_at)+'</span></div>'+
-'<div class="krow khead"><span class="kc1">Reklamues</span><span class="kc3">AI (i fundit)</span><span class="kc3">Fitore</span></div>'+
-s.kandidatet.map(function(k){
-return '<div class="krow">'+
 '<span class="kc1">'+esc(k.reklamues_emri||('#'+k.reklamues_id))+'</span>'+
 '<span class="kc3">'+(k.ai_skori_latest!=null?k.ai_skori_latest:'—')+'</span>'+
 '<span class="kc3" style="color:var(--good);">'+k.fitore+'</span>'+
