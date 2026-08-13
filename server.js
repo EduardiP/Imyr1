@@ -1836,7 +1836,10 @@ app.get('/api/admin/balancet-lista', iAdmin, async (req, res) => {
       SELECT b.id, b.emri, b.email,
         COALESCE(v.vetem, 0)::int        AS fitore_vetem,
         COALESCE(v.fit_barazim, 0)::int  AS fitore_barazim,
-        COALESCE(v.pjes_barazim, 0)::int AS pjesemarrje_barazim
+        COALESCE(v.pjes_barazim, 0)::int AS pjesemarrje_barazim,
+        COALESCE(h.vetem, 0)::int        AS host_fitore_vetem,
+        COALESCE(h.fit_barazim, 0)::int  AS host_fitore_barazim,
+        COALESCE(h.pjes_barazim, 0)::int AS host_pjesemarrje_barazim
       FROM bizneset b
       LEFT JOIN (
         SELECT reklamues_id,
@@ -1845,6 +1848,13 @@ app.get('/api/admin/balancet-lista', iAdmin, async (req, res) => {
           COUNT(*) FILTER (WHERE                me_barazim=true )::int AS pjes_barazim
         FROM balancet GROUP BY reklamues_id
       ) v ON v.reklamues_id = b.id
+      LEFT JOIN (
+        SELECT host_id,
+          COUNT(*) FILTER (WHERE fitoi=true  AND me_barazim=false)::int AS vetem,
+          COUNT(*) FILTER (WHERE fitoi=true  AND me_barazim=true )::int AS fit_barazim,
+          COUNT(*) FILTER (WHERE                me_barazim=true )::int AS pjes_barazim
+        FROM balancet GROUP BY host_id
+      ) h ON h.host_id = b.id
       WHERE b.logjika_shperndarjes='barazi'
          OR EXISTS (SELECT 1 FROM promovimet p
                     WHERE p.biznes_id=b.id AND p.aktiv=true AND p.logjika_shperndarjes='barazi')
