@@ -99,22 +99,68 @@ function cilAccount(body){
   stepPershkrimi($('cl_pershkrimi_wrap'));
 }
 
-// ═══ HOSTING — struktura (pa funksion real ende) ═══
-var _hostMenyra='vecmas'; // 'vecmas' (parazgjedhur) | 'te-gjitha'
-var _hostCache=null; // { menyra, barazi_perqindje, snippetet:[{id,emri,barazi_perqindje}] } — nga /api/hosting/cilesimet
+// ═══ HOSTING — dy nivele zgjedhjeje: (1) mode automatik/manual, (2) nese manual → vec e vec / te-gjitha ═══
+var _hostMode='automatik'; // 'automatik' (i rekomanduar) | 'manual'
+var _hostMenyra='vecmas'; // 'vecmas' | 'te-gjitha' — vetem kur _hostMode==='manual'
+var _hostCache=null; // { mode, menyra, barazi_perqindje, snippetet:[{id,emri,barazi_perqindje}] }
+
 async function adDelHosting(body){
   body.innerHTML='<h2 class="h">Hosting</h2>'+
-    '<label style="margin-top:14px;">Si do t\'i caktosh përqindjet e shpërndarjes?</label>'+
-    '<select id="hostMenyra" onchange="hostNdryshoMenyren(this.value)" style="width:100%;max-width:320px;padding:9px;background:#0e1116;border:1px solid var(--line);border-radius:8px;color:var(--txt);">'+
-      '<option value="vecmas">Snippet veç e veç</option>'+
-      '<option value="te-gjitha">Të gjithë snippet-et</option>'+
-    '</select>'+
-    '<div id="hostPercentazhet" style="margin-top:20px;"></div>'+
+    '<p class="small mut" style="margin:4px 0 16px;">Zgjidh si do të vendoset shpërndarja e reklamave në snippet-et e tua.</p>'+
+    '<div id="hostModeWrap" style="margin-bottom:18px;"></div>'+
+    '<div id="hostManualWrap"></div>'+
     '<button class="btn" onclick="hostRuaj()" style="margin-top:16px;">Ruaj</button>'+
     '<span class="small" id="hostRuajMsg" style="margin-left:10px;"></span>';
   try{ _hostCache = await (await fetch('/api/hosting/cilesimet')).json(); }
-  catch(e){ _hostCache = { menyra:'te-gjitha', barazi_perqindje:50, snippetet:[] }; }
+  catch(e){ _hostCache = { mode:'automatik', menyra:'te-gjitha', barazi_perqindje:50, snippetet:[] }; }
+  _hostMode   = (_hostCache && _hostCache.mode)   || 'automatik';
   _hostMenyra = (_hostCache && _hostCache.menyra) || 'te-gjitha';
+  hostRenderMode();
+  await hostRenderManual();
+}
+
+function hostRenderMode(){
+  var el=$('hostModeWrap'); if(!el) return;
+  function opt(v, titull, pershkrim, isRecommended){
+    var sel = _hostMode===v;
+    var badge = isRecommended ? '<span style="background:var(--acc);color:#fff;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;margin-left:8px;">REKOMANDUAR</span>' : '';
+    return '<label onclick="hostZgjidhMode(\''+v+'\')" style="display:block;cursor:pointer;padding:14px;border:1px solid '+(sel?'var(--acc)':'var(--line)')+';border-radius:8px;margin-bottom:8px;background:'+(sel?'rgba(59,130,246,0.08)':'transparent')+';">'+
+      '<div style="display:flex;align-items:center;gap:10px;">'+
+        '<span style="width:16px;height:16px;border-radius:50%;border:2px solid '+(sel?'var(--acc)':'var(--mut)')+';display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
+          (sel?'<span style="width:8px;height:8px;border-radius:50%;background:var(--acc);"></span>':'')+
+        '</span>'+
+        '<span style="font-weight:600;">'+titull+'</span>'+badge+
+      '</div>'+
+      '<div class="small mut" style="margin-top:6px;margin-left:26px;">'+pershkrim+'</div>'+
+    '</label>';
+  }
+  el.innerHTML=
+    opt('automatik','Automatik','Sistemi vendos vetë ekuilibrin optimal Ankand↔Balancë për çdo snippet, bazuar në aktivitetin e biznesit tënd.',true)+
+    opt('manual','Manual','Cakto vetë përqindjen Ankand/Balancë — për të gjithë snippet-et bashkë, ose veç e veç për secilin.',false);
+}
+
+function hostZgjidhMode(v){
+  _hostMode=v;
+  hostRenderMode();
+  hostRenderManual();
+}
+
+async function hostRenderManual(){
+  var el=$('hostManualWrap'); if(!el) return;
+  if(_hostMode==='automatik'){
+    el.innerHTML='';
+    return;
+  }
+  // Mode = manual → shfaq strukturen ekzistuese (nenzgjedhja + sliderat)
+  el.innerHTML=
+    '<div style="margin-top:8px;padding:16px;border:1px solid var(--line);border-radius:8px;background:#0a0d12;">'+
+      '<label>Si do t\'i caktosh përqindjet manualisht?</label>'+
+      '<select id="hostMenyra" onchange="hostNdryshoMenyren(this.value)" style="width:100%;max-width:320px;padding:9px;background:#0e1116;border:1px solid var(--line);border-radius:8px;color:var(--txt);margin-top:6px;">'+
+        '<option value="vecmas">Snippet veç e veç</option>'+
+        '<option value="te-gjitha">Të gjithë snippet-et</option>'+
+      '</select>'+
+      '<div id="hostPercentazhet" style="margin-top:20px;"></div>'+
+    '</div>';
   var sel=$('hostMenyra'); if(sel) sel.value=_hostMenyra;
   await hostRenderPercentazhet();
 }
@@ -161,19 +207,22 @@ async function hostRenderPercentazhet(){
 }
 async function hostRuaj(){
   var msg=$('hostRuajMsg');
-  var payload={ menyra:_hostMenyra };
-  if(_hostMenyra==='te-gjitha'){
-    var inp=$('host_te_gjitha');
-    var ankandV = inp ? parseInt(inp.value,10) : 50;
-    payload.barazi_perqindje = 100-ankandV;
-  } else {
-    var lista=[];
-    document.querySelectorAll('#hostPercentazhet input[type="range"]').forEach(function(inp){
-      var sid=parseInt(inp.id.replace('host_sn_',''),10);
-      var ankandV=parseInt(inp.value,10);
-      if(sid) lista.push({ id:sid, barazi_perqindje:100-ankandV });
-    });
-    payload.snippetet=lista;
+  var payload={ mode:_hostMode };
+  if(_hostMode==='manual'){
+    payload.menyra=_hostMenyra;
+    if(_hostMenyra==='te-gjitha'){
+      var inp=$('host_te_gjitha');
+      var ankandV = inp ? parseInt(inp.value,10) : 50;
+      payload.barazi_perqindje = 100-ankandV;
+    } else {
+      var lista=[];
+      document.querySelectorAll('#hostPercentazhet input[type="range"]').forEach(function(inp){
+        var sid=parseInt(inp.id.replace('host_sn_',''),10);
+        var ankandV=parseInt(inp.value,10);
+        if(sid) lista.push({ id:sid, barazi_perqindje:100-ankandV });
+      });
+      payload.snippetet=lista;
+    }
   }
   try{
     var r=await (await fetch('/api/hosting/ruaj',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})).json();
