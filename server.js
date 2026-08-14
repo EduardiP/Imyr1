@@ -1830,6 +1830,7 @@ app.get('/api/admin/balancat', iAdmin, async (req, res) => {
 // --- BALANCET (ANALITIKE): lista e bizneseve Balance me numra permbledhes te vendimeve ---
 // Biznesi konsiderohet "ne Balance" nese: (a) ka logjika_shperndarjes='barazi' te bizneset,
 // OSE (b) ka te pakten nje reklame ne promovimet me logjika_shperndarjes='barazi'.
+// Numrat pasqyrojne aktivitetin si HOST (kush ka ofruar hapesire dhe cka ndodhi tek ai).
 app.get('/api/admin/balancet-lista', iAdmin, async (req, res) => {
   try {
     const r = await pool.query(`
@@ -1839,12 +1840,12 @@ app.get('/api/admin/balancet-lista', iAdmin, async (req, res) => {
         COALESCE(v.pjes_barazim, 0)::int AS pjesemarrje_barazim
       FROM bizneset b
       LEFT JOIN (
-        SELECT reklamues_id,
+        SELECT host_id,
           COUNT(*) FILTER (WHERE fitoi=true  AND me_barazim=false)::int AS vetem,
           COUNT(*) FILTER (WHERE fitoi=true  AND me_barazim=true )::int AS fit_barazim,
           COUNT(*) FILTER (WHERE                me_barazim=true )::int AS pjes_barazim
-        FROM balancet GROUP BY reklamues_id
-      ) v ON v.reklamues_id = b.id
+        FROM balancet GROUP BY host_id
+      ) v ON v.host_id = b.id
       WHERE b.logjika_shperndarjes='barazi'
          OR EXISTS (SELECT 1 FROM promovimet p
                     WHERE p.biznes_id=b.id AND p.aktiv=true AND p.logjika_shperndarjes='barazi')
@@ -1853,36 +1854,35 @@ app.get('/api/admin/balancet-lista', iAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// --- BALANCET (ANALITIKE): detajet e nje biznesi (dy grupime AGREGUAR) ---
-//   vetem    → nje rresht per HOST: sa here ka fituar ky biznes te ky host
-//   skenaret → nje rresht per skenar (host + set kandidatesh identike qe kane
-//              qene te barabarte): AI-ja e fundit + numri i fitoreve per secilin
+// --- BALANCET (ANALITIKE): detajet e nje biznesi si HOST (dy grupime AGREGUAR) ---
+//   vetem    → nje rresht per REKLAMUES: sa here ky reklamues ka fituar te ky host (pa barazim)
+//   skenaret → nje rresht per skenar (host eshte i njejti = ky biznes, kandidatet ndryshojne):
+//              AI-ja e fundit + numri i fitoreve per secilin kandidat
 app.get('/api/admin/balancet/:id', iAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (!id) return res.status(400).json({ error: 'ID e pavlefshme' });
   try {
-    // Tabela 1 — Fitore si i vetem, AGREGUAR sipas host
+    // Tabela 1 — Fitore si i vetem TE KY HOST, AGREGUAR sipas reklamuesit qe fitoi
     const vetemQ = await pool.query(`
-      SELECT b.host_id,
+      SELECT b.reklamues_id,
         COUNT(*)::int AS shfaqje,
         MAX(b.created_at) AS last_at,
-        (SELECT emri FROM bizneset WHERE id = b.host_id) AS host_emri
+        (SELECT emri FROM bizneset WHERE id = b.reklamues_id) AS reklamues_emri
       FROM balancet b
-      WHERE b.reklamues_id=$1 AND b.fitoi=true AND b.me_barazim=false
-      GROUP BY b.host_id
+      WHERE b.host_id=$1 AND b.fitoi=true AND b.me_barazim=false
+      GROUP BY b.reklamues_id
       ORDER BY shfaqje DESC`, [id]);
 
-    // Tabela 2 — Skenaret e barazimit. Marrim raw pastaj agregojme ne JS
-    // sipas (host_id + set i kandidateve te barabarte).
+    // Tabela 2 — Skenaret e barazimit TE KY HOST. Marrim raw pastaj agregojme ne JS
+    // sipas setit te kandidateve (host eshte i njejti gjithmone = $1).
     const vendQ = await pool.query(`
       SELECT DISTINCT vendim_id FROM balancet
-      WHERE reklamues_id=$1 AND me_barazim=true`, [id]);
+      WHERE host_id=$1 AND me_barazim=true`, [id]);
     const vendimIdet = vendQ.rows.map(x => x.vendim_id);
     let skenaret = [];
     if (vendimIdet.length) {
       const detQ = await pool.query(`
-        SELECT b.vendim_id, b.host_id, b.reklamues_id, b.ai_skori, b.fitoi, b.created_at,
-          (SELECT emri FROM bizneset WHERE id = b.host_id)      AS host_emri,
+        SELECT b.vendim_id, b.reklamues_id, b.ai_skori, b.fitoi, b.created_at,
           (SELECT emri FROM bizneset WHERE id = b.reklamues_id) AS reklamues_emri
         FROM balancet b
         WHERE b.vendim_id = ANY($1::bigint[])
@@ -1892,8 +1892,6 @@ app.get('/api/admin/balancet/:id', iAdmin, async (req, res) => {
       const vendimet = {};
       detQ.rows.forEach(r => {
         if (!vendimet[r.vendim_id]) vendimet[r.vendim_id] = {
-          host_id: r.host_id,
-          host_emri: r.host_emri,
           created_at: r.created_at,
           kandidatet: []
         };
@@ -1905,14 +1903,11 @@ app.get('/api/admin/balancet/:id', iAdmin, async (req, res) => {
         });
       });
 
-      // Hapi 2: grupim per skenar = host_id + sorted candidate ids
+      // Hapi 2: grupim per skenar = set i sorted candidate ids (host eshte i njejti)
       const skenMap = {};
       Object.values(vendimet).forEach(v => {
-        const kandIds = v.kandidatet.map(k => k.reklamues_id).sort((a,b) => a-b).join(',');
-        const skenId = v.host_id + ':' + kandIds;
+        const skenId = v.kandidatet.map(k => k.reklamues_id).sort((a,b) => a-b).join(',');
         if (!skenMap[skenId]) skenMap[skenId] = {
-          host_id: v.host_id,
-          host_emri: v.host_emri,
           last_at: v.created_at,
           ndodhi_here: 0,
           kandidatet: {}
@@ -1932,8 +1927,6 @@ app.get('/api/admin/balancet/:id', iAdmin, async (req, res) => {
       });
 
       skenaret = Object.values(skenMap).map(s => ({
-        host_id: s.host_id,
-        host_emri: s.host_emri,
         last_at: s.last_at,
         ndodhi_here: s.ndodhi_here,
         kandidatet: Object.values(s.kandidatet)
