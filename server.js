@@ -1883,6 +1883,14 @@ app.get('/api/admin/automatik/:id', iAdmin, async (req, res) => {
         COUNT(*) FILTER (WHERE pishina_fituese='barazi')::int AS balance_fitore
       FROM automatik_vendime WHERE host_id=$1`, [id]);
 
+    // Vendimi i fundit i konkurruar — shuma e pikeve te perzgjedhjes per te dyja pishinat
+    const fundQ = await pool.query(`
+      SELECT pika_totale_ankand, pika_totale_barazi
+      FROM automatik_vendime
+      WHERE host_id=$1 AND u_konkurrua=true
+      ORDER BY created_at DESC LIMIT 1`, [id]);
+    const pikaFundit = fundQ.rows[0] || { pika_totale_ankand: null, pika_totale_barazi: null };
+
     async function tabelaPerPishine(pishina) {
       const r = await pool.query(`
         SELECT f.biznes_id,
@@ -1904,8 +1912,16 @@ app.get('/api/admin/automatik/:id', iAdmin, async (req, res) => {
 
     res.json({
       shfaqje_totale: totQ.rows[0].shfaqje_totale,
-      ankand: { fitore_gjithsej: totQ.rows[0].ankand_fitore, kandidatet: ankandKand },
-      balance: { fitore_gjithsej: totQ.rows[0].balance_fitore, kandidatet: balanceKand }
+      ankand: {
+        fitore_gjithsej: totQ.rows[0].ankand_fitore,
+        pika_totale_fundit: pikaFundit.pika_totale_ankand,
+        kandidatet: ankandKand
+      },
+      balance: {
+        fitore_gjithsej: totQ.rows[0].balance_fitore,
+        pika_totale_fundit: pikaFundit.pika_totale_barazi,
+        kandidatet: balanceKand
+      }
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
