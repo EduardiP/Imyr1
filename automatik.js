@@ -407,11 +407,13 @@ module.exports = function (pool) {
       const rreshta = [];
       (rezultat.topAnkand || []).forEach(x => rreshta.push({
         pishina: 'ankand', biznes_id: x.biznes_id, pesha: x.pesha,
-        pika: pikaPerzgjedhjeje(x.pesha), fitoi: x.biznes_id === fituesBizId
+        pika: pikaPerzgjedhjeje(x.pesha),
+        fitoi: (rezultat.pishina === 'ankand') && (x.biznes_id === fituesBizId)
       }));
       (rezultat.topBarazi || []).forEach(x => rreshta.push({
         pishina: 'barazi', biznes_id: x.biznes_id, pesha: x.pesha,
-        pika: pikaPerzgjedhjeje(x.pesha), fitoi: x.biznes_id === fituesBizId
+        pika: pikaPerzgjedhjeje(x.pesha),
+        fitoi: (rezultat.pishina === 'barazi') && (x.biznes_id === fituesBizId)
       }));
 
       for (const r of rreshta) {
