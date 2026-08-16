@@ -104,8 +104,12 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
        AND EXISTS (SELECT 1 FROM snippetet s WHERE s.biznes_id = b.id AND s.snippet_active = true AND COALESCE(s.pauzuar,false) = false)`,
     [hostId, logjikaKerkuar]);
 
-  // Filtri i tipit
-  let biznesetKand = kand.rows.filter(k => !(hTipi && k.tipi && !tipetPerputhen(k.tipi, hTipi)));
+  // Filtri i tipit — VETEM per Ankand (i paprekur). Per Balance, filtri i tipit
+  // NUK zbatohet ketu — balanca.js pranon te gjitha tipet dhe ben vete
+  // "perjashtimin e konkurrenteve" (AI=0 + e njejta kategori) brenda vetes.
+  let biznesetKand = shkoTeBarazi
+    ? kand.rows
+    : kand.rows.filter(k => !(hTipi && k.tipi && !tipetPerputhen(k.tipi, hTipi)));
   if (!biznesetKand.length) return null;
 
   let fituesBizId, listaAnkand = null, fituesiAnkand = null;
