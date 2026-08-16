@@ -404,16 +404,13 @@ module.exports = function (pool) {
 
       if (!rezultat.uKonkurrua) return; // s'ka finalistë per te regjistruar (rruge direkte)
 
-      const rreshta = [];
-      (rezultat.topAnkand || []).forEach(x => rreshta.push({
-        pishina: 'ankand', biznes_id: x.biznes_id, pesha: x.pesha,
+      // Regjistrohet VETEM pishina qe fitoi realisht — tjetra s'ka pse te shfaqet
+      // ne historik, edhe pse u llogarit internally per te vendosur fituesin.
+      const listaFituese = (rezultat.pishina === 'ankand') ? rezultat.topAnkand : rezultat.topBarazi;
+      const rreshta = (listaFituese || []).map(x => ({
+        pishina: rezultat.pishina, biznes_id: x.biznes_id, pesha: x.pesha,
         pika: pikaPerzgjedhjeje(x.pesha),
-        fitoi: (rezultat.pishina === 'ankand') && (x.biznes_id === fituesBizId)
-      }));
-      (rezultat.topBarazi || []).forEach(x => rreshta.push({
-        pishina: 'barazi', biznes_id: x.biznes_id, pesha: x.pesha,
-        pika: pikaPerzgjedhjeje(x.pesha),
-        fitoi: (rezultat.pishina === 'barazi') && (x.biznes_id === fituesBizId)
+        fitoi: x.biznes_id === fituesBizId
       }));
 
       for (const r of rreshta) {
@@ -427,26 +424,28 @@ module.exports = function (pool) {
   function rr(n) { return (n == null) ? null : Math.round(n * 100) / 100; }
 
 
+  // ══════════════════════════════════════════════════════════════════
+  // REGJISTRO EFEKTIN E SHFAQJES TE BORXHI GLOBAL
   //
   // Thirret nga selector.js pas nje shfaqjeje qe erdhi nga automatik.
-  //   hostTipi   : 'ankand' | 'barazi' | 'te-dyja' | 'asnje'
-  //   fituesTipi : 'ankand' | 'barazi' (pishina qe fitoi)
+  //   uKonkurrua : bool — a konkurruan REALISHT te dyja pishinat (Faza 3 u zbatua)
+  //   fituesTipi : 'ankand' | 'barazi' (pishina qe fitoi hapesiren)
+  //
+  // RREGULLI (i thjeshtuar — s'ka lidhje me tipin e host-it fare):
+  //   Borxhi ndryshon VETEM kur te dyja pishinat ishin realisht ne konkurrence
+  //   (uKonkurrua=true) dhe njera fitoi ndaj tjetres — pavaresisht nese host-i
+  //   vete ka nje ose dy llogari. Nese host-i kishte VETEM nje pishine te
+  //   disponueshme (rruge direkte, pa konkurrence), s'ka "humbes" real, s'ka borxh.
+  //
+  //   Balanca fiton (ne konkurrence te vertete) → Ankandi "humbi" mundesine
+  //     → borxhi_neto -1  (Balanca i detyrohet Ankandit)
+  //   Ankandi fiton (ne konkurrence te vertete) → Balanca "humbi" mundesine
+  //     → borxhi_neto +1  (Ankandi i detyrohet Balances)
   // ══════════════════════════════════════════════════════════════════
-  //   Host Ankand + Fitues Balance → Balanca "ka marre hua" nga Ankandi
-  //     → borxhi_neto -1  (Balanca i detyrohet Ankandit me shume)
-  //
-  //   Host Balance + Fitues Ankand → Ankandi "ka marre hua" nga Balanca
-  //     → borxhi_neto +1  (Ankandi i detyrohet Balances me shume)
-  //
-  //   Rastet e tjera (natyrore) → asnje ndryshim.
-  //   Host 'te-dyja' ose 'asnje' → asnje borxh (asnjera pishine nuk ka "hua")
-  async function regjistroShfaqjen(hostTipi, fituesTipi) {
-    if (hostTipi === 'ankand' && fituesTipi === 'barazi') {
-      await ndryshoBorxhin(-1);
-    } else if (hostTipi === 'barazi' && fituesTipi === 'ankand') {
-      await ndryshoBorxhin(+1);
-    }
-    // Rastet e tjera: asnje veprim.
+  async function regjistroShfaqjen(uKonkurrua, fituesTipi) {
+    if (!uKonkurrua) return; // rruge direkte — s'ka konkurrence, s'ka borxh
+    if (fituesTipi === 'barazi') await ndryshoBorxhin(-1);
+    else if (fituesTipi === 'ankand') await ndryshoBorxhin(+1);
   }
 
   return {
