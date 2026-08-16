@@ -71,11 +71,13 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
   let logjikaKerkuar;
   let modAutomatik = null;
   let hostTipiAutomatik = null;
+  let rezultatAutomatik = null; // { pishina, uKonkurrua, topAnkand, topBarazi } — per regjistrimin historik
 
   if (hostingMode === 'automatik') {
     modAutomatik = automatik(pool);
     hostTipiAutomatik = await modAutomatik.tipiHostit(hostId);
-    logjikaKerkuar = await modAutomatik.vendosLogjiken(hostId, hTipi);
+    rezultatAutomatik = await modAutomatik.vendosLogjikenDetajuar(hostId, hTipi);
+    logjikaKerkuar = rezultatAutomatik.pishina;
     if (!logjikaKerkuar) return null;
   } else {
     // SISTEMI EKZISTUES MANUAL — i paprekur
@@ -174,6 +176,10 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
   // Regjistro efektin ne borxhin global — VETEM nese kerkesa erdhi nga hosting_mode='automatik'
   if (modAutomatik && hostTipiAutomatik) {
     modAutomatik.regjistroShfaqjen(hostTipiAutomatik, logjikaKerkuar).catch(()=>{});
+  }
+  // Regjistro vendimin e plote (finalistet + fituesi) — per historikun ne admin panel
+  if (modAutomatik && rezultatAutomatik) {
+    modAutomatik.regjistroVendimDetajuar(hostId, rezultatAutomatik, fituesBizId).catch(()=>{});
   }
 
   return Object.assign({}, rd.rows[0], { cikel_ri: false, burimi: logjikaKerkuar });
