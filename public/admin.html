@@ -620,7 +620,7 @@ const LARTESIA = RRESHTA*PZ_MADH;
 let h='<div style="display:flex;flex-direction:column;align-items:center;">';
 h+='<div class="small mut" style="margin-bottom:6px;">Balancë</div>';
 h+='<div style="position:relative;width:'+PZ_MADH+'px;height:'+LARTESIA+'px;border:1px solid var(--line);border-radius:8px;background:#0e1116;overflow:hidden;">';
-h+='<div style="position:absolute;left:0;right:0;top:'+(PZ_QELIZA*PZ_MADH+PZ_MADH/2)+'px;height:1px;background:rgba(255,255,255,.35);z-index:1;"></div>';
+h+='<div style="position:absolute;left:0;right:0;top:'+(PZ_QELIZA*PZ_MADH+PZ_MADH/2)+'px;height:1px;background:#22c55e;z-index:1;"></div>';
 for(let r=0;r<RRESHTA;r++){
 const niveli = PZ_QELIZA - r; // +10 ... 0 ... -10
 let stil='background:transparent;';
@@ -675,10 +675,11 @@ await pzNgarkoListen();
 
 function pzRenderDetajet(r){
 const el=$('pzDetaje'); if(!el) return;
-function tabela(titull, fitoreGjithsej, kandidatet, ngjyraFitor){
+function tabela(titull, fitoreGjithsej, pikaTotaleFundit, kandidatet, ngjyraFitor){
 let h='<div style="flex:1;min-width:0;">'+
 '<div style="font-weight:600;margin-bottom:4px;">'+titull+'</div>'+
-'<div class="small mut" style="margin-bottom:8px;">Ka fituar gjithsej: <b style="color:var(--txt);">'+fitoreGjithsej+'</b> herë</div>';
+'<div class="small mut" style="margin-bottom:2px;">Ka fituar gjithsej: <b style="color:var(--txt);">'+fitoreGjithsej+'</b> herë</div>'+
+'<div class="small mut" style="margin-bottom:8px;">Shuma e pikëve (përzgjedhja e fundit): <b style="color:var(--txt);">'+(pikaTotaleFundit!=null?pikaTotaleFundit:'—')+'</b></div>';
 if(!kandidatet.length){
 h+='<p class="small mut">Ende s\'ka të dhëna.</p></div>';
 return h;
@@ -699,8 +700,8 @@ return h;
 }
 let h='<div class="small mut" style="margin-bottom:14px;">Shfaqje totale të ofruara nga ky biznes: <b style="color:var(--txt);">'+r.shfaqje_totale+'</b></div>';
 h+='<div style="display:flex;gap:24px;flex-wrap:wrap;">';
-h+=tabela('Ankand', r.ankand.fitore_gjithsej, r.ankand.kandidatet, 'rgba(74,158,255,0.15)');
-h+=tabela('Balancë', r.balance.fitore_gjithsej, r.balance.kandidatet, 'rgba(239,68,68,0.15)');
+h+=tabela('Ankand', r.ankand.fitore_gjithsej, r.ankand.pika_totale_fundit, r.ankand.kandidatet, 'rgba(74,158,255,0.15)');
+h+=tabela('Balancë', r.balance.fitore_gjithsej, r.balance.pika_totale_fundit, r.balance.kandidatet, 'rgba(239,68,68,0.15)');
 h+='</div>';
 el.innerHTML=h;
 }
