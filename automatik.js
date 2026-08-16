@@ -54,8 +54,12 @@ module.exports = function (pool) {
         host_id         INTEGER NOT NULL,
         pishina_fituese TEXT,          -- 'ankand' | 'barazi'
         u_konkurrua     BOOLEAN NOT NULL DEFAULT false, -- a u zbatua Faza 3 (te dyja pishinat kishin kandidate)
+        pika_totale_ankand  NUMERIC,   -- shuma e pikeve te perzgjedhjes per Ankand ne kete vendim (vetem nese u_konkurrua)
+        pika_totale_barazi  NUMERIC,   -- shuma e pikeve te perzgjedhjes per Balance ne kete vendim (vetem nese u_konkurrua)
         created_at      TIMESTAMPTZ DEFAULT now()
       )`);
+    await pool.query(`ALTER TABLE automatik_vendime ADD COLUMN IF NOT EXISTS pika_totale_ankand NUMERIC`);
+    await pool.query(`ALTER TABLE automatik_vendime ADD COLUMN IF NOT EXISTS pika_totale_barazi NUMERIC`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_automatik_vendime_host ON automatik_vendime(host_id)`);
 
     // automatik_finalistet: nje rresht per secilin finalist (nga te 2 pishinat), VETEM per vendimet
@@ -396,16 +400,25 @@ module.exports = function (pool) {
   // ══════════════════════════════════════════════════════════════════
   async function regjistroVendimDetajuar(hostId, rezultat, fituesBizId) {
     try {
+      // Shumat totale te pikeve te perzgjedhjes per te dyja pishinat (edhe humbesen) —
+      // ruhen ne vete rreshtin e vendimit, para se te hedhim poshte detajet e pishines humbese.
+      let pikaTotaleAnkand = null, pikaTotaleBarazi = null;
+      if (rezultat.uKonkurrua) {
+        pikaTotaleAnkand = (rezultat.topAnkand || []).reduce((s, x) => s + pikaPerzgjedhjeje(x.pesha), 0);
+        pikaTotaleBarazi = (rezultat.topBarazi || []).reduce((s, x) => s + pikaPerzgjedhjeje(x.pesha), 0);
+      }
+
       const vRes = await pool.query(
-        `INSERT INTO automatik_vendime (host_id, pishina_fituese, u_konkurrua)
-         VALUES ($1,$2,$3) RETURNING id`,
-        [hostId, rezultat.pishina, !!rezultat.uKonkurrua]);
+        `INSERT INTO automatik_vendime (host_id, pishina_fituese, u_konkurrua, pika_totale_ankand, pika_totale_barazi)
+         VALUES ($1,$2,$3,$4,$5) RETURNING id`,
+        [hostId, rezultat.pishina, !!rezultat.uKonkurrua, rr(pikaTotaleAnkand), rr(pikaTotaleBarazi)]);
       const vendimId = vRes.rows[0].id;
 
       if (!rezultat.uKonkurrua) return; // s'ka finalistë per te regjistruar (rruge direkte)
 
       // Regjistrohet VETEM pishina qe fitoi realisht — tjetra s'ka pse te shfaqet
-      // ne historik, edhe pse u llogarit internally per te vendosur fituesin.
+      // ne historik si liste kandidatesh, edhe pse u llogarit internally per te
+      // vendosur fituesin (shuma e saj totale mbetet e ruajtur me lart).
       const listaFituese = (rezultat.pishina === 'ankand') ? rezultat.topAnkand : rezultat.topBarazi;
       const rreshta = (listaFituese || []).map(x => ({
         pishina: rezultat.pishina, biznes_id: x.biznes_id, pesha: x.pesha,
