@@ -173,9 +173,10 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
 
   if (!shkoTeBarazi) regjistroAnkandin(pool, hostId, listaAnkand, fituesiAnkand, snippetId).catch(()=>{});
 
-  // Regjistro efektin ne borxhin global — VETEM nese kerkesa erdhi nga hosting_mode='automatik'
-  if (modAutomatik && hostTipiAutomatik) {
-    modAutomatik.regjistroShfaqjen(hostTipiAutomatik, logjikaKerkuar).catch(()=>{});
+  // Regjistro efektin ne borxhin global — VETEM nese kishte konkurrence te vertete
+  // mes te dyja pishinave (jo rruge direkte, jo tip host-i)
+  if (modAutomatik && rezultatAutomatik) {
+    modAutomatik.regjistroShfaqjen(rezultatAutomatik.uKonkurrua, logjikaKerkuar).catch(()=>{});
   }
   // Regjistro vendimin e plote (finalistet + fituesi) — per historikun ne admin panel
   if (modAutomatik && rezultatAutomatik) {
