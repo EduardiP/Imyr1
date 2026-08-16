@@ -45,6 +45,33 @@ module.exports = function (pool) {
         CONSTRAINT borxhi_global_nje_rresht CHECK (id = 1)
       )`);
     await pool.query(`INSERT INTO borxhi_global (id) VALUES (1) ON CONFLICT (id) DO NOTHING`);
+
+    // ── Tabelat e reja: regjistrimi historik i vendimeve te Fazes 3 (per admin panel) ──
+    // automatik_vendime: 1 rresht per cdo kerkese qe kaloi permes hosting_mode='automatik'
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS automatik_vendime (
+        id              SERIAL PRIMARY KEY,
+        host_id         INTEGER NOT NULL,
+        pishina_fituese TEXT,          -- 'ankand' | 'barazi'
+        u_konkurrua     BOOLEAN NOT NULL DEFAULT false, -- a u zbatua Faza 3 (te dyja pishinat kishin kandidate)
+        created_at      TIMESTAMPTZ DEFAULT now()
+      )`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_automatik_vendime_host ON automatik_vendime(host_id)`);
+
+    // automatik_finalistet: nje rresht per secilin finalist (nga te 2 pishinat), VETEM per vendimet
+    // ku u_konkurrua=true (pra ku Faza 3 vertet u zbatua me llogaritje peshe/pike).
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS automatik_finalistet (
+        id               SERIAL PRIMARY KEY,
+        vendim_id        INTEGER NOT NULL REFERENCES automatik_vendime(id) ON DELETE CASCADE,
+        pishina          TEXT NOT NULL,   -- 'ankand' | 'barazi'
+        biznes_id        INTEGER NOT NULL,
+        pesha            NUMERIC,         -- pesha Ankand OSE pika perfundimtare Balance (AI±deficit)
+        pika_perzgjedhje NUMERIC,         -- rezultati i formules universale mbi 'pesha'
+        fitoi_biznesin   BOOLEAN DEFAULT false -- a ishte ky biznes fituesi FINAL (Faza 4)
+      )`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_automatik_finalistet_vendim ON automatik_finalistet(vendim_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_automatik_finalistet_biznes ON automatik_finalistet(biznes_id)`);
   }
   // KUJDES: `borxhi_neto`:
   //   > 0  → Ankandi i ka borxh Balances (Ankandi ka marre nga hapesirat Balance)
@@ -296,7 +323,108 @@ module.exports = function (pool) {
   }
 
   // ══════════════════════════════════════════════════════════════════
-  // REGJISTRO EFEKTIN E SHFAQJES TE BORXHI GLOBAL
+  // VERSION I DETAJUAR: njesoj si vendosLogjiken, por kthen edhe listat
+  // e finalisteve (per te mundesuar regjistrimin historik per admin panel).
+  //
+  // Kthe: {
+  //   pishina: 'ankand' | 'barazi' | null,
+  //   uKonkurrua: bool,          // a u zbatua Faza 3 (krahasim real 5+5)
+  //   topAnkand: [{biznes_id, pesha}],  // bosh nese uKonkurrua=false
+  //   topBarazi: [{biznes_id, pesha}]   // bosh nese uKonkurrua=false
+  // }
+  // ══════════════════════════════════════════════════════════════════
+  async function vendosLogjikenDetajuar(hostId, hTipi) {
+    const bosh = { pishina: null, uKonkurrua: false, topAnkand: [], topBarazi: [] };
+
+    const hostTipi = await tipiHostit(hostId);
+
+    const bllokim = await kontrolloKufirin(hostTipi);
+    if (bllokim) return { pishina: bllokim, uKonkurrua: false, topAnkand: [], topBarazi: [] };
+
+    const kandAnkand = await merrKandidatet(hostId, hTipi, 'ankand');
+    const kandBarazi = await merrKandidatet(hostId, hTipi, 'barazi');
+
+    if (!kandAnkand.length && !kandBarazi.length) return bosh;
+    if (!kandAnkand.length) return { pishina: 'barazi', uKonkurrua: false, topAnkand: [], topBarazi: [] };
+    if (!kandBarazi.length) return { pishina: 'ankand', uKonkurrua: false, topAnkand: [], topBarazi: [] };
+
+    const peshatAnkand = [];
+    for (const k of kandAnkand) {
+      const p = await peshaAnkand(k.biznes_id, k.tipi, hostId, hTipi);
+      peshatAnkand.push({ biznes_id: k.biznes_id, pesha: p });
+    }
+    const peshatBarazi = [];
+    for (const k of kandBarazi) {
+      const p = await pikaPerfundimtareBalancePerBiznes(k.biznes_id, hostId);
+      peshatBarazi.push({ biznes_id: k.biznes_id, pesha: p });
+    }
+
+    peshatAnkand.sort((a, b) => b.pesha - a.pesha);
+    peshatBarazi.sort((a, b) => b.pesha - a.pesha);
+    const n = Math.min(5, Math.min(peshatAnkand.length, peshatBarazi.length));
+    const topAnkand = peshatAnkand.slice(0, n);
+    const topBarazi = peshatBarazi.slice(0, n);
+
+    const totaliAnkand = topAnkand.reduce((s, x) => s + pikaPerzgjedhjeje(x.pesha), 0);
+    const totaliBarazi = topBarazi.reduce((s, x) => s + pikaPerzgjedhjeje(x.pesha), 0);
+    const shuma = totaliAnkand + totaliBarazi;
+
+    let pishina;
+    if (shuma <= 0) pishina = Math.random() < 0.5 ? 'ankand' : 'barazi';
+    else {
+      const rand = Math.random() * shuma;
+      pishina = rand < totaliAnkand ? 'ankand' : 'barazi';
+    }
+
+    return { pishina, uKonkurrua: true, topAnkand, topBarazi };
+  }
+
+  // Wrapper per pajtueshmeri prapavajtese — kthen vetem stringun e pishines.
+  async function vendosLogjiken(hostId, hTipi) {
+    const r = await vendosLogjikenDetajuar(hostId, hTipi);
+    return r.pishina;
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // REGJISTRO VENDIMIN E PLOTE (per historik/admin panel)
+  //
+  // Thirret nga selector.js PASI eshte ditur edhe fituesi FINAL (Faza 4),
+  // pra biznesi specifik qe fitoi brenda pishines fituese.
+  //   hostId      : ID e host-it qe ofroi hapesiren
+  //   rezultat    : objekti i kthyer nga vendosLogjikenDetajuar
+  //   fituesBizId : ID e biznesit qe fitoi PERFUNDIMISHT (Faza 4)
+  // ══════════════════════════════════════════════════════════════════
+  async function regjistroVendimDetajuar(hostId, rezultat, fituesBizId) {
+    try {
+      const vRes = await pool.query(
+        `INSERT INTO automatik_vendime (host_id, pishina_fituese, u_konkurrua)
+         VALUES ($1,$2,$3) RETURNING id`,
+        [hostId, rezultat.pishina, !!rezultat.uKonkurrua]);
+      const vendimId = vRes.rows[0].id;
+
+      if (!rezultat.uKonkurrua) return; // s'ka finalistë per te regjistruar (rruge direkte)
+
+      const rreshta = [];
+      (rezultat.topAnkand || []).forEach(x => rreshta.push({
+        pishina: 'ankand', biznes_id: x.biznes_id, pesha: x.pesha,
+        pika: pikaPerzgjedhjeje(x.pesha), fitoi: x.biznes_id === fituesBizId
+      }));
+      (rezultat.topBarazi || []).forEach(x => rreshta.push({
+        pishina: 'barazi', biznes_id: x.biznes_id, pesha: x.pesha,
+        pika: pikaPerzgjedhjeje(x.pesha), fitoi: x.biznes_id === fituesBizId
+      }));
+
+      for (const r of rreshta) {
+        await pool.query(
+          `INSERT INTO automatik_finalistet (vendim_id, pishina, biznes_id, pesha, pika_perzgjedhje, fitoi_biznesin)
+           VALUES ($1,$2,$3,$4,$5,$6)`,
+          [vendimId, r.pishina, r.biznes_id, rr(r.pesha), rr(r.pika), r.fitoi]);
+      }
+    } catch (e) { /* mos e ndal shfaqjen nese regjistrimi historik deshton */ }
+  }
+  function rr(n) { return (n == null) ? null : Math.round(n * 100) / 100; }
+
+
   //
   // Thirret nga selector.js pas nje shfaqjeje qe erdhi nga automatik.
   //   hostTipi   : 'ankand' | 'barazi' | 'te-dyja' | 'asnje'
@@ -334,6 +462,8 @@ module.exports = function (pool) {
     merrDeficitin,
     // kryesoret (thirren nga selector.js)
     vendosLogjiken,
+    vendosLogjikenDetajuar,
+    regjistroVendimDetajuar,
     regjistroShfaqjen
   };
 };
