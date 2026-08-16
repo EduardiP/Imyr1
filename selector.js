@@ -8,6 +8,7 @@
 const pesha = require('./pesha');
 const pikeRekl = require('./pike-reklama');
 const balanca = require('./balanca');
+const automatik = require('./automatik');
 
 function tipetPerputhen(rTipi, hTipi) {
   if (rTipi === 'b2b2c' || hTipi === 'b2b2c') return true;
@@ -58,24 +59,40 @@ async function initGarat(pool) {
 
 async function zgjidhReklame(pool, hostId, pare, snippetId) {
   pare = Array.isArray(pare) ? pare : [];
-  const h = await pool.query('SELECT tipi, barazi_perqindje, hosting_menyra FROM bizneset WHERE id=$1', [hostId]);
+  const h = await pool.query('SELECT tipi, barazi_perqindje, hosting_menyra, hosting_mode FROM bizneset WHERE id=$1', [hostId]);
   const hTipi = h.rows[0] && h.rows[0].tipi;
+  const hostingMode = (h.rows[0] && h.rows[0].hosting_mode) || 'automatik';
   const hostingMenyra = (h.rows[0] && h.rows[0].hosting_menyra) || 'te-gjitha';
   let baraziPerqindje = (h.rows[0] && h.rows[0].barazi_perqindje != null) ? h.rows[0].barazi_perqindje : 50;
 
-  // VETEM menyra AKTUALE zbatohet — kurre te dyja njekohesisht.
-  // 'vecmas': perdor VETEM vleren e ketij snippet-i specifik (jo vleren e biznesit, edhe nese snippet-i s'ka te veten ende).
-  // 'te-gjitha': perdor VETEM vleren e biznesit — injoro plotesisht cdo vlere e vjeter individuale e snippet-eve.
-  if (hostingMenyra === 'vecmas' && snippetId) {
-    try {
-      const sn = await pool.query('SELECT barazi_perqindje FROM snippetet WHERE id=$1', [snippetId]);
-      baraziPerqindje = (sn.rows.length && sn.rows[0].barazi_perqindje != null) ? sn.rows[0].barazi_perqindje : 50;
-    } catch (e) { baraziPerqindje = 50; }
+  // ═══ VENDOS PISHINEN (Ankand ose Balance) ═══
+  // Nese hosting_mode='automatik' → moduli automatik vendos (algoritmi i ri)
+  // Nese hosting_mode='manual'    → sistemi i vjeter me barazi_perqindje (i paprekur)
+  let logjikaKerkuar;
+  let modAutomatik = null;
+  let hostTipiAutomatik = null;
+
+  if (hostingMode === 'automatik') {
+    modAutomatik = automatik(pool);
+    hostTipiAutomatik = await modAutomatik.tipiHostit(hostId);
+    logjikaKerkuar = await modAutomatik.vendosLogjiken(hostId, hTipi);
+    if (!logjikaKerkuar) return null;
+  } else {
+    // SISTEMI EKZISTUES MANUAL — i paprekur
+    // VETEM menyra AKTUALE zbatohet — kurre te dyja njekohesisht.
+    // 'vecmas': perdor VETEM vleren e ketij snippet-i specifik (jo vleren e biznesit, edhe nese snippet-i s'ka te veten ende).
+    // 'te-gjitha': perdor VETEM vleren e biznesit — injoro plotesisht cdo vlere e vjeter individuale e snippet-eve.
+    if (hostingMenyra === 'vecmas' && snippetId) {
+      try {
+        const sn = await pool.query('SELECT barazi_perqindje FROM snippetet WHERE id=$1', [snippetId]);
+        baraziPerqindje = (sn.rows.length && sn.rows[0].barazi_perqindje != null) ? sn.rows[0].barazi_perqindje : 50;
+      } catch (e) { baraziPerqindje = 50; }
+    }
+    logjikaKerkuar = ((Math.random() * 100) < baraziPerqindje) ? 'barazi' : 'ankand';
   }
 
-  // Vendos ne cilen pishine shkon KJO kerkese specifike (Ankand ose Balance)
-  const shkoTeBarazi = (Math.random() * 100) < baraziPerqindje;
-  const logjikaKerkuar = shkoTeBarazi ? 'barazi' : 'ankand';
+  // Cache boolean per pjesen e ulet te kodit (i paprekur)
+  const shkoTeBarazi = (logjikaKerkuar === 'barazi');
 
   // ANKANDI KRYESOR: kandidatet jane BIZNESE (jo cdo reklame), FILTRUAR sipas pishines se zgjedhur.
   const kand = await pool.query(
@@ -149,6 +166,12 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
   if (!rd.rows.length) return null;
 
   if (!shkoTeBarazi) regjistroAnkandin(pool, hostId, listaAnkand, fituesiAnkand, snippetId).catch(()=>{});
+
+  // Regjistro efektin ne borxhin global — VETEM nese kerkesa erdhi nga hosting_mode='automatik'
+  if (modAutomatik && hostTipiAutomatik) {
+    modAutomatik.regjistroShfaqjen(hostTipiAutomatik, logjikaKerkuar).catch(()=>{});
+  }
+
   return Object.assign({}, rd.rows[0], { cikel_ri: false, burimi: logjikaKerkuar });
 }
 
