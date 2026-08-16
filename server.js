@@ -1838,7 +1838,79 @@ app.get('/api/admin/balancat', iAdmin, async (req, res) => {
   } catch(e){ res.status(500).json({ error: e.message }); }
 });
 
-// --- BALANCET (ANALITIKE): lista e bizneseve Balance me numra permbledhes te vendimeve ---
+// ═══════════════════════════════════════════════════════════════════
+// PERZGJEDHJET (ADMIN) — historiku i Fazes 3 te sistemit Automatik
+// ═══════════════════════════════════════════════════════════════════
+
+// --- Borxhi global mes Ankand dhe Balance (per grafikun 1-kolonesh) ---
+app.get('/api/admin/automatik/borxhi', iAdmin, async (req, res) => {
+  try {
+    const r = await pool.query('SELECT borxhi_neto, kufiri FROM borxhi_global WHERE id=1');
+    const row = r.rows[0] || { borxhi_neto: 0, kufiri: 10 };
+    res.json(row);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- Lista e TE GJITHA bizneseve (per karuselin), me shfaqje totale te ofruara ---
+app.get('/api/admin/automatik/lista', iAdmin, async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT b.id, b.emri,
+        COALESCE(v.shfaqje_totale, 0)::int AS shfaqje_totale,
+        COALESCE(v.ankand_fitore, 0)::int  AS ankand_fitore,
+        COALESCE(v.balance_fitore, 0)::int AS balance_fitore
+      FROM bizneset b
+      LEFT JOIN (
+        SELECT host_id,
+          COUNT(*)::int AS shfaqje_totale,
+          COUNT(*) FILTER (WHERE pishina_fituese='ankand')::int AS ankand_fitore,
+          COUNT(*) FILTER (WHERE pishina_fituese='barazi')::int AS balance_fitore
+        FROM automatik_vendime GROUP BY host_id
+      ) v ON v.host_id = b.id
+      ORDER BY b.emri`);
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- Detajet per NJE biznes (host): 2 tabela (Ankand / Balance) me finaliste historike ---
+app.get('/api/admin/automatik/:id', iAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.status(400).json({ error: 'ID e pavlefshme' });
+  try {
+    const totQ = await pool.query(`
+      SELECT COUNT(*)::int AS shfaqje_totale,
+        COUNT(*) FILTER (WHERE pishina_fituese='ankand')::int AS ankand_fitore,
+        COUNT(*) FILTER (WHERE pishina_fituese='barazi')::int AS balance_fitore
+      FROM automatik_vendime WHERE host_id=$1`, [id]);
+
+    async function tabelaPerPishine(pishina) {
+      const r = await pool.query(`
+        SELECT f.biznes_id,
+          (SELECT emri FROM bizneset WHERE id=f.biznes_id) AS emri,
+          AVG(f.pesha)::numeric(10,2) AS pesha,
+          AVG(f.pika_perzgjedhje)::numeric(10,2) AS pika_perzgjedhje,
+          COUNT(*)::int AS pjesemarrje,
+          COUNT(*) FILTER (WHERE f.fitoi_biznesin=true)::int AS fitore
+        FROM automatik_finalistet f
+        JOIN automatik_vendime v ON v.id = f.vendim_id
+        WHERE v.host_id=$1 AND f.pishina=$2
+        GROUP BY f.biznes_id
+        ORDER BY fitore DESC, pesha DESC`, [id, pishina]);
+      return r.rows;
+    }
+
+    const ankandKand = await tabelaPerPishine('ankand');
+    const balanceKand = await tabelaPerPishine('barazi');
+
+    res.json({
+      shfaqje_totale: totQ.rows[0].shfaqje_totale,
+      ankand: { fitore_gjithsej: totQ.rows[0].ankand_fitore, kandidatet: ankandKand },
+      balance: { fitore_gjithsej: totQ.rows[0].balance_fitore, kandidatet: balanceKand }
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+
 // Biznesi konsiderohet "ne Balance" nese: (a) ka logjika_shperndarjes='barazi' te bizneset,
 // OSE (b) ka te pakten nje reklame ne promovimet me logjika_shperndarjes='barazi'.
 // Numrat pasqyrojne aktivitetin si HOST (kush ka ofruar hapesire dhe cka ndodhi tek ai).
