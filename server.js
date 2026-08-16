@@ -67,6 +67,7 @@ pool.query(`ALTER TABLE ngjarjet ADD COLUMN IF NOT EXISTS burimi TEXT`).catch(e 
 pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS barazi_perqindje INTEGER NOT NULL DEFAULT 50`).catch(e => console.error('migrim barazi_perqindje:', e.message));
 // Migrim: menyra e Hosting-ut ('te-gjitha' | 'vecmas') + mbivendosje per-snippet (nese 'vecmas')
 pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS hosting_menyra TEXT NOT NULL DEFAULT 'te-gjitha'`).catch(e => console.error('migrim hosting_menyra:', e.message));
+pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS hosting_mode TEXT NOT NULL DEFAULT 'automatik'`).catch(e => console.error('migrim hosting_mode:', e.message));
 pool.query(`ALTER TABLE snippetet ADD COLUMN IF NOT EXISTS barazi_perqindje INTEGER`).catch(e => console.error('migrim barazi_perqindje (snippetet):', e.message));
 
 // Migrim: tabela `balancet` per regjistrimin e vendimeve ne logjiken Balance
@@ -335,12 +336,13 @@ app.post('/api/logjika-shperndarjes', iLoguar, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// --- HOSTING: lexo cilesimet aktuale (menyra + perqindjet) ---
+// --- HOSTING: lexo cilesimet aktuale (mode + menyra + perqindjet) ---
 app.get('/api/hosting/cilesimet', iLoguar, async (req, res) => {
   try {
-    const b = await pool.query('SELECT hosting_menyra, barazi_perqindje FROM bizneset WHERE id=$1', [req.biznesId]);
+    const b = await pool.query('SELECT hosting_mode, hosting_menyra, barazi_perqindje FROM bizneset WHERE id=$1', [req.biznesId]);
     const sn = await pool.query('SELECT id, emri, barazi_perqindje FROM snippetet WHERE biznes_id=$1 ORDER BY id', [req.biznesId]);
     res.json({
+      mode: (b.rows[0] && b.rows[0].hosting_mode) || 'automatik',
       menyra: (b.rows[0] && b.rows[0].hosting_menyra) || 'te-gjitha',
       barazi_perqindje: (b.rows[0] && b.rows[0].barazi_perqindje != null) ? b.rows[0].barazi_perqindje : 50,
       snippetet: sn.rows.map(s => ({
@@ -351,20 +353,26 @@ app.get('/api/hosting/cilesimet', iLoguar, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// --- HOSTING: ruaj cilesimet (menyra + perqindja/et) ---
+// --- HOSTING: ruaj cilesimet (mode + menyra + perqindja/et) ---
 app.post('/api/hosting/ruaj', iLoguar, async (req, res) => {
+  const mode = req.body.mode === 'manual' ? 'manual' : 'automatik';
   const menyra = req.body.menyra === 'vecmas' ? 'vecmas' : 'te-gjitha';
   try {
-    await pool.query('UPDATE bizneset SET hosting_menyra=$2 WHERE id=$1', [req.biznesId, menyra]);
-    if (menyra === 'te-gjitha') {
-      const p = Math.max(0, Math.min(100, parseInt(req.body.barazi_perqindje, 10)));
-      await pool.query('UPDATE bizneset SET barazi_perqindje=$2 WHERE id=$1', [req.biznesId, isNaN(p) ? 50 : p]);
-    } else {
-      const lista = Array.isArray(req.body.snippetet) ? req.body.snippetet : [];
-      for (const s of lista) {
-        const sid = parseInt(s.id, 10);
-        const p = Math.max(0, Math.min(100, parseInt(s.barazi_perqindje, 10)));
-        if (sid) await pool.query('UPDATE snippetet SET barazi_perqindje=$2 WHERE id=$1 AND biznes_id=$3', [sid, isNaN(p) ? 50 : p, req.biznesId]);
+    // Gjithmone ruaj mode-n kryesor (automatik/manual)
+    await pool.query('UPDATE bizneset SET hosting_mode=$2 WHERE id=$1', [req.biznesId, mode]);
+    // Nese eshte manual, ruaj edhe menyren + perqindjet e detajuara
+    if (mode === 'manual') {
+      await pool.query('UPDATE bizneset SET hosting_menyra=$2 WHERE id=$1', [req.biznesId, menyra]);
+      if (menyra === 'te-gjitha') {
+        const p = Math.max(0, Math.min(100, parseInt(req.body.barazi_perqindje, 10)));
+        await pool.query('UPDATE bizneset SET barazi_perqindje=$2 WHERE id=$1', [req.biznesId, isNaN(p) ? 50 : p]);
+      } else {
+        const lista = Array.isArray(req.body.snippetet) ? req.body.snippetet : [];
+        for (const s of lista) {
+          const sid = parseInt(s.id, 10);
+          const p = Math.max(0, Math.min(100, parseInt(s.barazi_perqindje, 10)));
+          if (sid) await pool.query('UPDATE snippetet SET barazi_perqindje=$2 WHERE id=$1 AND biznes_id=$3', [sid, isNaN(p) ? 50 : p, req.biznesId]);
+        }
       }
     }
     res.json({ ok: true });
