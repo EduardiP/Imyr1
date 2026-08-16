@@ -142,7 +142,7 @@ const $ = id => document.getElementById(id);
 const SECTIONS = [
 { k:'bizneset', l:'Bizneset' },
 { k:'b1', l:'Kombinimet AI' }, { k:'b2', l:'Njoftime' },
-{ k:'b3', l:'Buton 3' }, { k:'b4', l:'Buton 4' }
+{ k:'b3', l:'Buton 3' }, { k:'b4', l:'Përzgjedhjet' }
 ];
 const BIZ_SUB = [
 { k:'bizneset', l:'Llogaritë' },
@@ -185,6 +185,7 @@ const c=$('content');
 if(curSec==='bizneset'){ renderBizneset(c); return; }
 if(curSec==='b1'){ renderKombinimet(c); return; }
 if(curSec==='b2'){ renderNjoftime(c); return; }
+if(curSec==='b4'){ renderPerzgjedhjet(c); return; }
 const lbl=(SECTIONS.find(s=>s.k===curSec)||{}).l||'';
 c.innerHTML='<div class="wrap"><h2 class="h">'+lbl+'</h2><p class="small" style="margin-top:8px;">Së shpejti.</p></div>';
 }
@@ -585,7 +586,126 @@ esc(b.emri)+' <span class="mut">('+(b.neto>0?'+':'')+b.neto+')</span></div>';
 }).join('')+'</div>';
 }
 
-// ============ BALANCET — DETAJET (lista e mbyllur me tabelat brenda) ============
+// ============ PERZGJEDHJET (Faza 3 — historiku Ankand vs Balance) ============
+var pzBizId = null; // ID e biznesit aktualisht te selektuar ne karusel
+var PZ_QELIZA = 10;  // 10 lart (Balance) + 10 posht (Ankand)
+var PZ_MADH = 14;    // madhesia e nje qelize (px)
+
+async function renderPerzgjedhjet(c){
+c.innerHTML='<div class="wrap">'+
+'<h2 class="h">Përzgjedhjet</h2>'+
+'<p class="small" style="margin:4px 0 16px;">Historiku i Fazës 3 (sistemi Automatik): cila pishinë — Ankand apo Balancë — fiton hapësirën e ofruar, dhe cilët biznese konkurruan.</p>'+
+'<div style="display:flex;gap:22px;align-items:flex-start;">'+
+  '<div id="pzGrafiku" style="flex:0 0 100px;"></div>'+
+  '<div id="pzKarusel" style="flex:1;min-width:0;"></div>'+
+'</div>'+
+'<div id="pzDetaje" style="margin-top:30px;"><p class="small mut">Zgjidh një biznes nga lista për të parë detajet.</p></div>'+
+'</div>';
+await pzNgarkoBorxhin();
+await pzNgarkoListen();
+}
+
+async function pzNgarkoBorxhin(){
+const el=$('pzGrafiku'); if(!el) return;
+try{
+const b=await(await fetch('/api/admin/automatik/borxhi')).json();
+pzRenderGrafikBorxhi(b.borxhi_neto||0, b.kufiri||10);
+}catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; }
+}
+function pzRenderGrafikBorxhi(borxhiNeto, kufiri){
+const el=$('pzGrafiku'); if(!el) return;
+const magnituda = Math.min(PZ_QELIZA, Math.abs(borxhiNeto));
+const RRESHTA = PZ_QELIZA*2+1;
+const LARTESIA = RRESHTA*PZ_MADH;
+let h='<div style="display:flex;flex-direction:column;align-items:center;">';
+h+='<div class="small mut" style="margin-bottom:6px;">Balancë</div>';
+h+='<div style="position:relative;width:'+PZ_MADH+'px;height:'+LARTESIA+'px;border:1px solid var(--line);border-radius:8px;background:#0e1116;overflow:hidden;">';
+h+='<div style="position:absolute;left:0;right:0;top:'+(PZ_QELIZA*PZ_MADH+PZ_MADH/2)+'px;height:1px;background:rgba(255,255,255,.35);z-index:1;"></div>';
+for(let r=0;r<RRESHTA;r++){
+const niveli = PZ_QELIZA - r; // +10 ... 0 ... -10
+let stil='background:transparent;';
+if(niveli>0){ // ana e siperme = Balance (e kuqe)
+  if(niveli<=magnituda) stil='background:#ef4444;';
+} else if(niveli<0){ // ana e poshtme = Ankand (blu)
+  if(Math.abs(niveli)<=magnituda) stil='background:#4a9eff;';
+}
+h+='<div style="width:'+PZ_MADH+'px;height:'+PZ_MADH+'px;box-sizing:border-box;border-bottom:1px solid rgba(255,255,255,.06);'+stil+'"></div>';
+}
+h+='</div>';
+h+='<div class="small mut" style="margin-top:6px;">Ankand</div>';
+h+='<div class="small mut" style="margin-top:10px;text-align:center;">Neto: <b style="color:var(--txt);">'+borxhiNeto+'</b><br>Kufiri: '+kufiri+'</div>';
+h+='</div>';
+el.innerHTML=h;
+}
+
+async function pzNgarkoListen(){
+const el=$('pzKarusel'); if(!el) return;
+el.innerHTML='<p class="small mut">Po ngarkoj…</p>';
+try{
+const lista=await(await fetch('/api/admin/automatik/lista')).json();
+pzRenderKaruselin(lista);
+}catch(e){ el.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
+}
+function pzRenderKaruselin(lista){
+const el=$('pzKarusel'); if(!el) return;
+if(!lista.length){ el.innerHTML='<p class="small mut">S\'ka biznese.</p>'; return; }
+el.innerHTML='<div style="display:flex;flex-direction:column;gap:6px;max-height:318px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:8px;">'+
+lista.map(function(b){
+const sel = (pzBizId===b.id);
+return '<div onclick="pzZgjidhBiznesin('+b.id+')" style="cursor:pointer;padding:9px 12px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;background:'+(sel?'rgba(59,130,246,0.12)':'transparent')+';border:1px solid '+(sel?'var(--acc)':'transparent')+';">'+
+'<span style="font-weight:'+(sel?'600':'400')+';">'+esc(b.emri||('#'+b.id))+'</span>'+
+'<span class="small mut">Shfaqje: '+b.shfaqje_totale+' &nbsp;·&nbsp; A:'+b.ankand_fitore+' B:'+b.balance_fitore+'</span>'+
+'</div>';
+}).join('')+
+'</div>';
+}
+
+async function pzZgjidhBiznesin(id){
+pzBizId=id;
+// rifresko highlight-in ne karusel pa ringarkuar listen e plote
+document.querySelectorAll('#pzKarusel > div > div').forEach(function(d){ d.style.background='transparent'; d.style.border='1px solid transparent'; });
+const el=$('pzDetaje'); if(el) el.innerHTML='<p class="small mut">Po ngarkoj…</p>';
+try{
+const r=await(await fetch('/api/admin/automatik/'+id)).json();
+pzRenderDetajet(r);
+}catch(e){ if(el) el.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
+// rindezo listen qe te theksohet zgjedhja e re
+await pzNgarkoListen();
+}
+
+function pzRenderDetajet(r){
+const el=$('pzDetaje'); if(!el) return;
+function tabela(titull, fitoreGjithsej, kandidatet, ngjyraFitor){
+let h='<div style="flex:1;min-width:0;">'+
+'<div style="font-weight:600;margin-bottom:4px;">'+titull+'</div>'+
+'<div class="small mut" style="margin-bottom:8px;">Ka fituar gjithsej: <b style="color:var(--txt);">'+fitoreGjithsej+'</b> herë</div>';
+if(!kandidatet.length){
+h+='<p class="small mut">Ende s\'ka të dhëna.</p></div>';
+return h;
+}
+h+='<div class="ktabela">'+
+'<div class="krow khead"><span class="kc1">Biznesi</span><span class="kc3">Peshë</span><span class="kc3">Pikë përzgj.</span><span class="kc3">Fitore</span></div>'+
+kandidatet.map(function(k){
+const stilFitor = k.fitore>0 ? ('background:'+ngjyraFitor+';font-weight:600;') : '';
+return '<div class="krow" style="'+stilFitor+'">'+
+'<span class="kc1">'+esc(k.emri||('#'+k.biznes_id))+'</span>'+
+'<span class="kc3">'+k.pesha+'</span>'+
+'<span class="kc3">'+k.pika_perzgjedhje+'</span>'+
+'<span class="kc3" style="color:var(--good);">'+k.fitore+'</span>'+
+'</div>';
+}).join('')+
+'</div></div>';
+return h;
+}
+let h='<div class="small mut" style="margin-bottom:14px;">Shfaqje totale të ofruara nga ky biznes: <b style="color:var(--txt);">'+r.shfaqje_totale+'</b></div>';
+h+='<div style="display:flex;gap:24px;flex-wrap:wrap;">';
+h+=tabela('Ankand', r.ankand.fitore_gjithsej, r.ankand.kandidatet, 'rgba(74,158,255,0.15)');
+h+=tabela('Balancë', r.balance.fitore_gjithsej, r.balance.kandidatet, 'rgba(239,68,68,0.15)');
+h+='</div>';
+el.innerHTML=h;
+}
+
+
 // Ngarkohet NJE HERE (jo ne interval — qe hapja/mbyllja te ruhet)
 async function balNgarkoDetajet(){
 const el=$('balDetajeLista'); if(!el) return;
@@ -631,35 +751,35 @@ if(box.getAttribute('data-loaded')==='1') return;
 try{
 const r=await(await fetch('/api/admin/balancet/'+id)).json();
 let h='';
-// ═ Tabela 1 — Fitore si i vetem (AGREGUAR sipas host) ═
+// ═ Tabela 1 — Kush fitoi TE KY HOST si i vetem (AGREGUAR sipas reklamuesit) ═
 h+='<div style="margin-bottom:18px;">'+
-'<div style="font-weight:600;font-size:13px;margin-bottom:6px;color:var(--acc);">Fitore si i vetëm ('+r.vetem.length+' host)</div>';
+'<div style="font-weight:600;font-size:13px;margin-bottom:6px;color:var(--acc);">Fitore si i vetëm — kush mori shfaqje ('+r.vetem.length+' reklamues)</div>';
 if(!r.vetem.length){
-h+='<p class="small mut">Ende s\'ka fitore si i vetëm.</p>';
+h+='<p class="small mut">Ende s\'ka fitore si i vetëm te ky host.</p>';
 } else {
 h+='<div class="ktabela">'+
-'<div class="krow khead"><span class="kc1">Host</span><span class="kc3">Shfaqje</span><span class="kc3">E fundit</span></div>'+
+'<div class="krow khead"><span class="kc1">Reklamues</span><span class="kc3">Shfaqje</span><span class="kc3">E fundit</span></div>'+
 r.vetem.map(function(v){
-return '<div class="krow"><span class="kc1">'+esc(v.host_emri||('#'+v.host_id))+'</span>'+
+return '<div class="krow"><span class="kc1">'+esc(v.reklamues_emri||('#'+v.reklamues_id))+'</span>'+
 '<span class="kc3" style="font-weight:600;color:var(--acc);">'+v.shfaqje+'</span>'+
 '<span class="kc3" style="font-size:11px;">'+dt(v.last_at)+'</span></div>';
 }).join('')+
 '</div>';
 }
 h+='</div>';
-// ═ Tabela 2 — Skenaret e barazimit (AGREGUAR sipas host+kandidatet) ═
+// ═ Tabela 2 — Skenaret e barazimit TE KY HOST (AGREGUAR sipas setit te kandidateve) ═
 h+='<div>'+
 '<div style="font-weight:600;font-size:13px;margin-bottom:6px;color:var(--acc);">Skenarët e barazimit ('+r.skenaret.length+')</div>';
 if(!r.skenaret.length){
-h+='<p class="small mut">Ende s\'ka pjesëmarrje në barazim.</p>';
+h+='<p class="small mut">Ende s\'ka barazime te ky host.</p>';
 } else {
 h+=r.skenaret.map(function(s){
 return '<div class="ktabela" style="margin-bottom:12px;">'+
-'<div class="krow khead"><span class="kc1">Host: '+esc(s.host_emri||('#'+s.host_id))+' · Ndodhi <b style="color:var(--txt);">'+s.ndodhi_here+'</b> herë · E fundit '+dt(s.last_at)+'</span></div>'+
+'<div class="krow khead"><span class="kc1">Ndodhi <b style="color:var(--txt);">'+s.ndodhi_here+'</b> herë · E fundit '+dt(s.last_at)+'</span></div>'+
 '<div class="krow khead"><span class="kc1">Reklamues</span><span class="kc3">AI (i fundit)</span><span class="kc3">Fitore</span></div>'+
 s.kandidatet.map(function(k){
-var isThisBiz = k.reklamues_id === id;
-var stil = isThisBiz ? 'background:#0a2540;font-weight:600;' : '';
+var kaFitore = k.fitore > 0;
+var stil = kaFitore ? 'background:#0a2540;font-weight:600;' : '';
 return '<div class="krow" style="'+stil+'">'+
 '<span class="kc1">'+esc(k.reklamues_emri||('#'+k.reklamues_id))+'</span>'+
 '<span class="kc3">'+(k.ai_skori_latest!=null?k.ai_skori_latest:'—')+'</span>'+
