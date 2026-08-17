@@ -1227,7 +1227,7 @@ function formaKreative(lloji){
   const ndihma = lloji==='html5'
     ? 'Mund të ngarkosh imazhe, ose një skedar .htm/.zip për modifikim.'
     : 'Mund të ngarkosh vetëm imazhe (JPG, PNG).';
-  return '<div style="margin-top:18px;">'+
+  return '<div id="krForma" style="margin-top:18px;">'+
     '<label>Emri</label>'+
     '<input id="krEmri" placeholder="Emri i reklamës (p.sh. Fushata Verë)">'+
     '<label style="margin-top:12px;">Përshkrimi</label>'+
@@ -1240,7 +1240,6 @@ function formaKreative(lloji){
     '<button class="primary" id="krGjenBtn" onclick="krGjenero(\''+lloji+'\')" style="margin-top:18px;">✨ Gjenero me AI</button>'+
     '<span class="small mut" id="krKufiri" style="margin-left:10px;"></span>'+
     '<p id="krMsg" class="msg"></p>'+
-    '<div id="krRezultat"></div>'+
   '</div>';
 }
 async function krNgarkoKufirin(lloji){
@@ -1285,15 +1284,30 @@ async function krGjenero(lloji){
   if(btn) btn.disabled=false;
 }
 function krShfaqRezultatin(k){
-  const el=$('krRezultat'); if(!el) return;
+  const el=$('krForma'); if(!el) return;
   el.innerHTML=
-    '<div class="card" style="margin-top:16px;">'+
-      '<div id="krImgWrap">'+(k.output_url ? '<img src="'+esc(k.output_url)+'" style="max-width:280px;border-radius:10px;display:block;margin-bottom:10px;">' : '')+'</div>'+
-      '<button class="btn" onclick="krHapModifiko('+k.id+',\''+esc(k.lloji)+'\')">✏️ Modifiko këtë gjenerim</button>'+
-      '<span class="small mut" id="krModKufiri" style="margin-left:10px;"></span>'+
-      '<div id="krModForm"></div>'+
-    '</div>';
+    '<div id="krImgWrap">'+(k.output_url ? '<img src="'+esc(k.output_url)+'" style="max-width:280px;border-radius:10px;display:block;margin-bottom:10px;">' : '')+'</div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">'+
+      '<a class="btn" href="'+esc(k.output_url)+'" download="kreative_'+k.id+'.png" style="text-decoration:none;">⬇ Shkarko</a>'+
+      '<button class="btn" onclick="krRuaj('+k.id+')">💾 Ruaje</button>'+
+      '<button class="btn" onclick="krHapModifiko('+k.id+',\''+esc(k.lloji)+'\')">✏️ Modifiko</button>'+
+    '</div>'+
+    '<span class="small mut" id="krModKufiri"></span>'+
+    '<span class="small" id="krRuajMsg" style="margin-left:10px;"></span>'+
+    '<div id="krModForm"></div>';
   krNgarkoModKufirin(k.id, k.lloji);
+}
+async function krRuaj(id){
+  const msg=$('krRuajMsg');
+  try{
+    const r=await(await fetch('/api/kreative')).json();
+    const k=(r.kreative||[]).find(x=>x.id===id);
+    if(k && k.output_url && k.status==='gati'){
+      if(msg){msg.style.color='var(--good)';msg.textContent='✓ Tashmë i ruajtur.';}
+    } else {
+      if(msg){msg.style.color='var(--mut)';msg.textContent='S\'ka çfarë ruhet ende.';}
+    }
+  }catch(e){ if(msg){msg.style.color='var(--err)';msg.textContent='Gabim.';} }
 }
 async function krNgarkoModKufirin(id, lloji){
   const el=$('krModKufiri'); if(!el) return;
@@ -1322,15 +1336,10 @@ async function krModifiko(id, lloji){
     const r = await (await fetch('/api/kreative/modifiko/'+id,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({pershkrimi})})).json();
     if(r.error){ if(msg){msg.className='msg err';msg.textContent=r.error;} if(btn) btn.disabled=false; return; }
-    // Perditeso VETEM imazhin, ne te njejtin vend (mbi te vjetrin) — forma mbetet e hapur per korrigjim tjeter
-    const imgWrap=$('krImgWrap');
-    if(imgWrap && r.output_url) imgWrap.innerHTML='<img src="'+esc(r.output_url)+'" style="max-width:280px;border-radius:10px;display:block;margin-bottom:10px;">';
-    const perInp=$('krModPer'); if(perInp) perInp.value='';
-    if(msg){msg.className='msg ok';msg.textContent='✓ U korrigjua.';}
-    krNgarkoModKufirin(id, lloji);
+    // Rikthej krejt pamjen (imazh i ri + tri butonat) ne te njejtin vend
+    krShfaqRezultatin(r);
     ngarkoKreativet();
   }catch(e){ if(msg){msg.className='msg err';msg.textContent='Gabim: '+e.message;} }
-  if(btn) btn.disabled=false;
 }
 
 async function ngarkoKreativet(){
