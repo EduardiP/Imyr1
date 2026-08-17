@@ -111,24 +111,33 @@ module.exports = function (app, pool, iLoguar, deps) {
   });
 
   // GJENERIM I VERTETE (Imazh, per tani — video/html5 vijne me vone)
-  app.post('/api/kreative/gjenero', iLoguar, async (req, res) => {
+  app.post('/api/kreative/gjenero', iLoguar, upload.single('skedari'), async (req, res) => {
     const lloji = ((req.body && req.body.lloji) || '').trim();
     const emri = ((req.body && req.body.emri) || '').trim().slice(0, 200);
     const pershkrimi = ((req.body && req.body.pershkrimi) || '').trim().slice(0, 2000);
     if (lloji !== 'imazh') return res.status(400).json({ error: 'Ky format s\'është gati ende.' });
     if (!emri) return res.status(400).json({ error: 'Emri është i detyrueshëm.' });
-    if (!pershkrimi) return res.status(400).json({ error: 'Përshkrimi është i detyrueshëm.' });
+    if (!req.file && !pershkrimi) return res.status(400).json({ error: 'Shkruaj përshkrimin ose ngarko një skedar.' });
     if (!s3) return res.status(500).json({ error: "Ruajtja (R2) s'është konfiguruar te serveri." });
     try {
       const perdorura = await krijimeKeteMuaj(pool, req.biznesId, lloji);
       if (perdorura >= KUFIJTE[lloji].krijimeMuaj) {
         return res.status(429).json({ error: 'Ke arritur kufirin mujor (' + KUFIJTE[lloji].krijimeMuaj + ') për ' + lloji + '.' });
       }
-      const falUrl = await falKlient.gjeneroImazh(pershkrimi);
-      const imgResp = await fetch(falUrl);
-      const buf = Buffer.from(await imgResp.arrayBuffer());
-      const key = 'kreative/' + req.biznesId + '_' + Date.now() + '.png';
-      await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: 'image/png' }));
+      let buf, ext;
+      if (req.file) {
+        // Skedar i ngarkuar direkt nga klienti — pa AI, ruhet siç eshte. Mund te modifikohet me AI me vone.
+        buf = req.file.buffer;
+        ext = (req.file.mimetype && req.file.mimetype.includes('png')) ? 'png' : 'jpg';
+      } else {
+        // Gjenerim me AI, nga pershkrimi
+        const falUrl = await falKlient.gjeneroImazh(pershkrimi);
+        const imgResp = await fetch(falUrl);
+        buf = Buffer.from(await imgResp.arrayBuffer());
+        ext = 'png';
+      }
+      const key = 'kreative/' + req.biznesId + '_' + Date.now() + '.' + ext;
+      await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: ext === 'png' ? 'image/png' : 'image/jpeg' }));
       const url = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + key;
       const r = await pool.query(
         `INSERT INTO kreativitetet (biznes_id, lloji, emri, pershkrimi, output_url, status)
@@ -137,6 +146,7 @@ module.exports = function (app, pool, iLoguar, deps) {
       res.json(r.rows[0]);
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
+
 
   // MODIFIKIM (korrigjim i imazhit ekzistues, Flux Kontext)
   app.post('/api/kreative/modifiko/:id', iLoguar, async (req, res) => {
