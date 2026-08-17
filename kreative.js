@@ -115,30 +115,63 @@ module.exports = function (app, pool, iLoguar, deps) {
     const lloji = ((req.body && req.body.lloji) || '').trim();
     const emri = ((req.body && req.body.emri) || '').trim().slice(0, 200);
     const pershkrimi = ((req.body && req.body.pershkrimi) || '').trim().slice(0, 2000);
-    if (lloji !== 'imazh') return res.status(400).json({ error: 'Ky format s\'është gati ende.' });
+    const imageUrl = ((req.body && req.body.image_url) || '').trim(); // imazh ekzistues nga "kreativet e mia"
+    if (!['imazh', 'video', 'html5'].includes(lloji)) return res.status(400).json({ error: 'Lloj i pavlefshëm.' });
     if (!emri) return res.status(400).json({ error: 'Emri është i detyrueshëm.' });
-    if (!req.file && !pershkrimi) return res.status(400).json({ error: 'Shkruaj përshkrimin ose ngarko një skedar.' });
     if (!s3) return res.status(500).json({ error: "Ruajtja (R2) s'është konfiguruar te serveri." });
     try {
       const perdorura = await krijimeKeteMuaj(pool, req.biznesId, lloji);
       if (perdorura >= KUFIJTE[lloji].krijimeMuaj) {
         return res.status(429).json({ error: 'Ke arritur kufirin mujor (' + KUFIJTE[lloji].krijimeMuaj + ') për ' + lloji + '.' });
       }
-      let buf, ext;
-      if (req.file) {
-        // Skedar i ngarkuar direkt nga klienti — pa AI, ruhet siç eshte. Mund te modifikohet me AI me vone.
-        buf = req.file.buffer;
-        ext = (req.file.mimetype && req.file.mimetype.includes('png')) ? 'png' : 'jpg';
-      } else {
-        // Gjenerim me AI, nga pershkrimi
-        const falUrl = await falKlient.gjeneroImazh(pershkrimi);
-        const imgResp = await fetch(falUrl);
-        buf = Buffer.from(await imgResp.arrayBuffer());
-        ext = 'png';
+      let url;
+      if (lloji === 'imazh') {
+        let buf, ext;
+        if (req.file) {
+          buf = req.file.buffer;
+          ext = (req.file.mimetype && req.file.mimetype.includes('png')) ? 'png' : 'jpg';
+        } else {
+          if (!pershkrimi) return res.status(400).json({ error: 'Shkruaj përshkrimin ose ngarko një skedar.' });
+          const falUrl = await falKlient.gjeneroImazh(pershkrimi);
+          const imgResp = await fetch(falUrl);
+          buf = Buffer.from(await imgResp.arrayBuffer());
+          ext = 'png';
+        }
+        const key = 'kreative/' + req.biznesId + '_' + Date.now() + '.' + ext;
+        await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: ext === 'png' ? 'image/png' : 'image/jpeg' }));
+        url = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + key;
+      } else if (lloji === 'video') {
+        // Video kerkon nje imazh baze — ose nga skedar i ngarkuar, ose nga imazhet e mia (image_url), ose gabim
+        let imgUrlPerVideo = imageUrl;
+        if (req.file) {
+          const ext2 = (req.file.mimetype && req.file.mimetype.includes('png')) ? 'png' : 'jpg';
+          const imgKey = 'kreative/' + req.biznesId + '_vid_src_' + Date.now() + '.' + ext2;
+          await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: imgKey, Body: req.file.buffer, ContentType: req.file.mimetype || 'image/jpeg' }));
+          imgUrlPerVideo = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + imgKey;
+        }
+        if (!imgUrlPerVideo) return res.status(400).json({ error: 'Video kërkon një imazh bazë — ngarko ose zgjidh nga imazhet e tua.' });
+        if (!pershkrimi) return res.status(400).json({ error: 'Shkruaj përshkrimin për videon.' });
+        const falUrl = await falKlient.gjeneroVideo(imgUrlPerVideo, pershkrimi);
+        const vidResp = await fetch(falUrl);
+        const buf = Buffer.from(await vidResp.arrayBuffer());
+        const key = 'kreative/' + req.biznesId + '_' + Date.now() + '.mp4';
+        await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: 'video/mp4' }));
+        url = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + key;
+      } else if (lloji === 'html5') {
+        if (!pershkrimi) return res.status(400).json({ error: 'Shkruaj përshkrimin për HTML5.' });
+        let imgUrlPerHtml = imageUrl;
+        if (req.file) {
+          const ext3 = (req.file.mimetype && req.file.mimetype.includes('png')) ? 'png' : 'jpg';
+          const imgKey = 'kreative/' + req.biznesId + '_h5_src_' + Date.now() + '.' + ext3;
+          await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: imgKey, Body: req.file.buffer, ContentType: req.file.mimetype || 'image/jpeg' }));
+          imgUrlPerHtml = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + imgKey;
+        }
+        const htmlCode = await falKlient.gjeneroHTML5(pershkrimi, imgUrlPerHtml || null);
+        const buf = Buffer.from(htmlCode, 'utf8');
+        const key = 'kreative/' + req.biznesId + '_' + Date.now() + '.html';
+        await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: 'text/html' }));
+        url = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + key;
       }
-      const key = 'kreative/' + req.biznesId + '_' + Date.now() + '.' + ext;
-      await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: ext === 'png' ? 'image/png' : 'image/jpeg' }));
-      const url = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + key;
       const r = await pool.query(
         `INSERT INTO kreativitetet (biznes_id, lloji, emri, pershkrimi, output_url, status)
          VALUES ($1,$2,$3,$4,$5,'gati') RETURNING id, lloji, emri, pershkrimi, output_url, status`,
@@ -148,7 +181,7 @@ module.exports = function (app, pool, iLoguar, deps) {
   });
 
 
-  // MODIFIKIM (korrigjim i imazhit ekzistues, Flux Kontext)
+  // MODIFIKIM — imazh (Flux Kontext), video (rigjenero nga imazhi i ri), html5 (rigjenero me Claude)
   app.post('/api/kreative/modifiko/:id', iLoguar, async (req, res) => {
     const pershkrimi = ((req.body && req.body.pershkrimi) || '').trim().slice(0, 2000);
     if (!pershkrimi) return res.status(400).json({ error: 'Shkruaj çfarë të ndryshohet.' });
@@ -157,18 +190,30 @@ module.exports = function (app, pool, iLoguar, deps) {
       const k = await pool.query('SELECT * FROM kreativitetet WHERE id=$1 AND biznes_id=$2', [req.params.id, req.biznesId]);
       if (!k.rows.length) return res.status(404).json({ error: 'Kreativiteti s\'u gjet.' });
       const kr = k.rows[0];
-      if (kr.lloji !== 'imazh') return res.status(400).json({ error: 'Ky format s\'është gati ende.' });
-      if (!kr.output_url) return res.status(400).json({ error: 'Ky krijim s\'ka ende imazh për t\'u modifikuar.' });
+      if (!kr.output_url) return res.status(400).json({ error: 'Ky krijim s\'ka ende output për t\'u modifikuar.' });
       const limiti = KUFIJTE[kr.lloji].modifikimeKrijim;
       if (kr.modifikime_perdorura >= limiti) {
         return res.status(429).json({ error: 'Ke arritur kufirin e modifikimeve (' + limiti + ') për këtë krijim.' });
       }
-      const falUrl = await falKlient.modifikoImazh(kr.output_url, pershkrimi);
-      const imgResp = await fetch(falUrl);
-      const buf = Buffer.from(await imgResp.arrayBuffer());
-      const key = 'kreative/' + req.biznesId + '_' + Date.now() + '.png';
-      await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: 'image/png' }));
-      const url = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + key;
+      let url;
+      if (kr.lloji === 'imazh') {
+        const falUrl = await falKlient.modifikoImazh(kr.output_url, pershkrimi);
+        const imgResp = await fetch(falUrl);
+        const buf = Buffer.from(await imgResp.arrayBuffer());
+        const key = 'kreative/' + req.biznesId + '_' + Date.now() + '.png';
+        await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: 'image/png' }));
+        url = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + key;
+      } else if (kr.lloji === 'video') {
+        // Video modifikim = rigjenero videon me prompt te ri, duke perdorur te njejtin imazh baze
+        // (imazhi baze mund te jete ruajtur si skedari_url ose te jete vetem output_url e videos — ne ate rast rikerkojme imazh)
+        return res.status(400).json({ error: 'Modifikimi i videos rigjeneron nga e para — shkruaj përshkrim të ri te Krijo.' });
+      } else if (kr.lloji === 'html5') {
+        const htmlCode = await falKlient.gjeneroHTML5(pershkrimi, null);
+        const buf = Buffer.from(htmlCode, 'utf8');
+        const key = 'kreative/' + req.biznesId + '_' + Date.now() + '.html';
+        await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: 'text/html' }));
+        url = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + key;
+      }
       const r = await pool.query(
         `UPDATE kreativitetet SET output_url=$2, pershkrimi=$3, modifikime_perdorura=modifikime_perdorura+1, perditesuar_at=now()
          WHERE id=$1 RETURNING id, lloji, emri, pershkrimi, output_url, status, modifikime_perdorura`,
