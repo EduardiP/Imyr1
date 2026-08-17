@@ -53,4 +53,53 @@ async function modifikoImazh(imageUrl, pershkrimi) {
   return url;
 }
 
-module.exports = { gjeneroImazh, modifikoImazh };
+// ═══ VIDEO — Wan 2.6 image-to-video (merr imazh + prompt, kthen video MP4) ═══
+const QELLIMI_VIDEO =
+  'Animate this advertisement image with subtle, professional motion suitable for a video ad. ' +
+  'Keep the brand message and layout intact, add eye-catching but tasteful movement. ' +
+  'Accept the description in any language. ';
+
+async function gjeneroVideo(imageUrl, pershkrimi) {
+  const data = await falThirr('wan/v2.6/image-to-video/flash', {
+    image_url: imageUrl,
+    prompt: QELLIMI_VIDEO + pershkrimi
+  });
+  const url = data && data.video && data.video.url;
+  if (!url) throw new Error("Fal.ai s'ktheu video.");
+  return url;
+}
+
+// ═══ HTML5 — Claude (Anthropic API) — gjeneron banner HTML/CSS/JS nga pershkrimi + imazhi ═══
+const QELLIMI_HTML5 =
+  'You are an expert HTML5 display ad designer. Create a single self-contained HTML file ' +
+  '(HTML+CSS+JS in one file, no external dependencies) for an animated banner ad. ' +
+  'The ad must be professional, eye-catching, with smooth CSS animations. ' +
+  'If an image URL is provided, include it as the main visual. ' +
+  'Output ONLY the raw HTML code, no markdown, no explanation, no backticks.';
+
+async function gjeneroHTML5(pershkrimi, imageUrl) {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) throw new Error("ANTHROPIC_API_KEY s'është konfiguruar te serveri.");
+  const userMsg = pershkrimi + (imageUrl ? '\n\nImage URL to include: ' + imageUrl : '');
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4000,
+      system: QELLIMI_HTML5,
+      messages: [{ role: 'user', content: userMsg }]
+    })
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error((data && data.error && data.error.message) || 'Anthropic gabim');
+  const teksti = data.content && data.content.map(c => c.text || '').join('');
+  if (!teksti || !teksti.includes('<')) throw new Error("Claude s'ktheu HTML të vlefshëm.");
+  return teksti;
+}
+
+module.exports = { gjeneroImazh, modifikoImazh, gjeneroVideo, gjeneroHTML5 };
