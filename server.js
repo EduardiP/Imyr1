@@ -1773,7 +1773,7 @@ require('./asistenti')(app, pool, iLoguar);
 require('./suporti')(app, pool);
 
 // Kreative — krijimi i reklamave me AI (imazh/video/HTML5)
-require('./kreative')(app, pool, iLoguar);
+require('./kreative')(app, pool, iLoguar, { upload, s3, PutObjectCommand });
 
 require('./njoftime-admin')(app, pool, iLoguar, iAdmin);
 
