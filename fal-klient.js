@@ -23,10 +23,12 @@ async function falThirr(endpoint, input) {
 
 // Prompt "qellimi" — kombinohet me pershkrimin e klientit, per te dhene rezultate te natyres reklame
 const QELLIMI_IMAZH =
-  'This must look like an actual DESIGNED ADVERTISEMENT (ad creative/banner composition) — ' +
-  'not a plain photo of an object, person, or scene. Unless the description below explicitly ' +
-  'asks for a plain/simple photo, compose it with clear advertising structure and intent ' +
-  '(promotional layout, product/brand focus, professional commercial styling). ';
+  'Generate this as a professional advertisement creative. ' +
+  'Design constraints: clean layout with clear visual hierarchy, high resolution, ' +
+  'no watermarks, no placeholder text unless explicitly requested, ' +
+  'balanced white space, eye-catching but not cluttered, ' +
+  'suitable for digital display advertising (banner, social, web). ' +
+  'Accept the description in any language. ';
 
 // Gjenerim i PARE (tekst → imazh) — Ideogram V3, teksti/CTA i lexueshem brenda imazhit
 async function gjeneroImazh(pershkrimi) {
