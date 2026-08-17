@@ -19,9 +19,30 @@ async function init(pool) {
       perditesuar_at TIMESTAMPTZ DEFAULT now()
     )`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_kreativitetet_biz ON kreativitetet(biznes_id)`);
+  // Numri i modifikimeve te perdorura per kete kreativitet specifik (kufi per-krijim)
+  await pool.query(`ALTER TABLE kreativitetet ADD COLUMN IF NOT EXISTS modifikime_perdorura INTEGER NOT NULL DEFAULT 0`);
 }
 
-module.exports = function (app, pool, iLoguar) {
+// Kufijte mujore (krijime te REJA) dhe per-krijim (modifikime), sipas formatit
+const KUFIJTE = {
+  imazh: { krijimeMuaj: 20, modifikimeKrijim: 5 },
+  video: { krijimeMuaj: 5,  modifikimeKrijim: 2 },
+  html5: { krijimeMuaj: 7,  modifikimeKrijim: 3 }
+};
+
+// Sa krijime te REJA jane bere kete muaj (30 dite) per kete biznes+format
+async function krijimeKeteMuaj(pool, bizId, lloji) {
+  const r = await pool.query(
+    `SELECT COUNT(*)::int AS n FROM kreativitetet
+     WHERE biznes_id=$1 AND lloji=$2 AND krijuar_at > now() - interval '30 days'`,
+    [bizId, lloji]);
+  return r.rows[0].n;
+}
+
+const falKlient = require('./fal-klient');
+
+module.exports = function (app, pool, iLoguar, deps) {
+  const { upload, s3, PutObjectCommand } = deps || {};
   init(pool).catch(e => console.error('kreative init:', e.message));
 
   // Listo kreativitetet e biznesit
@@ -62,6 +83,86 @@ module.exports = function (app, pool, iLoguar) {
          VALUES ($1,$2,$3,$4,$5)
          RETURNING id, lloji, emri, pershkrimi, skedari_url, status`,
         [req.biznesId, lloji, emri, pershkrimi, skedari_url]);
+      res.json(r.rows[0]);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // Kufijte (mbetur) per nje format — dhe per nje kreativitet specifik (modifikime) nese jepet ?id=
+  app.get('/api/kreative/kufijte', iLoguar, async (req, res) => {
+    const lloji = req.query.lloji;
+    if (!KUFIJTE[lloji]) return res.status(400).json({ error: 'Lloj i pavlefshëm.' });
+    try {
+      const perdorura = await krijimeKeteMuaj(pool, req.biznesId, lloji);
+      const rez = {
+        krijime_mbetura: Math.max(0, KUFIJTE[lloji].krijimeMuaj - perdorura),
+        krijime_gjithsej: KUFIJTE[lloji].krijimeMuaj
+      };
+      if (req.query.id) {
+        const k = await pool.query(
+          'SELECT modifikime_perdorura FROM kreativitetet WHERE id=$1 AND biznes_id=$2',
+          [req.query.id, req.biznesId]);
+        if (k.rows.length) {
+          rez.modifikime_mbetura = Math.max(0, KUFIJTE[lloji].modifikimeKrijim - k.rows[0].modifikime_perdorura);
+          rez.modifikime_gjithsej = KUFIJTE[lloji].modifikimeKrijim;
+        }
+      }
+      res.json(rez);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // GJENERIM I VERTETE (Imazh, per tani — video/html5 vijne me vone)
+  app.post('/api/kreative/gjenero', iLoguar, async (req, res) => {
+    const lloji = ((req.body && req.body.lloji) || '').trim();
+    const emri = ((req.body && req.body.emri) || '').trim().slice(0, 200);
+    const pershkrimi = ((req.body && req.body.pershkrimi) || '').trim().slice(0, 2000);
+    if (lloji !== 'imazh') return res.status(400).json({ error: 'Ky format s\'është gati ende.' });
+    if (!emri) return res.status(400).json({ error: 'Emri është i detyrueshëm.' });
+    if (!pershkrimi) return res.status(400).json({ error: 'Përshkrimi është i detyrueshëm.' });
+    if (!s3) return res.status(500).json({ error: "Ruajtja (R2) s'është konfiguruar te serveri." });
+    try {
+      const perdorura = await krijimeKeteMuaj(pool, req.biznesId, lloji);
+      if (perdorura >= KUFIJTE[lloji].krijimeMuaj) {
+        return res.status(429).json({ error: 'Ke arritur kufirin mujor (' + KUFIJTE[lloji].krijimeMuaj + ') për ' + lloji + '.' });
+      }
+      const falUrl = await falKlient.gjeneroImazh(pershkrimi);
+      const imgResp = await fetch(falUrl);
+      const buf = Buffer.from(await imgResp.arrayBuffer());
+      const key = 'kreative/' + req.biznesId + '_' + Date.now() + '.png';
+      await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: 'image/png' }));
+      const url = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + key;
+      const r = await pool.query(
+        `INSERT INTO kreativitetet (biznes_id, lloji, emri, pershkrimi, output_url, status)
+         VALUES ($1,$2,$3,$4,$5,'gati') RETURNING id, lloji, emri, pershkrimi, output_url, status`,
+        [req.biznesId, lloji, emri, pershkrimi, url]);
+      res.json(r.rows[0]);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // MODIFIKIM (korrigjim i imazhit ekzistues, Flux Kontext)
+  app.post('/api/kreative/modifiko/:id', iLoguar, async (req, res) => {
+    const pershkrimi = ((req.body && req.body.pershkrimi) || '').trim().slice(0, 2000);
+    if (!pershkrimi) return res.status(400).json({ error: 'Shkruaj çfarë të ndryshohet.' });
+    if (!s3) return res.status(500).json({ error: "Ruajtja (R2) s'është konfiguruar te serveri." });
+    try {
+      const k = await pool.query('SELECT * FROM kreativitetet WHERE id=$1 AND biznes_id=$2', [req.params.id, req.biznesId]);
+      if (!k.rows.length) return res.status(404).json({ error: 'Kreativiteti s\'u gjet.' });
+      const kr = k.rows[0];
+      if (kr.lloji !== 'imazh') return res.status(400).json({ error: 'Ky format s\'është gati ende.' });
+      if (!kr.output_url) return res.status(400).json({ error: 'Ky krijim s\'ka ende imazh për t\'u modifikuar.' });
+      const limiti = KUFIJTE[kr.lloji].modifikimeKrijim;
+      if (kr.modifikime_perdorura >= limiti) {
+        return res.status(429).json({ error: 'Ke arritur kufirin e modifikimeve (' + limiti + ') për këtë krijim.' });
+      }
+      const falUrl = await falKlient.modifikoImazh(kr.output_url, pershkrimi);
+      const imgResp = await fetch(falUrl);
+      const buf = Buffer.from(await imgResp.arrayBuffer());
+      const key = 'kreative/' + req.biznesId + '_' + Date.now() + '.png';
+      await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: 'image/png' }));
+      const url = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + key;
+      const r = await pool.query(
+        `UPDATE kreativitetet SET output_url=$2, pershkrimi=$3, modifikime_perdorura=modifikime_perdorura+1, perditesuar_at=now()
+         WHERE id=$1 RETURNING id, lloji, emri, pershkrimi, output_url, status, modifikime_perdorura`,
+        [kr.id, url, pershkrimi]);
       res.json(r.rows[0]);
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
