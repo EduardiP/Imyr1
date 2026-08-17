@@ -26,11 +26,12 @@ const QELLIMI_IMAZH =
   'Professional advertisement photo, clean composition, high quality commercial product/brand photography, ' +
   'suitable for a display ad. ';
 
-// Gjenerim i PARE (tekst → imazh)
+// Gjenerim i PARE (tekst → imazh) — Ideogram V3, teksti/CTA i lexueshem brenda imazhit
 async function gjeneroImazh(pershkrimi) {
-  const data = await falThirr('fal-ai/flux-pro/v1.1', {
+  const data = await falThirr('fal-ai/ideogram/v3', {
     prompt: QELLIMI_IMAZH + pershkrimi,
-    image_size: 'landscape_4_3'
+    image_size: 'square_hd',
+    rendering_speed: 'BALANCED'
   });
   const url = data && data.images && data.images[0] && data.images[0].url;
   if (!url) throw new Error("Fal.ai s'ktheu imazh.");
