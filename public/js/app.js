@@ -1288,7 +1288,7 @@ function krShfaqRezultatin(k){
   const el=$('krRezultat'); if(!el) return;
   el.innerHTML=
     '<div class="card" style="margin-top:16px;">'+
-      (k.output_url ? '<img src="'+esc(k.output_url)+'" style="max-width:280px;border-radius:10px;display:block;margin-bottom:10px;">' : '')+
+      '<div id="krImgWrap">'+(k.output_url ? '<img src="'+esc(k.output_url)+'" style="max-width:280px;border-radius:10px;display:block;margin-bottom:10px;">' : '')+'</div>'+
       '<button class="btn" onclick="krHapModifiko('+k.id+',\''+esc(k.lloji)+'\')">✏️ Modifiko këtë gjenerim</button>'+
       '<span class="small mut" id="krModKufiri" style="margin-left:10px;"></span>'+
       '<div id="krModForm"></div>'+
@@ -1305,12 +1305,9 @@ async function krNgarkoModKufirin(id, lloji){
 }
 function krHapModifiko(id, lloji){
   const el=$('krModForm'); if(!el) return;
-  const perAktual = ($('krPer')||{}).value || '';
   el.innerHTML=
-    '<label style="margin-top:14px;">Përshkrimi (korrigjo)</label>'+
-    '<textarea id="krModPer" style="min-height:80px;">'+esc(perAktual)+'</textarea>'+
-    '<label style="margin-top:10px;">Ngarko skedar (opsional)</label>'+
-    '<div class="krFile"><input type="file" id="krModFile" accept="image/*"></div>'+
+    '<label style="margin-top:14px;">Çfarë të ndryshohet?</label>'+
+    '<textarea id="krModPer" placeholder="p.sh. bëje sfondin blu, shto një filxhan kafeje" style="min-height:80px;"></textarea>'+
     '<button class="primary" id="krModBtn" onclick="krModifiko('+id+',\''+lloji+'\')" style="margin-top:12px;">✨ Gjenero me AI</button>'+
     '<p id="krModMsg" class="msg"></p>';
 }
@@ -1325,8 +1322,12 @@ async function krModifiko(id, lloji){
     const r = await (await fetch('/api/kreative/modifiko/'+id,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({pershkrimi})})).json();
     if(r.error){ if(msg){msg.className='msg err';msg.textContent=r.error;} if(btn) btn.disabled=false; return; }
+    // Perditeso VETEM imazhin, ne te njejtin vend (mbi te vjetrin) — forma mbetet e hapur per korrigjim tjeter
+    const imgWrap=$('krImgWrap');
+    if(imgWrap && r.output_url) imgWrap.innerHTML='<img src="'+esc(r.output_url)+'" style="max-width:280px;border-radius:10px;display:block;margin-bottom:10px;">';
+    const perInp=$('krModPer'); if(perInp) perInp.value='';
     if(msg){msg.className='msg ok';msg.textContent='✓ U korrigjua.';}
-    krShfaqRezultatin(r);
+    krNgarkoModKufirin(id, lloji);
     ngarkoKreativet();
   }catch(e){ if(msg){msg.className='msg err';msg.textContent='Gabim: '+e.message;} }
   if(btn) btn.disabled=false;
