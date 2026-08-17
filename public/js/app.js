@@ -1255,18 +1255,29 @@ async function krNgarkoKufirin(lloji){
 async function krGjenero(lloji){
   const emri = ($('krEmri')||{}).value || '';
   const pershkrimi = ($('krPer')||{}).value || '';
+  const fileInp = $('krFile');
+  const skedari = (fileInp && fileInp.files && fileInp.files[0]) ? fileInp.files[0] : null;
   const msg = $('krMsg');
   const btn = $('krGjenBtn');
   if(!emri.trim()){ if(msg){msg.className='msg err';msg.textContent='Vendos emrin.';} return; }
-  if(!pershkrimi.trim()){ if(msg){msg.className='msg err';msg.textContent='Shkruaj përshkrimin.';} return; }
+  if(!skedari && !pershkrimi.trim()){ if(msg){msg.className='msg err';msg.textContent='Shkruaj përshkrimin ose ngarko një skedar.';} return; }
   if(lloji!=='imazh'){ if(msg){msg.className='msg err';msg.textContent='Ky format s\'është gati ende — vjen së shpejti.';} return; }
   if(btn) btn.disabled=true;
-  if(msg){msg.className='msg';msg.textContent='Duke gjeneruar… (disa sekonda)';}
+  if(msg){msg.className='msg';msg.textContent=skedari?'Duke ngarkuar…':'Duke gjeneruar… (disa sekonda)';}
   try{
-    const r = await (await fetch('/api/kreative/gjenero',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({lloji, emri, pershkrimi})})).json();
+    let resp;
+    if(skedari){
+      const fd=new FormData();
+      fd.append('lloji', lloji); fd.append('emri', emri); fd.append('pershkrimi', pershkrimi);
+      fd.append('skedari', skedari);
+      resp = await fetch('/api/kreative/gjenero', { method:'POST', body: fd });
+    } else {
+      resp = await fetch('/api/kreative/gjenero', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({lloji, emri, pershkrimi}) });
+    }
+    const r = await resp.json();
     if(r.error){ if(msg){msg.className='msg err';msg.textContent=r.error;} if(btn) btn.disabled=false; return; }
-    if(msg){msg.className='msg ok';msg.textContent='✓ U gjenerua.';}
+    if(msg){msg.className='msg ok';msg.textContent='✓ U ruajt.';}
     krShfaqRezultatin(r);
     krNgarkoKufirin(lloji);
     ngarkoKreativet();
