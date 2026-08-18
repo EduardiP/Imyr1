@@ -251,6 +251,29 @@ module.exports = function (app, pool, iLoguar, deps) {
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
+  // RUAJ NJE HTML5 TE MODIFIKUAR MANUALISHT (nga GrapesJS, string HTML → R2)
+  app.post('/api/kreative/ruaj-editim-html5/:id', iLoguar, async (req, res) => {
+    const html = (req.body && req.body.html) || '';
+    if (!html.trim()) return res.status(400).json({ error: 'HTML bosh.' });
+    if (!s3) return res.status(500).json({ error: "Ruajtja (R2) s'është konfiguruar te serveri." });
+    try {
+      const k = await pool.query('SELECT * FROM kreativitetet WHERE id=$1 AND biznes_id=$2', [req.params.id, req.biznesId]);
+      if (!k.rows.length) return res.status(404).json({ error: 'Kreativiteti s\'u gjet.' });
+      if (k.rows[0].lloji !== 'html5') return res.status(400).json({ error: 'Editimi manual vlen vetëm për HTML5.' });
+
+      const buf = Buffer.from(html, 'utf8');
+      const key = 'kreative/' + req.biznesId + '_edit_' + Date.now() + '.html';
+      await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: 'text/html' }));
+      const url = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + key;
+
+      const r = await pool.query(
+        `UPDATE kreativitetet SET output_url=$2, perditesuar_at=now()
+         WHERE id=$1 RETURNING id, lloji, emri, pershkrimi, output_url, status`,
+        [k.rows[0].id, url]);
+      res.json(r.rows[0]);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
   // Fshi nje kreativitet
   app.delete('/api/kreative/:id', iLoguar, async (req, res) => {
     try {
