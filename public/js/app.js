@@ -1254,7 +1254,7 @@ async function krHapEditor(kreativId, imageUrl){
   // trajton Filerobot brenda vetes crossOrigin-in e <img>-it te tij te brendshem.
   var blobUrl;
   try{
-    var resp = await fetch(imageUrl);
+    var resp = await fetch('/api/kreative/proxy?url=' + encodeURIComponent(imageUrl));
     var blob = await resp.blob();
     blobUrl = URL.createObjectURL(blob);
   }catch(e){
@@ -1337,7 +1337,7 @@ var _gjsAktualiId = null;
 async function krHapEditorHtml5(kreativId, url){
   var htmlContent = '';
   try{
-    htmlContent = await (await fetch(url)).text();
+    htmlContent = await (await fetch('/api/kreative/proxy?url=' + encodeURIComponent(url))).text();
   }catch(e){ alert('Gabim: s\'u ngarkua përmbajtja HTML.'); return; }
 
   _gjsAktualiId = kreativId;
