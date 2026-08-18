@@ -45,6 +45,24 @@ module.exports = function (app, pool, iLoguar, deps) {
   const { upload, s3, PutObjectCommand } = deps || {};
   init(pool).catch(e => console.error('kreative init:', e.message));
 
+  // PROXY — merr nje skedar nga R2 permes backend-it tone (server-to-server, PA CORS
+  // fare, sepse kerkesa e browser-it shkon te DOMAIN-I YNE, jo direkt te R2).
+  // Perdoret nga editoret (Filerobot/GrapesJS) qe s'duan te varen nga konfigurimi CORS i R2.
+  app.get('/api/kreative/proxy', iLoguar, async (req, res) => {
+    const url = (req.query.url || '').trim();
+    const bazaR2 = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '');
+    if (!url || !bazaR2 || !url.startsWith(bazaR2)) {
+      return res.status(400).json({ error: 'URL e pavlefshme ose jashtë R2.' });
+    }
+    try {
+      const r = await fetch(url);
+      if (!r.ok) return res.status(r.status).json({ error: 'R2 ktheu ' + r.status });
+      const buf = Buffer.from(await r.arrayBuffer());
+      res.set('Content-Type', r.headers.get('content-type') || 'application/octet-stream');
+      res.send(buf);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
   // Listo kreativitetet e biznesit
   app.get('/api/kreative', iLoguar, async (req, res) => {
     try {
