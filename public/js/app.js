@@ -1264,7 +1264,7 @@ async function krHapEditor(kreativId, imageUrl){
   function fillimi(){
     if(!_fieInstance){
       _fieInstance = new FilerobotImageEditor(
-        { tools:['adjust','effects','filters','rotate','crop','resize'], colorScheme:'dark' },
+        { tools:['adjust','effects','filters','rotate','crop','resize'], colorScheme:'dark', finishButtonLabel:'Ruaj' },
         {
           onBeforeComplete: krFilerobotDuke, // ndalon upload/download automatik, ruan vete
           onClose: function(){ _fieAktualiId=null; }
