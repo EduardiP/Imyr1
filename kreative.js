@@ -222,6 +222,35 @@ module.exports = function (app, pool, iLoguar, deps) {
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
+  // RUAJ NJE IMAZH TE MODIFIKUAR MANUALISHT (nga Filerobot Image Editor, base64 → R2)
+  app.post('/api/kreative/ruaj-editim/:id', iLoguar, async (req, res) => {
+    const imageBase64 = (req.body && req.body.imageBase64) || '';
+    if (!imageBase64.startsWith('data:image/')) {
+      return res.status(400).json({ error: 'Imazh i pavlefshëm.' });
+    }
+    if (!s3) return res.status(500).json({ error: "Ruajtja (R2) s'është konfiguruar te serveri." });
+    try {
+      const k = await pool.query('SELECT * FROM kreativitetet WHERE id=$1 AND biznes_id=$2', [req.params.id, req.biznesId]);
+      if (!k.rows.length) return res.status(404).json({ error: 'Kreativiteti s\'u gjet.' });
+      if (k.rows[0].lloji !== 'imazh') return res.status(400).json({ error: 'Editimi manual vlen vetëm për imazhe.' });
+
+      const match = imageBase64.match(/^data:image\/(\w+);base64,(.+)$/);
+      if (!match) return res.status(400).json({ error: 'Formati base64 i pavlefshëm.' });
+      const ext = match[1] === 'jpeg' ? 'jpg' : match[1];
+      const buf = Buffer.from(match[2], 'base64');
+
+      const key = 'kreative/' + req.biznesId + '_edit_' + Date.now() + '.' + ext;
+      await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: 'image/' + ext }));
+      const url = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + key;
+
+      const r = await pool.query(
+        `UPDATE kreativitetet SET output_url=$2, perditesuar_at=now()
+         WHERE id=$1 RETURNING id, lloji, emri, pershkrimi, output_url, status`,
+        [k.rows[0].id, url]);
+      res.json(r.rows[0]);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
   // Fshi nje kreativitet
   app.delete('/api/kreative/:id', iLoguar, async (req, res) => {
     try {
