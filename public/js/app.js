@@ -1211,6 +1211,7 @@ async function ngarkoKreativetGati(){
     el.innerHTML = rows.map(k=>{
       const url = k.output_url||k.skedari_url;
       const eshteImazh = (k.lloji==='imazh' && url);
+      const eshteHtml5 = (k.lloji==='html5' && url);
       return '<div style="position:relative;flex:0 0 auto;width:84px;">'+
         '<div style="width:84px;height:84px;border-radius:10px;overflow:hidden;background:#0e1116;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;">'+
           (eshteImazh
@@ -1219,6 +1220,10 @@ async function ngarkoKreativetGati(){
         '</div>'+
         (eshteImazh
           ? '<button onclick="krHapEditor('+k.id+',\''+esc(url)+'\')" title="Ndrysho" '+
+            'style="position:absolute;top:4px;right:24px;width:24px;height:24px;border-radius:50%;background:rgba(14,17,22,.85);border:1px solid var(--line);color:var(--txt);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">✎</button>'
+          : '')+
+        (eshteHtml5
+          ? '<button onclick="krHapEditorHtml5('+k.id+',\''+esc(url)+'\')" title="Ndrysho" '+
             'style="position:absolute;top:4px;right:24px;width:24px;height:24px;border-radius:50%;background:rgba(14,17,22,.85);border:1px solid var(--line);color:var(--txt);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">✎</button>'
           : '')+
         '<button onclick="krFshi('+k.id+')" title="Fshi" '+
@@ -1286,6 +1291,81 @@ async function krRuajEditorin(kreativId, imageBase64){
   }catch(e){ alert('Gabim: '+e.message); }
 }
 
+// ═══ EDITIMI I HTML5 (GrapesJS — falas, plotesisht client-side, pa API) ═══
+// Ndryshe nga Filerobot, GrapesJS s'krijon vet modal — ndertojme ne overlay-in
+// dhe #gjs mount-in, dhe editori vendoset brenda tij.
+var _gjsEditor = null;
+var _gjsAktualiId = null;
+
+async function krHapEditorHtml5(kreativId, url){
+  var htmlContent = '';
+  try{
+    htmlContent = await (await fetch(url)).text();
+  }catch(e){ alert('Gabim: s\'u ngarkua përmbajtja HTML.'); return; }
+
+  _gjsAktualiId = kreativId;
+  var overlay = document.createElement('div');
+  overlay.id = 'krGjsOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10000;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML =
+    '<div style="width:min(1200px,96vw);height:min(760px,92vh);background:#12151b;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);">'+
+        '<span style="font-weight:600;">Ndrysho HTML5</span>'+
+        '<div>'+
+          '<button class="btn" onclick="krRuajGjs()" style="margin-right:8px;">💾 Ruaj</button>'+
+          '<button class="btn" onclick="krMbyllGjs()">✕ Mbyll</button>'+
+        '</div>'+
+      '</div>'+
+      '<div id="krGjsMount" style="flex:1;min-height:0;"></div>'+
+    '</div>';
+  document.body.appendChild(overlay);
+  krNgarkoGrapes(htmlContent);
+}
+
+function krMbyllGjs(){
+  if(_gjsEditor){ try{ _gjsEditor.destroy(); }catch(e){} _gjsEditor=null; }
+  _gjsAktualiId=null;
+  var ov=$('krGjsOverlay'); if(ov) ov.remove();
+}
+
+function krNgarkoGrapes(htmlContent){
+  function fillimi(){
+    var mount=$('krGjsMount'); if(!mount) return;
+    _gjsEditor = grapesjs.init({
+      container: mount,
+      height: '100%',
+      fromElement: false,
+      storageManager: false,
+      components: htmlContent
+    });
+  }
+  if(window.grapesjs){ fillimi(); return; }
+  var link=document.createElement('link');
+  link.rel='stylesheet';
+  link.href='https://cdn.jsdelivr.net/npm/grapesjs/dist/css/grapes.min.css';
+  document.head.appendChild(link);
+  var script=document.createElement('script');
+  script.src='https://cdn.jsdelivr.net/npm/grapesjs/dist/grapes.min.js';
+  script.onload=fillimi;
+  script.onerror=function(){ var m=$('krGjsMount'); if(m) m.innerHTML='<p class="small" style="padding:20px;">Gabim: s\'u ngarkua editori.</p>'; };
+  document.head.appendChild(script);
+}
+
+async function krRuajGjs(){
+  if(!_gjsEditor || !_gjsAktualiId) return;
+  var html = _gjsEditor.getHtml();
+  var css = _gjsEditor.getCss();
+  var full = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>'+css+'</style></head><body>'+html+'</body></html>';
+  try{
+    const r = await (await fetch('/api/kreative/ruaj-editim-html5/'+_gjsAktualiId, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ html: full })
+    })).json();
+    if(r.error){ alert('Gabim: '+r.error); return; }
+    krMbyllGjs();
+    ngarkoKreativetGati();
+  }catch(e){ alert('Gabim: '+e.message); }
+}
 
 function krZgjidh(l){ nav({v:'profile', nav:'kreative', lloji:l}); }
 
