@@ -1229,67 +1229,52 @@ async function ngarkoKreativetGati(){
   }catch(e){ wrap.style.display='none'; }
 }
 
-// ═══ EDITIMI I IMAZHIT (Filerobot Image Editor) ═══
-var _filerobotEditor = null;
+// ═══ EDITIMI I IMAZHIT (Filerobot Image Editor — versioni vanilla-JS, jo React) ═══
+// Editori vet krijon modalin e vet (showInModal:true, parazgjedhur) — s'na duhet
+// nje overlay/div i ndertuar nga ne, thjesht .open(url) e hap ate.
+var _fieInstance = null;
+var _fieAktualiId = null;
+
 function krHapEditor(kreativId, imageUrl){
-  var overlay = document.createElement('div');
-  overlay.id = 'krEditorOverlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10000;display:flex;align-items:center;justify-content:center;';
-  overlay.innerHTML =
-    '<div style="width:min(1100px,95vw);height:min(720px,90vh);background:#12151b;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;">'+
-      '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);">'+
-        '<span style="font-weight:600;">Ndrysho imazhin</span>'+
-        '<div>'+
-          '<button class="btn" onclick="krRuajEditorin('+kreativId+')" style="margin-right:8px;">💾 Ruaj</button>'+
-          '<button class="btn" onclick="krMbyllEditorin()">✕ Mbyll</button>'+
-        '</div>'+
-      '</div>'+
-      '<div id="krFilerobotMount" style="flex:1;min-height:0;"></div>'+
-    '</div>';
-  document.body.appendChild(overlay);
-  krNgarkoFilerobot(imageUrl);
-}
-function krMbyllEditorin(){
-  if(_filerobotEditor){ try{ _filerobotEditor.terminate(); }catch(e){} _filerobotEditor=null; }
-  var ov=$('krEditorOverlay'); if(ov) ov.remove();
-}
-function krNgarkoFilerobot(imageUrl){
+  _fieAktualiId = kreativId;
   function fillimi(){
-    var mount = $('krFilerobotMount'); if(!mount) return;
-    var config = {
-      source: imageUrl,
-      onSave: function(imageData){ window.__krEditoriRezultat = imageData; },
-      annotationsCommon: { fill: '#ff0000' },
-      Text: { text: 'Teksti' },
-      Rotate: { angle: 90, componentType: 'slider' },
-      translations: { hu: undefined },
-      defaultSavedImageType: 'png',
-      useBackendTranslations: false,
-      avoidChangesNotSavedAlertOnLeave: true
-    };
-    _filerobotEditor = new FilerobotImageEditor(mount, config);
-    _filerobotEditor.render({ onClose: krMbyllEditorin });
+    if(!_fieInstance){
+      _fieInstance = new FilerobotImageEditor(
+        { tools:['adjust','effects','filters','rotate','crop','resize'], colorScheme:'dark' },
+        {
+          onBeforeComplete: krFilerobotDuke, // ndalon upload/download automatik, ruan vete
+          onClose: function(){ _fieAktualiId=null; }
+        }
+      );
+    }
+    _fieInstance.open(imageUrl);
   }
-  // Ngarko CSS+JS e Filerobot nese s'jane ngarkuar ende (nga CDN)
   if(window.FilerobotImageEditor){ fillimi(); return; }
   var script = document.createElement('script');
-  script.src = 'https://cdn.jsdelivr.net/npm/react-filerobot-image-editor@latest/dist/react-filerobot-image-editor.standalone.min.js';
+  script.src = 'https://cdn.scaleflex.it/plugins/filerobot-image-editor/3.12.17/filerobot-image-editor.min.js';
   script.onload = fillimi;
-  script.onerror = function(){ var m=$('krFilerobotMount'); if(m) m.innerHTML='<p class="small" style="padding:20px;">Gabim: s\'u ngarkua editori.</p>'; };
+  script.onerror = function(){ alert('Gabim: s\'u ngarkua editori (kontrollo lidhjen e internetit).'); };
   document.head.appendChild(script);
 }
-async function krRuajEditorin(kreativId){
-  if(!window.__krEditoriRezultat || !window.__krEditoriRezultat.imageBase64){
-    alert('Bëj të paktën një ndryshim para se të ruash.'); return;
-  }
+
+// Thirret PARA se Filerobot te bej upload/download vete — kthejme 'false' qe ta ndalojme
+// ate, dhe ne vend te tij marrim canvas-in dhe e ruajme vete te backend-i yne.
+function krFilerobotDuke(payload){
+  var canvas = payload && payload.canvas;
+  if(!canvas || !_fieAktualiId){ return false; }
+  var dataUrl = canvas.toDataURL('image/png');
+  krRuajEditorin(_fieAktualiId, dataUrl);
+  return false; // ndalon sjelljen e parazgjedhur (shkarkim/upload te Filerobot/Cloudimage)
+}
+
+async function krRuajEditorin(kreativId, imageBase64){
   try{
     const r = await (await fetch('/api/kreative/ruaj-editim/'+kreativId, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ imageBase64: window.__krEditoriRezultat.imageBase64 })
+      body: JSON.stringify({ imageBase64: imageBase64 })
     })).json();
     if(r.error){ alert('Gabim: '+r.error); return; }
-    window.__krEditoriRezultat = null;
-    krMbyllEditorin();
+    if(_fieInstance){ try{ _fieInstance.close(); }catch(e){} }
     ngarkoKreativetGati();
   }catch(e){ alert('Gabim: '+e.message); }
 }
