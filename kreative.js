@@ -225,6 +225,7 @@ module.exports = function (app, pool, iLoguar, deps) {
   // RUAJ NJE IMAZH TE MODIFIKUAR MANUALISHT (nga Filerobot Image Editor, base64 → R2)
   app.post('/api/kreative/ruaj-editim/:id', iLoguar, async (req, res) => {
     const imageBase64 = (req.body && req.body.imageBase64) || '';
+    const mode = req.body && req.body.mode === 'copy' ? 'copy' : 'overwrite';
     if (!imageBase64.startsWith('data:image/')) {
       return res.status(400).json({ error: 'Imazh i pavlefshëm.' });
     }
@@ -243,10 +244,19 @@ module.exports = function (app, pool, iLoguar, deps) {
       await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: 'image/' + ext }));
       const url = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + key;
 
-      const r = await pool.query(
-        `UPDATE kreativitetet SET output_url=$2, perditesuar_at=now()
-         WHERE id=$1 RETURNING id, lloji, emri, pershkrimi, output_url, status`,
-        [k.rows[0].id, url]);
+      let r;
+      if (mode === 'copy') {
+        r = await pool.query(
+          `INSERT INTO kreativitetet (biznes_id, lloji, emri, pershkrimi, output_url, status)
+           VALUES ($1,$2,$3,$4,$5,'gati')
+           RETURNING id, lloji, emri, pershkrimi, output_url, status`,
+          [req.biznesId, k.rows[0].lloji, (k.rows[0].emri || '') + ' (kopje)', k.rows[0].pershkrimi, url]);
+      } else {
+        r = await pool.query(
+          `UPDATE kreativitetet SET output_url=$2, perditesuar_at=now()
+           WHERE id=$1 RETURNING id, lloji, emri, pershkrimi, output_url, status`,
+          [k.rows[0].id, url]);
+      }
       res.json(r.rows[0]);
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
@@ -254,6 +264,7 @@ module.exports = function (app, pool, iLoguar, deps) {
   // RUAJ NJE HTML5 TE MODIFIKUAR MANUALISHT (nga GrapesJS, string HTML → R2)
   app.post('/api/kreative/ruaj-editim-html5/:id', iLoguar, async (req, res) => {
     const html = (req.body && req.body.html) || '';
+    const mode = req.body && req.body.mode === 'copy' ? 'copy' : 'overwrite';
     if (!html.trim()) return res.status(400).json({ error: 'HTML bosh.' });
     if (!s3) return res.status(500).json({ error: "Ruajtja (R2) s'është konfiguruar te serveri." });
     try {
@@ -266,10 +277,19 @@ module.exports = function (app, pool, iLoguar, deps) {
       await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: 'text/html' }));
       const url = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + key;
 
-      const r = await pool.query(
-        `UPDATE kreativitetet SET output_url=$2, perditesuar_at=now()
-         WHERE id=$1 RETURNING id, lloji, emri, pershkrimi, output_url, status`,
-        [k.rows[0].id, url]);
+      let r;
+      if (mode === 'copy') {
+        r = await pool.query(
+          `INSERT INTO kreativitetet (biznes_id, lloji, emri, pershkrimi, output_url, status)
+           VALUES ($1,$2,$3,$4,$5,'gati')
+           RETURNING id, lloji, emri, pershkrimi, output_url, status`,
+          [req.biznesId, k.rows[0].lloji, (k.rows[0].emri || '') + ' (kopje)', k.rows[0].pershkrimi, url]);
+      } else {
+        r = await pool.query(
+          `UPDATE kreativitetet SET output_url=$2, perditesuar_at=now()
+           WHERE id=$1 RETURNING id, lloji, emri, pershkrimi, output_url, status`,
+          [k.rows[0].id, url]);
+      }
       res.json(r.rows[0]);
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
