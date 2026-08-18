@@ -1170,13 +1170,9 @@ function mainKreative_NEW(m, s){
     '<p class="small" style="margin:8px 0 16px;">Krijo reklama me AI: imazh, video, ose HTML5.</p>'+
     '<div class="tabs" style="max-width:320px;">'+
       '<div class="tab '+(tab==='krijo'?'active':'')+'" onclick="krTab(\'krijo\')">Krijo</div>'+
-      '<div class="tab '+(tab==='lista'?'active':'')+'" onclick="krTab(\'lista\')">Reklamat e mia</div>'+
+      '<div class="tab '+(tab==='lista'?'active':'')+'" onclick="krTab(\'lista\')">Krijimet e mia</div>'+
     '</div>'+
     (tab==='krijo' ? (
-      '<div id="krGatiWrap" style="display:none;margin:18px 0;">'+
-        '<label>Krijimet e gatshme</label>'+
-        '<div id="krGatiLista" style="display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;padding:8px 4px;margin-top:8px;"></div>'+
-      '</div>'+
       '<label>Cfare do te krijosh?</label>'+
       '<div class="krTip">'+
         '<button class="krT '+(zgjedhur==='imazh'?'sel':'')+'" onclick="krZgjidh(\'imazh\')">'+
@@ -1188,10 +1184,12 @@ function mainKreative_NEW(m, s){
       '</div>'+
       (zgjedhur ? formaKreative(zgjedhur) : '<p class="small mut" style="margin-top:16px;">Zgjidh nje lloj për të vazhduar.</p>')
     ) : (
-      '<div id="krLista" style="margin-top:18px;"></div>'
+      '<div id="krGatiWrap" style="margin-top:18px;">'+
+        '<div id="krGatiLista" style="display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;padding:8px 4px;"></div>'+
+      '</div>'
     ));
-  if(tab==='krijo'){ ngarkoKreativetGati(); if(zgjedhur) krNgarkoKufirin(zgjedhur); }
-  else { ngarkoKreativet(); }
+  if(tab==='krijo'){ if(zgjedhur) krNgarkoKufirin(zgjedhur); }
+  else { ngarkoKreativetGati(); }
 }
 function krTab(t){ nav({v:'profile', nav:'kreative', tab:t}); }
 
@@ -1205,11 +1203,11 @@ function krThumbHTML(k){
 }
 async function ngarkoKreativetGati(){
   const wrap=$('krGatiWrap'), el=$('krGatiLista'); if(!wrap||!el) return;
+  el.innerHTML='<p class="small mut">Po ngarkoj…</p>';
   try{
-    const r=await(await fetch('/api/kreative/gati')).json();
+    const r=await(await fetch('/api/kreative')).json();
     const rows=r.kreative||[];
-    if(!rows.length){ wrap.style.display='none'; return; }
-    wrap.style.display='block';
+    if(!rows.length){ el.innerHTML='<p class="small mut">Ende s\'ke krijuar asgjë.</p>'; return; }
     el.innerHTML = rows.map(k=>{
       const url = k.output_url||k.skedari_url;
       const eshteImazh = (k.lloji==='imazh' && url);
@@ -1221,12 +1219,21 @@ async function ngarkoKreativetGati(){
         '</div>'+
         (eshteImazh
           ? '<button onclick="krHapEditor('+k.id+',\''+esc(url)+'\')" title="Ndrysho" '+
-            'style="position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;background:rgba(14,17,22,.85);border:1px solid var(--line);color:var(--txt);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">✎</button>'
+            'style="position:absolute;top:4px;right:24px;width:24px;height:24px;border-radius:50%;background:rgba(14,17,22,.85);border:1px solid var(--line);color:var(--txt);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">✎</button>'
           : '')+
+        '<button onclick="krFshi('+k.id+')" title="Fshi" '+
+          'style="position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;background:rgba(14,17,22,.85);border:1px solid var(--line);color:var(--txt);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;">✕</button>'+
         '<div style="font-size:11px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--mut);">'+esc(k.emri||'')+'</div>'+
       '</div>';
     }).join('');
-  }catch(e){ wrap.style.display='none'; }
+  }catch(e){ el.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
+}
+async function krFshi(id){
+  if(!confirm('Fshi këtë krijim?')) return;
+  try{
+    await fetch('/api/kreative/'+id,{method:'DELETE'});
+    ngarkoKreativetGati();
+  }catch(e){}
 }
 
 // ═══ EDITIMI I IMAZHIT (Filerobot Image Editor — versioni vanilla-JS, jo React) ═══
@@ -1436,35 +1443,6 @@ async function krModifiko(id, lloji){
     krShfaqRezultatin(r);
     ngarkoKreativet();
   }catch(e){ if(msg){msg.className='msg err';msg.textContent='Gabim: '+e.message;} }
-}
-
-async function ngarkoKreativet(){
-  const el = $('krLista'); if(!el) return;
-  try{
-    const r = await (await fetch('/api/kreative')).json();
-    if(!r.kreative || !r.kreative.length){ el.innerHTML=''; return; }
-    el.innerHTML = '<h3 style="font-size:15px;margin:0 0 12px;">Krijimet e mia</h3>'+
-      '<div class="krLista">'+
-      r.kreative.map(k => 
-        '<div class="krItem">'+
-          '<div class="krItemHead"><b>'+esc(k.emri||'')+'</b>'+
-            '<span class="krLloj">'+esc(k.lloji)+'</span></div>'+
-          (k.pershkrimi ? '<p class="small mut" style="margin:6px 0 0;">'+esc(k.pershkrimi).slice(0,150)+'</p>' : '')+
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">'+
-            '<span class="small mut">'+esc(k.status)+'</span>'+
-            '<button class="btn" style="padding:4px 10px;font-size:12px;" onclick="krFshi('+k.id+')">Fshi</button>'+
-          '</div>'+
-        '</div>').join('')+
-      '</div>';
-  }catch(e){}
-}
-
-async function krFshi(id){
-  if(!confirm('Fshi këtë krijim?')) return;
-  try{
-    await fetch('/api/kreative/'+id,{method:'DELETE'});
-    ngarkoKreativet();
-  }catch(e){}
 }
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
