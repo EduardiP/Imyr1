@@ -1247,8 +1247,20 @@ async function krFshi(id){
 var _fieInstance = null;
 var _fieAktualiId = null;
 
-function krHapEditor(kreativId, imageUrl){
+async function krHapEditor(kreativId, imageUrl){
   _fieAktualiId = kreativId;
+  // Marrim vete imazhin si blob PARA se ta hapim — kjo garanton nje URL "same-origin"
+  // (blob:) qe canvas-i i editorit s'e trajton kurre si "tainted", pavaresisht si e
+  // trajton Filerobot brenda vetes crossOrigin-in e <img>-it te tij te brendshem.
+  var blobUrl;
+  try{
+    var resp = await fetch(imageUrl);
+    var blob = await resp.blob();
+    blobUrl = URL.createObjectURL(blob);
+  }catch(e){
+    alert('Gabim: s\'u mor imazhi (' + e.message + ').');
+    return;
+  }
   function fillimi(){
     if(!_fieInstance){
       _fieInstance = new FilerobotImageEditor(
@@ -1259,7 +1271,7 @@ function krHapEditor(kreativId, imageUrl){
         }
       );
     }
-    _fieInstance.open(imageUrl);
+    _fieInstance.open(blobUrl);
   }
   if(window.FilerobotImageEditor){ fillimi(); return; }
   var script = document.createElement('script');
@@ -1337,8 +1349,7 @@ async function krHapEditorHtml5(kreativId, url){
       '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);">'+
         '<span style="font-weight:600;">Ndrysho HTML5</span>'+
         '<div>'+
-          '<button class="btn primary" onclick="krRuajGjs(\'copy\')" style="margin-right:8px;">📄 Ruaj si Kopje</button>'+
-          '<button class="btn" onclick="krRuajGjs(\'overwrite\')" style="margin-right:8px;">💾 Zëvendëso Origjinalin</button>'+
+          '<button class="btn primary" onclick="krRuajGjsPergjigje()" style="margin-right:8px;">💾 Ruaj</button>'+
           '<button class="btn" onclick="krMbyllGjs()">✕ Mbyll</button>'+
         '</div>'+
       '</div>'+
@@ -1377,6 +1388,9 @@ function krNgarkoGrapes(htmlContent){
   document.head.appendChild(script);
 }
 
+function krRuajGjsPergjigje(){
+  krShfaqZgjedhjenRuajtje(function(mode){ krRuajGjs(mode); });
+}
 async function krRuajGjs(mode){
   if(!_gjsEditor || !_gjsAktualiId) return;
   var html = _gjsEditor.getHtml();
