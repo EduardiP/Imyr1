@@ -1141,7 +1141,7 @@ function mainKreative(m, s){
     '<p class="small" style="margin:8px 0 20px;">Krijo reklama me AI: imazh, video, ose HTML5.</p>'+
     '<div id="krGatiWrap" style="display:none;margin-bottom:20px;">'+
       '<label>Krijimet e gatshme</label>'+
-      '<div id="krGatiLista" style="max-height:160px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:6px 8px;margin-top:8px;"></div>'+
+      '<div id="krGatiLista" style="display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;padding:8px 4px;margin-top:8px;"></div>'+
     '</div>'+
     // Zgjedhesi i llojit
     '<label>Cfare do te krijosh?</label>'+
@@ -1175,7 +1175,7 @@ function mainKreative_NEW(m, s){
     (tab==='krijo' ? (
       '<div id="krGatiWrap" style="display:none;margin:18px 0;">'+
         '<label>Krijimet e gatshme</label>'+
-        '<div id="krGatiLista" style="max-height:160px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:6px 8px;margin-top:8px;"></div>'+
+        '<div id="krGatiLista" style="display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;padding:8px 4px;margin-top:8px;"></div>'+
       '</div>'+
       '<label>Cfare do te krijosh?</label>'+
       '<div class="krTip">'+
@@ -1210,14 +1210,90 @@ async function ngarkoKreativetGati(){
     const rows=r.kreative||[];
     if(!rows.length){ wrap.style.display='none'; return; }
     wrap.style.display='block';
-    el.innerHTML = rows.map(k=>
-      '<div style="display:flex;align-items:center;gap:10px;padding:6px 2px;border-bottom:1px solid #20262f;">'+
-        krThumbHTML(k)+
-        '<span style="font-size:13px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(k.emri||'')+'</span>'+
-      '</div>'
-    ).join('');
+    el.innerHTML = rows.map(k=>{
+      const url = k.output_url||k.skedari_url;
+      const eshteImazh = (k.lloji==='imazh' && url);
+      return '<div style="position:relative;flex:0 0 auto;width:84px;">'+
+        '<div style="width:84px;height:84px;border-radius:10px;overflow:hidden;background:#0e1116;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;">'+
+          (eshteImazh
+            ? '<img src="'+esc(url)+'" style="width:100%;height:100%;object-fit:cover;">'
+            : (k.lloji==='video' ? '<span style="font-size:22px;color:var(--mut);">▶</span>' : '<span style="font-size:16px;color:var(--mut);">&lt;/&gt;</span>'))+
+        '</div>'+
+        (eshteImazh
+          ? '<button onclick="krHapEditor('+k.id+',\''+esc(url)+'\')" title="Ndrysho" '+
+            'style="position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;background:rgba(14,17,22,.85);border:1px solid var(--line);color:var(--txt);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">✎</button>'
+          : '')+
+        '<div style="font-size:11px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--mut);">'+esc(k.emri||'')+'</div>'+
+      '</div>';
+    }).join('');
   }catch(e){ wrap.style.display='none'; }
 }
+
+// ═══ EDITIMI I IMAZHIT (Filerobot Image Editor) ═══
+var _filerobotEditor = null;
+function krHapEditor(kreativId, imageUrl){
+  var overlay = document.createElement('div');
+  overlay.id = 'krEditorOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10000;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML =
+    '<div style="width:min(1100px,95vw);height:min(720px,90vh);background:#12151b;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);">'+
+        '<span style="font-weight:600;">Ndrysho imazhin</span>'+
+        '<div>'+
+          '<button class="btn" onclick="krRuajEditorin('+kreativId+')" style="margin-right:8px;">💾 Ruaj</button>'+
+          '<button class="btn" onclick="krMbyllEditorin()">✕ Mbyll</button>'+
+        '</div>'+
+      '</div>'+
+      '<div id="krFilerobotMount" style="flex:1;min-height:0;"></div>'+
+    '</div>';
+  document.body.appendChild(overlay);
+  krNgarkoFilerobot(imageUrl);
+}
+function krMbyllEditorin(){
+  if(_filerobotEditor){ try{ _filerobotEditor.terminate(); }catch(e){} _filerobotEditor=null; }
+  var ov=$('krEditorOverlay'); if(ov) ov.remove();
+}
+function krNgarkoFilerobot(imageUrl){
+  function fillimi(){
+    var mount = $('krFilerobotMount'); if(!mount) return;
+    var config = {
+      source: imageUrl,
+      onSave: function(imageData){ window.__krEditoriRezultat = imageData; },
+      annotationsCommon: { fill: '#ff0000' },
+      Text: { text: 'Teksti' },
+      Rotate: { angle: 90, componentType: 'slider' },
+      translations: { hu: undefined },
+      defaultSavedImageType: 'png',
+      useBackendTranslations: false,
+      avoidChangesNotSavedAlertOnLeave: true
+    };
+    _filerobotEditor = new FilerobotImageEditor(mount, config);
+    _filerobotEditor.render({ onClose: krMbyllEditorin });
+  }
+  // Ngarko CSS+JS e Filerobot nese s'jane ngarkuar ende (nga CDN)
+  if(window.FilerobotImageEditor){ fillimi(); return; }
+  var script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/react-filerobot-image-editor@latest/dist/react-filerobot-image-editor.standalone.min.js';
+  script.onload = fillimi;
+  script.onerror = function(){ var m=$('krFilerobotMount'); if(m) m.innerHTML='<p class="small" style="padding:20px;">Gabim: s\'u ngarkua editori.</p>'; };
+  document.head.appendChild(script);
+}
+async function krRuajEditorin(kreativId){
+  if(!window.__krEditoriRezultat || !window.__krEditoriRezultat.imageBase64){
+    alert('Bëj të paktën një ndryshim para se të ruash.'); return;
+  }
+  try{
+    const r = await (await fetch('/api/kreative/ruaj-editim/'+kreativId, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ imageBase64: window.__krEditoriRezultat.imageBase64 })
+    })).json();
+    if(r.error){ alert('Gabim: '+r.error); return; }
+    window.__krEditoriRezultat = null;
+    krMbyllEditorin();
+    ngarkoKreativetGati();
+  }catch(e){ alert('Gabim: '+e.message); }
+}
+
 
 function krZgjidh(l){ nav({v:'profile', nav:'kreative', lloji:l}); }
 
