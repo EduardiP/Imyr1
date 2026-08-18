@@ -1275,15 +1275,40 @@ function krFilerobotDuke(payload){
   var canvas = payload && payload.canvas;
   if(!canvas || !_fieAktualiId){ return false; }
   var dataUrl = canvas.toDataURL('image/png');
-  krRuajEditorin(_fieAktualiId, dataUrl);
+  krShfaqZgjedhjenRuajtje(function(mode){ krRuajEditorin(_fieAktualiId, dataUrl, mode); });
   return false; // ndalon sjelljen e parazgjedhur (shkarkim/upload te Filerobot/Cloudimage)
 }
 
-async function krRuajEditorin(kreativId, imageBase64){
+// ═══ ZGJEDHJA "Ruaj si Kopje" vs "Zëvendëso Origjinalin" — e perbashket per te dy editoret ═══
+function krShfaqZgjedhjenRuajtje(onZgjedh){
+  var p=document.createElement('div');
+  p.id='krZgjedhjaRuajtje';
+  p.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10002;display:flex;align-items:center;justify-content:center;';
+  p.innerHTML=
+    '<div style="background:#12151b;border:1px solid var(--line);border-radius:10px;padding:22px;max-width:320px;text-align:center;">'+
+      '<p style="margin:0 0 16px;font-size:14px;">Si dëshiron ta ruash?</p>'+
+      '<button class="btn primary" style="width:100%;margin-bottom:8px;" onclick="krZgjedhjaBerja(\'copy\')">📄 Ruaj si Kopje</button>'+
+      '<button class="btn" style="width:100%;margin-bottom:8px;" onclick="krZgjedhjaBerja(\'overwrite\')">💾 Zëvendëso Origjinalin</button>'+
+      '<button class="btn" style="width:100%;background:transparent;" onclick="krZgjedhjaAnulo()">Anulo</button>'+
+    '</div>';
+  document.body.appendChild(p);
+  window.__krZgjedhjaCallback = onZgjedh;
+}
+function krZgjedhjaBerja(mode){
+  var p=$('krZgjedhjaRuajtje'); if(p) p.remove();
+  if(window.__krZgjedhjaCallback) window.__krZgjedhjaCallback(mode);
+  window.__krZgjedhjaCallback=null;
+}
+function krZgjedhjaAnulo(){
+  var p=$('krZgjedhjaRuajtje'); if(p) p.remove();
+  window.__krZgjedhjaCallback=null;
+}
+
+async function krRuajEditorin(kreativId, imageBase64, mode){
   try{
     const r = await (await fetch('/api/kreative/ruaj-editim/'+kreativId, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ imageBase64: imageBase64 })
+      body: JSON.stringify({ imageBase64: imageBase64, mode: mode })
     })).json();
     if(r.error){ alert('Gabim: '+r.error); return; }
     if(_fieInstance){ try{ _fieInstance.close(); }catch(e){} }
@@ -1312,7 +1337,8 @@ async function krHapEditorHtml5(kreativId, url){
       '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);">'+
         '<span style="font-weight:600;">Ndrysho HTML5</span>'+
         '<div>'+
-          '<button class="btn" onclick="krRuajGjs()" style="margin-right:8px;">💾 Ruaj</button>'+
+          '<button class="btn primary" onclick="krRuajGjs(\'copy\')" style="margin-right:8px;">📄 Ruaj si Kopje</button>'+
+          '<button class="btn" onclick="krRuajGjs(\'overwrite\')" style="margin-right:8px;">💾 Zëvendëso Origjinalin</button>'+
           '<button class="btn" onclick="krMbyllGjs()">✕ Mbyll</button>'+
         '</div>'+
       '</div>'+
@@ -1351,7 +1377,7 @@ function krNgarkoGrapes(htmlContent){
   document.head.appendChild(script);
 }
 
-async function krRuajGjs(){
+async function krRuajGjs(mode){
   if(!_gjsEditor || !_gjsAktualiId) return;
   var html = _gjsEditor.getHtml();
   var css = _gjsEditor.getCss();
@@ -1359,7 +1385,7 @@ async function krRuajGjs(){
   try{
     const r = await (await fetch('/api/kreative/ruaj-editim-html5/'+_gjsAktualiId, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ html: full })
+      body: JSON.stringify({ html: full, mode: mode })
     })).json();
     if(r.error){ alert('Gabim: '+r.error); return; }
     krMbyllGjs();
