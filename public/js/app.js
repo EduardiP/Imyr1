@@ -1255,6 +1255,10 @@ async function krHapEditor(kreativId, imageUrl){
   var blobUrl;
   try{
     var resp = await fetch('/api/kreative/proxy?url=' + encodeURIComponent(imageUrl));
+    if(!resp.ok){
+      var errBody = await resp.json().catch(function(){ return {}; });
+      throw new Error(errBody.error || ('HTTP ' + resp.status));
+    }
     var blob = await resp.blob();
     blobUrl = URL.createObjectURL(blob);
   }catch(e){
