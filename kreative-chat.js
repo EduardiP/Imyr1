@@ -16,8 +16,11 @@ function sistemiPrompt(lloji) {
   const llojiEtiketa = { imazh: 'an image', video: 'a video', html5: 'an HTML5 banner' }[lloji] || 'an advertisement';
   return 'You are a helpful assistant that helps a business owner clarify what advertisement ' +
     '(' + llojiEtiketa + ') they want an AI to generate. ' +
-    'ALWAYS respond in the SAME LANGUAGE the user is writing in (they may write in Albanian or any other language) ' +
-    'while you ask your clarifying questions — never switch to English mid-conversation. ' +
+    'If the user\'s message is exactly "[FILLIMI]", this means the conversation is just starting and ' +
+    'the user has not written anything yet — YOU must start: greet briefly and ask what they would like ' +
+    'to advertise. Default to ALBANIAN for this opening message, since this is an Albanian-language platform. ' +
+    'ALWAYS respond in the SAME LANGUAGE the user is writing in from then on (they may switch to any language) ' +
+    'while you ask your clarifying questions — never switch language on your own once the user has picked one. ' +
     'Ask SHORT clarifying questions, ONE AT A TIME, about anything essential that is missing: ' +
     'what product/service, target audience, key message or offer, must-include text or call-to-action, ' +
     'preferred colors/style/mood, anything visual that matters. ' +
@@ -26,8 +29,7 @@ function sistemiPrompt(lloji) {
     'nothing else, no markdown, no backticks: {"gati": true, "pershkrim_anglisht": "<a detailed, vivid, ' +
     'complete description in ENGLISH for an AI image/video generator, including every important detail ' +
     'the user mentioned, even if the user wrote to you in another language>"}. ' +
-    'Before that point, respond with ONLY plain text — your next clarifying question, nothing else, ' +
-    'no JSON, no preamble.';
+    'Before that point, respond with ONLY plain text — your next question, nothing else, no JSON, no preamble.';
 }
 
 module.exports = function (app, iLoguar) {
