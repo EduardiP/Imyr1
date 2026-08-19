@@ -136,6 +136,8 @@ module.exports = function (app, pool, iLoguar, deps) {
     const emri = ((req.body && req.body.emri) || '').trim().slice(0, 200);
     const pershkrimi = ((req.body && req.body.pershkrimi) || '').trim().slice(0, 2000);
     const imageUrl = ((req.body && req.body.image_url) || '').trim(); // imazh ekzistues nga "kreativet e mia" (rasti i vjeter, nje-imazh)
+    const permasaW = parseInt((req.body && req.body.permasa_w) || '', 10) || null;
+    const permasaH = parseInt((req.body && req.body.permasa_h) || '', 10) || null;
     const skedariNjeshi = req.files && req.files.skedari && req.files.skedari[0];
     const skedareShumefishe = (req.files && req.files.skedaret) || [];
     let etiketat = [];
@@ -179,10 +181,19 @@ module.exports = function (app, pool, iLoguar, deps) {
           ext = (skedariNjeshi.mimetype && skedariNjeshi.mimetype.includes('png')) ? 'png' : 'jpg';
         } else {
           if (!pershkrimi) return res.status(400).json({ error: 'Shkruaj përshkrimin ose ngarko një skedar.' });
-          const falUrl = await falKlient.gjeneroImazh(pershkrimi);
+          const falUrl = await falKlient.gjeneroImazh(pershkrimi, permasaW, permasaH);
           const imgResp = await fetch(falUrl);
           buf = Buffer.from(await imgResp.arrayBuffer());
           ext = 'png';
+          // Ideogram VETE prodhon vetem nje nga 6 presetat fikse (jo permasen e sakte qe u
+          // kerkua) — prandaj e presim/ripermasojme KETU, saktesisht, me 'sharp', qe rezultati
+          // final te jete PIKSEL-PER-PIKSEL ai qe u zgjodh te "Cakto madhesine".
+          if (permasaW && permasaH) {
+            try {
+              const sharp = require('sharp');
+              buf = await sharp(buf).resize(permasaW, permasaH, { fit: 'cover', position: 'centre' }).png().toBuffer();
+            } catch (e) { /* nese 'sharp' s'eshte instaluar, vazhdo me imazhin origjinal pa u ndalur */ }
+          }
         }
         const key = 'kreative/' + req.biznesId + '_' + Date.now() + '.' + ext;
         await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: ext === 'png' ? 'image/png' : 'image/jpeg' }));
@@ -203,7 +214,7 @@ module.exports = function (app, pool, iLoguar, deps) {
         if (!pershkrimi) return res.status(400).json({ error: 'Shkruaj përshkrimin për HTML5.' });
         // HTML5 (Claude) mund te perdori DISA imazhe referuese njekohesisht — i dergojme te gjitha te etiketuara.
         const listaPerHtml = imazhetEtiketuara.length ? imazhetEtiketuara : (imageUrl ? [{ url: imageUrl, emri: '' }] : []);
-        const htmlCode = await falKlient.gjeneroHTML5(pershkrimi, listaPerHtml);
+        const htmlCode = await falKlient.gjeneroHTML5(pershkrimi, listaPerHtml, permasaW, permasaH);
         const buf = Buffer.from(htmlCode, 'utf8');
         const key = 'kreative/' + req.biznesId + '_' + Date.now() + '.html';
         await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: 'text/html' }));
