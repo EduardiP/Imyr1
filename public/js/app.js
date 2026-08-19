@@ -1446,9 +1446,14 @@ function formaKreative(lloji){
       ? 'Mund të ngarkosh disa imazhe, por modeli i videos përdor VETËM imazhin e parë si bazë.'
       : 'Mund të ngarkosh vetëm imazhe (JPG, PNG).';
   krZgjedhurit = []; // reset sa here që hapet forma nga e para
+  if(window.krPermasaReset) krPermasaReset(); // gjendja e "Cakto madhësinë" — modul i veçantë (kreative-permasa.js)
   const imgZgjedhBtn = shumefishte
     ? '<button type="button" class="btn" onclick="krZgjidhImazh()" style="margin-left:8px;">📁 Nga imazhet e mia</button>'
     : '';
+  // "Cakto madhësinë" vlen per Imazh (gjenerim AI direkt) dhe HTML5 (Claude ndertohet fiks
+  // per kete permase). Per Video, permasa rrjedh nga imazhi baze, s'ka opsion te vetin.
+  const permasaLink = (lloji==='imazh' || lloji==='html5') && window.krPermasaLinkHTML
+    ? krPermasaLinkHTML() : '';
   return '<div id="krForma" style="margin-top:18px;">'+
     '<label>Emri</label>'+
     '<input id="krEmri" placeholder="Emri i reklamës (p.sh. Fushata Verë)">'+
@@ -1459,6 +1464,7 @@ function formaKreative(lloji){
       '<input type="file" id="krFile" accept="'+accept+'"'+(shumefishte?' multiple':'')+' onchange="krNdryshoFile(this,\''+lloji+'\')">'+
       imgZgjedhBtn+
     '</div>'+
+    permasaLink+
     '<p class="small mut" style="margin:6px 0 0;">'+ndihma+'</p>'+
     '<input type="hidden" id="krImageUrl" value="">'+
     '<div id="krZgjedhPrev"></div>'+
@@ -1533,6 +1539,12 @@ async function krGjenero(lloji){
   const imageUrlNjeshi = (!shumefishte) ? (($('krImageUrl')||{}).value || '') : '';
   const msg = $('krMsg');
   const btn = $('krGjenBtn');
+  // Permasa e synuar (vetem per imazh/html5) — nga moduli i vecante kreative-permasa.js
+  let permasaW = '', permasaH = '';
+  if((lloji==='imazh' || lloji==='html5') && window.krPermasaMerrZgjedhurin){
+    const p = await krPermasaMerrZgjedhurin();
+    if(p){ permasaW = p.w; permasaH = p.h; }
+  }
   if(!emri.trim()){ if(msg){msg.className='msg err';msg.textContent='Vendos emrin.';} return; }
   if(lloji==='imazh' && !skedariNjeshi && !pershkrimi.trim()){ if(msg){msg.className='msg err';msg.textContent='Shkruaj përshkrimin ose ngarko një skedar.';} return; }
   if((lloji==='video'||lloji==='html5') && !pershkrimi.trim()){ if(msg){msg.className='msg err';msg.textContent='Shkruaj përshkrimin.';} return; }
@@ -1546,6 +1558,7 @@ async function krGjenero(lloji){
       // Disa imazhe (nga kompjuteri dhe/ose "imazhet e mia"), secili me emrin e vet
       const fd=new FormData();
       fd.append('lloji', lloji); fd.append('emri', emri); fd.append('pershkrimi', pershkrimi);
+      if(permasaW){ fd.append('permasa_w', permasaW); fd.append('permasa_h', permasaH); }
       const etiketat = [];
       krZgjedhurit.forEach(function(x, i){
         if(x.burimi==='file'){
@@ -1561,10 +1574,11 @@ async function krGjenero(lloji){
       const fd=new FormData();
       fd.append('lloji', lloji); fd.append('emri', emri); fd.append('pershkrimi', pershkrimi);
       fd.append('skedari', skedariNjeshi);
+      if(permasaW){ fd.append('permasa_w', permasaW); fd.append('permasa_h', permasaH); }
       resp = await fetch('/api/kreative/gjenero', { method:'POST', body: fd });
     } else {
       resp = await fetch('/api/kreative/gjenero', { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({lloji, emri, pershkrimi, image_url:imageUrlNjeshi||undefined}) });
+        body: JSON.stringify({lloji, emri, pershkrimi, image_url:imageUrlNjeshi||undefined, permasa_w:permasaW||undefined, permasa_h:permasaH||undefined}) });
     }
     const r = await resp.json();
     if(r.error){ if(msg){msg.className='msg err';msg.textContent=r.error;} if(btn) btn.disabled=false; return; }
