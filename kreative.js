@@ -181,19 +181,11 @@ module.exports = function (app, pool, iLoguar, deps) {
           ext = (skedariNjeshi.mimetype && skedariNjeshi.mimetype.includes('png')) ? 'png' : 'jpg';
         } else {
           if (!pershkrimi) return res.status(400).json({ error: 'Shkruaj përshkrimin ose ngarko një skedar.' });
+          // Flux (jo me Ideogram) e merr permasen FIKS vete — s'nevojitet asnje prerje shtese.
           const falUrl = await falKlient.gjeneroImazh(pershkrimi, permasaW, permasaH);
           const imgResp = await fetch(falUrl);
           buf = Buffer.from(await imgResp.arrayBuffer());
           ext = 'png';
-          // Ideogram VETE prodhon vetem nje nga 6 presetat fikse (jo permasen e sakte qe u
-          // kerkua) — prandaj e presim/ripermasojme KETU, saktesisht, me 'sharp', qe rezultati
-          // final te jete PIKSEL-PER-PIKSEL ai qe u zgjodh te "Cakto madhesine".
-          if (permasaW && permasaH) {
-            try {
-              const sharp = require('sharp');
-              buf = await sharp(buf).resize(permasaW, permasaH, { fit: 'cover', position: 'centre' }).png().toBuffer();
-            } catch (e) { /* nese 'sharp' s'eshte instaluar, vazhdo me imazhin origjinal pa u ndalur */ }
-          }
         }
         const key = 'kreative/' + req.biznesId + '_' + Date.now() + '.' + ext;
         await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: ext === 'png' ? 'image/png' : 'image/jpeg' }));
