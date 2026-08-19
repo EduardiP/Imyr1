@@ -30,29 +30,7 @@ const QELLIMI_IMAZH =
   'suitable for digital display advertising (banner, social, web). ' +
   'Accept the description in any language. ';
 
-// Ideogram V3 (endpoint bazë) NUK pranon permasa custom {width,height} — VETEM 6 preseta
-// fikse (konfirmuar nga dokumentacioni zyrtar). Zgjedhim presetin me raportin me te
-// afert me ate te kerkuar; permasa e SAKTE finale arrihet me vone (kreative.js, me 'sharp').
-const IDEOGRAM_PRESETET = {
-  square_hd:       1,
-  square:          1,
-  portrait_4_3:    3/4,
-  portrait_16_9:   9/16,
-  landscape_4_3:   4/3,
-  landscape_16_9:  16/9
-};
-function ideogramPresetiMeAfert(width, height) {
-  if (!width || !height) return 'square_hd';
-  const raporti = width / height;
-  let mePakDiferenca = Infinity, zgjedhur = 'square_hd';
-  for (const [preset, r] of Object.entries(IDEOGRAM_PRESETET)) {
-    const dif = Math.abs(r - raporti);
-    if (dif < mePakDiferenca) { mePakDiferenca = dif; zgjedhur = preset; }
-  }
-  return zgjedhur;
-}
-
-// ═══ PËRKTHIM AUTOMATIK (shqip → anglisht) — VETEM per modelet e imazhit/videos (Ideogram/Wan),
+// ═══ PËRKTHIM AUTOMATIK (shqip → anglisht) — VETEM per modelet e imazhit/videos (Flux/Wan),
 // te cilat kuptojne shume me mire anglishten se gjuhet "me pak burime" si shqipja. Claude
 // (HTML5) s'ka nevoje per kete — kupton shqipen mire vete. ═══
 async function perkthejNeAnglisht(teksti) {
@@ -77,17 +55,15 @@ async function perkthejNeAnglisht(teksti) {
   } catch (e) { return teksti; } // fail-open — mos e ndal gjenerimin per shkak te perkthimit
 }
 
-// Gjenerim i PARE (tekst → imazh) — Ideogram V3, teksti/CTA i lexueshem brenda imazhit
-// width/height (opsionale): permasa e SYNUAR — zgjidhet presetimi Ideogram me i afert ne
-// raport; permasa e SAKTE finale (piksel per piksel) arrihet me vone, ne kreative.js, me
-// prerje/ripërmasim (sharp) — Ideogram vete NUK pranon permasa custom.
+// Gjenerim i PARE (tekst → imazh) — Flux Schnell (jo me Ideogram).
+// Flux PRANON REALISHT permasa custom {width,height} — rezultati eshte FIKS,
+// pikerisht ai qe kerkohet, pa nevoje per prerje/ripermasim shtese pas gjenerimit.
 async function gjeneroImazh(pershkrimi, width, height) {
-  const imageSize = (width && height) ? ideogramPresetiMeAfert(width, height) : 'square_hd';
+  const imageSize = (width && height) ? { width: width, height: height } : 'square_hd';
   const pershkrimiAnglisht = await perkthejNeAnglisht(pershkrimi);
-  const data = await falThirr('fal-ai/ideogram/v3', {
+  const data = await falThirr('fal-ai/flux/schnell', {
     prompt: QELLIMI_IMAZH + pershkrimiAnglisht,
-    image_size: imageSize,
-    rendering_speed: 'BALANCED'
+    image_size: imageSize
   });
   const url = data && data.images && data.images[0] && data.images[0].url;
   if (!url) throw new Error("Fal.ai s'ktheu imazh.");
