@@ -129,11 +129,18 @@ module.exports = function (app, pool, iLoguar, deps) {
   });
 
   // GJENERIM I VERTETE (Imazh, per tani — video/html5 vijne me vone)
-  app.post('/api/kreative/gjenero', iLoguar, upload.single('skedari'), async (req, res) => {
+  app.post('/api/kreative/gjenero', iLoguar,
+    upload.fields([{ name: 'skedari', maxCount: 1 }, { name: 'skedaret', maxCount: 10 }]),
+    async (req, res) => {
     const lloji = ((req.body && req.body.lloji) || '').trim();
     const emri = ((req.body && req.body.emri) || '').trim().slice(0, 200);
     const pershkrimi = ((req.body && req.body.pershkrimi) || '').trim().slice(0, 2000);
-    const imageUrl = ((req.body && req.body.image_url) || '').trim(); // imazh ekzistues nga "kreativet e mia"
+    const imageUrl = ((req.body && req.body.image_url) || '').trim(); // imazh ekzistues nga "kreativet e mia" (rasti i vjeter, nje-imazh)
+    const skedariNjeshi = req.files && req.files.skedari && req.files.skedari[0];
+    const skedareShumefishe = (req.files && req.files.skedaret) || [];
+    let etiketat = [];
+    try { etiketat = JSON.parse((req.body && req.body.etiketat) || '[]'); } catch (e) { etiketat = []; }
+
     if (!['imazh', 'video', 'html5'].includes(lloji)) return res.status(400).json({ error: 'Lloj i pavlefshëm.' });
     if (!emri) return res.status(400).json({ error: 'Emri është i detyrueshëm.' });
     if (!s3) return res.status(500).json({ error: "Ruajtja (R2) s'është konfiguruar te serveri." });
@@ -142,12 +149,34 @@ module.exports = function (app, pool, iLoguar, deps) {
       if (perdorura >= KUFIJTE[lloji].krijimeMuaj) {
         return res.status(429).json({ error: 'Ke arritur kufirin mujor (' + KUFIJTE[lloji].krijimeMuaj + ') për ' + lloji + '.' });
       }
+
+      // Ngarko te R2 çdo skedar te ri (nga kompjuteri) qe u dergua brenda listes se etiketuar,
+      // dhe ndërto nje liste te vetme {url, emri} — kombinim URLsh ekzistuese + skedaresh te rinj.
+      async function ngarkoSkedarinDheEtiketo(fileObj, etiketaEmri){
+        const ext = (fileObj.mimetype && fileObj.mimetype.includes('png')) ? 'png' : 'jpg';
+        const key = 'kreative/' + req.biznesId + '_ref_' + Date.now() + '_' + Math.random().toString(36).slice(2,7) + '.' + ext;
+        await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: fileObj.buffer, ContentType: fileObj.mimetype || 'image/jpeg' }));
+        return { url: (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + key, emri: etiketaEmri || '' };
+      }
+      let imazhetEtiketuara = [];
+      if (etiketat.length) {
+        let indeksiSkedari = 0;
+        for (const et of etiketat) {
+          if (et.burimi === 'file') {
+            const f = skedareShumefishe[indeksiSkedari]; indeksiSkedari++;
+            if (f) imazhetEtiketuara.push(await ngarkoSkedarinDheEtiketo(f, et.emri));
+          } else if (et.burimi === 'url' && et.url) {
+            imazhetEtiketuara.push({ url: et.url, emri: et.emri || '' });
+          }
+        }
+      }
+
       let url;
       if (lloji === 'imazh') {
         let buf, ext;
-        if (req.file) {
-          buf = req.file.buffer;
-          ext = (req.file.mimetype && req.file.mimetype.includes('png')) ? 'png' : 'jpg';
+        if (skedariNjeshi) {
+          buf = skedariNjeshi.buffer;
+          ext = (skedariNjeshi.mimetype && skedariNjeshi.mimetype.includes('png')) ? 'png' : 'jpg';
         } else {
           if (!pershkrimi) return res.status(400).json({ error: 'Shkruaj përshkrimin ose ngarko një skedar.' });
           const falUrl = await falKlient.gjeneroImazh(pershkrimi);
@@ -159,14 +188,9 @@ module.exports = function (app, pool, iLoguar, deps) {
         await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: ext === 'png' ? 'image/png' : 'image/jpeg' }));
         url = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + key;
       } else if (lloji === 'video') {
-        // Video kerkon nje imazh baze — ose nga skedar i ngarkuar, ose nga imazhet e mia (image_url), ose gabim
-        let imgUrlPerVideo = imageUrl;
-        if (req.file) {
-          const ext2 = (req.file.mimetype && req.file.mimetype.includes('png')) ? 'png' : 'jpg';
-          const imgKey = 'kreative/' + req.biznesId + '_vid_src_' + Date.now() + '.' + ext2;
-          await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: imgKey, Body: req.file.buffer, ContentType: req.file.mimetype || 'image/jpeg' }));
-          imgUrlPerVideo = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + imgKey;
-        }
+        // Video kerkon nje imazh baze — modeli (Wan) pranon VETEM nje imazh, prandaj
+        // perdoret VETEM i pari nga lista e etiketuar (nese ka), perndryshe rasti i vjeter (image_url).
+        let imgUrlPerVideo = imazhetEtiketuara.length ? imazhetEtiketuara[0].url : imageUrl;
         if (!imgUrlPerVideo) return res.status(400).json({ error: 'Video kërkon një imazh bazë — ngarko ose zgjidh nga imazhet e tua.' });
         if (!pershkrimi) return res.status(400).json({ error: 'Shkruaj përshkrimin për videon.' });
         const falUrl = await falKlient.gjeneroVideo(imgUrlPerVideo, pershkrimi);
@@ -177,14 +201,9 @@ module.exports = function (app, pool, iLoguar, deps) {
         url = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + key;
       } else if (lloji === 'html5') {
         if (!pershkrimi) return res.status(400).json({ error: 'Shkruaj përshkrimin për HTML5.' });
-        let imgUrlPerHtml = imageUrl;
-        if (req.file) {
-          const ext3 = (req.file.mimetype && req.file.mimetype.includes('png')) ? 'png' : 'jpg';
-          const imgKey = 'kreative/' + req.biznesId + '_h5_src_' + Date.now() + '.' + ext3;
-          await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: imgKey, Body: req.file.buffer, ContentType: req.file.mimetype || 'image/jpeg' }));
-          imgUrlPerHtml = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + imgKey;
-        }
-        const htmlCode = await falKlient.gjeneroHTML5(pershkrimi, imgUrlPerHtml || null);
+        // HTML5 (Claude) mund te perdori DISA imazhe referuese njekohesisht — i dergojme te gjitha te etiketuara.
+        const listaPerHtml = imazhetEtiketuara.length ? imazhetEtiketuara : (imageUrl ? [{ url: imageUrl, emri: '' }] : []);
+        const htmlCode = await falKlient.gjeneroHTML5(pershkrimi, listaPerHtml);
         const buf = Buffer.from(htmlCode, 'utf8');
         const key = 'kreative/' + req.biznesId + '_' + Date.now() + '.html';
         await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: 'text/html' }));
