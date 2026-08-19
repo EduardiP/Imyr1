@@ -69,18 +69,27 @@ async function gjeneroVideo(imageUrl, pershkrimi) {
   return url;
 }
 
-// ═══ HTML5 — Claude (Anthropic API) — gjeneron banner HTML/CSS/JS nga pershkrimi + imazhi ═══
+// ═══ HTML5 — Claude (Anthropic API) — gjeneron banner HTML/CSS/JS nga pershkrimi + imazhet ═══
 const QELLIMI_HTML5 =
   'You are an expert HTML5 display ad designer. Create a single self-contained HTML file ' +
   '(HTML+CSS+JS in one file, no external dependencies) for an animated banner ad. ' +
   'The ad must be professional, eye-catching, with smooth CSS animations. ' +
-  'If an image URL is provided, include it as the main visual. ' +
+  'If image URLs are provided, each is labeled with its intended purpose — use the label ' +
+  'to decide how/where each image fits (e.g. a "Logo" label goes in a logo spot, a "Produkti" ' +
+  'label is the main product visual, etc). ' +
   'Output ONLY the raw HTML code, no markdown, no explanation, no backticks.';
 
-async function gjeneroHTML5(pershkrimi, imageUrl) {
+// imazhetEtiketuara: [{url, emri}] — nje ose disa imazhe, secili me etiketen e vet (mund te jete bosh []).
+async function gjeneroHTML5(pershkrimi, imazhetEtiketuara) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY s'është konfiguruar te serveri.");
-  const userMsg = pershkrimi + (imageUrl ? '\n\nImage URL to include: ' + imageUrl : '');
+  let userMsg = pershkrimi;
+  const lista = imazhetEtiketuara || [];
+  if (lista.length) {
+    userMsg += '\n\nImage references:\n' + lista.map(function (x, i) {
+      return (i + 1) + '. ' + (x.emri ? ('[' + x.emri + '] ') : '') + x.url;
+    }).join('\n');
+  }
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
