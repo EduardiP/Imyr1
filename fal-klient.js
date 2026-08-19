@@ -30,11 +30,63 @@ const QELLIMI_IMAZH =
   'suitable for digital display advertising (banner, social, web). ' +
   'Accept the description in any language. ';
 
+// Ideogram V3 (endpoint bazë) NUK pranon permasa custom {width,height} — VETEM 6 preseta
+// fikse (konfirmuar nga dokumentacioni zyrtar). Zgjedhim presetin me raportin me te
+// afert me ate te kerkuar; permasa e SAKTE finale arrihet me vone (kreative.js, me 'sharp').
+const IDEOGRAM_PRESETET = {
+  square_hd:       1,
+  square:          1,
+  portrait_4_3:    3/4,
+  portrait_16_9:   9/16,
+  landscape_4_3:   4/3,
+  landscape_16_9:  16/9
+};
+function ideogramPresetiMeAfert(width, height) {
+  if (!width || !height) return 'square_hd';
+  const raporti = width / height;
+  let mePakDiferenca = Infinity, zgjedhur = 'square_hd';
+  for (const [preset, r] of Object.entries(IDEOGRAM_PRESETET)) {
+    const dif = Math.abs(r - raporti);
+    if (dif < mePakDiferenca) { mePakDiferenca = dif; zgjedhur = preset; }
+  }
+  return zgjedhur;
+}
+
+// ═══ PËRKTHIM AUTOMATIK (shqip → anglisht) — VETEM per modelet e imazhit/videos (Ideogram/Wan),
+// te cilat kuptojne shume me mire anglishten se gjuhet "me pak burime" si shqipja. Claude
+// (HTML5) s'ka nevoje per kete — kupton shqipen mire vete. ═══
+async function perkthejNeAnglisht(teksti) {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key || !teksti) return teksti; // fail-open: nese s'ka çelës, dergo origjinalin pa u ndalur
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 500,
+        system: 'Translate the following advertisement description into natural, vivid English suitable ' +
+          'for an AI image-generation prompt. Keep all concrete visual details. Output ONLY the ' +
+          'translated text, nothing else — no preamble, no quotes, no explanation.',
+        messages: [{ role: 'user', content: teksti }]
+      })
+    });
+    const data = await r.json();
+    const perkthimi = data.content && data.content.map(c => c.text || '').join('').trim();
+    return perkthimi || teksti; // fail-open nese perkthimi deshton
+  } catch (e) { return teksti; } // fail-open — mos e ndal gjenerimin per shkak te perkthimit
+}
+
 // Gjenerim i PARE (tekst → imazh) — Ideogram V3, teksti/CTA i lexueshem brenda imazhit
-async function gjeneroImazh(pershkrimi) {
+// width/height (opsionale): permasa e SYNUAR — zgjidhet presetimi Ideogram me i afert ne
+// raport; permasa e SAKTE finale (piksel per piksel) arrihet me vone, ne kreative.js, me
+// prerje/ripërmasim (sharp) — Ideogram vete NUK pranon permasa custom.
+async function gjeneroImazh(pershkrimi, width, height) {
+  const imageSize = (width && height) ? ideogramPresetiMeAfert(width, height) : 'square_hd';
+  const pershkrimiAnglisht = await perkthejNeAnglisht(pershkrimi);
   const data = await falThirr('fal-ai/ideogram/v3', {
-    prompt: QELLIMI_IMAZH + pershkrimi,
-    image_size: 'square_hd',
+    prompt: QELLIMI_IMAZH + pershkrimiAnglisht,
+    image_size: imageSize,
     rendering_speed: 'BALANCED'
   });
   const url = data && data.images && data.images[0] && data.images[0].url;
@@ -60,9 +112,10 @@ const QELLIMI_VIDEO =
   'Accept the description in any language. ';
 
 async function gjeneroVideo(imageUrl, pershkrimi) {
+  const pershkrimiAnglisht = await perkthejNeAnglisht(pershkrimi);
   const data = await falThirr('wan/v2.6/image-to-video/flash', {
     image_url: imageUrl,
-    prompt: QELLIMI_VIDEO + pershkrimi
+    prompt: QELLIMI_VIDEO + pershkrimiAnglisht
   });
   const url = data && data.video && data.video.url;
   if (!url) throw new Error("Fal.ai s'ktheu video.");
@@ -80,7 +133,8 @@ const QELLIMI_HTML5 =
   'Output ONLY the raw HTML code, no markdown, no explanation, no backticks.';
 
 // imazhetEtiketuara: [{url, emri}] — nje ose disa imazhe, secili me etiketen e vet (mund te jete bosh []).
-async function gjeneroHTML5(pershkrimi, imazhetEtiketuara) {
+// width/height (opsionale): permasa e sakte piksel qe Claude duhet ta ndertoje si kontejner fiks.
+async function gjeneroHTML5(pershkrimi, imazhetEtiketuara, width, height) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY s'është konfiguruar te serveri.");
   let userMsg = pershkrimi;
@@ -89,6 +143,11 @@ async function gjeneroHTML5(pershkrimi, imazhetEtiketuara) {
     userMsg += '\n\nImage references:\n' + lista.map(function (x, i) {
       return (i + 1) + '. ' + (x.emri ? ('[' + x.emri + '] ') : '') + x.url;
     }).join('\n');
+  }
+  if (width && height) {
+    userMsg += '\n\nExact target size: the outer container MUST be exactly ' + width + 'x' + height +
+      ' pixels (set this as a fixed width/height on the root element, with overflow:hidden — ' +
+      'do not let content overflow or leave the canvas smaller than this).';
   }
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
