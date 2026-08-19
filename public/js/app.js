@@ -1157,7 +1157,7 @@ function mainKreative(m, s){
     (zgjedhur ? formaKreative(zgjedhur) : '<p class="small mut" style="margin-top:16px;">Zgjidh nje lloj për të vazhduar.</p>')+
     // Lista e krijimeve te fundit
     '<div id="krLista" style="margin-top:30px;"></div>';
-  ngarkoKreativet();
+  ngarkoKreativetGati();
   ngarkoKreativetGati();
 }
 
@@ -1246,6 +1246,7 @@ async function krFshi(id){
 // nje overlay/div i ndertuar nga ne, thjesht .open(url) e hap ate.
 var _fieInstance = null;
 var _fieAktualiId = null;
+var _fieOrigjinaliFingerprint = null;
 
 async function krHapEditor(kreativId, imageUrl){
   _fieAktualiId = kreativId;
@@ -1265,6 +1266,19 @@ async function krHapEditor(kreativId, imageUrl){
     alert('Gabim: s\'u mor imazhi (' + e.message + ').');
     return;
   }
+  // Gjurma e imazhit ORIGJINAL — e kalojme neper te njejtin encode PNG qe do perdore
+  // edhe ruajtja (canvas.toDataURL('image/png')), qe krahasimi te mos jape "ndryshim"
+  // fals thjesht sepse formati origjinal ishte JPEG dhe ruajtja gjithmone prodhon PNG.
+  _fieOrigjinaliFingerprint = null;
+  try{
+    var img = new Image();
+    await new Promise(function(res, rej){ img.onload=res; img.onerror=rej; img.src=blobUrl; });
+    var c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    c.getContext('2d').drawImage(img, 0, 0);
+    _fieOrigjinaliFingerprint = c.toDataURL('image/png');
+  }catch(e){ _fieOrigjinaliFingerprint = null; } // deshtim ketu s'e bllokon editimin, thjesht s'kontrollohet ndryshimi
+
   function fillimi(){
     if(!_fieInstance){
       _fieInstance = new FilerobotImageEditor(
@@ -1291,6 +1305,10 @@ function krFilerobotDuke(payload){
   var canvas = payload && payload.canvas;
   if(!canvas || !_fieAktualiId){ return false; }
   var dataUrl = canvas.toDataURL('image/png');
+  if(_fieOrigjinaliFingerprint && dataUrl === _fieOrigjinaliFingerprint){
+    alert('S\'ke bërë asnjë ndryshim — ruajtja u anulua.');
+    return false;
+  }
   krShfaqZgjedhjenRuajtje(function(mode){ krRuajEditorin(_fieAktualiId, dataUrl, mode); });
   return false; // ndalon sjelljen e parazgjedhur (shkarkim/upload te Filerobot/Cloudimage)
 }
@@ -1393,6 +1411,10 @@ function krNgarkoGrapes(htmlContent){
 }
 
 function krRuajGjsPergjigje(){
+  if(_gjsEditor && _gjsEditor.UndoManager && !_gjsEditor.UndoManager.hasChanges()){
+    alert('S\'ke bërë asnjë ndryshim — ruajtja u anulua.');
+    return;
+  }
   krShfaqZgjedhjenRuajtje(function(mode){ krRuajGjs(mode); });
 }
 async function krRuajGjs(mode){
@@ -1413,12 +1435,18 @@ async function krRuajGjs(mode){
 
 function krZgjidh(l){ nav({v:'profile', nav:'kreative', lloji:l}); }
 
+var krZgjedhurit = []; // {burimi:'file'|'url', file, url, emri}
+
 function formaKreative(lloji){
+  const shumefishte = (lloji==='video' || lloji==='html5');
   const accept = lloji==='html5' ? 'image/*,.htm,.html,.zip' : 'image/*';
   const ndihma = lloji==='html5'
-    ? 'Mund të ngarkosh imazhe, ose një skedar .htm/.zip për modifikim.'
-    : 'Mund të ngarkosh vetëm imazhe (JPG, PNG).';
-  const imgZgjedhBtn = (lloji==='video'||lloji==='html5')
+    ? 'Mund të ngarkosh disa imazhe (secili do t\'i referohet Claude sipas emrit që i vendos), ose një skedar .htm/.zip për modifikim.'
+    : lloji==='video'
+      ? 'Mund të ngarkosh disa imazhe, por modeli i videos përdor VETËM imazhin e parë si bazë.'
+      : 'Mund të ngarkosh vetëm imazhe (JPG, PNG).';
+  krZgjedhurit = []; // reset sa here që hapet forma nga e para
+  const imgZgjedhBtn = shumefishte
     ? '<button type="button" class="btn" onclick="krZgjidhImazh()" style="margin-left:8px;">📁 Nga imazhet e mia</button>'
     : '';
   return '<div id="krForma" style="margin-top:18px;">'+
@@ -1428,17 +1456,45 @@ function formaKreative(lloji){
     '<textarea id="krPer" placeholder="Çfarë do të tregojë reklama? (mesazhi, ndjesia, thirrja për veprim)" style="min-height:100px;"></textarea>'+
     '<label style="margin-top:12px;">Ngarko skedarë</label>'+
     '<div class="krFile" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'+
-      '<input type="file" id="krFile" accept="'+accept+'">'+
+      '<input type="file" id="krFile" accept="'+accept+'"'+(shumefishte?' multiple':'')+' onchange="krNdryshoFile(this,\''+lloji+'\')">'+
       imgZgjedhBtn+
     '</div>'+
     '<p class="small mut" style="margin:6px 0 0;">'+ndihma+'</p>'+
     '<input type="hidden" id="krImageUrl" value="">'+
     '<div id="krZgjedhPrev"></div>'+
+    '<div id="krZgjedhurLista" style="margin-top:10px;"></div>'+
     '<button class="primary" id="krGjenBtn" onclick="krGjenero(\''+lloji+'\')" style="margin-top:18px;">✨ Gjenero me AI</button>'+
     '<span class="small mut" id="krKufiri" style="margin-left:10px;"></span>'+
     '<p id="krMsg" class="msg"></p>'+
   '</div>';
 }
+
+// Kur zgjidhen skedare NGA KOMPJUTERI (mund te jene disa, per html5/video)
+function krNdryshoFile(inp, lloji){
+  const shumefishte = (lloji==='video' || lloji==='html5');
+  if(!shumefishte){ return; } // rasti imazh (i vetem) mbetet siç ishte, pa listë emrash
+  Array.prototype.forEach.call(inp.files, function(f){
+    krZgjedhurit.push({ burimi:'file', file:f, emri:f.name.replace(/\.[^.]+$/,'') });
+  });
+  inp.value = ''; // pastro input-in qe te mund te shtosh me shume me vone pa i dyfishuar
+  krRenderZgjedhurit();
+}
+function krRenderZgjedhurit(){
+  const el=$('krZgjedhurLista'); if(!el) return;
+  if(!krZgjedhurit.length){ el.innerHTML=''; return; }
+  el.innerHTML = '<label>Imazhet e zgjedhura</label>'+
+    krZgjedhurit.map(function(x,i){
+      const thumb = x.burimi==='url' ? x.url : URL.createObjectURL(x.file);
+      return '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;">'+
+        '<img src="'+esc(thumb)+'" style="width:40px;height:40px;border-radius:6px;object-fit:cover;">'+
+        '<input value="'+esc(x.emri)+'" placeholder="Emërto këtë imazh (p.sh. Logo)" '+
+          'oninput="krZgjedhurit['+i+'].emri=this.value" style="flex:1;">'+
+        '<button type="button" class="btn" onclick="krHiqZgjedhurin('+i+')" style="padding:4px 10px;">✕</button>'+
+      '</div>';
+    }).join('');
+}
+function krHiqZgjedhurin(i){ krZgjedhurit.splice(i,1); krRenderZgjedhurit(); }
+
 async function krNgarkoKufirin(lloji){
   const el=$('krKufiri'); if(!el) return;
   try{
@@ -1455,52 +1511,67 @@ async function krZgjidhImazh(){
     const r=await(await fetch('/api/kreative/gati')).json();
     const imazhet=(r.kreative||[]).filter(k=>k.lloji==='imazh' && (k.output_url||k.skedari_url));
     if(!imazhet.length){ prev.innerHTML='<p class="small mut">S\'ke imazhe të gatshme. Krijo së pari një imazh.</p>'; return; }
-    prev.innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">'+
+    prev.innerHTML='<p class="small mut" style="margin-top:8px;">Kliko për të shtuar (mund të zgjedhësh disa):</p>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">'+
       imazhet.map(k=>{
         const url=k.output_url||k.skedari_url;
         return '<img src="'+esc(url)+'" style="width:60px;height:60px;border-radius:8px;object-fit:cover;cursor:pointer;border:2px solid transparent;" '+
-          'onclick="krZgjedhImazhUrl(this,\''+esc(url)+'\')">';
+          'onclick="krShtoImazhNgaLista(\''+esc(url)+'\',\''+esc(k.emri||'')+'\')">';
       }).join('')+'</div>';
   }catch(e){ prev.innerHTML='<p class="small">Gabim.</p>'; }
 }
-function krZgjedhImazhUrl(el, url){
-  document.querySelectorAll('#krZgjedhPrev img').forEach(i=>i.style.borderColor='transparent');
-  el.style.borderColor='var(--acc)';
-  var inp=$('krImageUrl'); if(inp) inp.value=url;
+function krShtoImazhNgaLista(url, emriParazgjedhur){
+  krZgjedhurit.push({ burimi:'url', url:url, emri: emriParazgjedhur || '' });
+  krRenderZgjedhurit();
 }
 async function krGjenero(lloji){
   const emri = ($('krEmri')||{}).value || '';
   const pershkrimi = ($('krPer')||{}).value || '';
+  const shumefishte = (lloji==='video' || lloji==='html5');
   const fileInp = $('krFile');
-  const skedari = (fileInp && fileInp.files && fileInp.files[0]) ? fileInp.files[0] : null;
-  const imageUrl = ($('krImageUrl')||{}).value || '';
+  const skedariNjeshi = (!shumefishte && fileInp && fileInp.files && fileInp.files[0]) ? fileInp.files[0] : null;
+  const imageUrlNjeshi = (!shumefishte) ? (($('krImageUrl')||{}).value || '') : '';
   const msg = $('krMsg');
   const btn = $('krGjenBtn');
   if(!emri.trim()){ if(msg){msg.className='msg err';msg.textContent='Vendos emrin.';} return; }
-  if(lloji==='imazh' && !skedari && !pershkrimi.trim()){ if(msg){msg.className='msg err';msg.textContent='Shkruaj përshkrimin ose ngarko një skedar.';} return; }
+  if(lloji==='imazh' && !skedariNjeshi && !pershkrimi.trim()){ if(msg){msg.className='msg err';msg.textContent='Shkruaj përshkrimin ose ngarko një skedar.';} return; }
   if((lloji==='video'||lloji==='html5') && !pershkrimi.trim()){ if(msg){msg.className='msg err';msg.textContent='Shkruaj përshkrimin.';} return; }
-  if(lloji==='video' && !skedari && !imageUrl){ if(msg){msg.className='msg err';msg.textContent='Ngarko ose zgjidh një imazh bazë për videon.';} return; }
+  if(lloji==='video' && !krZgjedhurit.length){ if(msg){msg.className='msg err';msg.textContent='Ngarko ose zgjidh të paktën një imazh bazë për videon.';} return; }
   if(btn) btn.disabled=true;
-  var kohaTxt = lloji==='video'?'Duke gjeneruar video… (mund të zgjasë deri 1 min)' : lloji==='html5'?'Duke gjeneruar HTML5…' : (skedari?'Duke ngarkuar…':'Duke gjeneruar… (disa sekonda)');
+  var kohaTxt = lloji==='video'?'Duke gjeneruar video… (mund të zgjasë deri 1 min)' : lloji==='html5'?'Duke gjeneruar HTML5…' : (skedariNjeshi?'Duke ngarkuar…':'Duke gjeneruar… (disa sekonda)');
   if(msg){msg.className='msg';msg.textContent=kohaTxt;}
   try{
     let resp;
-    if(skedari){
+    if(shumefishte && krZgjedhurit.length){
+      // Disa imazhe (nga kompjuteri dhe/ose "imazhet e mia"), secili me emrin e vet
       const fd=new FormData();
       fd.append('lloji', lloji); fd.append('emri', emri); fd.append('pershkrimi', pershkrimi);
-      fd.append('skedari', skedari);
-      if(imageUrl) fd.append('image_url', imageUrl);
+      const etiketat = [];
+      krZgjedhurit.forEach(function(x, i){
+        if(x.burimi==='file'){
+          fd.append('skedaret', x.file);
+          etiketat.push({ burimi:'file', indeksi:i, emri:x.emri||'' });
+        } else {
+          etiketat.push({ burimi:'url', url:x.url, emri:x.emri||'' });
+        }
+      });
+      fd.append('etiketat', JSON.stringify(etiketat));
+      resp = await fetch('/api/kreative/gjenero', { method:'POST', body: fd });
+    } else if(skedariNjeshi){
+      const fd=new FormData();
+      fd.append('lloji', lloji); fd.append('emri', emri); fd.append('pershkrimi', pershkrimi);
+      fd.append('skedari', skedariNjeshi);
       resp = await fetch('/api/kreative/gjenero', { method:'POST', body: fd });
     } else {
       resp = await fetch('/api/kreative/gjenero', { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({lloji, emri, pershkrimi, image_url:imageUrl||undefined}) });
+        body: JSON.stringify({lloji, emri, pershkrimi, image_url:imageUrlNjeshi||undefined}) });
     }
     const r = await resp.json();
     if(r.error){ if(msg){msg.className='msg err';msg.textContent=r.error;} if(btn) btn.disabled=false; return; }
     if(msg){msg.className='msg ok';msg.textContent='✓ U krijua.';}
     krShfaqRezultatin(r);
     krNgarkoKufirin(lloji);
-    ngarkoKreativet();
+    ngarkoKreativetGati();
   }catch(e){ if(msg){msg.className='msg err';msg.textContent='Gabim: '+e.message;} }
   if(btn) btn.disabled=false;
 }
@@ -1565,7 +1636,7 @@ async function krModifiko(id, lloji){
     if(r.error){ if(msg){msg.className='msg err';msg.textContent=r.error;} if(btn) btn.disabled=false; return; }
     // Rikthej krejt pamjen (imazh i ri + tri butonat) ne te njejtin vend
     krShfaqRezultatin(r);
-    ngarkoKreativet();
+    ngarkoKreativetGati();
   }catch(e){ if(msg){msg.className='msg err';msg.textContent='Gabim: '+e.message;} }
 }
 
