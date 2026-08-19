@@ -46,6 +46,7 @@ async function krPermasaToggle(){
 function krPermasaRenderZgjedhesin(){
   var el = document.getElementById('krPermasaEditor'); if(!el) return;
   el.innerHTML =
+    '<p class="small mut" style="margin-bottom:8px;">⚠️ Zgjidh <b>VETËM NJË</b> — do të krijohet <b>një krijim i vetëm</b>, jo dy:</p>'+
     '<div style="display:flex;gap:8px;margin-bottom:10px;">'+
       '<button type="button" class="btn" id="kpBtnDesktop" onclick="krPermasaZgjidhPajisjen(\'desktop\')">🖥️ Desktop</button>'+
       '<button type="button" class="btn" id="kpBtnMobile" onclick="krPermasaZgjidhPajisjen(\'mobile\')">📱 Mobile</button>'+
@@ -58,8 +59,10 @@ function krPermasaRenderZgjedhesin(){
 function krPermasaZgjidhPajisjen(pajisje){
   _kpPajisje = pajisje;
   var dsk = document.getElementById('kpBtnDesktop'), mob = document.getElementById('kpBtnMobile');
-  if(dsk) dsk.style.background = (pajisje==='desktop') ? 'var(--acc)' : '';
-  if(mob) mob.style.background = (pajisje==='mobile') ? 'var(--acc)' : '';
+  // I zgjedhuri theksohet plotesisht; tjetri zbehet (opacity) qe te jete e qarte
+  // se VETEM njeri po perdoret — jo qe te dy jane "aktive" njekohesisht.
+  if(dsk){ dsk.style.background = (pajisje==='desktop') ? 'var(--acc)' : ''; dsk.style.opacity = (pajisje==='desktop') ? '1' : '.45'; }
+  if(mob){ mob.style.background = (pajisje==='mobile') ? 'var(--acc)' : ''; mob.style.opacity = (pajisje==='mobile') ? '1' : '.45'; }
 
   var maxW = pajisje==='desktop' ? _kpLimits.max_w : _kpLimits.m_max_w;
   var maxH = pajisje==='desktop' ? _kpLimits.max_h : _kpLimits.m_max_h;
@@ -95,8 +98,8 @@ function krPermasaVendosKatrorin(scale, maxW, maxH, minW, minH){
 
 function krPermasaPerditesoInfo(maxW, maxH, minW, minH){
   var info = document.getElementById('kpInfo'); if(!info) return;
-  info.textContent = 'Përmasa e zgjedhur: '+_kpZgjedhur.w+'×'+_kpZgjedhur.h+' px  '+
-    '(kufijtë: '+minW+'–'+maxW+' × '+minH+'–'+maxH+' px)';
+  info.innerHTML = '✓ Do të krijohet <b>1 (një) krijim</b>, saktësisht <b>'+_kpZgjedhur.w+'×'+_kpZgjedhur.h+' px</b>  '+
+    '(kufijtë e lejuara: '+minW+'–'+maxW+' × '+minH+'–'+maxH+' px)';
 }
 
 // Zvarritje e cepit poshte-djathtas — ruan raportin origjinal te standardit,
