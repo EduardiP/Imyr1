@@ -1446,7 +1446,9 @@ function formaKreative(lloji){
       ? 'Mund të ngarkosh disa imazhe, por modeli i videos përdor VETËM imazhin e parë si bazë.'
       : 'Mund të ngarkosh vetëm imazhe (JPG, PNG).';
   krZgjedhurit = []; // reset sa here që hapet forma nga e para
+  window._formaKreativeLloji = lloji; // lexohet nga kreative-chat-ui.js
   if(window.krPermasaReset) krPermasaReset(); // gjendja e "Cakto madhësinë" — modul i veçantë (kreative-permasa.js)
+  if(window.krChatReset) krChatReset(); // gjendja e "Bisedë me AI" — modul i veçantë (kreative-chat-ui.js)
   const imgZgjedhBtn = shumefishte
     ? '<button type="button" class="btn" onclick="krZgjidhImazh()" style="margin-left:8px;">📁 Nga imazhet e mia</button>'
     : '';
@@ -1454,11 +1456,14 @@ function formaKreative(lloji){
   // per kete permase). Per Video, permasa rrjedh nga imazhi baze, s'ka opsion te vetin.
   const permasaLink = (lloji==='imazh' || lloji==='html5') && window.krPermasaLinkHTML
     ? krPermasaLinkHTML() : '';
+  // "Bisedë me AI" — vlen per te trija format-et, ndihmon te qartesoje pershkrimin.
+  const chatLink = window.krChatLinkHTML ? krChatLinkHTML() : '';
   return '<div id="krForma" style="margin-top:18px;">'+
     '<label>Emri</label>'+
     '<input id="krEmri" placeholder="Emri i reklamës (p.sh. Fushata Verë)">'+
     '<label style="margin-top:12px;">Përshkrimi</label>'+
     '<textarea id="krPer" placeholder="Çfarë do të tregojë reklama? (mesazhi, ndjesia, thirrja për veprim)" style="min-height:100px;"></textarea>'+
+    chatLink+
     '<label style="margin-top:12px;">Ngarko skedarë</label>'+
     '<div class="krFile" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'+
       '<input type="file" id="krFile" accept="'+accept+'"'+(shumefishte?' multiple':'')+' onchange="krNdryshoFile(this,\''+lloji+'\')">'+
