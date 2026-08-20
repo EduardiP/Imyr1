@@ -590,6 +590,35 @@ app.get('/api/analytics/kategorite-dhene', iLoguar, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// --- ANALYTICS: DEFICITI — sa ke DHENE (si host) kundrejt sa ke MARRE (si reklamues),
+// PER DHOGARINE AKTUALE (respekton ?logjika=, njesoj si te 4 endpoint-et e tjera). ---
+app.get('/api/analytics/deficiti', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const ngaD=new Date(nga), deriD=new Date(deri);
+    if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+    const logjika = ['ankand','barazi'].includes(req.query.logjika) ? req.query.logjika : 'ankand';
+
+    const r = await pool.query(`
+      SELECT gs::date AS data,
+        COALESCE(d.n,0)::int AS dhene,
+        COALESCE(m.n,0)::int AS marre
+      FROM generate_series($2::date, $3::date, '1 day') AS gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1 AND lloji='view' AND burimi=$4 GROUP BY dt) d ON d.dt=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='view' AND burimi=$4 GROUP BY dt) m ON m.dt=gs
+      ORDER BY gs`, [req.biznesId, nga, deri, logjika]);
+
+    res.json({ nga, deri, rows: r.rows.map(x => ({
+      data: x.data.toISOString().slice(0,10),
+      dhene: x.dhene, marre: x.marre, diferenca: x.dhene - x.marre
+    })) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // --- PROFILI I ZGJERUAR: pikët e profilit + analitika për çdo snippet ---
 app.get('/api/profili', iLoguar, async (req, res) => {
   try {
