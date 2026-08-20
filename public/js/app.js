@@ -31,11 +31,10 @@ const NAV2 = [
   { k:'konvertimet', l:'Konvertimet' },
   { k:'analytics', l:'Analytics', subs:[
     {l:'Trafiku', nav:'analytics'},
-    {l:'Sipas kategorisë', nav:'analytics'},
-    {l:'Dhënie', nav:'analytics'},
-    {l:'Marrje', nav:'analytics'},
+    {l:'Reklamat', nav:'analytics'},
     {l:'Snippet-et', nav:'analytics'},
-    {l:'Tendencat', nav:'analytics'}
+    {l:'Dhënie', nav:'analytics'},
+    {l:'Marrje', nav:'analytics'}
   ]},
   { k:'insights', l:'Vështrime', subs:[
     {l:'Pika AI & kombinimet kryesore', nav:'insights'},
