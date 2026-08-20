@@ -676,6 +676,104 @@ async function ngarkoAnaKatDhene(){
   });
 }
 
+// ================= FAQE E VEÇANTË: "Performanca" per "My Ads" =================
+// Nxjerr SAKTESISHT dy grafiket e para te mainAnalytics() (Trafiku + Sipas kategorise),
+// vendosur ne 2 rreshka, PA listen anesore te kategorive dhe PA seksionin "Dhënie".
+function mainRekPerformanca(m){
+  window.__pamjeVecante=true;
+  _anaSelectedAd=null; _anaDropdownOpen=false;
+  _anaKatSelectedAd=null; _anaKatDropdownOpen=false; _anaKatMetrikaAktive='shikime';
+  m.innerHTML='<h2 class="h">Performanca — Reklamat e mia</h2>'+
+    '<p class="small" style="margin:2px 0 16px;">Ecuria e reklamave të tua me ditë.</p>'+
+    '<div class="card" style="margin-bottom:16px;">'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
+        '<button class="btn" onclick="anaPreset(7)">7 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPreset(30)">30 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPreset(90)">90 ditët e fundit</button>'+
+        '<span style="flex:1"></span>'+
+        '<div style="position:relative;">'+
+          '<button type="button" id="anaKalBtn_top" class="btn" style="min-width:170px;"></button>'+
+          '<div id="anaKalPanel_top" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;width:230px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+        '</div>'+
+        '<input type="date" id="anaNga" style="display:none;">'+
+        '<input type="date" id="anaDeri" style="display:none;">'+
+      '</div>'+
+      '<div style="display:flex;justify-content:flex-end;margin-top:10px;">'+
+        '<div style="position:relative;">'+
+          '<button type="button" id="anaRekBtn" class="btn" style="min-width:150px;">Reklamat <span id="anaRekBtnCount"></span> ▾</button>'+
+          '<div id="anaRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:240px;max-height:280px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+        '</div>'+
+      '</div>'+
+      '<div id="anaMetrikaRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;"></div>'+
+    '</div>'+
+    '<div class="card"><canvas id="anaCanvas" height="90"></canvas></div>'+
+    '<div class="card" style="margin-top:16px;">'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
+        '<button class="btn" onclick="anaPresetKat(7)">7 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetKat(30)">30 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetKat(90)">90 ditët e fundit</button>'+
+        '<span style="flex:1"></span>'+
+        '<div style="position:relative;">'+
+          '<button type="button" id="anaKalBtn_kat" class="btn" style="min-width:170px;"></button>'+
+          '<div id="anaKalPanel_kat" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;width:230px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+        '</div>'+
+        '<input type="date" id="anaNgaKat" style="display:none;">'+
+        '<input type="date" id="anaDeriKat" style="display:none;">'+
+      '</div>'+
+    '</div>'+
+    '<div class="card" style="margin-top:16px;">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:14px;">'+
+        '<h3 class="h" style="font-size:15px;margin:0;">Sipas kategorisë së biznesit</h3>'+
+        '<div style="flex:0 0 200px;">'+
+          '<div class="small mut" style="font-weight:600;margin-bottom:6px;">Kategoritë e bizneseve që kanë marrë pjesë.</div>'+
+          '<div id="anaKatLegend" style="display:flex;flex-direction:column;gap:6px;max-height:80px;overflow-y:auto;padding-right:4px;"></div>'+
+        '</div>'+
+        '<div style="position:relative;">'+
+          '<button type="button" id="anaKatRekBtn" class="btn" style="min-width:140px;">Reklamat <span id="anaKatRekBtnCount"></span> ▾</button>'+
+          '<div id="anaKatRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:230px;max-height:260px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+        '</div>'+
+      '</div>'+
+      '<div id="anaKatMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
+      '<canvas id="anaKatCanvas" height="110"></canvas>'+
+    '</div>';
+
+  const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
+  $('anaNga').value=anaFmt(nga); $('anaDeri').value=anaFmt(sot);
+  $('anaNgaKat').value=anaFmt(nga); $('anaDeriKat').value=anaFmt(sot);
+
+  window.__anaKalendaret = window.__anaKalendaret || {};
+  anaKrijoKalendarRangu({
+    id:'top', btnId:'anaKalBtn_top', panelId:'anaKalPanel_top',
+    getNga:()=>$('anaNga').value, getDeri:()=>$('anaDeri').value,
+    setNga:v=>{ $('anaNga').value=v; }, setDeri:v=>{ $('anaDeri').value=v; },
+    onRuaj: ngarkoAnalitika
+  });
+  anaKrijoKalendarRangu({
+    id:'kat', btnId:'anaKalBtn_kat', panelId:'anaKalPanel_kat',
+    getNga:()=>$('anaNgaKat').value, getDeri:()=>$('anaDeriKat').value,
+    setNga:v=>{ $('anaNgaKat').value=v; }, setDeri:v=>{ $('anaDeriKat').value=v; },
+    onRuaj: anaNgarkoKategoriteTeGjitha
+  });
+  $('anaRekBtn').addEventListener('click', function(e){
+    e.stopPropagation();
+    const dd=$('anaRekDropdown'); if(!dd) return;
+    _anaDropdownOpen=!_anaDropdownOpen;
+    dd.classList.toggle('hide', !_anaDropdownOpen);
+  });
+  $('anaKatRekBtn').addEventListener('click', function(e){
+    e.stopPropagation();
+    const dd=$('anaKatRekDropdown'); if(!dd) return;
+    _anaKatDropdownOpen=!_anaKatDropdownOpen;
+    dd.classList.toggle('hide', !_anaKatDropdownOpen);
+  });
+  anaRenderMetrika();
+  ngarkoAnaReklamatLista();
+  anaRenderKategoriMetrika();
+  ngarkoAnaKatReklamatLista();
+  ngarkoAnalitika();
+  ngarkoAnaKategorite();
+}
+
 // ================= FAQE E VEÇANTË: "Statistikat" per "Hapësira e reklamave" =================
 // Ripërdor TE NJEJTIN endpoint (kategorite-dhene) dhe TE NJEJTIN pattern grafiku si paneli
 // "Dhënie" brenda Analytics — thjesht si faqe e vetme, e pavarur (sipas kategorise se
