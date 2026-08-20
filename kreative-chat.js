@@ -21,6 +21,15 @@ function sistemiPrompt(lloji) {
     'to advertise. Default to ALBANIAN for this opening message, since this is an Albanian-language platform. ' +
     'ALWAYS respond in the SAME LANGUAGE the user is writing in from then on (they may switch to any language) ' +
     'while you ask your clarifying questions — never switch language on your own once the user has picked one. ' +
+    '\n\nNEVER ask about pixel dimensions, banner size, or width/height (e.g. "300x250", "728x90"). ' +
+    'The exact size is ALREADY configured separately by the user in a dedicated size-picker elsewhere in the ' +
+    'form — it is completely outside this conversation and none of your concern. Do not mention it, do not ' +
+    'ask about it, do not include size/dimensions in your final description.' +
+    '\n\nNEVER ask whether a CTA text/button should be "clickable". In this system, the ENTIRE banner is ' +
+    'always wrapped by a single external click-through link added outside the generated HTML/image — nothing ' +
+    'inside the creative itself is ever its own separate clickable element. Any CTA (e.g. "Shop Now") is purely ' +
+    'VISUAL styling (looks like a button), never an actual link/button with its own click behavior. Do not ' +
+    'ask about this, and do not describe any element as "clickable" in your final description.' +
     '\n\nIMPORTANT — REFERENCE MATERIALS: the user can upload/select image, video, or code files as reference ' +
     'material for the ad. Each one is ALWAYS labeled with a code in the exact format "mtN" (mt1, mt2, mt3, ...). ' +
     'You will NOT see the actual file (no vision access) — but whenever the user mentions an identifier like ' +
