@@ -103,9 +103,9 @@ function mainAnalytics(m){
       '</div>'+
     '</div>'+
     '<div class="card" style="margin-top:16px;">'+
-      '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Deficiti — Dhënë vs Marrë</h3>'+
-      '<p class="small mut" style="margin:0 0 12px;">Sa ke dhënë (si host) kundrejt sa ke marrë (si reklamues), për dhogarinë aktuale.</p>'+
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">'+
+      '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Deficiti — Marrë − Dhënë</h3>'+
+      '<p class="small mut" style="margin:0 0 12px;">Diferenca mes sa ke marrë (si reklamues) dhe sa ke dhënë (si host), për dhogarinë aktuale. Pozitiv = ke marrë më shumë; negativ = ke dhënë më shumë.</p>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
         '<button class="btn" onclick="anaPresetDeficit(7)">7 ditët e fundit</button>'+
         '<button class="btn" onclick="anaPresetDeficit(30)">30 ditët e fundit</button>'+
         '<button class="btn" onclick="anaPresetDeficit(90)">90 ditët e fundit</button>'+
@@ -117,10 +117,7 @@ function mainAnalytics(m){
         '<input type="date" id="anaNgaDeficit" style="display:none;">'+
         '<input type="date" id="anaDeriDeficit" style="display:none;">'+
       '</div>'+
-      '<div id="anaDeficitModeRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">'+
-        '<button type="button" onclick="anaDeficitModeSet(\'krahasim\')" id="anaDefBtnKrahasim" class="small">Dhënë vs Marrë</button>'+
-        '<button type="button" onclick="anaDeficitModeSet(\'diferenca\')" id="anaDefBtnDiferenca" class="small">Diferenca</button>'+
-      '</div>'+
+      '<div id="anaDeficitMetrikaRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
       '<canvas id="anaDeficitCanvas" height="110"></canvas>'+
     '</div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
@@ -182,13 +179,255 @@ function mainAnalytics(m){
   ngarkoAnaPikatProfili();
   ngarkoAnaSnipDhene();
   ngarkoAnaKatDhene();
-  anaDeficitModeSet('krahasim');
+  anaRenderDeficitMetrika();
+  ngarkoAnaDeficit();
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// FAQE TE VECANTA — secila nen-kategori Analytics ka TASHME permbajtjen
+// e VET (si Hapësira e reklamave), jo me te gjitha bashke ne nje faqe.
+// mainAnalytics() (lart) mbetet e paprekur, thjesht s'thirret me nga
+// asnje click normal — vetem funksionet e reja poshte perdoren tani.
+// ═══════════════════════════════════════════════════════════════════
+
+function mainAnaTrafiku(m){
+  _anaSelectedAd=null; _anaDropdownOpen=false;
+  m.innerHTML='<h2 class="h">Trafiku</h2>'+
+    '<p class="small" style="margin:2px 0 16px;">Ecuria e reklamave të tua me ditë.</p>'+
+    '<div class="card" style="margin-bottom:16px;">'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
+        '<button class="btn" onclick="anaPreset(7)">7 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPreset(30)">30 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPreset(90)">90 ditët e fundit</button>'+
+        '<span style="flex:1"></span>'+
+        '<div style="position:relative;">'+
+          '<button type="button" id="anaKalBtn_top" class="btn" style="min-width:170px;"></button>'+
+          '<div id="anaKalPanel_top" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;width:230px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+        '</div>'+
+        '<input type="date" id="anaNga" style="display:none;">'+
+        '<input type="date" id="anaDeri" style="display:none;">'+
+      '</div>'+
+      '<div style="display:flex;justify-content:flex-end;margin-top:10px;">'+
+        '<div style="position:relative;">'+
+          '<button type="button" id="anaRekBtn" class="btn" style="min-width:150px;">Reklamat <span id="anaRekBtnCount"></span> ▾</button>'+
+          '<div id="anaRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:240px;max-height:280px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+        '</div>'+
+      '</div>'+
+      '<div id="anaMetrikaRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;"></div>'+
+    '</div>'+
+    '<div class="card"><canvas id="anaCanvas" height="90"></canvas></div>';
+  const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
+  $('anaNga').value=anaFmt(nga); $('anaDeri').value=anaFmt(sot);
+  window.__anaKalendaret = window.__anaKalendaret || {};
+  anaKrijoKalendarRangu({
+    id:'top', btnId:'anaKalBtn_top', panelId:'anaKalPanel_top',
+    getNga:()=>$('anaNga').value, getDeri:()=>$('anaDeri').value,
+    setNga:v=>{ $('anaNga').value=v; }, setDeri:v=>{ $('anaDeri').value=v; },
+    onRuaj: ngarkoAnalitika
+  });
+  $('anaRekBtn').addEventListener('click', function(e){
+    e.stopPropagation();
+    const dd=$('anaRekDropdown'); if(!dd) return;
+    _anaDropdownOpen=!_anaDropdownOpen;
+    dd.classList.toggle('hide', !_anaDropdownOpen);
+  });
+  anaRenderMetrika();
+  ngarkoAnaReklamatLista();
+  ngarkoAnalitika();
+}
+
+function mainAnaDeficiti(m){
+  m.innerHTML='<h2 class="h">Deficiti</h2>'+
+    '<div class="card">'+
+      '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Deficiti — Marrë − Dhënë</h3>'+
+      '<p class="small mut" style="margin:0 0 12px;">Diferenca mes sa ke marrë (si reklamues) dhe sa ke dhënë (si host), për dhogarinë aktuale. Pozitiv = ke marrë më shumë; negativ = ke dhënë më shumë.</p>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
+        '<button class="btn" onclick="anaPresetDeficit(7)">7 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetDeficit(30)">30 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetDeficit(90)">90 ditët e fundit</button>'+
+        '<span style="flex:1"></span>'+
+        '<div style="position:relative;">'+
+          '<button type="button" id="anaKalBtn_deficit" class="btn" style="min-width:170px;"></button>'+
+          '<div id="anaKalPanel_deficit" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;width:230px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+        '</div>'+
+        '<input type="date" id="anaNgaDeficit" style="display:none;">'+
+        '<input type="date" id="anaDeriDeficit" style="display:none;">'+
+      '</div>'+
+      '<div id="anaDeficitMetrikaRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
+      '<canvas id="anaDeficitCanvas" height="110"></canvas>'+
+    '</div>';
+  const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
+  $('anaNgaDeficit').value=anaFmt(nga); $('anaDeriDeficit').value=anaFmt(sot);
+  window.__anaKalendaret = window.__anaKalendaret || {};
+  anaKrijoKalendarRangu({
+    id:'deficit', btnId:'anaKalBtn_deficit', panelId:'anaKalPanel_deficit',
+    getNga:()=>$('anaNgaDeficit').value, getDeri:()=>$('anaDeriDeficit').value,
+    setNga:v=>{ $('anaNgaDeficit').value=v; }, setDeri:v=>{ $('anaDeriDeficit').value=v; },
+    onRuaj: ngarkoAnaDeficit
+  });
+  anaRenderDeficitMetrika();
+  ngarkoAnaDeficit();
+}
+
+function mainAnaReklamat(m){
+  _anaKatSelectedAd=null; _anaKatDropdownOpen=false; _anaKatMetrikaAktive='shikime';
+  _anaListSelectedAd=null; _anaListDropdownOpen=false;
+  m.innerHTML='<h2 class="h">Reklamat — Sipas kategorisë</h2>'+
+    '<p class="small" style="margin:2px 0 16px;">Ku janë shfaqur reklamat tuaja, sipas kategorisë së biznesit.</p>'+
+    '<div class="card" style="margin-bottom:16px;">'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
+        '<button class="btn" onclick="anaPresetKat(7)">7 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetKat(30)">30 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetKat(90)">90 ditët e fundit</button>'+
+        '<span style="flex:1"></span>'+
+        '<div style="position:relative;">'+
+          '<button type="button" id="anaKalBtn_kat" class="btn" style="min-width:170px;"></button>'+
+          '<div id="anaKalPanel_kat" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;width:230px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+        '</div>'+
+        '<input type="date" id="anaNgaKat" style="display:none;">'+
+        '<input type="date" id="anaDeriKat" style="display:none;">'+
+      '</div>'+
+    '</div>'+
+    '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;">'+
+      '<div class="card" style="flex:2;min-width:340px;">'+
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:14px;">'+
+          '<h3 class="h" style="font-size:15px;margin:0;">Sipas kategorisë së biznesit</h3>'+
+          '<div style="flex:0 0 200px;">'+
+            '<div class="small mut" style="font-weight:600;margin-bottom:6px;">Kategoritë e bizneseve ku janë ngarkuar reklamat tuaja.</div>'+
+            '<div id="anaKatLegend" style="display:flex;flex-direction:column;gap:6px;max-height:80px;overflow-y:auto;padding-right:4px;"></div>'+
+          '</div>'+
+          '<div style="position:relative;">'+
+            '<button type="button" id="anaKatRekBtn" class="btn" style="min-width:140px;">Reklamat <span id="anaKatRekBtnCount"></span> ▾</button>'+
+            '<div id="anaKatRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:230px;max-height:260px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+          '</div>'+
+        '</div>'+
+        '<div id="anaKatMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
+        '<canvas id="anaKatCanvas" height="110"></canvas>'+
+      '</div>'+
+      '<div class="card" style="flex:1;min-width:220px;">'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Kategoritë e bizneseve</h3>'+
+        '<p class="small mut" style="margin:0 0 12px;">Ku janë ngarkuar reklamat tuaja.</p>'+
+        '<div style="position:relative;margin-bottom:14px;">'+
+          '<button type="button" id="anaListRekBtn" class="btn" style="width:100%;">Reklamat <span id="anaListRekBtnCount"></span> ▾</button>'+
+          '<div id="anaListRekDropdown" class="hide" style="position:absolute;top:110%;left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;max-height:240px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+        '</div>'+
+        '<div id="anaListaKategori" style="max-height:300px;overflow-y:auto;padding-right:4px;"><p class="small">Po ngarkoj…</p></div>'+
+      '</div>'+
+    '</div>';
+  const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
+  $('anaNgaKat').value=anaFmt(nga); $('anaDeriKat').value=anaFmt(sot);
+  window.__anaKalendaret = window.__anaKalendaret || {};
+  anaKrijoKalendarRangu({
+    id:'kat', btnId:'anaKalBtn_kat', panelId:'anaKalPanel_kat',
+    getNga:()=>$('anaNgaKat').value, getDeri:()=>$('anaDeriKat').value,
+    setNga:v=>{ $('anaNgaKat').value=v; }, setDeri:v=>{ $('anaDeriKat').value=v; },
+    onRuaj: anaNgarkoKategoriteTeGjitha
+  });
+  $('anaKatRekBtn').addEventListener('click', function(e){
+    e.stopPropagation();
+    const dd=$('anaKatRekDropdown'); if(!dd) return;
+    _anaKatDropdownOpen=!_anaKatDropdownOpen;
+    dd.classList.toggle('hide', !_anaKatDropdownOpen);
+  });
+  $('anaListRekBtn').addEventListener('click', function(e){
+    e.stopPropagation();
+    const dd=$('anaListRekDropdown'); if(!dd) return;
+    _anaListDropdownOpen=!_anaListDropdownOpen;
+    dd.classList.toggle('hide', !_anaListDropdownOpen);
+  });
+  anaRenderKategoriMetrika();
+  ngarkoAnaKatReklamatLista();
+  ngarkoAnaListRekamatLista();
+  ngarkoAnaKategorite();
+  ngarkoAnaLista();
+}
+
+function mainAnaSnippetet(m){
+  m.innerHTML='<h2 class="h">Snippet-et e reklamave</h2>'+
+    '<div class="card" style="margin-bottom:16px;">'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
+        '<button class="btn" onclick="anaPresetDhene(7)">7 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetDhene(30)">30 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetDhene(90)">90 ditët e fundit</button>'+
+        '<span style="flex:1"></span>'+
+        '<div style="position:relative;">'+
+          '<button type="button" id="anaKalBtn_dhene" class="btn" style="min-width:170px;"></button>'+
+          '<div id="anaKalPanel_dhene" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;width:230px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+        '</div>'+
+        '<input type="date" id="anaNgaDhene" style="display:none;">'+
+        '<input type="date" id="anaDeriDhene" style="display:none;">'+
+      '</div>'+
+    '</div>'+
+    '<div class="card">'+
+      '<p class="small mut" style="margin:0 0 12px;">Çfarë u ke dhënë bizneseve të tjera nëpërmjet snippet-eve tuaja. <span style="color:var(--acc);text-decoration:underline;cursor:pointer;" onclick="snipKrijo()">Shto snippet</span> për t\'u shfaqur edhe ti më shumë tek të tjerët.</p>'+
+      '<div id="anaSnipDheneLista" style="max-height:400px;overflow-y:auto;padding-right:4px;"><p class="small">Po ngarkoj…</p></div>'+
+    '</div>';
+  const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
+  $('anaNgaDhene').value=anaFmt(nga); $('anaDeriDhene').value=anaFmt(sot);
+  window.__anaKalendaret = window.__anaKalendaret || {};
+  anaKrijoKalendarRangu({
+    id:'dhene', btnId:'anaKalBtn_dhene', panelId:'anaKalPanel_dhene',
+    getNga:()=>$('anaNgaDhene').value, getDeri:()=>$('anaDeriDhene').value,
+    setNga:v=>{ $('anaNgaDhene').value=v; }, setDeri:v=>{ $('anaDeriDhene').value=v; },
+    onRuaj: ngarkoAnaSnipDhene
+  });
+  ngarkoAnaSnipDhene();
+}
+
+function mainAnaDhenie(m){
+  m.innerHTML='<h2 class="h">Dhënie</h2>'+
+    '<div class="card" style="margin-bottom:16px;">'+
+      '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">'+
+        '<div style="flex:1;min-width:220px;">'+
+          '<div style="font-size:40px;font-weight:800;color:var(--acc);" id="anaPikatProfili">–</div>'+
+          '<div class="small mut" style="margin-top:4px;">Sa më shumë u jep bizneseve të tjera, aq më shumë rriten pikët — dhe aq më shpesh shfaqet reklama jote te të tjerët.</div>'+
+        '</div>'+
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
+          '<button class="btn" onclick="anaPresetDhene(7)">7 ditët e fundit</button>'+
+          '<button class="btn" onclick="anaPresetDhene(30)">30 ditët e fundit</button>'+
+          '<button class="btn" onclick="anaPresetDhene(90)">90 ditët e fundit</button>'+
+          '<div style="position:relative;">'+
+            '<button type="button" id="anaKalBtn_dhene" class="btn" style="min-width:170px;"></button>'+
+            '<div id="anaKalPanel_dhene" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;width:230px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+          '</div>'+
+          '<input type="date" id="anaNgaDhene" style="display:none;">'+
+          '<input type="date" id="anaDeriDhene" style="display:none;">'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="card">'+
+      '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Sipas kategorisë së biznesit</h3>'+
+      '<p class="small mut" style="margin:0 0 12px;">Çfarë u ke dhënë secilës kategori.</p>'+
+      '<div id="anaKatDheneMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
+      '<div id="anaKatDheneLegend" style="display:flex;flex-direction:column;gap:6px;max-height:80px;overflow-y:auto;padding-right:4px;margin-bottom:10px;"></div>'+
+      '<canvas id="anaKatDheneCanvas" height="110"></canvas>'+
+    '</div>';
+  const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
+  $('anaNgaDhene').value=anaFmt(nga); $('anaDeriDhene').value=anaFmt(sot);
+  window.__anaKalendaret = window.__anaKalendaret || {};
+  anaKrijoKalendarRangu({
+    id:'dhene', btnId:'anaKalBtn_dhene', panelId:'anaKalPanel_dhene',
+    getNga:()=>$('anaNgaDhene').value, getDeri:()=>$('anaDeriDhene').value,
+    setNga:v=>{ $('anaNgaDhene').value=v; }, setDeri:v=>{ $('anaDeriDhene').value=v; },
+    onRuaj: ngarkoAnaKatDhene
+  });
+  anaRenderKatDheneMetrika();
+  ngarkoAnaPikatProfili();
+  ngarkoAnaKatDhene();
+}
+
+// "Marrje" — S'KA ENDE PËRMBAJTJE TË PËRCAKTUAR (thjesht etiketë, si Deficiti
+// para se te percaktohej). Placeholder derisa te thuhet çfarë duhet të tregojë.
+function mainAnaMarrje(m){
+  m.innerHTML='<h2 class="h">Marrje</h2>'+
+    '<div class="card"><p class="small mut">🚧 Kjo faqe s\'ka ende përmbajtje të përcaktuar.</p></div>';
+}
+
 function anaNgarkoTeGjitha(){ ngarkoAnalitika(); }
 function anaNgarkoKategoriteTeGjitha(){ ngarkoAnaKategorite(); ngarkoAnaLista(); }
 function anaNgarkoDheneTeGjitha(){ ngarkoAnaSnipDhene(); ngarkoAnaKatDhene(); }
 
-var _anaDeficitMode='krahasim'; // 'krahasim' (2 vija) | 'diferenca' (1 vije, mund te jete negative)
+var _anaDeficitMetrikaAktive={shfaqje:true,shikime:true,klikime:true,konvertime:true};
 var _anaDeficitChart=null;
 
 function anaPresetDeficit(dite){
@@ -198,12 +437,23 @@ function anaPresetDeficit(dite){
   ngarkoAnaDeficit();
 }
 
-function anaDeficitModeSet(mode){
-  _anaDeficitMode=mode;
-  const bK=$('anaDefBtnKrahasim'), bD=$('anaDefBtnDiferenca');
-  if(bK) bK.style.cssText = 'padding:6px 12px;border-radius:20px;border:1px solid '+(mode==='krahasim'?'var(--acc);background:var(--acc);color:#06121f;font-weight:600;':'var(--line);background:transparent;color:var(--mut);')+'cursor:pointer;font-size:12px;font-family:inherit;';
-  if(bD) bD.style.cssText = 'padding:6px 12px;border-radius:20px;border:1px solid '+(mode==='diferenca'?'var(--acc);background:var(--acc);color:#06121f;font-weight:600;':'var(--line);background:transparent;color:var(--mut);')+'cursor:pointer;font-size:12px;font-family:inherit;';
-  ngarkoAnaDeficit();
+function anaRenderDeficitMetrika(){
+  const el=$('anaDeficitMetrikaRow'); if(!el) return;
+  el.innerHTML='';
+  ANA_METRIKA.forEach(x=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.textContent=x.l;
+    const on=_anaDeficitMetrikaAktive[x.k];
+    btn.style.cssText = on
+      ? 'padding:7px 14px;border-radius:20px;border:1px solid var(--acc);background:rgba(74,158,255,.15);color:var(--acc);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;'
+      : 'padding:7px 14px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:13px;cursor:pointer;font-family:inherit;';
+    btn.addEventListener('click', function(){
+      _anaDeficitMetrikaAktive[x.k]=!_anaDeficitMetrikaAktive[x.k];
+      anaRenderDeficitMetrika();
+      ngarkoAnaDeficit();
+    });
+    el.appendChild(btn);
+  });
 }
 
 async function ngarkoAnaDeficit(){
@@ -217,22 +467,24 @@ async function ngarkoAnaDeficit(){
   const canvas=$('anaDeficitCanvas'); if(!canvas||typeof Chart==='undefined') return;
   if(_anaDeficitChart){ _anaDeficitChart.destroy(); _anaDeficitChart=null; }
 
-  let datasets;
-  if(_anaDeficitMode==='krahasim'){
-    datasets=[
-      {label:'Dhënë', data:rows.map(r=>r.dhene), borderColor:'#4a9eff', backgroundColor:'transparent', tension:0, borderWidth:2, pointRadius:2, pointBackgroundColor:'#4a9eff'},
-      {label:'Marrë', data:rows.map(r=>r.marre), borderColor:'#ef4444', backgroundColor:'transparent', tension:0, borderWidth:2, pointRadius:2, pointBackgroundColor:'#ef4444'}
-    ];
-  } else {
-    datasets=[
-      {label:'Diferenca (Dhënë − Marrë)', data:rows.map(r=>r.diferenca), borderColor:'#22c55e', backgroundColor:'transparent', tension:0, borderWidth:2, pointRadius:2, pointBackgroundColor:'#22c55e'}
-    ];
-  }
+  const datasets=[];
+  ANA_METRIKA.forEach(x=>{
+    if(_anaDeficitMetrikaAktive[x.k]) datasets.push({label:x.l, data:rows.map(r=>r[x.k]), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
+  });
   const ctx=canvas.getContext('2d');
   _anaDeficitChart=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
-      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
-      plugins:{legend:{labels:{color:'#e6edf3'}}}}
+      scales:{
+        x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}},
+        // PA beginAtZero — boshti Y lejon vlera negative, zero-vija ne mes (jo ne fund)
+        y:{ticks:{color:'#8b949e',precision:0},grid:{color:function(ctx){ return ctx.tick.value===0 ? 'rgba(230,237,243,.35)' : '#2a313c'; }}}
+      },
+      plugins:{legend:{labels:{color:'#e6edf3', generateLabels:function(chart){
+        const items=Chart.defaults.plugins.legend.labels.generateLabels(chart);
+        items.forEach(it=>{ it.lineDash=[]; it.lineWidth=2; });
+        return items;
+      }}, onClick:function(){}}}},
+    plugins:[anaMultiColorLinePlugin]
   });
 }
 
