@@ -255,6 +255,18 @@ function mainAnaDeficiti(m){
       '</div>'+
       '<div id="anaDeficitMetrikaRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
       '<canvas id="anaDeficitCanvas" height="110"></canvas>'+
+    '</div>'+
+    '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
+      '<div class="card" style="flex:1;min-width:300px;">'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 12px;">Vetëm Dhënë</h3>'+
+        '<div id="anaDhenNgaMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
+        '<canvas id="anaDhenNgaCanvas" height="110"></canvas>'+
+      '</div>'+
+      '<div class="card" style="flex:1;min-width:300px;">'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 12px;">Vetëm Marrë</h3>'+
+        '<div id="anaMarrjaMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
+        '<canvas id="anaMarrjaCanvas" height="110"></canvas>'+
+      '</div>'+
     '</div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
   $('anaNgaDeficit').value=anaFmt(nga); $('anaDeriDeficit').value=anaFmt(sot);
@@ -263,10 +275,14 @@ function mainAnaDeficiti(m){
     id:'deficit', btnId:'anaKalBtn_deficit', panelId:'anaKalPanel_deficit',
     getNga:()=>$('anaNgaDeficit').value, getDeri:()=>$('anaDeriDeficit').value,
     setNga:v=>{ $('anaNgaDeficit').value=v; }, setDeri:v=>{ $('anaDeriDeficit').value=v; },
-    onRuaj: ngarkoAnaDeficit
+    onRuaj: anaNgarkoDeficitinTeGjithe
   });
   anaRenderDeficitMetrika();
   ngarkoAnaDeficit();
+  anaRenderDhenNgaMetrika();
+  anaRenderMarrjaMetrika();
+  ngarkoAnaDhenNga();
+  ngarkoAnaMarrja();
 }
 
 function mainAnaReklamat(m){
@@ -434,7 +450,12 @@ function anaPresetDeficit(dite){
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-(dite-1));
   $('anaNgaDeficit').value=anaFmt(nga); $('anaDeriDeficit').value=anaFmt(sot);
   if(window.__anaKalendaret && window.__anaKalendaret.deficit) window.__anaKalendaret.deficit.refreshLabel();
+  anaNgarkoDeficitinTeGjithe();
+}
+function anaNgarkoDeficitinTeGjithe(){
   ngarkoAnaDeficit();
+  ngarkoAnaDhenNga();
+  ngarkoAnaMarrja();
 }
 
 function anaRenderDeficitMetrika(){
@@ -495,6 +516,109 @@ async function ngarkoAnaDeficit(){
         return items;
       }}, onClick:function(){}}}},
     plugins:[anaMultiColorLinePluginDivergjent]
+  });
+}
+
+// ═══ Grafiket "Vetem Dhene" / "Vetem Marre" — te dyja perdorin te njejtin endpoint
+// (/api/analytics/deficiti) qe tashme kthen edhe vlerat e papërpunuara per secilen
+// metrike (jo vetem diferencen). Keto jane GJITHMONE >=0, prandaj perdorin plugin-in
+// normal (jo variantin divergjent) dhe beginAtZero standarde. ═══
+var _anaDhenNgaMetrikaAktive={shfaqje:true,shikime:true,klikime:true,konvertime:true};
+var _anaMarrjaMetrikaAktive={shfaqje:true,shikime:true,klikime:true,konvertime:true};
+var _anaDhenNgaChart=null, _anaMarrjaChart=null;
+var _anaDeficitDhenieRows=[]; // cache-i i fundit i /api/analytics/deficiti — ripërdorur nga te dyja grafiket, pa thirrje shtese
+
+function anaRenderDhenNgaMetrika(){
+  const el=$('anaDhenNgaMetrikaRow'); if(!el) return;
+  el.innerHTML='';
+  ANA_METRIKA.forEach(x=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.textContent=x.l;
+    const on=_anaDhenNgaMetrikaAktive[x.k];
+    btn.style.cssText = on
+      ? 'padding:6px 12px;border-radius:20px;border:1px solid var(--acc);background:rgba(74,158,255,.15);color:var(--acc);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;'
+      : 'padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit;';
+    btn.addEventListener('click', function(){
+      _anaDhenNgaMetrikaAktive[x.k]=!_anaDhenNgaMetrikaAktive[x.k];
+      anaRenderDhenNgaMetrika();
+      anaVizatoDhenNga();
+    });
+    el.appendChild(btn);
+  });
+}
+function anaRenderMarrjaMetrika(){
+  const el=$('anaMarrjaMetrikaRow'); if(!el) return;
+  el.innerHTML='';
+  ANA_METRIKA.forEach(x=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.textContent=x.l;
+    const on=_anaMarrjaMetrikaAktive[x.k];
+    btn.style.cssText = on
+      ? 'padding:6px 12px;border-radius:20px;border:1px solid var(--acc);background:rgba(74,158,255,.15);color:var(--acc);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;'
+      : 'padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit;';
+    btn.addEventListener('click', function(){
+      _anaMarrjaMetrikaAktive[x.k]=!_anaMarrjaMetrikaAktive[x.k];
+      anaRenderMarrjaMetrika();
+      anaVizatoMarrja();
+    });
+    el.appendChild(btn);
+  });
+}
+
+// Marrin te dhenat NJE HERE (nga i njejti endpoint qe perdor edhe Deficiti) dhe i
+// ndajne mes te dy grafikeve — shmang 2 thirrje shtese API per te njejtat dite.
+async function ngarkoAnaDhenNga(){
+  await anaSigurohuDeficitDhenie();
+  anaVizatoDhenNga();
+}
+async function ngarkoAnaMarrja(){
+  await anaSigurohuDeficitDhenie();
+  anaVizatoMarrja();
+}
+async function anaSigurohuDeficitDhenie(){
+  const ngaEl=$('anaNgaDeficit'), deriEl=$('anaDeriDeficit');
+  if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
+  const url='/api/analytics/deficiti?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand');
+  try{ const d=await(await fetch(url)).json(); _anaDeficitDhenieRows=d.rows||[]; }catch(e){ _anaDeficitDhenieRows=[]; }
+}
+function anaVizatoDhenNga(){
+  const canvas=$('anaDhenNgaCanvas'); if(!canvas||typeof Chart==='undefined') return;
+  if(_anaDhenNgaChart){ _anaDhenNgaChart.destroy(); _anaDhenNgaChart=null; }
+  const labels=_anaDeficitDhenieRows.map(r=>r.data);
+  const datasets=[];
+  ANA_METRIKA.forEach(x=>{
+    if(_anaDhenNgaMetrikaAktive[x.k]) datasets.push({label:x.l, data:_anaDeficitDhenieRows.map(r=>r[x.k+'_dhene']), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
+  });
+  const ctx=canvas.getContext('2d');
+  _anaDhenNgaChart=new Chart(ctx,{type:'line',data:{labels,datasets},
+    options:{responsive:true,interaction:{mode:'index',intersect:false},
+      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
+      plugins:{legend:{labels:{color:'#e6edf3', generateLabels:function(chart){
+        const items=Chart.defaults.plugins.legend.labels.generateLabels(chart);
+        items.forEach(it=>{ it.lineDash=[]; it.lineWidth=2; });
+        return items;
+      }}, onClick:function(){}}}},
+    plugins:[anaMultiColorLinePlugin]
+  });
+}
+function anaVizatoMarrja(){
+  const canvas=$('anaMarrjaCanvas'); if(!canvas||typeof Chart==='undefined') return;
+  if(_anaMarrjaChart){ _anaMarrjaChart.destroy(); _anaMarrjaChart=null; }
+  const labels=_anaDeficitDhenieRows.map(r=>r.data);
+  const datasets=[];
+  ANA_METRIKA.forEach(x=>{
+    if(_anaMarrjaMetrikaAktive[x.k]) datasets.push({label:x.l, data:_anaDeficitDhenieRows.map(r=>r[x.k+'_marre']), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
+  });
+  const ctx=canvas.getContext('2d');
+  _anaMarrjaChart=new Chart(ctx,{type:'line',data:{labels,datasets},
+    options:{responsive:true,interaction:{mode:'index',intersect:false},
+      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
+      plugins:{legend:{labels:{color:'#e6edf3', generateLabels:function(chart){
+        const items=Chart.defaults.plugins.legend.labels.generateLabels(chart);
+        items.forEach(it=>{ it.lineDash=[]; it.lineWidth=2; });
+        return items;
+      }}, onClick:function(){}}}},
+    plugins:[anaMultiColorLinePlugin]
   });
 }
 
