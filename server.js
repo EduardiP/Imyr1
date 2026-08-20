@@ -430,9 +430,10 @@ app.get('/api/analytics/reklamat', iLoguar, async (req, res) => {
     if (nga > deri) { const t=nga; nga=deri; deri=t; }
     const ngaD=new Date(nga), deriD=new Date(deri);
     if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+    const logjika = ['ankand','barazi'].includes(req.query.logjika) ? req.query.logjika : 'ankand';
     const rekIds = (req.query.reklama_ids || '').split(',').map(x => parseInt(x, 10)).filter(x => !isNaN(x));
-    const filtroRek = rekIds.length ? ' AND reklama_id = ANY($4::int[])' : '';
-    const params = rekIds.length ? [req.biznesId, nga, deri, rekIds] : [req.biznesId, nga, deri];
+    const filtroRek = rekIds.length ? ' AND reklama_id = ANY($5::int[])' : '';
+    const params = rekIds.length ? [req.biznesId, nga, deri, logjika, rekIds] : [req.biznesId, nga, deri, logjika];
 
     const r = await pool.query(`
       SELECT gs::date AS data,
@@ -441,10 +442,10 @@ app.get('/api/analytics/reklamat', iLoguar, async (req, res) => {
         COALESCE(k.n,0)::int  AS klikime,
         COALESCE(kv.n,0)::int AS konvertime
       FROM generate_series($2::date, $3::date, '1 day') AS gs
-      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='view'${filtroRek} GROUP BY d) v ON v.d=gs
-      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='shikim'${filtroRek} GROUP BY d) sh ON sh.d=gs
-      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='click'${filtroRek} GROUP BY d) k ON k.d=gs
-      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='konvertim'${filtroRek} GROUP BY d) kv ON kv.d=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='view' AND burimi=$4${filtroRek} GROUP BY d) v ON v.d=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='shikim' AND burimi=$4${filtroRek} GROUP BY d) sh ON sh.d=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='click' AND burimi=$4${filtroRek} GROUP BY d) k ON k.d=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='konvertim' AND burimi=$4${filtroRek} GROUP BY d) kv ON kv.d=gs
       ORDER BY gs`, params);
     res.json({ nga, deri, rows: r.rows.map(x => ({
       data: x.data.toISOString().slice(0,10),
@@ -463,21 +464,22 @@ app.get('/api/analytics/kategorite', iLoguar, async (req, res) => {
     if (nga > deri) { const t=nga; nga=deri; deri=t; }
     const ngaD=new Date(nga), deriD=new Date(deri);
     if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+    const logjika = ['ankand','barazi'].includes(req.query.logjika) ? req.query.logjika : 'ankand';
 
     // Kategoria e vet biznesit — s'duhet shfaqur (asnjeherë s'shfaqet konkurrenca e vet)
     const vetja = await pool.query('SELECT kategoria_kryesore FROM bizneset WHERE id=$1', [req.biznesId]);
     const vetjaKat = vetja.rows.length ? vetja.rows[0].kategoria_kryesore : null;
 
     const rekIds = (req.query.reklama_ids || '').split(',').map(x => parseInt(x, 10)).filter(x => !isNaN(x));
-    const filtroRek = rekIds.length ? ' AND e.reklama_id = ANY($4::int[])' : '';
-    const baseParams = rekIds.length ? [req.biznesId, nga, deri, rekIds] : [req.biznesId, nga, deri];
+    const filtroRek = rekIds.length ? ' AND e.reklama_id = ANY($5::int[])' : '';
+    const baseParams = rekIds.length ? [req.biznesId, nga, deri, logjika, rekIds] : [req.biznesId, nga, deri, logjika];
 
     // 1) Kategorite qe kane te pakten 1 ngjarje (cfaredo lloji) ne kete periudhe/filtrim
     const katQ = await pool.query(`
       SELECT DISTINCT b.kategoria_kryesore AS kategoria
       FROM ngjarjet e JOIN bizneset b ON b.id = e.biznes_id
       WHERE e.reklamues_id=$1 AND e.created_at::date BETWEEN $2 AND $3
-        AND e.lloji IN ('view','shikim','click','konvertim')
+        AND e.lloji IN ('view','shikim','click','konvertim') AND e.burimi=$4
         AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''
         ${filtroRek}`, baseParams);
     let kategorite = katQ.rows.map(r => r.kategoria);
@@ -485,9 +487,9 @@ app.get('/api/analytics/kategorite', iLoguar, async (req, res) => {
 
     const rezultat = [];
     for (const kat of kategorite) {
-      const filtroRek2 = rekIds.length ? ' AND e.reklama_id = ANY($4::int[])' : '';
-      const katIdx = rekIds.length ? 5 : 4;
-      const params2 = rekIds.length ? [req.biznesId, nga, deri, rekIds, kat] : [req.biznesId, nga, deri, kat];
+      const filtroRek2 = rekIds.length ? ' AND e.reklama_id = ANY($5::int[])' : '';
+      const katIdx = rekIds.length ? 6 : 5;
+      const params2 = rekIds.length ? [req.biznesId, nga, deri, logjika, rekIds, kat] : [req.biznesId, nga, deri, logjika, kat];
       const r = await pool.query(`
         SELECT gs::date AS data,
           COALESCE(v.n,0)::int  AS shfaqje,
@@ -495,10 +497,10 @@ app.get('/api/analytics/kategorite', iLoguar, async (req, res) => {
           COALESCE(k.n,0)::int  AS klikime,
           COALESCE(kv.n,0)::int AS konvertime
         FROM generate_series($2::date, $3::date, '1 day') AS gs
-        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.biznes_id WHERE e.reklamues_id=$1 AND e.lloji='view'${filtroRek2} AND b.kategoria_kryesore=$${katIdx} GROUP BY d) v ON v.d=gs
-        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.biznes_id WHERE e.reklamues_id=$1 AND e.lloji='shikim'${filtroRek2} AND b.kategoria_kryesore=$${katIdx} GROUP BY d) sh ON sh.d=gs
-        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.biznes_id WHERE e.reklamues_id=$1 AND e.lloji='click'${filtroRek2} AND b.kategoria_kryesore=$${katIdx} GROUP BY d) k ON k.d=gs
-        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.biznes_id WHERE e.reklamues_id=$1 AND e.lloji='konvertim'${filtroRek2} AND b.kategoria_kryesore=$${katIdx} GROUP BY d) kv ON kv.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.biznes_id WHERE e.reklamues_id=$1 AND e.lloji='view' AND e.burimi=$4${filtroRek2} AND b.kategoria_kryesore=$${katIdx} GROUP BY d) v ON v.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.biznes_id WHERE e.reklamues_id=$1 AND e.lloji='shikim' AND e.burimi=$4${filtroRek2} AND b.kategoria_kryesore=$${katIdx} GROUP BY d) sh ON sh.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.biznes_id WHERE e.reklamues_id=$1 AND e.lloji='click' AND e.burimi=$4${filtroRek2} AND b.kategoria_kryesore=$${katIdx} GROUP BY d) k ON k.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.biznes_id WHERE e.reklamues_id=$1 AND e.lloji='konvertim' AND e.burimi=$4${filtroRek2} AND b.kategoria_kryesore=$${katIdx} GROUP BY d) kv ON kv.d=gs
         ORDER BY gs`, params2);
       rezultat.push({ emri: kat, pikat: r.rows.map(x => ({
         data: x.data.toISOString().slice(0,10),
@@ -520,6 +522,7 @@ app.get('/api/analytics/snippetet-dhene', iLoguar, async (req, res) => {
     if (nga > deri) { const t=nga; nga=deri; deri=t; }
     const ngaD=new Date(nga), deriD=new Date(deri);
     if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+    const logjika = ['ankand','barazi'].includes(req.query.logjika) ? req.query.logjika : 'ankand';
 
     const r = await pool.query(`
       SELECT s.id, s.emri, s.snippet_active, s.pauzuar,
@@ -528,12 +531,12 @@ app.get('/api/analytics/snippetet-dhene', iLoguar, async (req, res) => {
         COALESCE(k.n,0)::int  AS klikime,
         COALESCE(kv.n,0)::int AS konvertime
       FROM snippetet s
-      LEFT JOIN (SELECT snippet_id, COUNT(*) n FROM ngjarjet WHERE lloji='view'      AND created_at::date BETWEEN $2 AND $3 GROUP BY snippet_id) v  ON v.snippet_id=s.id
-      LEFT JOIN (SELECT snippet_id, COUNT(*) n FROM ngjarjet WHERE lloji='shikim'    AND created_at::date BETWEEN $2 AND $3 GROUP BY snippet_id) sh ON sh.snippet_id=s.id
-      LEFT JOIN (SELECT snippet_id, COUNT(*) n FROM ngjarjet WHERE lloji='click'     AND created_at::date BETWEEN $2 AND $3 GROUP BY snippet_id) k  ON k.snippet_id=s.id
-      LEFT JOIN (SELECT snippet_id, COUNT(*) n FROM ngjarjet WHERE lloji='konvertim' AND created_at::date BETWEEN $2 AND $3 GROUP BY snippet_id) kv ON kv.snippet_id=s.id
+      LEFT JOIN (SELECT snippet_id, COUNT(*) n FROM ngjarjet WHERE lloji='view'      AND burimi=$4 AND created_at::date BETWEEN $2 AND $3 GROUP BY snippet_id) v  ON v.snippet_id=s.id
+      LEFT JOIN (SELECT snippet_id, COUNT(*) n FROM ngjarjet WHERE lloji='shikim'    AND burimi=$4 AND created_at::date BETWEEN $2 AND $3 GROUP BY snippet_id) sh ON sh.snippet_id=s.id
+      LEFT JOIN (SELECT snippet_id, COUNT(*) n FROM ngjarjet WHERE lloji='click'     AND burimi=$4 AND created_at::date BETWEEN $2 AND $3 GROUP BY snippet_id) k  ON k.snippet_id=s.id
+      LEFT JOIN (SELECT snippet_id, COUNT(*) n FROM ngjarjet WHERE lloji='konvertim' AND burimi=$4 AND created_at::date BETWEEN $2 AND $3 GROUP BY snippet_id) kv ON kv.snippet_id=s.id
       WHERE s.biznes_id=$1
-      ORDER BY s.id ASC`, [req.biznesId, nga, deri]);
+      ORDER BY s.id ASC`, [req.biznesId, nga, deri, logjika]);
 
     res.json({ nga, deri, snippetet: r.rows });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -549,6 +552,7 @@ app.get('/api/analytics/kategorite-dhene', iLoguar, async (req, res) => {
     if (nga > deri) { const t=nga; nga=deri; deri=t; }
     const ngaD=new Date(nga), deriD=new Date(deri);
     if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+    const logjika = ['ankand','barazi'].includes(req.query.logjika) ? req.query.logjika : 'ankand';
 
     const vetja = await pool.query('SELECT kategoria_kryesore FROM bizneset WHERE id=$1', [req.biznesId]);
     const vetjaKat = vetja.rows.length ? vetja.rows[0].kategoria_kryesore : null;
@@ -557,8 +561,8 @@ app.get('/api/analytics/kategorite-dhene', iLoguar, async (req, res) => {
       SELECT DISTINCT b.kategoria_kryesore AS kategoria
       FROM ngjarjet e JOIN bizneset b ON b.id = e.reklamues_id
       WHERE e.biznes_id=$1 AND e.created_at::date BETWEEN $2 AND $3
-        AND e.lloji IN ('view','shikim','click','konvertim')
-        AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''`, [req.biznesId, nga, deri]);
+        AND e.lloji IN ('view','shikim','click','konvertim') AND e.burimi=$4
+        AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''`, [req.biznesId, nga, deri, logjika]);
     let kategorite = katQ.rows.map(r => r.kategoria);
     if (vetjaKat) kategorite = kategorite.filter(k => k !== vetjaKat);
 
@@ -571,11 +575,11 @@ app.get('/api/analytics/kategorite-dhene', iLoguar, async (req, res) => {
           COALESCE(k.n,0)::int  AS klikime,
           COALESCE(kv.n,0)::int AS konvertime
         FROM generate_series($2::date, $3::date, '1 day') AS gs
-        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='view'      AND b.kategoria_kryesore=$4 GROUP BY d) v  ON v.d=gs
-        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='shikim'    AND b.kategoria_kryesore=$4 GROUP BY d) sh ON sh.d=gs
-        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='click'     AND b.kategoria_kryesore=$4 GROUP BY d) k  ON k.d=gs
-        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='konvertim' AND b.kategoria_kryesore=$4 GROUP BY d) kv ON kv.d=gs
-        ORDER BY gs`, [req.biznesId, nga, deri, kat]);
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='view'      AND e.burimi=$4 AND b.kategoria_kryesore=$5 GROUP BY d) v  ON v.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='shikim'    AND e.burimi=$4 AND b.kategoria_kryesore=$5 GROUP BY d) sh ON sh.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='click'     AND e.burimi=$4 AND b.kategoria_kryesore=$5 GROUP BY d) k  ON k.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='konvertim' AND e.burimi=$4 AND b.kategoria_kryesore=$5 GROUP BY d) kv ON kv.d=gs
+        ORDER BY gs`, [req.biznesId, nga, deri, logjika, kat]);
       rezultat.push({ emri: kat, pikat: r.rows.map(x => ({
         data: x.data.toISOString().slice(0,10),
         shfaqje: x.shfaqje, shikime: x.shikime, klikime: x.klikime, konvertime: x.konvertime
