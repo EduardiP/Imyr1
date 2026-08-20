@@ -3,11 +3,16 @@
 // Eksporton VETEM disa funksione globale minimale qe app.js i therret:
 //   krChatLinkHTML()  — HTML i butonit "Fillo bisedë me AI" (per formaKreative)
 //   krChatReset()     — pastron gjendjen (per t'u thirrur kur hapet forma nga e para)
+//
+// SJELLJA: biseda zevendeson VEND-N-VEND fushen "Përshkrimi" (jo dritare/popup e
+// vecante) — dhe VLEN VETEM per krijimin FILLESTAR te pershkrimit. Modifikimi i
+// nje krijimi ekzistues (butoni "✏️ Modifiko" te "Krijimet e mia") mbetet PLOTESISHT
+// manual, pa AI-chat, siç eshte tashme — kjo veçori s'e prek fare ate rrjedhe.
 
 var _kcLloji = null;
 var _kcHistoriku = [];      // [{role, content}] — dergohet i plote ne cdo thirrje
 var _kcGati = false;
-var _kcPershkrimAnglisht = null;
+var _kcAktiv = false;
 
 function krChatLinkHTML(){
   return '<button type="button" class="btn" onclick="krChatHap()" style="margin-top:6px;">💬 Fillo bisedë me AI</button>'+
@@ -15,47 +20,61 @@ function krChatLinkHTML(){
 }
 
 function krChatReset(){
-  _kcHistoriku = []; _kcGati = false; _kcPershkrimAnglisht = null;
+  _kcHistoriku = []; _kcGati = false; _kcAktiv = false;
   var st = document.getElementById('krChatStatus');
   if(st) st.textContent = '';
-  var ov = document.getElementById('krChatOverlay');
-  if(ov) ov.remove();
+  var inl = document.getElementById('krChatInline');
+  if(inl) inl.remove();
+  var per = document.getElementById('krPer');
+  if(per) per.style.display = '';
 }
 
-// ═══ HAPJA E BISEDES ═══
+// ═══ HAPJA E BISEDES — ZEVENDESON VEND-N-VEND FUSHEN "Përshkrimi" ═══
 function krChatHap(){
-  _kcLloji = (window._formaKreativeLloji) || 'imazh'; // vendoset nga formaKreative() ne app.js
+  if(_kcAktiv) return;
+  _kcAktiv = true;
+  _kcLloji = (window._formaKreativeLloji) || 'imazh';
   _kcHistoriku = [];
-  var overlay = document.createElement('div');
-  overlay.id = 'krChatOverlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10003;display:flex;align-items:center;justify-content:center;';
-  overlay.innerHTML =
-    '<div style="width:min(480px,92vw);height:min(560px,85vh);background:#12151b;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;border:1px solid var(--line);">'+
-      '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);">'+
-        '<span style="font-weight:600;">💬 Bisedë me AI</span>'+
-        '<button class="btn" onclick="krChatMbyll()">✕</button>'+
-      '</div>'+
-      '<div id="krChatMesazhet" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>'+
-      '<div id="krChatFundi" style="padding:12px 14px;border-top:1px solid var(--line);display:flex;gap:8px;">'+
-        '<input id="krChatInput" placeholder="Shkruaj përgjigjen…" style="flex:1;" onkeydown="if(event.key===\'Enter\')krChatDergo()">'+
-        '<button class="btn primary" onclick="krChatDergo()">➤</button>'+
-      '</div>'+
+
+  var per = document.getElementById('krPer'); if(!per) return;
+  per.style.display = 'none';
+
+  var inl = document.createElement('div');
+  inl.id = 'krChatInline';
+  inl.style.cssText = 'border:1px solid var(--line);border-radius:8px;background:#0e1116;'+
+    'display:flex;flex-direction:column;height:220px;overflow:hidden;';
+  inl.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);flex:0 0 auto;">'+
+      '<span class="small" style="font-weight:600;">💬 Bisedë me AI</span>'+
+      '<button type="button" onclick="krChatMbyll()" style="background:none;border:none;color:var(--mut);cursor:pointer;font-size:15px;padding:2px 6px;">✕</button>'+
+    '</div>'+
+    '<div id="krChatMesazhet" style="flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;"></div>'+
+    '<div style="flex:0 0 auto;padding:8px 10px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:stretch;">'+
+      '<input id="krChatInput" placeholder="Shkruaj përgjigjen…" '+
+        'style="flex:1 1 auto;min-width:0;background:#12151b;border:1px solid var(--line);border-radius:6px;color:var(--txt);padding:7px 10px;font-size:13px;" '+
+        'onkeydown="if(event.key===\'Enter\')krChatDergo()">'+
+      '<button type="button" onclick="krChatDergo()" '+
+        'style="flex:0 0 auto;width:38px;background:var(--acc);border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:15px;">➤</button>'+
     '</div>';
-  document.body.appendChild(overlay);
+  per.parentNode.insertBefore(inl, per);
+
   krChatShtoBulle('ai', 'Duke shkruar…', true);
-  krChatThirr('[FILLIMI]', /*fshehur=*/true);
+  krChatThirr(true);
 }
 
 function krChatMbyll(){
-  var ov = document.getElementById('krChatOverlay');
-  if(ov) ov.remove();
+  _kcAktiv = false;
+  var inl = document.getElementById('krChatInline');
+  if(inl) inl.remove();
+  var per = document.getElementById('krPer');
+  if(per) per.style.display = '';
 }
 
 // ═══ MESAZHET (bullat e bisedes) ═══
 function krChatShtoBulle(kush, teksti, ephemer){
   var wrap = document.getElementById('krChatMesazhet'); if(!wrap) return null;
   var b = document.createElement('div');
-  b.style.cssText = 'max-width:85%;padding:9px 13px;border-radius:12px;font-size:14px;line-height:1.4;'+
+  b.style.cssText = 'max-width:85%;padding:7px 11px;border-radius:10px;font-size:13px;line-height:1.4;'+
     (kush==='ai'
       ? 'align-self:flex-start;background:#1c2230;color:var(--txt);'
       : 'align-self:flex-end;background:var(--acc);color:#fff;');
@@ -77,20 +96,17 @@ function krChatDergo(){
   if(!teksti || _kcGati) return;
   inp.value = '';
   krChatShtoBulle('klient', teksti);
-  krChatThirr(teksti, false);
+  krChatThirr(false, teksti);
 }
 
 // ═══ THIRRJA E BACKEND-IT (dergon historikun e plote cdo here) ═══
-async function krChatThirr(tekstiRiJetiRi, eshteFshehur){
-  if(!eshteFshehur){
-    _kcHistoriku.push({ role:'user', content: tekstiRiJetiRi });
-  } else {
-    _kcHistoriku.push({ role:'user', content: '[FILLIMI]' });
-  }
+async function krChatThirr(eshteFillimi, tekstiRiJetiRi){
+  _kcHistoriku.push({ role:'user', content: eshteFillimi ? '[FILLIMI]' : tekstiRiJetiRi });
+
   var input = document.getElementById('krChatInput');
   if(input) input.disabled = true;
   krChatHiqEphemeret();
-  var duke = krChatShtoBulle('ai', 'Duke shkruar…', true);
+  krChatShtoBulle('ai', 'Duke shkruar…', true);
 
   try{
     const r = await (await fetch('/api/kreative/chat', {
@@ -106,13 +122,12 @@ async function krChatThirr(tekstiRiJetiRi, eshteFshehur){
     }
     if(r.gati){
       _kcGati = true;
-      _kcPershkrimAnglisht = r.pershkrim_anglisht;
-      krChatShtoBulle('ai', '✓ U qartësua! Po e mbyll bisedën — kliko "✨ Gjenero me AI" kur të jesh gati.');
+      krChatShtoBulle('ai', '✓ U qartësua! Po e mbyll bisedën…');
       var per = document.getElementById('krPer');
-      if(per) per.value = r.pershkrim_anglisht; // klienti mund ta shohi/ndryshoje edhe vete nese do
+      if(per) per.value = r.pershkrim_anglisht;
       var st = document.getElementById('krChatStatus');
       if(st) st.textContent = '✓ Përshkrimi u përgatit nga biseda.';
-      setTimeout(krChatMbyll, 1600);
+      setTimeout(krChatMbyll, 1200);
       return;
     }
     _kcHistoriku.push({ role:'assistant', content: r.pyetje });
