@@ -1491,32 +1491,40 @@ function krNdryshoFile(inp, lloji){
   const shumefishte = (lloji==='video' || lloji==='html5');
   if(!shumefishte){
     // Rasti IMAZH (nje skedar i vetem) — s'perdor krZgjedhurit (mbetet skedariNjeshi
-    // te krGjenero, siç ishte), POR prap njoftojme chat-in DHE tregojme emrin qartazi.
+    // te krGjenero, siç ishte), POR prap njoftojme chat-in DHE tregojme emrin qartazi,
+    // duke perfshire emrin ORIGJINAL te skedarit nga kompjuteri.
     if(inp.files && inp.files[0]){
       if(window.krChatShtoReferencaImazhi) krChatShtoReferencaImazhi('img1');
-      krTregoEmertimin(['img1']);
+      krTregoEmertimin([{ origjinali: inp.files[0].name, emri: 'img1' }]);
     }
     return;
   }
   const prefiksi = (lloji==='html5') ? 'Code' : 'img';
-  const emrateReja = [];
   Array.prototype.forEach.call(inp.files, function(f){
     const numri = krZgjedhurit.filter(function(x){ return x.burimi==='file'; }).length + 1;
     const emriAuto = prefiksi + numri;
-    krZgjedhurit.push({ burimi:'file', file:f, emri: emriAuto });
-    emrateReja.push(emriAuto);
+    krZgjedhurit.push({ burimi:'file', file:f, emri: emriAuto, origjinali: f.name });
     if(window.krChatShtoReferencaImazhi) krChatShtoReferencaImazhi(emriAuto);
   });
   inp.value = ''; // pastro input-in qe te mund te shtosh me shume me vone pa i dyfishuar
   krRenderZgjedhurit();
-  krTregoEmertimin(krZgjedhurit.map(function(x){ return x.emri; }));
+  krTregoEmertimin(krZgjedhurit);
 }
 // Etiketa gjithmone e dukshme, direkt poshte butonit "Choose File" — mos u fsheh
-// brenda scroll-it te chat-it. Tregon TE GJITHA emrat aktive te ngarkuar/zgjedhur.
-function krTregoEmertimin(emrat){
+// brenda scroll-it te chat-it. Per skedare nga kompjuteri, tregon EDHE emrin
+// ORIGJINAL ("emri_origjinal.jpg emërtohet si img1") — per ato nga "Krijimet e
+// mia" (s'kane koncept "emer skedari"), tregon vetem emrin ekzistues.
+function krTregoEmertimin(lista){
   const el = $('krEmertimet'); if(!el) return;
-  if(!emrat || !emrat.length){ el.innerHTML=''; return; }
-  el.innerHTML = '<p class="small" style="color:var(--acc);">📌 Emërtimi: <b>'+emrat.map(esc).join('</b>, <b>')+'</b> — përdore këtë emër kur i referohesh te biseda.</p>';
+  if(!lista || !lista.length){ el.innerHTML=''; return; }
+  el.innerHTML = '<div class="small" style="color:var(--acc);line-height:1.6;">'+
+    lista.map(function(x){
+      if(x.origjinali){
+        return '📌 <b>'+esc(x.origjinali)+'</b> emërtohet si <b>'+esc(x.emri)+'</b> — përdore <b>"'+esc(x.emri)+'"</b> te biseda.';
+      }
+      return '📌 <b>'+esc(x.emri)+'</b> — përdore <b>"'+esc(x.emri)+'"</b> te biseda.';
+    }).join('<br>')+
+  '</div>';
 }
 function krRenderZgjedhurit(){
   const el=$('krZgjedhurLista'); if(!el) return;
@@ -1527,12 +1535,12 @@ function krRenderZgjedhurit(){
       return '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;">'+
         '<img src="'+esc(thumb)+'" style="width:40px;height:40px;border-radius:6px;object-fit:cover;">'+
         '<input value="'+esc(x.emri)+'" placeholder="Emërto këtë imazh (p.sh. Logo)" '+
-          'oninput="krZgjedhurit['+i+'].emri=this.value; krTregoEmertimin(krZgjedhurit.map(function(y){return y.emri;}));" style="flex:1;">'+
+          'oninput="krZgjedhurit['+i+'].emri=this.value; krTregoEmertimin(krZgjedhurit);" style="flex:1;">'+
         '<button type="button" class="btn" onclick="krHiqZgjedhurin('+i+')" style="padding:4px 10px;">✕</button>'+
       '</div>';
     }).join('');
 }
-function krHiqZgjedhurin(i){ krZgjedhurit.splice(i,1); krRenderZgjedhurit(); krTregoEmertimin(krZgjedhurit.map(function(x){ return x.emri; })); }
+function krHiqZgjedhurin(i){ krZgjedhurit.splice(i,1); krRenderZgjedhurit(); krTregoEmertimin(krZgjedhurit); }
 
 async function krNgarkoKufirin(lloji){
   if(window.krChatAutoHap) krChatAutoHap(); // nis "Përshkruaj te AI" automatikisht
@@ -1565,7 +1573,7 @@ function krShtoImazhNgaLista(url, emriParazgjedhur){
   krZgjedhurit.push({ burimi:'url', url:url, emri: emri });
   if(window.krChatShtoReferencaImazhi) krChatShtoReferencaImazhi(emri);
   krRenderZgjedhurit();
-  krTregoEmertimin(krZgjedhurit.map(function(x){ return x.emri; }));
+  krTregoEmertimin(krZgjedhurit);
 }
 async function krGjenero(lloji){
   const emri = ($('krEmri')||{}).value || '';
