@@ -1448,7 +1448,7 @@ function formaKreative(lloji){
   krZgjedhurit = []; // reset sa here që hapet forma nga e para
   window._formaKreativeLloji = lloji; // lexohet nga kreative-chat-ui.js
   if(window.krPermasaReset) krPermasaReset(); // gjendja e "Cakto madhësinë" — modul i veçantë (kreative-permasa.js)
-  if(window.krChatReset) krChatReset(); // gjendja e "Bisedë me AI" — modul i veçantë (kreative-chat-ui.js)
+  if(window.krChatReset) krChatReset(); // gjendja e "Përshkruaj te AI" — modul i veçantë (kreative-chat-ui.js)
   const imgZgjedhBtn = shumefishte
     ? '<button type="button" class="btn" onclick="krZgjidhImazh()" style="margin-left:8px;">📁 Nga imazhet e mia</button>'
     : '';
@@ -1456,14 +1456,19 @@ function formaKreative(lloji){
   // per kete permase). Per Video, permasa rrjedh nga imazhi baze, s'ka opsion te vetin.
   const permasaLink = (lloji==='imazh' || lloji==='html5') && window.krPermasaLinkHTML
     ? krPermasaLinkHTML() : '';
-  // "Bisedë me AI" — vlen per te trija format-et, ndihmon te qartesoje pershkrimin.
-  const chatLink = window.krChatLinkHTML ? krChatLinkHTML() : '';
+  // "Përshkruaj te AI" — ZEVENDESON teresisht fushen e vjeter "Përshkrimi". S'ka
+  // buton veçues — chat-i eshte gjithmone i hapur (nisur nga krChatAutoHap ne
+  // krNgarkoKufirin, PAS insertimit ne DOM).
+  // NESE kreative-chat-ui.js s'eshte ngarkuar, DUHET te jete E QARTE (jo fallback
+  // i heshtur ne fushen e vjeter — kjo shkaktoi konfuzion me pare).
+  const pershkrimiHTML = window.krChatEmbedHTML
+    ? krChatEmbedHTML()
+    : ('<p style="margin-top:12px;padding:12px;background:#3a1414;border:1px solid #a33;border-radius:8px;color:#ff8080;">'+
+       '⚠️ GABIM: kreative-chat-ui.js s\'është ngarkuar. Kontrollo &lt;script src="/js/kreative-chat-ui.js"&gt; te index.html.</p>');
   return '<div id="krForma" style="margin-top:18px;">'+
     '<label>Emri</label>'+
     '<input id="krEmri" placeholder="Emri i reklamës (p.sh. Fushata Verë)">'+
-    '<label style="margin-top:12px;">Përshkrimi</label>'+
-    '<textarea id="krPer" placeholder="Çfarë do të tregojë reklama? (mesazhi, ndjesia, thirrja për veprim)" style="min-height:100px;"></textarea>'+
-    chatLink+
+    pershkrimiHTML+
     '<label style="margin-top:12px;">Ngarko skedarë</label>'+
     '<div class="krFile" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'+
       '<input type="file" id="krFile" accept="'+accept+'"'+(shumefishte?' multiple':'')+' onchange="krNdryshoFile(this,\''+lloji+'\')">'+
@@ -1507,6 +1512,7 @@ function krRenderZgjedhurit(){
 function krHiqZgjedhurin(i){ krZgjedhurit.splice(i,1); krRenderZgjedhurit(); }
 
 async function krNgarkoKufirin(lloji){
+  if(window.krChatAutoHap) krChatAutoHap(); // nis "Përshkruaj te AI" automatikisht
   const el=$('krKufiri'); if(!el) return;
   try{
     const r=await(await fetch('/api/kreative/kufijte?lloji='+lloji)).json();
@@ -1537,7 +1543,10 @@ function krShtoImazhNgaLista(url, emriParazgjedhur){
 }
 async function krGjenero(lloji){
   const emri = ($('krEmri')||{}).value || '';
-  const pershkrimi = ($('krPer')||{}).value || '';
+  // Pershkrimi vjen tashme nga "Përshkruaj te AI" (kreative-chat-ui.js), jo nga
+  // nje textarea e vjeter — s'ka me #krPer fare ne DOM.
+  const pershkrimiChat = window.krChatMerrPershkrimin ? krChatMerrPershkrimin() : null;
+  const pershkrimi = pershkrimiChat || '';
   const shumefishte = (lloji==='video' || lloji==='html5');
   const fileInp = $('krFile');
   const skedariNjeshi = (!shumefishte && fileInp && fileInp.files && fileInp.files[0]) ? fileInp.files[0] : null;
@@ -1551,8 +1560,8 @@ async function krGjenero(lloji){
     if(p){ permasaW = p.w; permasaH = p.h; }
   }
   if(!emri.trim()){ if(msg){msg.className='msg err';msg.textContent='Vendos emrin.';} return; }
-  if(lloji==='imazh' && !skedariNjeshi && !pershkrimi.trim()){ if(msg){msg.className='msg err';msg.textContent='Shkruaj përshkrimin ose ngarko një skedar.';} return; }
-  if((lloji==='video'||lloji==='html5') && !pershkrimi.trim()){ if(msg){msg.className='msg err';msg.textContent='Shkruaj përshkrimin.';} return; }
+  if(lloji==='imazh' && !skedariNjeshi && !pershkrimiChat){ if(msg){msg.className='msg err';msg.textContent='Përfundo bisedën "Përshkruaj te AI" ose ngarko një skedar.';} return; }
+  if((lloji==='video'||lloji==='html5') && !pershkrimiChat){ if(msg){msg.className='msg err';msg.textContent='Përfundo bisedën "Përshkruaj te AI" së pari.';} return; }
   if(lloji==='video' && !krZgjedhurit.length){ if(msg){msg.className='msg err';msg.textContent='Ngarko ose zgjidh të paktën një imazh bazë për videon.';} return; }
   if(btn) btn.disabled=true;
   var kohaTxt = lloji==='video'?'Duke gjeneruar video… (mund të zgjasë deri 1 min)' : lloji==='html5'?'Duke gjeneruar HTML5…' : (skedariNjeshi?'Duke ngarkuar…':'Duke gjeneruar… (disa sekonda)');
