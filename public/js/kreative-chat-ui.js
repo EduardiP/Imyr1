@@ -125,6 +125,23 @@ async function krChatThirr(tekstiRiJetiRi){
   }
 }
 
+// ═══ NJOFTIM KUR SHTOHET NJE IMAZH JASHTE CHAT-IT (nga "Ngarko skedarë" ose
+// "Nga imazhet e mia", poshte chat-it) — shfaq nje shenim te vogel brenda bisedes
+// dhe e informon AI-n automatikisht, qe te mund te pyesi cfare eshte nese nevojitet. ═══
+function krChatShtoReferencaImazhi(emri){
+  if(_kcGati) return; // biseda ka perfunduar tashme — s'ka kuptim ta rihapim per kete
+  var wrap = document.getElementById('krChatMesazhet');
+  if(!wrap) return; // chat-i s'eshte hapur/render-uar ende (rast i rralle)
+  var shenim = document.createElement('div');
+  shenim.style.cssText = 'align-self:center;font-size:11px;color:var(--mut);background:#1c2230;padding:3px 10px;border-radius:20px;';
+  shenim.textContent = '📎 U shtua: ' + emri;
+  wrap.appendChild(shenim);
+  wrap.scrollTop = wrap.scrollHeight;
+  krChatThirr('[Klienti sapo shtoi një material referues, i identifikuar si "'+emri+'". '+
+    'Nëse është e rëndësishme të dish çfarë përfaqëson (p.sh. logo, produkt, sfond, video baze, kod ekzistues), '+
+    'pyete shkurt; përndryshe vazhdo normalisht.]');
+}
+
 // Thirret nga krGjenero() ne app.js, ne vend te leximit te nje textarea — kthen
 // null nese biseda s'ka perfunduar ende (klienti duhet ta paralajmerojme).
 function krChatMerrPershkrimin(){
