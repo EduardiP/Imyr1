@@ -34,10 +34,17 @@ function sistemiPrompt(lloji) {
     'preferred colors/style/mood, anything visual that matters. ' +
     'Do not ask more than 4 questions total — once you have enough to work with, stop asking. ' +
     'When you have enough detail (usually after 2-4 exchanges), respond with ONLY a raw JSON object, ' +
-    'nothing else, no markdown, no backticks: {"gati": true, "pershkrim_anglisht": "<a detailed, vivid, ' +
+    'nothing else, no markdown, no backticks, NO explanation before or after it — the ENTIRE response must ' +
+    'be parseable JSON and nothing else: {"gati": true, "pershkrim_anglisht": "<a detailed, vivid, ' +
     'complete description in ENGLISH for an AI image/video generator, including every important detail ' +
     'the user mentioned, even if the user wrote to you in another language>"}. ' +
-    'Before that point, respond with ONLY plain text — your next question, nothing else, no JSON, no preamble.';
+    'Before that point, respond with ONLY plain text — your next question, nothing else, no JSON, no preamble. ' +
+    '\n\nIMPORTANT: this system automatically sends your final description to the actual image/video/HTML ' +
+    'generator the moment the user clicks the "Generate" button — the user does NOT need to copy anything, ' +
+    'does NOT need an external tool, and you must NEVER suggest they use DALL-E, Midjourney, or any other ' +
+    'external service themselves. If the user asks "can you send it yourself" or "what do I do now" after ' +
+    'you\'ve already provided the description, simply reassure them the system handles delivery automatically ' +
+    'once they click the Generate button in the app — do not explain how AI image generators work in general.';
 }
 
 module.exports = function (app, iLoguar) {
@@ -51,10 +58,13 @@ module.exports = function (app, iLoguar) {
     try {
       const teksti = await deepseek.pyetDeepSeek(mesazhet, sistemiPrompt(lloji));
 
-      // Provo ta lexojme si JSON perfundimtar {gati:true, pershkrim_anglisht:...}
+      // Provo ta lexojme si JSON perfundimtar {gati:true, pershkrim_anglisht:...} — KUDO
+      // ne tekst (jo vetem ne fillim), sepse DeepSeek ndonjehere shton fjali shpjeguese
+      // para/pas JSON-it, edhe pse i thame "VETEM JSON". startsWith('{') deshtonte ne ate rast.
       let ejashtme = null;
-      if (teksti.startsWith('{')) {
-        try { ejashtme = JSON.parse(teksti); } catch (e) { ejashtme = null; }
+      const jsonMatch = teksti.match(/\{[\s\S]*"gati"[\s\S]*\}/);
+      if (jsonMatch) {
+        try { ejashtme = JSON.parse(jsonMatch[0]); } catch (e) { ejashtme = null; }
       }
       if (ejashtme && ejashtme.gati && ejashtme.pershkrim_anglisht) {
         return res.json({ gati: true, pershkrim_anglisht: ejashtme.pershkrim_anglisht });
