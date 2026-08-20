@@ -98,8 +98,7 @@ function hapNav2Dropdown(n, btn){
       e.stopPropagation();
       mbyllNav2Dropdown();
       if(s.akcion && typeof window[s.akcion]==='function'){ window[s.akcion](); return; }
-      if(n.k==='analytics') nav({v:'analitika-full'});
-      else nav({v:'profile', nav:s.nav||n.k, tab:s.tab, sub:s.sub});
+      nav({v:'profile', nav:s.nav||n.k, tab:s.tab, sub:s.sub});
     });
     dd.appendChild(sb);
   });
