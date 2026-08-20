@@ -883,12 +883,7 @@ function mainPershkrimi(m){
 }
 // ═══ SNIPPET-ET (lista + krijim + detaje) ═══
 var _snipAktiv = null;  // id i snippet-it te hapur (per caktimin e madhesise)
-function mainSnippetStatistikat(m){
-  window.__pamjeVecante=true;
-  m.innerHTML='<h2 class="h">Statistikat — Hapësira e reklamave</h2>'+
-    '<p class="small" style="margin:8px 0 16px;">Shfaqje, klikime dhe konvertime sipas kategorisë së bizneseve që kanë marrë pjesë.</p>'+
-    '<div class="card"><p class="small mut">🚧 Kjo faqe po ndërtohet — do të përdorë të njëjtin grafik si Analytics (analitika.js).</p></div>';
-}
+// mainSnippetStatistikat() — implementuar te analitika.js (ripërdor kategorite-dhene + Chart.js)
 async function mainSnippetet(m, s){
   window.__pamjeVecante=true;
   s = s || {};
