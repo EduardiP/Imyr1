@@ -605,13 +605,18 @@ app.get('/api/analytics/deficiti', iLoguar, async (req, res) => {
     const params = [req.biznesId, nga, deri, logjika];
 
     // Per secilen prej 4 metrikave: diferenca = MARRE - DHENE (pozitiv = ka marre me shume,
-    // negativ = ka dhene me shume) — njesoj per te 4 llojet e ngjarjes.
+    // negativ = ka dhene me shume) — njesoj per te 4 llojet e ngjarjes. Kthehen edhe vlerat
+    // e papërpunuara (dhene/marre) veç e veç, per grafiket "vetem Dhënë"/"vetem Marrë".
     const r = await pool.query(`
       SELECT gs::date AS data,
         COALESCE(m1.n,0)::int - COALESCE(d1.n,0)::int AS shfaqje,
         COALESCE(m2.n,0)::int - COALESCE(d2.n,0)::int AS shikime,
         COALESCE(m3.n,0)::int - COALESCE(d3.n,0)::int AS klikime,
-        COALESCE(m4.n,0)::int - COALESCE(d4.n,0)::int AS konvertime
+        COALESCE(m4.n,0)::int - COALESCE(d4.n,0)::int AS konvertime,
+        COALESCE(d1.n,0)::int AS shfaqje_dhene,    COALESCE(m1.n,0)::int AS shfaqje_marre,
+        COALESCE(d2.n,0)::int AS shikime_dhene,    COALESCE(m2.n,0)::int AS shikime_marre,
+        COALESCE(d3.n,0)::int AS klikime_dhene,    COALESCE(m3.n,0)::int AS klikime_marre,
+        COALESCE(d4.n,0)::int AS konvertime_dhene, COALESCE(m4.n,0)::int AS konvertime_marre
       FROM generate_series($2::date, $3::date, '1 day') AS gs
       LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='view'      AND burimi=$4 GROUP BY dt) m1 ON m1.dt=gs
       LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1    AND lloji='view'      AND burimi=$4 GROUP BY dt) d1 ON d1.dt=gs
@@ -625,7 +630,11 @@ app.get('/api/analytics/deficiti', iLoguar, async (req, res) => {
 
     res.json({ nga, deri, rows: r.rows.map(x => ({
       data: x.data.toISOString().slice(0,10),
-      shfaqje: x.shfaqje, shikime: x.shikime, klikime: x.klikime, konvertime: x.konvertime
+      shfaqje: x.shfaqje, shikime: x.shikime, klikime: x.klikime, konvertime: x.konvertime,
+      shfaqje_dhene: x.shfaqje_dhene, shfaqje_marre: x.shfaqje_marre,
+      shikime_dhene: x.shikime_dhene, shikime_marre: x.shikime_marre,
+      klikime_dhene: x.klikime_dhene, klikime_marre: x.klikime_marre,
+      konvertime_dhene: x.konvertime_dhene, konvertime_marre: x.konvertime_marre
     })) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
