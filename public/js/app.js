@@ -1471,7 +1471,8 @@ function formaKreative(lloji){
     pershkrimiHTML+
     '<label style="margin-top:12px;">Ngarko skedarë</label>'+
     '<div class="krFile" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'+
-      '<input type="file" id="krFile" accept="'+accept+'"'+(shumefishte?' multiple':'')+' onchange="krNdryshoFile(this,\''+lloji+'\')">'+
+      '<input type="file" id="krFile" accept="'+accept+'"'+(shumefishte?' multiple':'')+' onchange="krNdryshoFile(this,\''+lloji+'\')" style="display:none;">'+
+      '<button type="button" class="btn" onclick="document.getElementById(\'krFile\').click()">📁 Zgjidh skedar</button>'+
       imgZgjedhBtn+
     '</div>'+
     '<div id="krEmertimet" style="margin-top:6px;"></div>'+
@@ -1494,15 +1495,15 @@ function krNdryshoFile(inp, lloji){
     // te krGjenero, siç ishte), POR prap njoftojme chat-in DHE tregojme emrin qartazi,
     // duke perfshire emrin ORIGJINAL te skedarit nga kompjuteri.
     if(inp.files && inp.files[0]){
-      if(window.krChatShtoReferencaImazhi) krChatShtoReferencaImazhi('img1');
-      krTregoEmertimin([{ origjinali: inp.files[0].name, emri: 'img1' }]);
+      if(window.krChatShtoReferencaImazhi) krChatShtoReferencaImazhi('mt1');
+      krTregoEmertimin([{ origjinali: inp.files[0].name, emri: 'mt1' }]);
     }
     return;
   }
-  const prefiksi = (lloji==='html5') ? 'Code' : 'img';
+  // Emertim UNIVERSAL "mt" (material) — i njejte per imazh/video/kod, numerim GLOBAL
+  // (jo i ndare sipas tipit), qe chat-i te kete nje rregull te vetem per t'i njohur.
   Array.prototype.forEach.call(inp.files, function(f){
-    const numri = krZgjedhurit.filter(function(x){ return x.burimi==='file'; }).length + 1;
-    const emriAuto = prefiksi + numri;
+    const emriAuto = 'mt' + (krZgjedhurit.length + 1);
     krZgjedhurit.push({ burimi:'file', file:f, emri: emriAuto, origjinali: f.name });
     if(window.krChatShtoReferencaImazhi) krChatShtoReferencaImazhi(emriAuto);
   });
@@ -1552,29 +1553,70 @@ async function krNgarkoKufirin(lloji){
   }catch(e){}
 }
 
+var _kzModalZgjedhur = []; // {url, origjinali} — zgjedhjet e perkohshme brenda modalit, para "Ngarko"
+
 async function krZgjidhImazh(){
-  const prev=$('krZgjedhPrev'); if(!prev) return;
-  prev.innerHTML='<p class="small mut">Po ngarkoj imazhet…</p>';
+  _kzModalZgjedhur = [];
+  var overlay = document.createElement('div');
+  overlay.id = 'krZgjedhModalOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10004;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML =
+    '<div style="width:min(560px,92vw);max-height:80vh;background:#12151b;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;border:1px solid var(--line);">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);">'+
+        '<span style="font-weight:600;">📁 Nga imazhet e mia</span>'+
+        '<button type="button" onclick="krZgjidhImazhMbyll()" style="background:none;border:none;color:var(--mut);cursor:pointer;font-size:16px;">✕</button>'+
+      '</div>'+
+      '<div id="krZgjedhModalGrid" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-wrap:wrap;gap:10px;"></div>'+
+      '<div style="padding:12px 16px;border-top:1px solid var(--line);text-align:right;">'+
+        '<button type="button" class="btn primary" onclick="krZgjidhImazhKonfirmo()">Ngarko</button>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(overlay);
+
+  const grid = document.getElementById('krZgjedhModalGrid');
+  grid.innerHTML = '<p class="small mut">Po ngarkoj imazhet…</p>';
   try{
-    const r=await(await fetch('/api/kreative/gati')).json();
-    const imazhet=(r.kreative||[]).filter(k=>k.lloji==='imazh' && (k.output_url||k.skedari_url));
-    if(!imazhet.length){ prev.innerHTML='<p class="small mut">S\'ke imazhe të gatshme. Krijo së pari një imazh.</p>'; return; }
-    prev.innerHTML='<p class="small mut" style="margin-top:8px;">Kliko për të shtuar (mund të zgjedhësh disa):</p>'+
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">'+
-      imazhet.map(k=>{
-        const url=k.output_url||k.skedari_url;
-        return '<img src="'+esc(url)+'" style="width:60px;height:60px;border-radius:8px;object-fit:cover;cursor:pointer;border:2px solid transparent;" '+
-          'onclick="krShtoImazhNgaLista(\''+esc(url)+'\',\''+esc(k.emri||'')+'\')">';
-      }).join('')+'</div>';
-  }catch(e){ prev.innerHTML='<p class="small">Gabim.</p>'; }
+    const r = await (await fetch('/api/kreative/gati')).json();
+    const imazhet = (r.kreative||[]).filter(k=>k.lloji==='imazh' && (k.output_url||k.skedari_url));
+    if(!imazhet.length){ grid.innerHTML='<p class="small mut">S\'ke imazhe të gatshme. Krijo së pari një imazh.</p>'; return; }
+    grid.innerHTML = imazhet.map((k,i)=>{
+      const url = k.output_url||k.skedari_url;
+      return '<div id="krZgjModItem'+i+'" onclick="krZgjidhImazhToggle('+i+',\''+esc(url)+'\',\''+esc(k.emri||'')+'\')" '+
+        'style="width:70px;height:70px;border-radius:8px;cursor:pointer;border:2px solid transparent;overflow:hidden;">'+
+        '<img src="'+esc(url)+'" style="width:100%;height:100%;object-fit:cover;">'+
+      '</div>';
+    }).join('');
+  }catch(e){ grid.innerHTML = '<p class="small">Gabim.</p>'; }
 }
-function krShtoImazhNgaLista(url, emriParazgjedhur){
-  const emri = emriParazgjedhur || 'imazh';
-  krZgjedhurit.push({ burimi:'url', url:url, emri: emri });
-  if(window.krChatShtoReferencaImazhi) krChatShtoReferencaImazhi(emri);
+
+function krZgjidhImazhToggle(i, url, emriEkzistues){
+  const el = document.getElementById('krZgjModItem'+i); if(!el) return;
+  const idx = _kzModalZgjedhur.findIndex(function(x){ return x.url===url; });
+  if(idx > -1){
+    _kzModalZgjedhur.splice(idx, 1);
+    el.style.borderColor = 'transparent';
+  } else {
+    _kzModalZgjedhur.push({ url: url, origjinali: emriEkzistues });
+    el.style.borderColor = 'var(--acc)';
+  }
+}
+
+function krZgjidhImazhMbyll(){
+  var ov = document.getElementById('krZgjedhModalOverlay');
+  if(ov) ov.remove();
+}
+
+function krZgjidhImazhKonfirmo(){
+  _kzModalZgjedhur.forEach(function(x){
+    const emriAuto = 'mt' + (krZgjedhurit.length + 1);
+    krZgjedhurit.push({ burimi:'url', url:x.url, emri:emriAuto, origjinali:x.origjinali||'nga Krijimet e mia' });
+    if(window.krChatShtoReferencaImazhi) krChatShtoReferencaImazhi(emriAuto);
+  });
   krRenderZgjedhurit();
   krTregoEmertimin(krZgjedhurit);
+  krZgjidhImazhMbyll();
 }
+
 async function krGjenero(lloji){
   const emri = ($('krEmri')||{}).value || '';
   // Pershkrimi vjen tashme nga "Përshkruaj te AI" (kreative-chat-ui.js), jo nga
