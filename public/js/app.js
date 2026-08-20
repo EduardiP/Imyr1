@@ -1474,6 +1474,7 @@ function formaKreative(lloji){
       '<input type="file" id="krFile" accept="'+accept+'"'+(shumefishte?' multiple':'')+' onchange="krNdryshoFile(this,\''+lloji+'\')">'+
       imgZgjedhBtn+
     '</div>'+
+    '<div id="krEmertimet" style="margin-top:6px;"></div>'+
     permasaLink+
     '<p class="small mut" style="margin:6px 0 0;">'+ndihma+'</p>'+
     '<input type="hidden" id="krImageUrl" value="">'+
@@ -1490,21 +1491,32 @@ function krNdryshoFile(inp, lloji){
   const shumefishte = (lloji==='video' || lloji==='html5');
   if(!shumefishte){
     // Rasti IMAZH (nje skedar i vetem) — s'perdor krZgjedhurit (mbetet skedariNjeshi
-    // te krGjenero, siç ishte), POR prap njoftojme chat-in qe AI-ja ta dije qe ekziston.
-    if(inp.files && inp.files[0] && window.krChatShtoReferencaImazhi){
-      krChatShtoReferencaImazhi('img1');
+    // te krGjenero, siç ishte), POR prap njoftojme chat-in DHE tregojme emrin qartazi.
+    if(inp.files && inp.files[0]){
+      if(window.krChatShtoReferencaImazhi) krChatShtoReferencaImazhi('img1');
+      krTregoEmertimin(['img1']);
     }
     return;
   }
   const prefiksi = (lloji==='html5') ? 'Code' : 'img';
+  const emrateReja = [];
   Array.prototype.forEach.call(inp.files, function(f){
     const numri = krZgjedhurit.filter(function(x){ return x.burimi==='file'; }).length + 1;
     const emriAuto = prefiksi + numri;
     krZgjedhurit.push({ burimi:'file', file:f, emri: emriAuto });
+    emrateReja.push(emriAuto);
     if(window.krChatShtoReferencaImazhi) krChatShtoReferencaImazhi(emriAuto);
   });
   inp.value = ''; // pastro input-in qe te mund te shtosh me shume me vone pa i dyfishuar
   krRenderZgjedhurit();
+  krTregoEmertimin(krZgjedhurit.map(function(x){ return x.emri; }));
+}
+// Etiketa gjithmone e dukshme, direkt poshte butonit "Choose File" — mos u fsheh
+// brenda scroll-it te chat-it. Tregon TE GJITHA emrat aktive te ngarkuar/zgjedhur.
+function krTregoEmertimin(emrat){
+  const el = $('krEmertimet'); if(!el) return;
+  if(!emrat || !emrat.length){ el.innerHTML=''; return; }
+  el.innerHTML = '<p class="small" style="color:var(--acc);">📌 Emërtimi: <b>'+emrat.map(esc).join('</b>, <b>')+'</b> — përdore këtë emër kur i referohesh te biseda.</p>';
 }
 function krRenderZgjedhurit(){
   const el=$('krZgjedhurLista'); if(!el) return;
@@ -1515,12 +1527,12 @@ function krRenderZgjedhurit(){
       return '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;">'+
         '<img src="'+esc(thumb)+'" style="width:40px;height:40px;border-radius:6px;object-fit:cover;">'+
         '<input value="'+esc(x.emri)+'" placeholder="Emërto këtë imazh (p.sh. Logo)" '+
-          'oninput="krZgjedhurit['+i+'].emri=this.value" style="flex:1;">'+
+          'oninput="krZgjedhurit['+i+'].emri=this.value; krTregoEmertimin(krZgjedhurit.map(function(y){return y.emri;}));" style="flex:1;">'+
         '<button type="button" class="btn" onclick="krHiqZgjedhurin('+i+')" style="padding:4px 10px;">✕</button>'+
       '</div>';
     }).join('');
 }
-function krHiqZgjedhurin(i){ krZgjedhurit.splice(i,1); krRenderZgjedhurit(); }
+function krHiqZgjedhurin(i){ krZgjedhurit.splice(i,1); krRenderZgjedhurit(); krTregoEmertimin(krZgjedhurit.map(function(x){ return x.emri; })); }
 
 async function krNgarkoKufirin(lloji){
   if(window.krChatAutoHap) krChatAutoHap(); // nis "Përshkruaj te AI" automatikisht
@@ -1553,6 +1565,7 @@ function krShtoImazhNgaLista(url, emriParazgjedhur){
   krZgjedhurit.push({ burimi:'url', url:url, emri: emri });
   if(window.krChatShtoReferencaImazhi) krChatShtoReferencaImazhi(emri);
   krRenderZgjedhurit();
+  krTregoEmertimin(krZgjedhurit.map(function(x){ return x.emri; }));
 }
 async function krGjenero(lloji){
   const emri = ($('krEmri')||{}).value || '';
