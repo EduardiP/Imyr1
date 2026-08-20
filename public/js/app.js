@@ -34,8 +34,7 @@ const NAV2 = [
     {l:'Reklamat', nav:'analytics'},
     {l:'Snippet-et', nav:'analytics'},
     {l:'Dhënie', nav:'analytics'},
-    {l:'Marrje', nav:'analytics'},
-    {l:'Deficiti', nav:'analytics'}
+    {l:'Marrje', nav:'analytics'}
   ]},
   { k:'insights', l:'Vështrime', subs:[
     {l:'Pika AI & kombinimet kryesore', nav:'insights'},
