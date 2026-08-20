@@ -15,9 +15,9 @@
 const NAV2 = [
   { k:'dashboard', l:'Dashboard' },
   { k:'snippetet', l:'Hapësira e reklamave', subs:[
-    {l:'Krijo', nav:'snippetet'},
+    {l:'Krijo', akcion:'snipKrijo'},
     {l:'Hapësirat e mia', nav:'snippetet'},
-    {l:'Statistikat', nav:'snippetet'}
+    {l:'Statistikat', nav:'snippetStats'}
   ]},
   { k:'kreative', l:'Creative', subs:[
     {l:'Krijo', nav:'kreative', tab:'krijo'},
@@ -97,6 +97,7 @@ function hapNav2Dropdown(n, btn){
     sb.addEventListener('click', function(e){
       e.stopPropagation();
       mbyllNav2Dropdown();
+      if(s.akcion && typeof window[s.akcion]==='function'){ window[s.akcion](); return; }
       if(n.k==='analytics') nav({v:'analitika-full'});
       else nav({v:'profile', nav:s.nav||n.k, tab:s.tab});
     });
@@ -500,6 +501,7 @@ function renderMain(s){
   if(curNav==='pershkrimi') return mainPershkrimi(m);
   if(curNav==='lidhja')     return mainLidhja(m);
   if(curNav==='snippetet')  return mainSnippetet(m, s);
+  if(curNav==='snippetStats')  return mainSnippetStatistikat(m);
   if(curNav==='dashboard')  return mainDashboard(m);
   if(curNav==='kreative')   return mainKreative_NEW(m, s);
   if(curNav==='reklamat')   return mainReklamat(m, s);
@@ -881,6 +883,12 @@ function mainPershkrimi(m){
 }
 // ═══ SNIPPET-ET (lista + krijim + detaje) ═══
 var _snipAktiv = null;  // id i snippet-it te hapur (per caktimin e madhesise)
+function mainSnippetStatistikat(m){
+  window.__pamjeVecante=true;
+  m.innerHTML='<h2 class="h">Statistikat — Hapësira e reklamave</h2>'+
+    '<p class="small" style="margin:8px 0 16px;">Shfaqje, klikime dhe konvertime sipas kategorisë së bizneseve që kanë marrë pjesë.</p>'+
+    '<div class="card"><p class="small mut">🚧 Kjo faqe po ndërtohet — do të përdorë të njëjtin grafik si Analytics (analitika.js).</p></div>';
+}
 async function mainSnippetet(m, s){
   window.__pamjeVecante=true;
   s = s || {};
