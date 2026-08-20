@@ -1489,8 +1489,12 @@ function formaKreative(lloji){
 function krNdryshoFile(inp, lloji){
   const shumefishte = (lloji==='video' || lloji==='html5');
   if(!shumefishte){ return; } // rasti imazh (i vetem) mbetet siç ishte, pa listë emrash
+  const prefiksi = (lloji==='html5') ? 'Code' : 'img';
   Array.prototype.forEach.call(inp.files, function(f){
-    krZgjedhurit.push({ burimi:'file', file:f, emri:f.name.replace(/\.[^.]+$/,'') });
+    const numri = krZgjedhurit.filter(function(x){ return x.burimi==='file'; }).length + 1;
+    const emriAuto = prefiksi + numri;
+    krZgjedhurit.push({ burimi:'file', file:f, emri: emriAuto });
+    if(window.krChatShtoReferencaImazhi) krChatShtoReferencaImazhi(emriAuto);
   });
   inp.value = ''; // pastro input-in qe te mund te shtosh me shume me vone pa i dyfishuar
   krRenderZgjedhurit();
@@ -1538,7 +1542,9 @@ async function krZgjidhImazh(){
   }catch(e){ prev.innerHTML='<p class="small">Gabim.</p>'; }
 }
 function krShtoImazhNgaLista(url, emriParazgjedhur){
-  krZgjedhurit.push({ burimi:'url', url:url, emri: emriParazgjedhur || '' });
+  const emri = emriParazgjedhur || 'imazh';
+  krZgjedhurit.push({ burimi:'url', url:url, emri: emri });
+  if(window.krChatShtoReferencaImazhi) krChatShtoReferencaImazhi(emri);
   krRenderZgjedhurit();
 }
 async function krGjenero(lloji){
