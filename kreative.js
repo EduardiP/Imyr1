@@ -176,7 +176,20 @@ module.exports = function (app, pool, iLoguar, deps) {
       let url;
       if (lloji === 'imazh') {
         let buf, ext;
-        if (skedariNjeshi) {
+        if (skedariNjeshi && pershkrimi) {
+          // RASTI I RREGULLUAR: ka skedar TE ngarkuar DHE pershkrim (nga chat-i) —
+          // perdor Flux Kontext per te MODIFIKUAR realisht skedarin sipas pershkrimit,
+          // ne vend qe thjesht ta kopjoje siç eshte (bug i mepareshem).
+          const ext0 = (skedariNjeshi.mimetype && skedariNjeshi.mimetype.includes('png')) ? 'png' : 'jpg';
+          const keyBaze = 'kreative/' + req.biznesId + '_baze_' + Date.now() + '.' + ext0;
+          await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: keyBaze, Body: skedariNjeshi.buffer, ContentType: skedariNjeshi.mimetype || 'image/jpeg' }));
+          const urlBaze = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + keyBaze;
+          const falUrl = await falKlient.modifikoImazh(urlBaze, pershkrimi);
+          const imgResp = await fetch(falUrl);
+          buf = Buffer.from(await imgResp.arrayBuffer());
+          ext = 'png';
+        } else if (skedariNjeshi) {
+          // Vetem skedar, PA pershkrim (rast i rralle — chat-i normalisht e kerkon) — ruaje siç eshte.
           buf = skedariNjeshi.buffer;
           ext = (skedariNjeshi.mimetype && skedariNjeshi.mimetype.includes('png')) ? 'png' : 'jpg';
         } else {
