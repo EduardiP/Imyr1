@@ -602,19 +602,30 @@ app.get('/api/analytics/deficiti', iLoguar, async (req, res) => {
     const ngaD=new Date(nga), deriD=new Date(deri);
     if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
     const logjika = ['ankand','barazi'].includes(req.query.logjika) ? req.query.logjika : 'ankand';
+    const params = [req.biznesId, nga, deri, logjika];
 
+    // Per secilen prej 4 metrikave: diferenca = MARRE - DHENE (pozitiv = ka marre me shume,
+    // negativ = ka dhene me shume) — njesoj per te 4 llojet e ngjarjes.
     const r = await pool.query(`
       SELECT gs::date AS data,
-        COALESCE(d.n,0)::int AS dhene,
-        COALESCE(m.n,0)::int AS marre
+        COALESCE(m1.n,0)::int - COALESCE(d1.n,0)::int AS shfaqje,
+        COALESCE(m2.n,0)::int - COALESCE(d2.n,0)::int AS shikime,
+        COALESCE(m3.n,0)::int - COALESCE(d3.n,0)::int AS klikime,
+        COALESCE(m4.n,0)::int - COALESCE(d4.n,0)::int AS konvertime
       FROM generate_series($2::date, $3::date, '1 day') AS gs
-      LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1 AND lloji='view' AND burimi=$4 GROUP BY dt) d ON d.dt=gs
-      LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='view' AND burimi=$4 GROUP BY dt) m ON m.dt=gs
-      ORDER BY gs`, [req.biznesId, nga, deri, logjika]);
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='view'      AND burimi=$4 GROUP BY dt) m1 ON m1.dt=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1    AND lloji='view'      AND burimi=$4 GROUP BY dt) d1 ON d1.dt=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='shikim'    AND burimi=$4 GROUP BY dt) m2 ON m2.dt=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1    AND lloji='shikim'    AND burimi=$4 GROUP BY dt) d2 ON d2.dt=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='click'     AND burimi=$4 GROUP BY dt) m3 ON m3.dt=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1    AND lloji='click'     AND burimi=$4 GROUP BY dt) d3 ON d3.dt=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='konvertim' AND burimi=$4 GROUP BY dt) m4 ON m4.dt=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1    AND lloji='konvertim' AND burimi=$4 GROUP BY dt) d4 ON d4.dt=gs
+      ORDER BY gs`, params);
 
     res.json({ nga, deri, rows: r.rows.map(x => ({
       data: x.data.toISOString().slice(0,10),
-      dhene: x.dhene, marre: x.marre, diferenca: x.dhene - x.marre
+      shfaqje: x.shfaqje, shikime: x.shikime, klikime: x.klikime, konvertime: x.konvertime
     })) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
