@@ -42,6 +42,98 @@ function pasHyrjes(){
   return {v:'profile', nav:'dashboard'};
 }
 
+// ---------- URL <-> GJENDJE ----------
+// Konverton objektin e gjendjes (i njejti qe ruhet ne history.state) ne nje URL
+// reale te shiritit te adresave, dhe anasjelltas — per bookmark/share/refresh/Figma.
+function stateToUrl(s){
+  if(!s) return '/';
+  if(s.v==='hero') return '/';
+  if(s.v==='wizard') return '/fillo' + (s.step ? '/'+s.step : '');
+  if(s.v==='home') return '/fillim';
+  if(s.v==='analitika-full') return '/analytics';
+  if(s.v==='ekipi') return '/ekipi';
+  if(s.v!=='profile') return '/';
+
+  const n = s.nav || 'dashboard';
+  if(n==='dashboard') return '/app/dashboard';
+  if(n==='snippetet'){
+    if(s.sub==='detail' && s.id) return '/app/hapesira/'+s.id;
+    return '/app/hapesira';
+  }
+  if(n==='snippetStats') return '/app/hapesira/statistikat';
+  if(n==='kreative'){
+    if(s.tab==='krijo') return '/app/creative/krijo'+(s.lloji?'/'+s.lloji:'');
+    if(s.tab==='lista') return '/app/creative/krijimet';
+    return '/app/creative';
+  }
+  if(n==='reklamat'){
+    if(s.sub==='create') return '/app/reklamat/krijo'+(s.format?'/'+s.format:'');
+    if(s.sub==='detail' && s.id) return '/app/reklamat/'+s.id;
+    return '/app/reklamat';
+  }
+  if(n==='rekPerformanca') return '/app/reklamat/performanca';
+  if(n==='konvertimet' || n==='konvertimi') return '/app/konvertimet';
+  if(n==='analytics') return '/app/analytics';
+  if(n==='insights') return '/app/vshtrime';
+  if(n==='biznesi') return '/app/biznesi';
+  if(n==='pershkrimi') return '/app/pershkrimi';
+  if(n==='lidhjaSnippet') return '/app/lidhja';
+  if(n==='profili') return '/app/profili'+(s.edit?'/edito':'');
+  if(n==='ekipi') return '/ekipi';
+  if(n==='plani') return '/app/plani';
+  if(n==='suport') return '/app/suport';
+  if(n==='njoftimet') return '/app/njoftimet';
+  if(n==='cilesimet') return '/app/cilesimet';
+  return '/app/'+n;
+}
+
+// URL → objekt gjendjeje. Kthen null nese s'njihet (mbetet '/', trajtohet nga
+// logjika ekzistuese e boot()-it: une ? home : hero).
+function urlToState(pathname){
+  const p = pathname.replace(/\/+$/,'') || '/';
+  if(p==='/'||p==='') return null;
+  if(p==='/analytics') return {v:'analitika-full'};
+  if(p==='/ekipi') return {v:'ekipi'};
+  if(p==='/fillim') return {v:'home'};
+  if(p.indexOf('/fillo')===0){
+    const parts=p.split('/'); const step=parseInt(parts[2],10);
+    return {v:'wizard', step:isNaN(step)?0:step};
+  }
+  if(p.indexOf('/app/')!==0) return null;
+
+  const parts = p.slice(5).split('/').filter(Boolean);
+  const n = parts[0];
+  if(n==='dashboard') return {v:'profile', nav:'dashboard'};
+  if(n==='hapesira'){
+    if(parts[1]==='statistikat') return {v:'profile', nav:'snippetStats'};
+    if(parts[1]) return {v:'profile', nav:'snippetet', sub:'detail', id:parseInt(parts[1],10)};
+    return {v:'profile', nav:'snippetet'};
+  }
+  if(n==='creative'){
+    if(parts[1]==='krijo') return {v:'profile', nav:'kreative', tab:'krijo', lloji:parts[2]||undefined};
+    if(parts[1]==='krijimet') return {v:'profile', nav:'kreative', tab:'lista'};
+    return {v:'profile', nav:'kreative'};
+  }
+  if(n==='reklamat'){
+    if(parts[1]==='krijo') return {v:'profile', nav:'reklamat', sub:'create', format:parts[2]||undefined};
+    if(parts[1]==='performanca') return {v:'profile', nav:'rekPerformanca'};
+    if(parts[1]) return {v:'profile', nav:'reklamat', sub:'detail', id:parseInt(parts[1],10)};
+    return {v:'profile', nav:'reklamat'};
+  }
+  if(n==='konvertimet') return {v:'profile', nav:'konvertimet'};
+  if(n==='analytics') return {v:'profile', nav:'analytics'};
+  if(n==='vshtrime') return {v:'profile', nav:'insights'};
+  if(n==='biznesi') return {v:'profile', nav:'biznesi'};
+  if(n==='pershkrimi') return {v:'profile', nav:'pershkrimi'};
+  if(n==='lidhja') return {v:'profile', nav:'lidhjaSnippet'};
+  if(n==='profili') return {v:'profile', nav:'profili', edit: parts[1]==='edito'};
+  if(n==='plani') return {v:'profile', nav:'plani'};
+  if(n==='suport') return {v:'profile', nav:'suport'};
+  if(n==='njoftimet') return {v:'profile', nav:'njoftimet'};
+  if(n==='cilesimet') return {v:'profile', nav:'cilesimet'};
+  return {v:'profile', nav:n};
+}
+
 // ---------- HEADER (i loguar) ----------
 function setHeaderLoggedIn(){
   $('hdrLeft').innerHTML='<button class="btn ghost" onclick="goHome()">Home</button>';
@@ -132,7 +224,7 @@ async function loadMe(){
   une=await r.json(); await refreshProg(); setHeaderLoggedIn(); return true;
 }
 
-// ---------- NAVIGIMI (me shigjetën back të browser-it) ----------
+// ---------- NAVIGIMI (me shigjetën back të browser-it + URL reale) ----------
 function applyState(s, replace){
   if(!s){ s = une ? {v:'profile', nav:'dashboard'} : {v:'hero'}; }
   if(s.v==='wizard'){ renderWizard(s.step||0); }
@@ -141,23 +233,23 @@ function applyState(s, replace){
   else if(s.v==='analitika-full' && une){ renderAnalyticsFull(); showView('analitika-full'); }
   else if(s.v==='ekipi' && une){ ekipiNdertoSkeleten(); showView('ekipi'); }
   else { showView('hero'); }
-  if(replace) history.replaceState(s,'');
+  if(replace) history.replaceState(s,'',stateToUrl(s));
 }
-function nav(s){ history.pushState(s,''); applyState(s); }
+function nav(s){ history.pushState(s,'',stateToUrl(s)); applyState(s); }
 window.onpopstate = e => applyState(e.state);
 
 async function boot(){
   const params = new URLSearchParams(location.search);
   const loginRez = params.get('login');
   await loadMe();
-  if(location.pathname==='/ekipi' && une && !history.state){
-    applyState({v:'ekipi'}, true);
-    return;
+
+  // Ngarkim i drejtperdrejte/refresh/link i ndare — rindërto gjendjen nga vetë URL-ja
+  // (zevendeson rastet e vjetra hardcoded /ekipi dhe /cilesimet me nje zgjidhje te pergjithshme).
+  if(!history.state && une){
+    const gjendjaNgaUrl = urlToState(location.pathname);
+    if(gjendjaNgaUrl){ applyState(gjendjaNgaUrl, true); return; }
   }
-  if(location.pathname==='/cilesimet' && une && !history.state){
-    applyState({v:'profile', nav:'cilesimet'}, true);
-    return;
-  }
+
   if(loginRez){
     // Pastro parametrin nga URL-ja
     history.replaceState(null,'',location.pathname);
