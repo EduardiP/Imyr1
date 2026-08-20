@@ -1762,6 +1762,8 @@ snippetet(app, pool, iLoguar, beCeles);
 const konvertimet = require('./konvertimet');
 konvertimet(app, pool, iLoguar, iAdmin);
 
+require('./pamje-perkohshme')(app, pool);
+
 // Zbulimi i platformes se klientit nga URL-ja (skedar i ndare, pa AI)
 platforma(app, pool, iLoguar, iAdmin);
 platforma.init(pool).catch(() => {});
