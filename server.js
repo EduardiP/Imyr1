@@ -2100,7 +2100,22 @@ app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'adm
 
 // health check
 app.get('/health', (req, res) => res.json({ ok: true, koha: new Date().toISOString() }));
+// SHTO KETE TE server.js — DUHET TE JETE E FUNDIT, pas TE GJITHA app.get/post/etj
+// te tjera (API-t, static, faqet specifike si /ekipi, /cilesimet).
+//
+// Pse nevojitet: core.js tani gjeneron URL reale per çdo faqe te aplikacionit
+// (/app/dashboard, /app/hapesira/5, /app/reklamat/performanca, etj.) — por keto
+// s'ekzistojne si "rruge" te vertetat te serveri (jane vetem gjendje e brendshme
+// e JS-it). Pa kete catch-all, refresh/link-i-ndare/direkt-hapje per keto URL
+// do te kthente 404, sepse serveri s'i njeh fare.
+//
+// Ky route i FUNDIT thjesht i kthen te gjitha (perveç /api/...) te index.html,
+// dhe core.js (urlToState) e rindërton vetë gjendjen e sakte nga vetë URL-ja.
 
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found' });
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 const PORT = process.env.PORT || 3000;
 initDB(pool)
   .then(() => kombinimi.init(pool))
