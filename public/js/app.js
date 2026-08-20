@@ -13,16 +13,11 @@
 })();
 
 const NAV2 = [
-  { k:'dashboard', l:'Dashboard', subs:[
-    {l:'Statusi i integrimit', nav:'dashboard'},
-    {l:'Pika e profilit & efikasiteti', nav:'dashboard'}
-  ]},
+  { k:'dashboard', l:'Dashboard' },
   { k:'snippetet', l:'Hapësira e reklamave', subs:[
-    {l:'Konfigurimi i madhësisë', nav:'snippetet'},
-    {l:'Instalimi', nav:'snippetet'},
-    {l:'Pamja paraprake', nav:'snippetet'},
-    {l:'Statusi', nav:'snippetet'},
-    {l:'Kontrollet e sigurisë', nav:'snippetet'}
+    {l:'Krijo', nav:'snippetet'},
+    {l:'Hapësirat e mia', nav:'snippetet'},
+    {l:'Statistikat', nav:'snippetet'}
   ]},
   { k:'kreative', l:'Creative', subs:[
     {l:'Krijo', nav:'kreative', tab:'krijo'},
@@ -31,16 +26,14 @@ const NAV2 = [
   { k:'reklamat', l:'My Ads', subs:[
     {l:'Krijo', nav:'reklamat'},
     {l:'Reklamat', nav:'reklamat'},
-    {l:'Performanca', nav:'reklamat'},
-    {l:'Pikët & renditja', nav:'reklamat'}
+    {l:'Performanca', nav:'reklamat'}
   ]},
-  { k:'konvertimet', l:'Konvertimet', subs:[
-    {l:'Konfigurimi', nav:'konvertimet'},
-    {l:'Historiku', nav:'konvertimet'}
-  ]},
+  { k:'konvertimet', l:'Konvertimet' },
   { k:'analytics', l:'Analytics', subs:[
     {l:'Trafiku', nav:'analytics'},
     {l:'Sipas kategorisë', nav:'analytics'},
+    {l:'Dhënie', nav:'analytics'},
+    {l:'Marrje', nav:'analytics'},
     {l:'Snippet-et', nav:'analytics'},
     {l:'Tendencat', nav:'analytics'}
   ]},
@@ -56,7 +49,7 @@ function renderNav2(){
   let wrap=$('snav2');
   if(!wrap){
     wrap=document.createElement('nav'); wrap.id='snav2'; wrap.className='snav';
-    wrap.style.cssText='margin-top:14px;padding-top:14px;border-top:1px solid var(--line);';
+    wrap.style.cssText='margin-top:6px;';
     const s1=$('snav'); if(s1 && s1.parentNode) s1.parentNode.insertBefore(wrap, s1.nextSibling);
   }
   wrap.innerHTML='';
