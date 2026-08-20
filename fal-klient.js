@@ -106,6 +106,13 @@ const QELLIMI_HTML5 =
   'If image URLs are provided, each is labeled with its intended purpose — use the label ' +
   'to decide how/where each image fits (e.g. a "Logo" label goes in a logo spot, a "Produkti" ' +
   'label is the main product visual, etc). ' +
+  'CRITICAL — NO CLICKABLE ELEMENTS: this HTML will be embedded inside an OUTER click-through wrapper ' +
+  'added by the ad platform (the entire banner becomes one single clickable link, pointing to the ' +
+  'advertiser\'s URL). Therefore your generated HTML must NEVER contain its own <a> tags, onclick handlers, ' +
+  '<button> elements with functional behavior, or any JS click listeners — this would conflict with the ' +
+  'outer wrapper. Any CTA text (e.g. "Shop Now", "Merr ofertën") must be PURELY VISUAL — styled to look ' +
+  'like a button (background, padding, border-radius) using a plain <div> or <span>, with zero click ' +
+  'functionality of its own. Animation/motion is fine (CSS transitions, keyframes); interactivity/clicks are not. ' +
   'Output ONLY the raw HTML code, no markdown, no explanation, no backticks.';
 
 // imazhetEtiketuara: [{url, emri}] — nje ose disa imazhe, secili me etiketen e vet (mund te jete bosh []).
