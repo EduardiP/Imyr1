@@ -265,7 +265,7 @@ var _anaChart=null;
 async function ngarkoAnalitika(){
   const ngaEl=$('anaNga'), deriEl=$('anaDeri');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
-  let url='/api/analytics/reklamat?nga='+ngaEl.value+'&deri='+deriEl.value;
+  let url='/api/analytics/reklamat?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand');
   if(_anaSelectedAd) url+='&reklama_ids='+_anaSelectedAd;
   let d;
   try{ d=await(await fetch(url)).json(); }catch(e){ return; }
@@ -410,7 +410,7 @@ function anaRenderKatLegend(kategorite){
 async function ngarkoAnaKategorite(){
   const ngaEl=$('anaNgaKat'), deriEl=$('anaDeriKat');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
-  let url='/api/analytics/kategorite?nga='+ngaEl.value+'&deri='+deriEl.value;
+  let url='/api/analytics/kategorite?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand');
   if(_anaKatSelectedAd) url+='&reklama_ids='+_anaKatSelectedAd;
   let d;
   try{ d=await(await fetch(url)).json(); }catch(e){ return; }
@@ -467,7 +467,7 @@ function anaListUpdateBtnLabel(){
 async function ngarkoAnaLista(){
   const ngaEl=$('anaNgaKat'), deriEl=$('anaDeriKat'), el=$('anaListaKategori');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value||!el) return;
-  let url='/api/analytics/kategorite?nga='+ngaEl.value+'&deri='+deriEl.value;
+  let url='/api/analytics/kategorite?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand');
   if(_anaListSelectedAd) url+='&reklama_ids='+_anaListSelectedAd;
   let d;
   try{ d=await(await fetch(url)).json(); }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; return; }
@@ -596,7 +596,7 @@ async function ngarkoAnaSnipDhene(){
   const el=$('anaSnipDheneLista'), ngaEl=$('anaNgaDhene'), deriEl=$('anaDeriDhene');
   if(!el||!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
-  try{ d=await(await fetch('/api/analytics/snippetet-dhene?nga='+ngaEl.value+'&deri='+deriEl.value)).json(); }
+  try{ d=await(await fetch('/api/analytics/snippetet-dhene?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand'))).json(); }
   catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; return; }
   const rows=d.snippetet||[];
   if(!rows.length){ el.innerHTML='<button class="btn cta" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'lidhjaSnippet\'})">Lidh një snippet →</button>'; return; }
@@ -652,7 +652,7 @@ async function ngarkoAnaKatDhene(){
   const ngaEl=$('anaNgaDhene'), deriEl=$('anaDeriDhene');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
-  try{ d=await(await fetch('/api/analytics/kategorite-dhene?nga='+ngaEl.value+'&deri='+deriEl.value)).json(); }catch(e){ return; }
+  try{ d=await(await fetch('/api/analytics/kategorite-dhene?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand'))).json(); }catch(e){ return; }
   const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>p[_anaKatDheneMetrikaAktive]>0));
   anaRenderKatDheneLegend(kategorite);
   const canvas=$('anaKatDheneCanvas'); if(!canvas||typeof Chart==='undefined') return;
@@ -854,7 +854,7 @@ async function ngarkoSnStatistikat(){
   const ngaEl=$('snStatNga'), deriEl=$('snStatDeri');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
-  try{ d=await(await fetch('/api/analytics/kategorite-dhene?nga='+ngaEl.value+'&deri='+deriEl.value)).json(); }catch(e){ return; }
+  try{ d=await(await fetch('/api/analytics/kategorite-dhene?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand'))).json(); }catch(e){ return; }
   const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>p[_snStatMetrikaAktive]>0));
   const legEl=$('snStatLegend');
   if(legEl){
