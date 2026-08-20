@@ -24,9 +24,9 @@ const NAV2 = [
     {l:'Krijimet e mia', nav:'kreative', tab:'lista'}
   ]},
   { k:'reklamat', l:'My Ads', subs:[
-    {l:'Krijo', nav:'reklamat'},
+    {l:'Krijo', nav:'reklamat', sub:'create'},
     {l:'Reklamat', nav:'reklamat'},
-    {l:'Performanca', nav:'reklamat'}
+    {l:'Performanca', nav:'rekPerformanca'}
   ]},
   { k:'konvertimet', l:'Konvertimet' },
   { k:'analytics', l:'Analytics', subs:[
@@ -99,7 +99,7 @@ function hapNav2Dropdown(n, btn){
       mbyllNav2Dropdown();
       if(s.akcion && typeof window[s.akcion]==='function'){ window[s.akcion](); return; }
       if(n.k==='analytics') nav({v:'analitika-full'});
-      else nav({v:'profile', nav:s.nav||n.k, tab:s.tab});
+      else nav({v:'profile', nav:s.nav||n.k, tab:s.tab, sub:s.sub});
     });
     dd.appendChild(sb);
   });
@@ -502,6 +502,7 @@ function renderMain(s){
   if(curNav==='lidhja')     return mainLidhja(m);
   if(curNav==='snippetet')  return mainSnippetet(m, s);
   if(curNav==='snippetStats')  return mainSnippetStatistikat(m);
+  if(curNav==='rekPerformanca')  return mainRekPerformanca(m);
   if(curNav==='dashboard')  return mainDashboard(m);
   if(curNav==='kreative')   return mainKreative_NEW(m, s);
   if(curNav==='reklamat')   return mainReklamat(m, s);
