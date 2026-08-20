@@ -101,11 +101,33 @@ function mainAnalytics(m){
         '<div id="anaKatDheneLegend" style="display:flex;flex-direction:column;gap:6px;max-height:80px;overflow-y:auto;padding-right:4px;margin-bottom:10px;"></div>'+
         '<canvas id="anaKatDheneCanvas" height="110"></canvas>'+
       '</div>'+
+    '</div>'+
+    '<div class="card" style="margin-top:16px;">'+
+      '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Deficiti — Dhënë vs Marrë</h3>'+
+      '<p class="small mut" style="margin:0 0 12px;">Sa ke dhënë (si host) kundrejt sa ke marrë (si reklamues), për dhogarinë aktuale.</p>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">'+
+        '<button class="btn" onclick="anaPresetDeficit(7)">7 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetDeficit(30)">30 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetDeficit(90)">90 ditët e fundit</button>'+
+        '<span style="flex:1"></span>'+
+        '<div style="position:relative;">'+
+          '<button type="button" id="anaKalBtn_deficit" class="btn" style="min-width:170px;"></button>'+
+          '<div id="anaKalPanel_deficit" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;width:230px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+        '</div>'+
+        '<input type="date" id="anaNgaDeficit" style="display:none;">'+
+        '<input type="date" id="anaDeriDeficit" style="display:none;">'+
+      '</div>'+
+      '<div id="anaDeficitModeRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">'+
+        '<button type="button" onclick="anaDeficitModeSet(\'krahasim\')" id="anaDefBtnKrahasim" class="small">Dhënë vs Marrë</button>'+
+        '<button type="button" onclick="anaDeficitModeSet(\'diferenca\')" id="anaDefBtnDiferenca" class="small">Diferenca</button>'+
+      '</div>'+
+      '<canvas id="anaDeficitCanvas" height="110"></canvas>'+
     '</div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
   $('anaNga').value=anaFmt(nga); $('anaDeri').value=anaFmt(sot);
   $('anaNgaKat').value=anaFmt(nga); $('anaDeriKat').value=anaFmt(sot);
   $('anaNgaDhene').value=anaFmt(nga); $('anaDeriDhene').value=anaFmt(sot);
+  $('anaNgaDeficit').value=anaFmt(nga); $('anaDeriDeficit').value=anaFmt(sot);
   anaKrijoKalendarRangu({
     id:'top', btnId:'anaKalBtn_top', panelId:'anaKalPanel_top',
     getNga:()=>$('anaNga').value, getDeri:()=>$('anaDeri').value,
@@ -123,6 +145,12 @@ function mainAnalytics(m){
     getNga:()=>$('anaNgaDhene').value, getDeri:()=>$('anaDeriDhene').value,
     setNga:v=>{ $('anaNgaDhene').value=v; }, setDeri:v=>{ $('anaDeriDhene').value=v; },
     onRuaj: anaNgarkoDheneTeGjitha
+  });
+  anaKrijoKalendarRangu({
+    id:'deficit', btnId:'anaKalBtn_deficit', panelId:'anaKalPanel_deficit',
+    getNga:()=>$('anaNgaDeficit').value, getDeri:()=>$('anaDeriDeficit').value,
+    setNga:v=>{ $('anaNgaDeficit').value=v; }, setDeri:v=>{ $('anaDeriDeficit').value=v; },
+    onRuaj: ngarkoAnaDeficit
   });
   $('anaRekBtn').addEventListener('click', function(e){
     e.stopPropagation();
@@ -154,10 +182,60 @@ function mainAnalytics(m){
   ngarkoAnaPikatProfili();
   ngarkoAnaSnipDhene();
   ngarkoAnaKatDhene();
+  anaDeficitModeSet('krahasim');
 }
 function anaNgarkoTeGjitha(){ ngarkoAnalitika(); }
 function anaNgarkoKategoriteTeGjitha(){ ngarkoAnaKategorite(); ngarkoAnaLista(); }
 function anaNgarkoDheneTeGjitha(){ ngarkoAnaSnipDhene(); ngarkoAnaKatDhene(); }
+
+var _anaDeficitMode='krahasim'; // 'krahasim' (2 vija) | 'diferenca' (1 vije, mund te jete negative)
+var _anaDeficitChart=null;
+
+function anaPresetDeficit(dite){
+  const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-(dite-1));
+  $('anaNgaDeficit').value=anaFmt(nga); $('anaDeriDeficit').value=anaFmt(sot);
+  if(window.__anaKalendaret && window.__anaKalendaret.deficit) window.__anaKalendaret.deficit.refreshLabel();
+  ngarkoAnaDeficit();
+}
+
+function anaDeficitModeSet(mode){
+  _anaDeficitMode=mode;
+  const bK=$('anaDefBtnKrahasim'), bD=$('anaDefBtnDiferenca');
+  if(bK) bK.style.cssText = 'padding:6px 12px;border-radius:20px;border:1px solid '+(mode==='krahasim'?'var(--acc);background:var(--acc);color:#06121f;font-weight:600;':'var(--line);background:transparent;color:var(--mut);')+'cursor:pointer;font-size:12px;font-family:inherit;';
+  if(bD) bD.style.cssText = 'padding:6px 12px;border-radius:20px;border:1px solid '+(mode==='diferenca'?'var(--acc);background:var(--acc);color:#06121f;font-weight:600;':'var(--line);background:transparent;color:var(--mut);')+'cursor:pointer;font-size:12px;font-family:inherit;';
+  ngarkoAnaDeficit();
+}
+
+async function ngarkoAnaDeficit(){
+  const ngaEl=$('anaNgaDeficit'), deriEl=$('anaDeriDeficit');
+  if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
+  const url='/api/analytics/deficiti?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand');
+  let d;
+  try{ d=await(await fetch(url)).json(); }catch(e){ return; }
+  const rows=d.rows||[];
+  const labels=rows.map(r=>r.data);
+  const canvas=$('anaDeficitCanvas'); if(!canvas||typeof Chart==='undefined') return;
+  if(_anaDeficitChart){ _anaDeficitChart.destroy(); _anaDeficitChart=null; }
+
+  let datasets;
+  if(_anaDeficitMode==='krahasim'){
+    datasets=[
+      {label:'Dhënë', data:rows.map(r=>r.dhene), borderColor:'#4a9eff', backgroundColor:'transparent', tension:0, borderWidth:2, pointRadius:2, pointBackgroundColor:'#4a9eff'},
+      {label:'Marrë', data:rows.map(r=>r.marre), borderColor:'#ef4444', backgroundColor:'transparent', tension:0, borderWidth:2, pointRadius:2, pointBackgroundColor:'#ef4444'}
+    ];
+  } else {
+    datasets=[
+      {label:'Diferenca (Dhënë − Marrë)', data:rows.map(r=>r.diferenca), borderColor:'#22c55e', backgroundColor:'transparent', tension:0, borderWidth:2, pointRadius:2, pointBackgroundColor:'#22c55e'}
+    ];
+  }
+  const ctx=canvas.getContext('2d');
+  _anaDeficitChart=new Chart(ctx,{type:'line',data:{labels,datasets},
+    options:{responsive:true,interaction:{mode:'index',intersect:false},
+      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
+      plugins:{legend:{labels:{color:'#e6edf3'}}}}
+  });
+}
+
 function anaPresetDhene(dite){
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-(dite-1));
   $('anaNgaDhene').value=anaFmt(nga); $('anaDeriDhene').value=anaFmt(sot);
