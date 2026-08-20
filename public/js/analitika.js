@@ -471,13 +471,23 @@ async function ngarkoAnaDeficit(){
   ANA_METRIKA.forEach(x=>{
     if(_anaDeficitMetrikaAktive[x.k]) datasets.push({label:x.l, data:rows.map(r=>r[x.k]), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
   });
+
+  // Rang SIMETRIK rreth zeros — llogarit vleren maksimale absolute (pozitive ose
+  // negative) mes te dhenave aktualisht te shfaqura, dhe vendos min/max te barabarta
+  // (-maks/+maks), qe zero te bjere GJITHMONE saktesisht ne MES te grafikut, sado
+  // qe te dhenat te priren nga njera ane. Nese s'ka fare te dhena (te gjitha 0),
+  // perdor nje rang minimal fiks qe grafiku te mos rrudhet ne nje vije te sheshte.
+  let maksAbs=0;
+  datasets.forEach(ds=>{ ds.data.forEach(v=>{ const a=Math.abs(v||0); if(a>maksAbs) maksAbs=a; }); });
+  const jastek = maksAbs>0 ? maksAbs*1.15 : 5; // 15% hapesire shtese siper/poshte majes, per lexueshmeri
+
   const ctx=canvas.getContext('2d');
   _anaDeficitChart=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
       scales:{
         x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}},
-        // PA beginAtZero — boshti Y lejon vlera negative, zero-vija ne mes (jo ne fund)
-        y:{ticks:{color:'#8b949e',precision:0},grid:{color:function(ctx){ return ctx.tick.value===0 ? 'rgba(230,237,243,.35)' : '#2a313c'; }}}
+        // Rang simetrik (-jastek..+jastek) — zero gjithmone saktesisht ne mes, jo vetem "lejohet negative"
+        y:{min:-jastek, max:jastek, ticks:{color:'#8b949e',precision:0}, grid:{color:function(ctx){ return ctx.tick.value===0 ? 'rgba(230,237,243,.35)' : '#2a313c'; }}}
       },
       plugins:{legend:{labels:{color:'#e6edf3', generateLabels:function(chart){
         const items=Chart.defaults.plugins.legend.labels.generateLabels(chart);
