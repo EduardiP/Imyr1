@@ -1218,6 +1218,10 @@ async function ngarkoKreativetGati(){
             ? '<img src="'+esc(url)+'" style="width:100%;height:100%;object-fit:cover;">'
             : (k.lloji==='video' ? '<span style="font-size:22px;color:var(--mut);">▶</span>' : '<span style="font-size:16px;color:var(--mut);">&lt;/&gt;</span>'))+
         '</div>'+
+        (url
+          ? '<button onclick="krHapPamjenPlote(\''+esc(url)+'\')" title="Shiko madhësinë reale" '+
+            'style="position:absolute;top:4px;right:44px;width:24px;height:24px;border-radius:50%;background:rgba(14,17,22,.85);border:1px solid var(--line);color:var(--txt);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;">🔍</button>'
+          : '')+
         (eshteImazh
           ? '<button onclick="krHapEditor('+k.id+',\''+esc(url)+'\')" title="Ndrysho" '+
             'style="position:absolute;top:4px;right:24px;width:24px;height:24px;border-radius:50%;background:rgba(14,17,22,.85);border:1px solid var(--line);color:var(--txt);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">✎</button>'
@@ -1690,6 +1694,7 @@ function krShfaqRezultatin(k){
   el.innerHTML=
     '<div id="krImgWrap">'+preview+'</div>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">'+
+      '<button class="btn" onclick="krHapPamjenPlote(\''+esc(k.output_url)+'\')" title="Shiko madhësinë reale">🔍</button>'+
       '<a class="btn" href="'+esc(k.output_url)+'" download="kreative_'+k.id+(k.lloji==='video'?'.mp4':k.lloji==='html5'?'.html':'.png')+'" style="text-decoration:none;">⬇ Shkarko</a>'+
       '<button class="btn" onclick="krRuaj('+k.id+')">💾 Ruaje</button>'+
       '<button class="btn" onclick="krHapModifiko('+k.id+',\''+esc(k.lloji)+'\')">✏️ Modifiko</button>'+
@@ -1698,6 +1703,13 @@ function krShfaqRezultatin(k){
     '<span class="small" id="krRuajMsg" style="margin-left:10px;"></span>'+
     '<div id="krModForm"></div>';
   krNgarkoModKufirin(k.id, k.lloji);
+}
+// Hap materialin ne dritare/tab te re, ne madhesine e vet reale — vlen per imazh
+// (shfaqet direkt), video (shfaqet direkt), dhe HTML5 (shfaqet si faqe e gjalle,
+// browser-i e "render"-on vete, sepse skedari eshte i tipit text/html).
+function krHapPamjenPlote(url){
+  if(!url) return;
+  window.open(url, '_blank');
 }
 async function krRuaj(id){
   const msg=$('krRuajMsg');
