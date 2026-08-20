@@ -676,6 +676,120 @@ async function ngarkoAnaKatDhene(){
   });
 }
 
+// ================= FAQE E VEÇANTË: "Statistikat" per "Hapësira e reklamave" =================
+// Ripërdor TE NJEJTIN endpoint (kategorite-dhene) dhe TE NJEJTIN pattern grafiku si paneli
+// "Dhënie" brenda Analytics — thjesht si faqe e vetme, e pavarur (sipas kategorise se
+// bizneseve qe kane marre pjese, JO emer biznesi/reklame specifike).
+var _snStatMetrikaAktive='shfaqje', _snStatChart=null;
+
+function mainSnippetStatistikat(m){
+  window.__pamjeVecante=true;
+  m.innerHTML='<h2 class="h">Statistikat — Hapësira e reklamave</h2>'+
+    '<p class="small" style="margin:2px 0 16px;">Shfaqje, shikime, klikime dhe konvertime që u ke dhënë bizneseve të tjera nëpërmjet hapësirave tua, sipas kategorisë së tyre.</p>'+
+    '<div class="card">'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
+        '<button class="btn" onclick="snStatPreset(7)">7 ditët e fundit</button>'+
+        '<button class="btn" onclick="snStatPreset(30)">30 ditët e fundit</button>'+
+        '<button class="btn" onclick="snStatPreset(90)">90 ditët e fundit</button>'+
+        '<span style="flex:1"></span>'+
+        '<div style="position:relative;">'+
+          '<button type="button" id="anaKalBtn_snstat" class="btn" style="min-width:170px;"></button>'+
+          '<div id="anaKalPanel_snstat" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;width:230px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+        '</div>'+
+        '<input type="date" id="snStatNga" style="display:none;">'+
+        '<input type="date" id="snStatDeri" style="display:none;">'+
+      '</div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:14px;">'+
+        '<div id="snStatMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;"></div>'+
+        '<div style="flex:0 0 200px;">'+
+          '<div class="small mut" style="font-weight:600;margin-bottom:6px;">Kategoritë që kanë marrë pjesë.</div>'+
+          '<div id="snStatLegend" style="display:flex;flex-direction:column;gap:6px;max-height:120px;overflow-y:auto;padding-right:4px;"></div>'+
+        '</div>'+
+      '</div>'+
+      '<canvas id="snStatCanvas" height="110"></canvas>'+
+    '</div>';
+
+  anaRenderSnStatMetrika();
+
+  const sot=new Date(), fill=new Date(); fill.setDate(fill.getDate()-29);
+  const fmt=d=>{ const y=d.getFullYear(), mo=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0'); return y+'-'+mo+'-'+dd; };
+  $('snStatNga').value=fmt(fill); $('snStatDeri').value=fmt(sot);
+
+  window.__anaKalendaret = window.__anaKalendaret || {};
+  anaKrijoKalendarRangu({
+    id:'snstat', btnId:'anaKalBtn_snstat', panelId:'anaKalPanel_snstat',
+    getNga:()=>$('snStatNga').value, getDeri:()=>$('snStatDeri').value,
+    setNga:v=>{ $('snStatNga').value=v; }, setDeri:v=>{ $('snStatDeri').value=v; },
+    onRuaj: ngarkoSnStatistikat
+  });
+  ngarkoSnStatistikat();
+}
+
+function snStatPreset(dite){
+  const sot=new Date(), fill=new Date(); fill.setDate(fill.getDate()-(dite-1));
+  const fmt=d=>{ const y=d.getFullYear(), mo=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0'); return y+'-'+mo+'-'+dd; };
+  $('snStatNga').value=fmt(fill); $('snStatDeri').value=fmt(sot);
+  if(window.__anaKalendaret && window.__anaKalendaret['snstat']) window.__anaKalendaret['snstat'].refreshLabel();
+  ngarkoSnStatistikat();
+}
+
+function anaRenderSnStatMetrika(){
+  const el=$('snStatMetrikaRow'); if(!el) return;
+  el.innerHTML='';
+  ANA_METRIKA.forEach(x=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.textContent=x.l;
+    const on=_snStatMetrikaAktive===x.k;
+    btn.style.cssText = on
+      ? 'padding:6px 12px;border-radius:20px;border:1px solid var(--acc);background:var(--acc);color:#06121f;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;'
+      : 'padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit;';
+    btn.addEventListener('click', function(){
+      _snStatMetrikaAktive=x.k;
+      anaRenderSnStatMetrika();
+      ngarkoSnStatistikat();
+    });
+    el.appendChild(btn);
+  });
+}
+
+async function ngarkoSnStatistikat(){
+  const ngaEl=$('snStatNga'), deriEl=$('snStatDeri');
+  if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
+  let d;
+  try{ d=await(await fetch('/api/analytics/kategorite-dhene?nga='+ngaEl.value+'&deri='+deriEl.value)).json(); }catch(e){ return; }
+  const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>p[_snStatMetrikaAktive]>0));
+  const legEl=$('snStatLegend');
+  if(legEl){
+    legEl.innerHTML = !kategorite.length
+      ? '<p class="small mut" style="margin:0;">Asnjë kategori me të dhëna.</p>'
+      : kategorite.map((k,i)=>
+          '<div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--txt);">'+
+            '<span style="width:10px;height:10px;border-radius:50%;background:'+anaKatPaleta(i)+';flex:0 0 auto;"></span>'+
+            '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(k.emri)+'</span>'+
+          '</div>'
+        ).join('');
+  }
+  const canvas=$('snStatCanvas'); if(!canvas||typeof Chart==='undefined') return;
+  if(_snStatChart){ _snStatChart.destroy(); _snStatChart=null; }
+  if(!kategorite.length){
+    const ctx0=canvas.getContext('2d'); ctx0.clearRect(0,0,canvas.width,canvas.height);
+    return;
+  }
+  const labels=kategorite[0].pikat.map(p=>p.data);
+  const datasets=kategorite.map((k,i)=>({
+    label:k.emri, data:k.pikat.map(p=>p[_snStatMetrikaAktive]),
+    borderColor:anaKatPaleta(i), backgroundColor:'transparent',
+    tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:anaKatPaleta(i)
+  }));
+  const ctx=canvas.getContext('2d');
+  _snStatChart=new Chart(ctx,{type:'line',data:{labels,datasets},
+    options:{responsive:true,interaction:{mode:'index',intersect:false},
+      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
+      plugins:{legend:{display:false}}},
+    plugins:[anaMultiColorLinePlugin]
+  });
+}
+
 // ================= FAQE E PLOTE (pa sidebar), me rifreskim "live" te grafiku kryesor =================
 var _anaLiveTimer=null;
 function renderAnalyticsFull(){
