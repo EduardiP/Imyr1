@@ -1488,7 +1488,14 @@ function formaKreative(lloji){
 // Kur zgjidhen skedare NGA KOMPJUTERI (mund te jene disa, per html5/video)
 function krNdryshoFile(inp, lloji){
   const shumefishte = (lloji==='video' || lloji==='html5');
-  if(!shumefishte){ return; } // rasti imazh (i vetem) mbetet siç ishte, pa listë emrash
+  if(!shumefishte){
+    // Rasti IMAZH (nje skedar i vetem) — s'perdor krZgjedhurit (mbetet skedariNjeshi
+    // te krGjenero, siç ishte), POR prap njoftojme chat-in qe AI-ja ta dije qe ekziston.
+    if(inp.files && inp.files[0] && window.krChatShtoReferencaImazhi){
+      krChatShtoReferencaImazhi('img1');
+    }
+    return;
+  }
   const prefiksi = (lloji==='html5') ? 'Code' : 'img';
   Array.prototype.forEach.call(inp.files, function(f){
     const numri = krZgjedhurit.filter(function(x){ return x.burimi==='file'; }).length + 1;
