@@ -30,12 +30,12 @@ const NAV2 = [
   ]},
   { k:'konvertimet', l:'Konvertimet' },
   { k:'analytics', l:'Analytics', subs:[
-    {l:'Trafiku', nav:'analytics'},
-    {l:'Deficiti', nav:'analytics'},
-    {l:'Reklamat', nav:'analytics'},
-    {l:'Snippet-et', nav:'analytics'},
-    {l:'Dhënie', nav:'analytics'},
-    {l:'Marrje', nav:'analytics'}
+    {l:'Trafiku', nav:'anaTrafiku'},
+    {l:'Deficiti', nav:'anaDeficiti'},
+    {l:'Reklamat', nav:'anaReklamat'},
+    {l:'Snippet-et', nav:'anaSnippetet'},
+    {l:'Dhënie', nav:'anaDhenie'},
+    {l:'Marrje', nav:'anaMarrje'}
   ]},
   { k:'insights', l:'Vështrime', subs:[
     {l:'Pika AI & kombinimet kryesore', nav:'insights'},
@@ -98,8 +98,7 @@ function hapNav2Dropdown(n, btn){
       e.stopPropagation();
       mbyllNav2Dropdown();
       if(s.akcion && typeof window[s.akcion]==='function'){ window[s.akcion](); return; }
-      if(n.k==='analytics') nav({v:'analitika-full'});
-      else nav({v:'profile', nav:s.nav||n.k, tab:s.tab, sub:s.sub});
+      nav({v:'profile', nav:s.nav||n.k, tab:s.tab, sub:s.sub});
     });
     dd.appendChild(sb);
   });
@@ -503,6 +502,12 @@ function renderMain(s){
   if(curNav==='snippetet')  return mainSnippetet(m, s);
   if(curNav==='snippetStats')  return mainSnippetStatistikat(m);
   if(curNav==='rekPerformanca')  return mainRekPerformanca(m);
+  if(curNav==='anaTrafiku')  return mainAnaTrafiku(m);
+  if(curNav==='anaDeficiti')  return mainAnaDeficiti(m);
+  if(curNav==='anaReklamat')  return mainAnaReklamat(m);
+  if(curNav==='anaSnippetet')  return mainAnaSnippetet(m);
+  if(curNav==='anaDhenie')  return mainAnaDhenie(m);
+  if(curNav==='anaMarrje')  return mainAnaMarrje(m);
   if(curNav==='dashboard')  return mainDashboard(m);
   if(curNav==='kreative')   return mainKreative_NEW(m, s);
   if(curNav==='reklamat')   return mainReklamat(m, s);
