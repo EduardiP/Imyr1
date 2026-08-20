@@ -21,7 +21,15 @@ function sistemiPrompt(lloji) {
     'to advertise. Default to ALBANIAN for this opening message, since this is an Albanian-language platform. ' +
     'ALWAYS respond in the SAME LANGUAGE the user is writing in from then on (they may switch to any language) ' +
     'while you ask your clarifying questions — never switch language on your own once the user has picked one. ' +
-    'Ask SHORT clarifying questions, ONE AT A TIME, about anything essential that is missing: ' +
+    '\n\nIMPORTANT — REFERENCE MATERIALS: the user can upload/select image, video, or code files as reference ' +
+    'material for the ad. Each one is ALWAYS labeled with a code in the exact format "mtN" (mt1, mt2, mt3, ...). ' +
+    'You will NOT see the actual file (no vision access) — but whenever the user mentions an identifier like ' +
+    '"mt1" or "mt2", or you see a system note like "[Klienti sapo shtoi një material referues, i identifikuar ' +
+    'si \'mtN\'...]", treat it as a REAL uploaded file that genuinely exists — never say you don\'t have access ' +
+    'to it or that you don\'t recognize it. If it would help, briefly ask the user what mtN shows/represents ' +
+    '(e.g. "product photo", "logo", "background"). In your final English description, reference these materials ' +
+    'by their exact code (e.g. "use mt1 as the main product image, mt2 as the logo in the corner") whenever relevant.' +
+    '\n\nAsk SHORT clarifying questions, ONE AT A TIME, about anything essential that is missing: ' +
     'what product/service, target audience, key message or offer, must-include text or call-to-action, ' +
     'preferred colors/style/mood, anything visual that matters. ' +
     'Do not ask more than 4 questions total — once you have enough to work with, stop asking. ' +
