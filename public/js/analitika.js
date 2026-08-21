@@ -350,11 +350,20 @@ function anaRenderDetNenPanel(){
   if(!_anaDetAktiv){ el.innerHTML=''; return; }
 
   if(_anaDetAktiv==='pesha'){
+    const modBtn=function(mode,lbl){
+      return '<button type="button" onclick="anaDetPeshaSet(\''+mode+'\')" style="'+(_anaDetPeshaMode===mode?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">'+lbl+'</button>';
+    };
     el.innerHTML =
-      '<div style="padding:12px;background:#0e1116;border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;gap:8px;">'+
-        '<label style="display:flex;align-items:center;gap:6px;"><input type="radio" name="anaDetPeshaR" '+(_anaDetPeshaMode==='te_gjitha'?'checked':'')+' onchange="anaDetPeshaSet(\'te_gjitha\')"> Të gjitha</label>'+
-        '<label style="display:flex;align-items:center;gap:6px;"><input type="radio" name="anaDetPeshaR" '+(_anaDetPeshaMode==='fiks'?'checked':'')+' onchange="anaDetPeshaSet(\'fiks\')"> Numër fiks: <input type="number" id="anaDetPeshaFiksInp" min="0" max="1500" value="'+(_anaDetPeshaFiks||'')+'" style="width:80px;" oninput="anaDetPeshaFiksChange(this.value)"></label>'+
-        '<label style="display:flex;align-items:center;gap:6px;"><input type="radio" name="anaDetPeshaR" '+(_anaDetPeshaMode==='interval'?'checked':'')+' onchange="anaDetPeshaSet(\'interval\')"> Nga <input type="number" id="anaDetPeshaMinInp" min="0" max="1500" value="'+(_anaDetPeshaMin||'')+'" style="width:70px;" oninput="anaDetPeshaIntervalChange()"> deri <input type="number" id="anaDetPeshaMaxInp" min="0" max="1500" value="'+(_anaDetPeshaMax||'')+'" style="width:70px;" oninput="anaDetPeshaIntervalChange()"> (maksimumi 1500)</label>'+
+      '<div style="padding:12px;background:#0e1116;border:1px solid var(--line);border-radius:8px;">'+
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:'+(_anaDetPeshaMode==='te_gjitha'?'0':'10px')+';">'+
+          modBtn('te_gjitha','Të gjitha')+modBtn('fiks','Numër fiks')+modBtn('interval','Interval')+
+        '</div>'+
+        (_anaDetPeshaMode==='fiks'
+          ? '<div style="display:flex;align-items:center;gap:8px;">Numër fiks: <input type="number" id="anaDetPeshaFiksInp" min="0" max="1500" value="'+(_anaDetPeshaFiks!=null?_anaDetPeshaFiks:'')+'" style="width:90px;" oninput="anaDetPeshaFiksChange(this.value)"><span class="small mut">(0-1500)</span></div>'
+          : '')+
+        (_anaDetPeshaMode==='interval'
+          ? '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">Nga <input type="number" id="anaDetPeshaMinInp" min="0" max="1500" value="'+(_anaDetPeshaMin!=null?_anaDetPeshaMin:'')+'" style="width:80px;" oninput="anaDetPeshaIntervalChange()"> deri <input type="number" id="anaDetPeshaMaxInp" min="0" max="1500" value="'+(_anaDetPeshaMax!=null?_anaDetPeshaMax:'')+'" style="width:80px;" oninput="anaDetPeshaIntervalChange()"> <span class="small mut">(maksimumi 1500)</span></div>'
+          : '')+
       '</div>';
   } else if(_anaDetAktiv==='pozicioni'){
     el.innerHTML =
@@ -416,18 +425,19 @@ async function ngarkoAnaDetaje(){
   const t1=$('anaDetTabela1');
   if(t1){
     t1.innerHTML = !rreshtat.length ? '<p class="small mut">Asnjë pjesëmarrje në këtë filtër.</p>' :
-      '<table style="width:100%;font-size:12px;border-collapse:collapse;">'+
-        '<thead><tr style="color:var(--mut);text-align:left;"><th style="padding:4px 6px;">Data</th><th style="padding:4px 6px;">Kategoria</th><th style="padding:4px 6px;">Pesha</th><th style="padding:4px 6px;">Pozicioni</th><th style="padding:4px 6px;">Rezultati</th></tr></thead>'+
-        '<tbody>'+rreshtat.map(function(r){
-          return '<tr style="border-top:1px solid #20262f;">'+
-            '<td style="padding:4px 6px;">'+esc(r.data)+'</td>'+
-            '<td style="padding:4px 6px;">'+esc(r.kategoria||'—')+'</td>'+
-            '<td style="padding:4px 6px;">'+r.pesha+'</td>'+
-            '<td style="padding:4px 6px;">'+(r.pozicioni!=null ? '#'+r.pozicioni : '—')+'</td>'+
-            '<td style="padding:4px 6px;color:'+(r.fitoi?'var(--good)':'var(--mut)')+';">'+(r.fitoi?'Fituar':'Humbur')+'</td>'+
-          '</tr>';
-        }).join('')+
-      '</tbody></table>';
+      rreshtat.map(function(r){
+        const kutiaPoz = r.pozicioni!=null
+          ? '<div style="flex:0 0 30px;height:26px;display:flex;align-items:center;justify-content:center;background:rgba(74,158,255,.15);border:1px solid var(--acc);border-radius:6px;font-size:12px;font-weight:700;color:var(--acc);">'+r.pozicioni+'</div>'
+          : '<div style="flex:0 0 30px;height:26px;display:flex;align-items:center;justify-content:center;background:#1a1f27;border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--mut);">—</div>';
+        return '<div style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid #20262f;">'+
+          kutiaPoz+
+          '<div style="flex:1;min-width:0;">'+
+            '<div style="font-size:12px;">'+esc(r.data)+' · '+esc(r.kategoria||'—')+'</div>'+
+            '<div class="small mut">Pesha: '+r.pesha+'</div>'+
+          '</div>'+
+          '<div style="font-size:12px;font-weight:600;color:'+(r.fitoi?'var(--good)':'var(--mut)')+';">'+(r.fitoi?'Fituar':'Humbur')+'</div>'+
+        '</div>';
+      }).join('');
   }
   anaRenderDetRezultati();
 }
