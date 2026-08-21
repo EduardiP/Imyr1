@@ -215,7 +215,31 @@ function mainAnaTrafiku(m){
       '</div>'+
       '<div id="anaMetrikaRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;"></div>'+
     '</div>'+
-    '<div class="card"><canvas id="anaCanvas" height="90"></canvas></div>';
+    '<div class="card"><canvas id="anaCanvas" height="90"></canvas></div>'+
+    '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
+      '<div class="card" style="flex:2;min-width:340px;">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px;">'+
+          '<h3 class="h" style="font-size:15px;margin:0;">Sipas orës së ditës</h3>'+
+          '<div style="position:relative;">'+
+            '<button type="button" id="anaKalBtn_ore" class="btn" style="min-width:170px;"></button>'+
+            '<div id="anaKalPanel_ore" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;width:230px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+          '</div>'+
+          '<input type="date" id="anaNgaOre" style="display:none;">'+
+          '<input type="date" id="anaDeriOre" style="display:none;">'+
+        '</div>'+
+        '<p class="small mut" style="margin:0 0 12px;">Zgjidh 1 ditë (ose interval) — shtyllat tregojnë shumën në secilën orë. Vetëm 1 metrikë njëherë.</p>'+
+        '<div id="anaOreMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
+        '<canvas id="anaOreCanvas" height="110"></canvas>'+
+      '</div>'+
+      '<div class="card" style="flex:1;min-width:260px;">'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Ankand — pjesëmarrje vs fitore</h3>'+
+        '<p class="small mut" style="margin:0 0 12px;">Zgjidh maksimum 1 kategori biznesi (nga ku ke marrë pjesë), për periudhën e zgjedhur më lart.</p>'+
+        '<div id="anaAnkandRezultati" style="margin-bottom:14px;padding:12px;background:#0e1116;border-radius:8px;border:1px solid var(--line);">'+
+          '<p class="small mut" style="margin:0;">Zgjidh kategori nga lista poshtë.</p>'+
+        '</div>'+
+        '<div id="anaAnkandKarusel" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;padding-right:4px;"></div>'+
+      '</div>'+
+    '</div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
   $('anaNga').value=anaFmt(nga); $('anaDeri').value=anaFmt(sot);
   window.__anaKalendaret = window.__anaKalendaret || {};
@@ -234,7 +258,113 @@ function mainAnaTrafiku(m){
   anaRenderMetrika();
   ngarkoAnaReklamatLista();
   ngarkoAnalitika();
+
+  // ─── Ora e ditës + Ankand (rreshti i ri, poshtë grafikut kryesor) ───
+  $('anaNgaOre').value=anaFmt(nga); $('anaDeriOre').value=anaFmt(sot);
+  anaKrijoKalendarRangu({
+    id:'ore', btnId:'anaKalBtn_ore', panelId:'anaKalPanel_ore',
+    getNga:()=>$('anaNgaOre').value, getDeri:()=>$('anaDeriOre').value,
+    setNga:v=>{ $('anaNgaOre').value=v; }, setDeri:v=>{ $('anaDeriOre').value=v; },
+    onRuaj: anaNgarkoOreDheAnkand
+  });
+  anaRenderOreMetrika();
+  ngarkoAnaOre();
+  ngarkoAnaAnkandKategorite();
 }
+
+function anaNgarkoOreDheAnkand(){ ngarkoAnaOre(); ngarkoAnaAnkandKategorite(); }
+
+// ═══ "Sipas orës së ditës" — VETEM 1 metrikë (radio), qirinj (bare), 24 shtylla ═══
+var _anaOreMetrikaAktive='shfaqje', _anaOreChart=null;
+
+function anaRenderOreMetrika(){
+  const el=$('anaOreMetrikaRow'); if(!el) return;
+  el.innerHTML='';
+  ANA_METRIKA.forEach(x=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.textContent=x.l;
+    const on=_anaOreMetrikaAktive===x.k;
+    btn.style.cssText = on
+      ? 'padding:6px 12px;border-radius:20px;border:1px solid var(--acc);background:var(--acc);color:#06121f;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;'
+      : 'padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit;';
+    btn.addEventListener('click', function(){
+      _anaOreMetrikaAktive=x.k;
+      anaRenderOreMetrika();
+      ngarkoAnaOre();
+    });
+    el.appendChild(btn);
+  });
+}
+
+async function ngarkoAnaOre(){
+  const ngaEl=$('anaNgaOre'), deriEl=$('anaDeriOre');
+  if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
+  const url='/api/analytics/ore?nga='+ngaEl.value+'&deri='+deriEl.value+'&metrika='+_anaOreMetrikaAktive+'&logjika='+(window.__llogariaModaliteti||'ankand');
+  let d;
+  try{ d=await(await fetch(url)).json(); }catch(e){ return; }
+  const oret=d.oret||new Array(24).fill(0);
+  const labels=oret.map((_,i)=>i+':00');
+  const ngjyra=(ANA_METRIKA.find(x=>x.k===_anaOreMetrikaAktive)||{}).c||'#4a9eff';
+  const canvas=$('anaOreCanvas'); if(!canvas||typeof Chart==='undefined') return;
+  if(_anaOreChart){ _anaOreChart.destroy(); _anaOreChart=null; }
+  const ctx=canvas.getContext('2d');
+  _anaOreChart=new Chart(ctx,{type:'bar',data:{labels,datasets:[{data:oret,backgroundColor:ngjyra,borderRadius:3,maxBarThickness:22}]},
+    options:{responsive:true,
+      scales:{x:{ticks:{color:'#8b949e'},grid:{display:false}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
+      plugins:{legend:{display:false}}}
+  });
+}
+
+// ═══ "Ankand — pjesëmarrje vs fitore" — karusel vertikal kategorish, max 1 e zgjedhur ═══
+var _anaAnkandKategorite=[], _anaAnkandZgjedhur=null;
+
+async function ngarkoAnaAnkandKategorite(){
+  const ngaEl=$('anaNgaOre'), deriEl=$('anaDeriOre');
+  if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
+  const url='/api/analytics/ankand-kategorite?nga='+ngaEl.value+'&deri='+deriEl.value;
+  let d;
+  try{ d=await(await fetch(url)).json(); }catch(e){ return; }
+  _anaAnkandKategorite=d.kategorite||[];
+  if(_anaAnkandZgjedhur && !_anaAnkandKategorite.some(k=>k.kategoria===_anaAnkandZgjedhur)) _anaAnkandZgjedhur=null;
+  anaRenderAnkandKarusel();
+  anaRenderAnkandRezultati();
+}
+
+function anaRenderAnkandKarusel(){
+  const el=$('anaAnkandKarusel'); if(!el) return;
+  if(!_anaAnkandKategorite.length){ el.innerHTML='<p class="small mut" style="margin:0;">Asnjë pjesëmarrje Ankand në këtë periudhë.</p>'; return; }
+  el.innerHTML = _anaAnkandKategorite.map(function(k, i){
+    const on = _anaAnkandZgjedhur===k.kategoria;
+    return '<button type="button" onclick="anaZgjidhAnkandKategori('+i+')" style="text-align:left;padding:9px 12px;border-radius:8px;border:1px solid '+(on?'var(--acc)':'var(--line)')+';background:'+(on?'rgba(74,158,255,.15)':'transparent')+';color:'+(on?'var(--acc)':'var(--txt)')+';cursor:pointer;font-family:inherit;font-size:13px;">'+
+      esc(k.kategoria)+' <span style="opacity:.6;font-size:11px;">('+k.pjesemarrje+')</span>'+
+    '</button>';
+  }).join('');
+}
+
+function anaZgjidhAnkandKategori(i){
+  const k=_anaAnkandKategorite[i]; if(!k) return;
+  _anaAnkandZgjedhur = (_anaAnkandZgjedhur===k.kategoria) ? null : k.kategoria; // klik i dyte = shfuqizo zgjedhjen
+  anaRenderAnkandKarusel();
+  anaRenderAnkandRezultati();
+}
+
+function anaRenderAnkandRezultati(){
+  const el=$('anaAnkandRezultati'); if(!el) return;
+  if(!_anaAnkandZgjedhur){
+    // Pa zgjedhje — trego totalin e pergjithshem (te gjitha kategorite bashke)
+    const tot = _anaAnkandKategorite.reduce((acc,k)=>({pjesemarrje:acc.pjesemarrje+k.pjesemarrje, fitore:acc.fitore+k.fitore}), {pjesemarrje:0,fitore:0});
+    el.innerHTML = '<div class="small mut" style="margin-bottom:4px;">Total (të gjitha kategoritë)</div>'+
+      '<div style="font-size:13px;">Pjesëmarrje: <b style="color:var(--txt);">'+tot.pjesemarrje+'</b> &nbsp; Fitore: <b style="color:var(--good);">'+tot.fitore+'</b></div>';
+    return;
+  }
+  const k = _anaAnkandKategorite.find(x=>x.kategoria===_anaAnkandZgjedhur);
+  if(!k){ el.innerHTML='<p class="small mut" style="margin:0;">S\'u gjet.</p>'; return; }
+  const perc = k.pjesemarrje ? Math.round(k.fitore/k.pjesemarrje*100) : 0;
+  el.innerHTML = '<div class="small mut" style="margin-bottom:4px;">'+esc(k.kategoria)+'</div>'+
+    '<div style="font-size:13px;">Pjesëmarrje: <b style="color:var(--txt);">'+k.pjesemarrje+'</b> &nbsp; Fitore: <b style="color:var(--good);">'+k.fitore+'</b> &nbsp; ('+perc+'%)</div>';
+}
+
+
 
 function mainAnaDeficiti(m){
   m.innerHTML='<h2 class="h">Deficiti</h2>'+
