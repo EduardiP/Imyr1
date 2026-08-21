@@ -639,6 +639,59 @@ app.get('/api/analytics/deficiti', iLoguar, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// --- ANALYTICS: SIPAS ORES SE DITES — nje metrike e vetme, shume dite (ose 1),
+// qirinjte (bare) tregojne shumen e te gjitha diteve te zgjedhura ne ate ore. ---
+app.get('/api/analytics/ore', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const ngaD=new Date(nga), deriD=new Date(deri);
+    if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+    const logjika = ['ankand','barazi'].includes(req.query.logjika) ? req.query.logjika : 'ankand';
+    const metrikaMap = { shfaqje:'view', shikime:'shikim', klikime:'click', konvertime:'konvertim' };
+    const lloji = metrikaMap[req.query.metrika] || 'view';
+
+    const r = await pool.query(`
+      SELECT EXTRACT(HOUR FROM created_at)::int AS ora, COUNT(*)::int AS n
+      FROM ngjarjet
+      WHERE reklamues_id=$1 AND lloji=$4 AND burimi=$5 AND created_at::date BETWEEN $2 AND $3
+      GROUP BY ora`, [req.biznesId, nga, deri, lloji, logjika]);
+
+    const oret = new Array(24).fill(0);
+    r.rows.forEach(x => { oret[x.ora] = x.n; });
+    res.json({ nga, deri, metrika: req.query.metrika || 'shfaqje', oret });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- ANALYTICS: ANKAND — sa here ka marre pjese vs sa here e ka fituar, sipas
+// kategorise se HOST-it (biznesi qe e priti gaën), per karuselin vertikal + raportin. ---
+app.get('/api/analytics/ankand-kategorite', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const ngaD=new Date(nga), deriD=new Date(deri);
+    if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+
+    const r = await pool.query(`
+      SELECT b.kategoria_kryesore AS kategoria,
+        COUNT(*)::int AS pjesemarrje,
+        COUNT(*) FILTER (WHERE g.fitoi=true)::int AS fitore
+      FROM garat g JOIN bizneset b ON b.id = g.host_id
+      WHERE g.reklamues_id=$1 AND g.created_at::date BETWEEN $2 AND $3
+        AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''
+      GROUP BY b.kategoria_kryesore
+      ORDER BY pjesemarrje DESC`, [req.biznesId, nga, deri]);
+
+    res.json({ nga, deri, kategorite: r.rows });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // --- PROFILI I ZGJERUAR: pikët e profilit + analitika për çdo snippet ---
 app.get('/api/profili', iLoguar, async (req, res) => {
   try {
