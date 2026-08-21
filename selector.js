@@ -55,6 +55,15 @@ async function initGarat(pool) {
   await pool.query(`ALTER TABLE garat ADD COLUMN IF NOT EXISTS ndihma NUMERIC`);
   await pool.query(`ALTER TABLE garat ADD COLUMN IF NOT EXISTS snippet_id INTEGER`);
   await pool.query(`ALTER TABLE garat ADD COLUMN IF NOT EXISTS ndihma_bruto NUMERIC`);
+  // vendim_id — identifikues i perbashket per te gjithe kandidatet e TE NJEJTIT vendim
+  // (per te llogaritur POZICIONIN e sakte brenda atij vendimi specifik).
+  await pool.query(`CREATE SEQUENCE IF NOT EXISTS garat_vendim_seq`);
+  await pool.query(`ALTER TABLE garat ADD COLUMN IF NOT EXISTS vendim_id BIGINT`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_garat_vendim ON garat(vendim_id)`);
+  // reklama_id — VETEM per rreshtin FITUES (humbesit s'kane reklame specifike te percaktuar,
+  // sepse Ankandi zgjedh fillimisht biznesin, e vetem PASTAJ zgjedh reklamen e tij specifike —
+  // kjo faze e dyte s'ndodh fare per humbesit).
+  await pool.query(`ALTER TABLE garat ADD COLUMN IF NOT EXISTS reklama_id INTEGER`);
 }
 
 async function zgjidhReklame(pool, hostId, pare, snippetId) {
@@ -171,7 +180,7 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
     'SELECT id, biznes_id, teksti, imazh_url, video_url, html5_url, link FROM promovimet WHERE id=$1', [rekId]);
   if (!rd.rows.length) return null;
 
-  if (!shkoTeBarazi) regjistroAnkandin(pool, hostId, listaAnkand, fituesiAnkand, snippetId).catch(()=>{});
+  if (!shkoTeBarazi) regjistroAnkandin(pool, hostId, listaAnkand, fituesiAnkand, snippetId, rekId).catch(()=>{});
 
   // Regjistro efektin ne borxhin global — VETEM nese kishte konkurrence te vertete
   // mes te dyja pishinave (jo rruge direkte, jo tip host-i)
@@ -207,14 +216,17 @@ async function zgjedhNgaLista(pool, bizId, idet) {
   return l[l.length - 1].id;
 }
 
-async function regjistroAnkandin(pool, hostId, lista, fituesi, snippetId) {
+async function regjistroAnkandin(pool, hostId, lista, fituesi, snippetId, reklamaFituese) {
   try {
+    const vendimQ = await pool.query(`SELECT nextval('garat_vendim_seq') AS id`);
+    const vendimId = vendimQ.rows[0].id;
     for (const x of lista) {
       await pool.query(
-        `INSERT INTO garat (host_id, reklamues_id, pesha, ai, profili, ndihma, ndihma_bruto, fitoi, snippet_id)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        `INSERT INTO garat (host_id, reklamues_id, pesha, ai, profili, ndihma, ndihma_bruto, fitoi, snippet_id, vendim_id, reklama_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
         [hostId, x.k.biznes_id,
-         rr(x.pesha), rr(x.ai), rr(x.profili), rr(x.ndihma), rr(x.ndihmaBruto), x === fituesi, snippetId || null]);
+         rr(x.pesha), rr(x.ai), rr(x.profili), rr(x.ndihma), rr(x.ndihmaBruto), x === fituesi, snippetId || null,
+         vendimId, (x === fituesi) ? (reklamaFituese || null) : null]);
     }
   } catch (e) {}
 }
