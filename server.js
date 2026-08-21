@@ -768,6 +768,82 @@ app.get('/api/analytics/ankand-detaje', iLoguar, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// --- ANALYTICS: HISTOGRAM I PESHES — boshti X: intervale peshe (0-1500, hapa 100),
+// boshti Y: sa here eshte FITUAR ne ate interval, brenda dates se zgjedhur. ---
+app.get('/api/analytics/ankand-pesha-histogram', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+
+    const r = await pool.query(`
+      SELECT LEAST(14, FLOOR(pesha/100))::int AS kosh, COUNT(*)::int AS n
+      FROM garat
+      WHERE reklamues_id=$1 AND fitoi=true AND created_at::date BETWEEN $2 AND $3
+      GROUP BY kosh`, [req.biznesId, nga, deri]);
+
+    const koshat = new Array(15).fill(0); // 0-99,100-199,...,1400-1500
+    r.rows.forEach(x => { koshat[x.kosh] = x.n; });
+    const etiketa = koshat.map((_, i) => (i*100) + '-' + (i===14 ? 1500 : (i*100+99)));
+    res.json({ nga, deri, etiketa, koshat });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- ANALYTICS: POZICIONET E FITUARA — vetem nivelet e pozicionit qe kane fituar
+// te pakten 1 here (jo te gjitha pozicionet teorike). ---
+app.get('/api/analytics/ankand-pozicionet-fituara', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+
+    const r = await pool.query(`
+      WITH mp AS (
+        SELECT g.*, CASE WHEN g.vendim_id IS NOT NULL THEN RANK() OVER (PARTITION BY g.vendim_id ORDER BY g.pesha DESC) ELSE NULL END AS pozicioni
+        FROM garat g WHERE g.reklamues_id=$1 AND g.created_at::date BETWEEN $2 AND $3
+      )
+      SELECT DISTINCT pozicioni, COUNT(*)::int AS n
+      FROM mp WHERE fitoi=true AND pozicioni IS NOT NULL
+      GROUP BY pozicioni ORDER BY pozicioni`, [req.biznesId, nga, deri]);
+
+    res.json({ nga, deri, pozicionet: r.rows.map(x => ({ pozicioni: x.pozicioni, n: x.n })) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- ANALYTICS: DETAJET E FITOREVE NE NJE POZICION SPECIFIK ---
+app.get('/api/analytics/ankand-pozicion-detaje', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const pozicioni = parseInt(req.query.pozicioni, 10);
+    if (isNaN(pozicioni)) return res.status(400).json({ error: 'pozicioni kërkohet' });
+
+    const r = await pool.query(`
+      WITH mp AS (
+        SELECT g.*, CASE WHEN g.vendim_id IS NOT NULL THEN RANK() OVER (PARTITION BY g.vendim_id ORDER BY g.pesha DESC) ELSE NULL END AS pozicioni
+        FROM garat g WHERE g.reklamues_id=$1 AND g.created_at::date BETWEEN $2 AND $3
+      )
+      SELECT mp.created_at, mp.pesha, mp.ai, b.kategoria_kryesore AS kategoria, p.titulli AS reklama
+      FROM mp
+      JOIN bizneset b ON b.id = mp.host_id
+      LEFT JOIN promovimet p ON p.id = mp.reklama_id
+      WHERE mp.fitoi=true AND mp.pozicioni=$4
+      ORDER BY mp.created_at DESC`, [req.biznesId, nga, deri, pozicioni]);
+
+    res.json({ nga, deri, pozicioni, fitoret: r.rows.map(x => ({
+      data: x.created_at.toISOString().slice(0,10), pesha: x.pesha, ai: x.ai,
+      kategoria: x.kategoria, reklama: x.reklama || '(pa emër)'
+    })) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // --- PROFILI I ZGJERUAR: pikët e profilit + analitika për çdo snippet ---
 app.get('/api/profili', iLoguar, async (req, res) => {
   try {
