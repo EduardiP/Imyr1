@@ -705,21 +705,39 @@ app.get('/api/analytics/ankand-detaje', iLoguar, async (req, res) => {
     if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
 
     const kategoria = (req.query.kategoria || '').trim();
-    const pesha = (req.query.pesha || 'te_gjitha').trim(); // 'te_gjitha'|'larta'|'mesatare'|'ulet'
+    const peshaMode = (req.query.pesha_mode || 'te_gjitha').trim(); // 'te_gjitha'|'fiks'|'interval'
+    const peshaFiks = req.query.pesha_fiks != null ? parseFloat(req.query.pesha_fiks) : null;
+    let peshaMin = req.query.pesha_min != null ? parseFloat(req.query.pesha_min) : null;
+    let peshaMax = req.query.pesha_max != null ? parseFloat(req.query.pesha_max) : null;
+    if (peshaMin != null) peshaMin = Math.max(0, Math.min(1500, peshaMin));
+    if (peshaMax != null) peshaMax = Math.max(0, Math.min(1500, peshaMax));
+    const pozicioni = req.query.pozicioni && req.query.pozicioni !== 'te_gjitha' ? parseInt(req.query.pozicioni, 10) : null;
+    const reklamaId = req.query.reklama_id ? parseInt(req.query.reklama_id, 10) : null;
 
-    let filtroKat = '', filtroPesha = '';
     const params = [req.biznesId, nga, deri];
-    if (kategoria) { params.push(kategoria); filtroKat = ` AND b.kategoria_kryesore=$${params.length}`; }
-    if (pesha === 'larta') filtroPesha = ' AND g.pesha >= 70';
-    else if (pesha === 'mesatare') filtroPesha = ' AND g.pesha >= 40 AND g.pesha < 70';
-    else if (pesha === 'ulet') filtroPesha = ' AND g.pesha < 40';
+    let filtri = '';
+    if (kategoria) { params.push(kategoria); filtri += ` AND b.kategoria_kryesore=$${params.length}`; }
+    if (peshaMode === 'fiks' && peshaFiks != null) { params.push(peshaFiks); filtri += ` AND mp.pesha=$${params.length}`; }
+    else if (peshaMode === 'interval' && peshaMin != null && peshaMax != null) {
+      params.push(peshaMin); const i1=params.length;
+      params.push(peshaMax); const i2=params.length;
+      filtri += ` AND mp.pesha BETWEEN $${i1} AND $${i2}`;
+    }
+    if (pozicioni != null && !isNaN(pozicioni)) { params.push(pozicioni); filtri += ` AND mp.pozicioni=$${params.length}`; }
+    if (reklamaId && !isNaN(reklamaId)) { params.push(reklamaId); filtri += ` AND mp.reklama_id=$${params.length}`; }
 
     const r = await pool.query(`
-      SELECT g.id, g.created_at, g.pesha, g.ai, g.profili, g.ndihma, g.fitoi, b.kategoria_kryesore AS kategoria
-      FROM garat g JOIN bizneset b ON b.id = g.host_id
-      WHERE g.reklamues_id=$1 AND g.created_at::date BETWEEN $2 AND $3
-        ${filtroKat}${filtroPesha}
-      ORDER BY g.created_at DESC
+      WITH mp AS (
+        SELECT g.*,
+          CASE WHEN g.vendim_id IS NOT NULL THEN RANK() OVER (PARTITION BY g.vendim_id ORDER BY g.pesha DESC) ELSE NULL END AS pozicioni
+        FROM garat g
+        WHERE g.reklamues_id=$1 AND g.created_at::date BETWEEN $2 AND $3
+      )
+      SELECT mp.id, mp.created_at, mp.pesha, mp.ai, mp.profili, mp.ndihma, mp.fitoi, mp.pozicioni, mp.reklama_id,
+        b.kategoria_kryesore AS kategoria
+      FROM mp JOIN bizneset b ON b.id = mp.host_id
+      WHERE 1=1 ${filtri}
+      ORDER BY mp.created_at DESC
       LIMIT 500`, params);
 
     // Kategoritë e disponueshme (per butonat e filtrit) — te pavarura nga filtri i kategorise vete
@@ -730,14 +748,22 @@ app.get('/api/analytics/ankand-detaje', iLoguar, async (req, res) => {
         AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''
       ORDER BY 1`, [req.biznesId, nga, deri]);
 
+    // Reklamat e disponueshme (per filtrin "Reklama") — vetem ato qe kane fituar te pakten 1 here
+    const rekOpt = await pool.query(`
+      SELECT DISTINCT p.id, p.titulli
+      FROM garat g JOIN promovimet p ON p.id = g.reklama_id
+      WHERE g.reklamues_id=$1 AND g.created_at::date BETWEEN $2 AND $3 AND g.reklama_id IS NOT NULL
+      ORDER BY 2`, [req.biznesId, nga, deri]);
+
     res.json({
       nga, deri,
       rreshtat: r.rows.map(x => ({
         id: x.id, data: x.created_at.toISOString().slice(0,10),
         pesha: x.pesha, ai: x.ai, profili: x.profili, ndihma: x.ndihma,
-        fitoi: x.fitoi, kategoria: x.kategoria
+        fitoi: x.fitoi, kategoria: x.kategoria, pozicioni: x.pozicioni, reklama_id: x.reklama_id
       })),
-      kategorite_disponueshme: katOpt.rows.map(x => x.kategoria)
+      kategorite_disponueshme: katOpt.rows.map(x => x.kategoria),
+      reklamat_disponueshme: rekOpt.rows.map(x => ({ id: x.id, emri: x.titulli }))
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
