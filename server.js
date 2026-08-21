@@ -692,6 +692,56 @@ app.get('/api/analytics/ankand-kategorite', iLoguar, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// --- ANALYTICS: ANKAND DETAJE — pjesemarrjet individuale, te filtrueshme sipas
+// dates/peshes/kategorise (reklama+pozicioni kerkojne kolona shtese, PENDING). ---
+app.get('/api/analytics/ankand-detaje', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const ngaD=new Date(nga), deriD=new Date(deri);
+    if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+
+    const kategoria = (req.query.kategoria || '').trim();
+    const pesha = (req.query.pesha || 'te_gjitha').trim(); // 'te_gjitha'|'larta'|'mesatare'|'ulet'
+
+    let filtroKat = '', filtroPesha = '';
+    const params = [req.biznesId, nga, deri];
+    if (kategoria) { params.push(kategoria); filtroKat = ` AND b.kategoria_kryesore=$${params.length}`; }
+    if (pesha === 'larta') filtroPesha = ' AND g.pesha >= 70';
+    else if (pesha === 'mesatare') filtroPesha = ' AND g.pesha >= 40 AND g.pesha < 70';
+    else if (pesha === 'ulet') filtroPesha = ' AND g.pesha < 40';
+
+    const r = await pool.query(`
+      SELECT g.id, g.created_at, g.pesha, g.ai, g.profili, g.ndihma, g.fitoi, b.kategoria_kryesore AS kategoria
+      FROM garat g JOIN bizneset b ON b.id = g.host_id
+      WHERE g.reklamues_id=$1 AND g.created_at::date BETWEEN $2 AND $3
+        ${filtroKat}${filtroPesha}
+      ORDER BY g.created_at DESC
+      LIMIT 500`, params);
+
+    // Kategoritë e disponueshme (per butonat e filtrit) — te pavarura nga filtri i kategorise vete
+    const katOpt = await pool.query(`
+      SELECT DISTINCT b.kategoria_kryesore AS kategoria
+      FROM garat g JOIN bizneset b ON b.id = g.host_id
+      WHERE g.reklamues_id=$1 AND g.created_at::date BETWEEN $2 AND $3
+        AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''
+      ORDER BY 1`, [req.biznesId, nga, deri]);
+
+    res.json({
+      nga, deri,
+      rreshtat: r.rows.map(x => ({
+        id: x.id, data: x.created_at.toISOString().slice(0,10),
+        pesha: x.pesha, ai: x.ai, profili: x.profili, ndihma: x.ndihma,
+        fitoi: x.fitoi, kategoria: x.kategoria
+      })),
+      kategorite_disponueshme: katOpt.rows.map(x => x.kategoria)
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // --- PROFILI I ZGJERUAR: pikët e profilit + analitika për çdo snippet ---
 app.get('/api/profili', iLoguar, async (req, res) => {
   try {
