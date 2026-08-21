@@ -212,16 +212,7 @@ function mainAnaTrafiku(m){
       '<div id="anaDetPeshaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
       '<div class="small mut" style="margin-bottom:4px;">Kategoria:</div>'+
       '<div id="anaDetKategoriaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;"></div>'+
-      '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;">'+
-        '<div style="flex:1;min-width:300px;">'+
-          '<h4 class="small" style="font-weight:600;margin:0 0 8px;">Pjesëmarrjet</h4>'+
-          '<div id="anaDetTabela1" style="max-height:320px;overflow-y:auto;"><p class="small">Po ngarkoj…</p></div>'+
-        '</div>'+
-        '<div style="flex:1;min-width:300px;">'+
-          '<h4 class="small" style="font-weight:600;margin:0 0 8px;">Përmbledhje sipas kategorisë</h4>'+
-          '<div id="anaDetTabela2" style="max-height:320px;overflow-y:auto;"><p class="small">Po ngarkoj…</p></div>'+
-        '</div>'+
-      '</div>'+
+      '<div id="anaDetTabela1" style="max-height:400px;overflow-y:auto;"><p class="small">Po ngarkoj…</p></div>'+
     '</div>'+
     '<p class="small" style="margin:2px 0 16px;">Ecuria e reklamave të tua me ditë.</p>'+
     '<div class="card" style="margin-bottom:16px;">'+
@@ -387,30 +378,6 @@ async function ngarkoAnaDetaje(){
             '<td style="padding:4px 6px;">'+esc(r.kategoria||'—')+'</td>'+
             '<td style="padding:4px 6px;">'+r.pesha+'</td>'+
             '<td style="padding:4px 6px;color:'+(r.fitoi?'var(--good)':'var(--mut)')+';">'+(r.fitoi?'Fituar':'Humbur')+'</td>'+
-          '</tr>';
-        }).join('')+
-      '</tbody></table>';
-  }
-
-  // Tabela 2 — permbledhje sipas kategorise (nga te njejtat rreshta te filtruara)
-  const t2=$('anaDetTabela2');
-  if(t2){
-    const grupe={};
-    rreshtat.forEach(function(r){
-      const k=r.kategoria||'Pa kategori';
-      if(!grupe[k]) grupe[k]={pjesemarrje:0,fitore:0,peshaTot:0};
-      grupe[k].pjesemarrje++; if(r.fitoi) grupe[k].fitore++; grupe[k].peshaTot+=(+r.pesha||0);
-    });
-    const rreshtatGrup=Object.keys(grupe).map(function(k){ return {kategoria:k, ...grupe[k], peshaMes: grupe[k].pjesemarrje ? (grupe[k].peshaTot/grupe[k].pjesemarrje).toFixed(1) : 0}; });
-    t2.innerHTML = !rreshtatGrup.length ? '<p class="small mut">Asnjë të dhënë.</p>' :
-      '<table style="width:100%;font-size:12px;border-collapse:collapse;">'+
-        '<thead><tr style="color:var(--mut);text-align:left;"><th style="padding:4px 6px;">Kategoria</th><th style="padding:4px 6px;">Pjesëmarrje</th><th style="padding:4px 6px;">Fitore</th><th style="padding:4px 6px;">Pesha mes.</th></tr></thead>'+
-        '<tbody>'+rreshtatGrup.map(function(g){
-          return '<tr style="border-top:1px solid #20262f;">'+
-            '<td style="padding:4px 6px;">'+esc(g.kategoria)+'</td>'+
-            '<td style="padding:4px 6px;">'+g.pjesemarrje+'</td>'+
-            '<td style="padding:4px 6px;color:var(--good);">'+g.fitore+'</td>'+
-            '<td style="padding:4px 6px;">'+g.peshaMes+'</td>'+
           '</tr>';
         }).join('')+
       '</tbody></table>';
