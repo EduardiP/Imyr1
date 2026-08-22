@@ -891,6 +891,37 @@ app.get('/api/analytics/balance-kategorite-katror', iLoguar, async (req, res) =>
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// --- AUTOMATIKU: si eshte ndare hapesira jote (si host) mes pishines Ankand dhe
+// Balance, dite-per-dite. Bazuar te vet hosting_mode i biznesit + te dhenat reale. ---
+app.get('/api/analytics/automatik-ndarja', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const ngaD=new Date(nga), deriD=new Date(deri);
+    if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+
+    const b = await pool.query('SELECT hosting_mode, barazi_perqindje FROM bizneset WHERE id=$1', [req.biznesId]);
+    const hostingMode = (b.rows[0] && b.rows[0].hosting_mode) || 'automatik';
+    const baraziPerqindje = (b.rows[0] && b.rows[0].barazi_perqindje) != null ? b.rows[0].barazi_perqindje : null;
+
+    const r = await pool.query(`
+      SELECT gs::date AS data,
+        COALESCE(a.n,0)::int AS ankand,
+        COALESCE(bl.n,0)::int AS balance
+      FROM generate_series($2::date, $3::date, '1 day') AS gs
+      LEFT JOIN (SELECT created_at::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1 AND lloji='view' AND burimi='ankand' GROUP BY dt) a  ON a.dt=gs
+      LEFT JOIN (SELECT created_at::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1 AND lloji='view' AND burimi='barazi' GROUP BY dt) bl ON bl.dt=gs
+      ORDER BY gs`, [req.biznesId, nga, deri]);
+
+    res.json({ nga, deri, hostingMode, baraziPerqindje, rows: r.rows.map(x => ({
+      data: x.data.toISOString().slice(0,10), ankand: x.ankand, balance: x.balance
+    })) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // --- PROFILI I ZGJERUAR: pikët e profilit + analitika për çdo snippet ---
 app.get('/api/profili', iLoguar, async (req, res) => {
   try {
