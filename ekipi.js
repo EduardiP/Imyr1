@@ -62,13 +62,20 @@ async function init(pool) {
       krijuar_at TIMESTAMPTZ DEFAULT now()
     )`);
 
-  // Rolet standarde (shabllone) — krijohen 1 here per biznes, nese s'ekzistojne
-  const LEJE_ADMIN = { creative_krijo: true, creative_shiko: true, snippet_ndrysho: true,
+  // Rolet standarde (shabllone) — krijohen 1 here per biznes, nese s'ekzistojne.
+  // Struktura E RE: { ankand:{aktiv,...7leje}, barazi:{aktiv,...7leje} } — Admin merr
+  // qasje te plote ne te dyja dhogarite si parazgjedhje; Editor/Lexues vetem Ankand
+  // (mund ta shtoje vete Balance me pas, nga UI-ja, nese e do).
+  const LEJE_PLOTE = { creative_krijo: true, creative_shiko: true, snippet_ndrysho: true,
     faturimi_shiko: true, ekipi_menaxho: true, analytics_shiko: true, konvertimet_shiko: true };
-  const LEJE_EDITOR = { creative_krijo: true, creative_shiko: true, snippet_ndrysho: false,
+  const LEJE_EDITOR_DET = { creative_krijo: true, creative_shiko: true, snippet_ndrysho: false,
     faturimi_shiko: false, ekipi_menaxho: false, analytics_shiko: true, konvertimet_shiko: true };
-  const LEJE_LEXUES = { creative_krijo: false, creative_shiko: true, snippet_ndrysho: false,
+  const LEJE_LEXUES_DET = { creative_krijo: false, creative_shiko: true, snippet_ndrysho: false,
     faturimi_shiko: false, ekipi_menaxho: false, analytics_shiko: true, konvertimet_shiko: false };
+
+  const LEJE_ADMIN = { ankand: Object.assign({ aktiv: true }, LEJE_PLOTE), barazi: Object.assign({ aktiv: true }, LEJE_PLOTE) };
+  const LEJE_EDITOR = { ankand: Object.assign({ aktiv: true }, LEJE_EDITOR_DET), barazi: { aktiv: false } };
+  const LEJE_LEXUES = { ankand: Object.assign({ aktiv: true }, LEJE_LEXUES_DET), barazi: { aktiv: false } };
 
   await pool.query(`
     INSERT INTO ekipi_role_shabllonet (biznes_id, emri, leje)
