@@ -210,32 +210,13 @@ function mainAnaTrafiku(m){
       '</div>'+
       '<div id="anaDetKryesoriRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
       '<div id="anaDetNenPanel" style="margin-bottom:14px;"></div>'+
-      '<div id="anaDetTabela1" style="max-height:400px;overflow-y:auto;"><p class="small">Po ngarkoj…</p></div>'+
-      '<div id="anaDetRezultati" style="margin-top:16px;"></div>'+
-    '</div>'+
-    '<p class="small" style="margin:2px 0 16px;">Ecuria e reklamave të tua me ditë.</p>'+
-    '<div class="card" style="margin-bottom:16px;">'+
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
-        '<button class="btn" onclick="anaPreset(7)">7 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPreset(30)">30 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPreset(90)">90 ditët e fundit</button>'+
-        '<span style="flex:1"></span>'+
-        '<div style="position:relative;">'+
-          '<button type="button" id="anaKalBtn_top" class="btn" style="min-width:170px;"></button>'+
-          '<div id="anaKalPanel_top" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;width:230px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
-        '</div>'+
-        '<input type="date" id="anaNga" style="display:none;">'+
-        '<input type="date" id="anaDeri" style="display:none;">'+
-      '</div>'+
-      '<div style="display:flex;justify-content:flex-end;margin-top:10px;">'+
-        '<div style="position:relative;">'+
-          '<button type="button" id="anaRekBtn" class="btn" style="min-width:150px;">Reklamat <span id="anaRekBtnCount"></span> ▾</button>'+
-          '<div id="anaRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:240px;max-height:280px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+      '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:4px;">'+
+        '<div id="anaDetRezultati" style="flex:2;min-width:280px;"></div>'+
+        '<div style="flex:1;min-width:200px;max-width:280px;">'+
+          '<div id="anaDetTabela1" style="max-height:330px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;"><p class="small" style="padding:10px;">Po ngarkoj…</p></div>'+
         '</div>'+
       '</div>'+
-      '<div id="anaMetrikaRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;"></div>'+
     '</div>'+
-    '<div class="card"><canvas id="anaCanvas" height="90"></canvas></div>'+
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
       '<div class="card" style="flex:2;min-width:340px;">'+
         '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px;">'+
@@ -261,23 +242,7 @@ function mainAnaTrafiku(m){
       '</div>'+
     '</div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
-  $('anaNga').value=anaFmt(nga); $('anaDeri').value=anaFmt(sot);
   window.__anaKalendaret = window.__anaKalendaret || {};
-  anaKrijoKalendarRangu({
-    id:'top', btnId:'anaKalBtn_top', panelId:'anaKalPanel_top',
-    getNga:()=>$('anaNga').value, getDeri:()=>$('anaDeri').value,
-    setNga:v=>{ $('anaNga').value=v; }, setDeri:v=>{ $('anaDeri').value=v; },
-    onRuaj: ngarkoAnalitika
-  });
-  $('anaRekBtn').addEventListener('click', function(e){
-    e.stopPropagation();
-    const dd=$('anaRekDropdown'); if(!dd) return;
-    _anaDropdownOpen=!_anaDropdownOpen;
-    dd.classList.toggle('hide', !_anaDropdownOpen);
-  });
-  anaRenderMetrika();
-  ngarkoAnaReklamatLista();
-  ngarkoAnalitika();
 
   // ─── Ora e ditës + Ankand (rreshti i ri, poshtë grafikut kryesor) ───
   $('anaNgaOre').value=anaFmt(nga); $('anaDeriOre').value=anaFmt(sot);
@@ -424,20 +389,25 @@ async function ngarkoAnaDetaje(){
   const rreshtat = d.rreshtat || [];
   const t1=$('anaDetTabela1');
   if(t1){
-    t1.innerHTML = !rreshtat.length ? '<p class="small mut">Asnjë pjesëmarrje në këtë filtër.</p>' :
-      rreshtat.map(function(r){
-        const kutiaPoz = r.pozicioni!=null
-          ? '<div style="flex:0 0 30px;height:26px;display:flex;align-items:center;justify-content:center;background:rgba(74,158,255,.15);border:1px solid var(--acc);border-radius:6px;font-size:12px;font-weight:700;color:var(--acc);">'+r.pozicioni+'</div>'
-          : '<div style="flex:0 0 30px;height:26px;display:flex;align-items:center;justify-content:center;background:#1a1f27;border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--mut);">—</div>';
-        return '<div style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid #20262f;">'+
-          kutiaPoz+
-          '<div style="flex:1;min-width:0;">'+
-            '<div style="font-size:12px;">'+esc(r.data)+' · '+esc(r.kategoria||'—')+'</div>'+
-            '<div class="small mut">Pesha: '+r.pesha+'</div>'+
-          '</div>'+
-          '<div style="font-size:12px;font-weight:600;color:'+(r.fitoi?'var(--good)':'var(--mut)')+';">'+(r.fitoi?'Fituar':'Humbur')+'</div>'+
-        '</div>';
-      }).join('');
+    t1.innerHTML = !rreshtat.length ? '<p class="small mut" style="padding:10px;">Asnjë pjesëmarrje në këtë filtër.</p>' :
+      '<table style="width:100%;border-collapse:collapse;font-size:12px;">'+
+        '<thead><tr style="position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--line);">'+
+          '<th style="text-align:left;padding:7px 8px;font-weight:600;">Data</th>'+
+          '<th style="text-align:left;padding:7px 8px;font-weight:600;">Kategoria</th>'+
+          '<th style="text-align:center;padding:7px 4px;font-weight:600;">Poz.</th>'+
+          '<th style="text-align:right;padding:7px 8px;font-weight:600;">Pesha</th>'+
+          '<th style="text-align:right;padding:7px 8px;font-weight:600;">Rezultati</th>'+
+        '</tr></thead><tbody>'+
+        rreshtat.map(function(r){
+          return '<tr style="border-bottom:1px solid #20262f;">'+
+            '<td style="padding:7px 8px;white-space:nowrap;">'+esc(r.data)+'</td>'+
+            '<td style="padding:7px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;">'+esc(r.kategoria||'—')+'</td>'+
+            '<td style="text-align:center;padding:7px 4px;">'+(r.pozicioni!=null?r.pozicioni:'—')+'</td>'+
+            '<td style="text-align:right;padding:7px 8px;">'+r.pesha+'</td>'+
+            '<td style="text-align:right;padding:7px 8px;font-weight:600;color:'+(r.fitoi?'var(--good)':'var(--mut)')+';">'+(r.fitoi?'Fituar':'Humbur')+'</td>'+
+          '</tr>';
+        }).join('')+
+        '</tbody></table>';
   }
   anaRenderDetRezultati();
 }
