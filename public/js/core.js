@@ -221,7 +221,13 @@ function goHome(){ nav({v:'profile', nav:'dashboard'}); }
 async function loadMe(){
   let r; try{ r=await fetch('/api/une'); }catch(e){ une=null; return false; }
   if(!r.ok){ une=null; return false; }
-  une=await r.json(); await refreshProg(); setHeaderLoggedIn(); return true;
+  une=await r.json();
+  window.une = une; // balance.js (dhe cdo skedar tjeter) e lexon si window.une — sigurohu qe eshte gjithmone i njejte
+  // Sinkronizo MENJEHERE modalitetin Ankand/Balance, PARA se te vizatohet cfardo —
+  // mos prit klikimin e menyse se avatarit (ai ishte shkaku i vertete i bug-ut: ne
+  // refresh, modaliteti mbetej te vlera fillestare hardcoded 'ankand').
+  if(typeof window._sinkronizoModalitetin==='function') window._sinkronizoModalitetin();
+  await refreshProg(); setHeaderLoggedIn(); return true;
 }
 
 // ---------- NAVIGIMI (me shigjetën back të browser-it + URL reale) ----------
