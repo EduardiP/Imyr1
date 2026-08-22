@@ -219,7 +219,7 @@ module.exports = function (app, pool, iLoguar, resendKlient) {
       if (resendKlient) {
         try {
           await resendKlient.emails.send({
-            from: 'PronexusAI <ekipi@pronexusai.com>',
+            from: process.env.EKIPI_EMAIL_FROM || 'Imyr <onboarding@resend.dev>',
             to: email,
             subject: 'Je ftuar në ekipin e PronexusAI',
             html: `<p>Je ftuar të bashkohesh. <a href="https://phronexusai.com/prano-ftesen?kodi=${kodi}">Kliko këtu për të pranuar</a> (skadon në 72 orë).</p>`
