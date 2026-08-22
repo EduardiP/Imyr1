@@ -193,10 +193,12 @@ function mainAnalytics(m){
 function mainAnaTrafiku(m){
   _anaSelectedAd=null; _anaDropdownOpen=false;
   _anaDetAktiv='pesha'; // Pesha e zgjedhur si parazgjedhje, jo asnje
+  _anaDetPerspektiv='marre'; // Marrë (ti përfitove) parazgjedhje; Dhënë (të tjerët përfituan) opsional
   m.innerHTML='<h2 class="h">Trafiku</h2>'+
     '<div class="card" style="margin-bottom:16px;">'+
       '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Detajet e pjesëmarrjeve në Ankand</h3>'+
       '<p class="small mut" style="margin:0 0 12px;">Data vlen për të gjitha filtrat poshtë. Kliko një kategori filtri për ta hapur.</p>'+
+      '<div id="anaDetPerspektivRow" style="display:flex;gap:8px;margin-bottom:14px;"></div>'+
       '<div id="anaDetKryesoriRow" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
         '<button class="btn" onclick="anaDetPreset(7)">7 ditët e fundit</button>'+
@@ -276,12 +278,14 @@ function mainAnaTrafiku(m){
     dd.classList.toggle('hide', !_anaDetRekDropdownOpen);
   });
   anaRenderDetKryesori();
+  anaRenderDetPerspektiv();
   anaRenderDetNenPanel();
   ngarkoAnaDetaje();
 }
 
 // ═══ Seksioni "Detajet e pjesëmarrjeve në Ankand" — 4 butona kryesorë, secili hap panelin e vet ═══
 var _anaDetAktiv=null; // 'pesha'|'pozicioni'|'reklama'|'kategoria'|null
+var _anaDetPerspektiv='marre'; // 'marre' (ti perfitove, reklamues_id=ti) | 'dhene' (te tjeret perfituan, host_id=ti)
 var _anaDetPeshaMode='te_gjitha', _anaDetPeshaFiks=null, _anaDetPeshaMin=null, _anaDetPeshaMax=null;
 var _anaDetPozicioni='te_gjitha';
 var _anaDetReklamaId='', _anaDetReklamat=[];
@@ -323,6 +327,29 @@ function anaRenderDetKryesori(){
     btn.addEventListener('click', function(){ _anaDetAktiv = (_anaDetAktiv===x.k) ? null : x.k; anaRenderDetKryesori(); anaRenderDetNenPanel(); anaRenderDetRezultati(); });
     el.appendChild(btn);
   });
+}
+
+function anaRenderDetPerspektiv(){
+  const el=$('anaDetPerspektivRow'); if(!el) return;
+  const opsionet=[{k:'marre',l:'Marrë'},{k:'dhene',l:'Dhënë'}];
+  el.innerHTML='';
+  opsionet.forEach(function(o){
+    const btn=document.createElement('button');
+    btn.type='button'; btn.textContent=o.l;
+    const on=_anaDetPerspektiv===o.k;
+    btn.style.cssText = on
+      ? 'padding:8px 18px;border-radius:8px;border:2px solid var(--acc);background:var(--acc);color:#06121f;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;'
+      : 'padding:8px 18px;border-radius:8px;border:2px solid var(--line);background:transparent;color:var(--mut);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;';
+    btn.addEventListener('click', function(){ anaDetPerspektivSet(o.k); });
+    el.appendChild(btn);
+  });
+}
+function anaDetPerspektivSet(p){
+  if(_anaDetPerspektiv===p) return;
+  _anaDetPerspektiv=p;
+  anaRenderDetPerspektiv();
+  ngarkoAnaDetaje();       // rifreskon tabelen + listen e reklamave/kategorive
+  anaRenderDetRezultati(); // rifreskon grafikun aktual (Pesha/Pozicioni/Reklama/Kategoria)
 }
 
 function anaRenderDetNenPanel(){
@@ -410,7 +437,7 @@ function anaDetUpdateRekBtnLabel(){
 async function ngarkoAnaDetaje(){
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
-  let url='/api/analytics/ankand-detaje?nga='+ngaEl.value+'&deri='+deriEl.value+'&pesha_mode='+_anaDetPeshaMode;
+  let url='/api/analytics/ankand-detaje?nga='+ngaEl.value+'&deri='+deriEl.value+'&perspektiv='+_anaDetPerspektiv+'&pesha_mode='+_anaDetPeshaMode;
   if(_anaDetPeshaMode==='fiks' && _anaDetPeshaFiks!=null) url+='&pesha_fiks='+_anaDetPeshaFiks;
   if(_anaDetPeshaMode==='interval' && _anaDetPeshaMin!=null && _anaDetPeshaMax!=null) url+='&pesha_min='+_anaDetPeshaMin+'&pesha_max='+_anaDetPeshaMax;
   if(_anaDetPozicioni!=='te_gjitha') url+='&pozicioni='+_anaDetPozicioni;
@@ -534,7 +561,7 @@ async function anaDetRezPesha(el){
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
-  try{ d=await(await fetch('/api/analytics/ankand-pesha-histogram?nga='+ngaEl.value+'&deri='+deriEl.value)).json(); }catch(e){ return; }
+  try{ d=await(await fetch('/api/analytics/ankand-pesha-histogram?nga='+ngaEl.value+'&deri='+deriEl.value+'&perspektiv='+_anaDetPerspektiv)).json(); }catch(e){ return; }
   const canvas=$('anaDetPeshaHistCanvas'); if(!canvas||typeof Chart==='undefined') return;
   if(_anaDetPeshaHistChart){ _anaDetPeshaHistChart.destroy(); _anaDetPeshaHistChart=null; }
   const ctx=canvas.getContext('2d');
@@ -551,7 +578,7 @@ async function anaDetRezPozicioni(el){
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
-  try{ d=await(await fetch('/api/analytics/ankand-pozicionet-fituara?nga='+ngaEl.value+'&deri='+deriEl.value)).json(); }catch(e){ return; }
+  try{ d=await(await fetch('/api/analytics/ankand-pozicionet-fituara?nga='+ngaEl.value+'&deri='+deriEl.value+'&perspektiv='+_anaDetPerspektiv)).json(); }catch(e){ return; }
   _anaDetPozicionetLista = d.pozicionet || [];
   _anaDetPozicioniHapur = null;
   anaDetRenderPozicionetLista();
@@ -583,7 +610,7 @@ async function anaDetNgarkoPozicioniDetaje(p){
   el.innerHTML='<p class="small mut">Po ngarkoj…</p>';
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
   let d;
-  try{ d=await(await fetch('/api/analytics/ankand-pozicion-detaje?nga='+ngaEl.value+'&deri='+deriEl.value+'&pozicioni='+p)).json(); }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; return; }
+  try{ d=await(await fetch('/api/analytics/ankand-pozicion-detaje?nga='+ngaEl.value+'&deri='+deriEl.value+'&perspektiv='+_anaDetPerspektiv+'&pozicioni='+p)).json(); }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; return; }
   const fitoret=d.fitoret||[];
   el.innerHTML = !fitoret.length ? '<p class="small mut">Asnjë detaj.</p>' :
     '<table style="width:100%;font-size:12px;border-collapse:collapse;">'+
