@@ -57,8 +57,8 @@ ${trupi}
 <footer>© 2026 DizajnKit — faqe prove per Imyr</footer>
 
 <!-- ═══ NGJIT KETU rreshtin e Imyr-it (copy-paste nga wizard-i) — vlen per TE GJITHA faqet e DizajnKit -->
-<script src="https://phronexusai.com/imyr.js" data-key="imyr_372a497f5d50ae51e6a57c9e"></script>
-<script src="https://phronexusai.com/imyr-track.js" data-key="imyr_372a497f5d50ae51e6a57c9e"></script>
+<script src="https://phronexusai.com/imyr.js" data-key="imyr_04d0ec54f1eccaf519c7f4a0"></script>
+
 <!-- ═══ deri ketu ═══ -->
 </body>
 </html>`;
