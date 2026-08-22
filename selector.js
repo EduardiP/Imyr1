@@ -115,6 +115,41 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
        AND EXISTS (SELECT 1 FROM snippetet s WHERE s.biznes_id = b.id AND s.snippet_active = true AND COALESCE(s.pauzuar,false) = false)`,
     [hostId, logjikaKerkuar]);
 
+  // ═══ KUFIZIMET E KATEGORIVE — perjashtim DYANSHEM, vlen per te dyja pishinat ═══
+  // (a) HOST-i s'do kandidate nga kategorite qe VETE i ka perjashtuar.
+  // (b) Kandidatet qe VETE e kane perjashtuar kategorine e HOST-it, s'marrin pjese.
+  if (kand.rows.length) {
+    try {
+      const hostKatQ = await pool.query('SELECT kategoria_kryesore FROM bizneset WHERE id=$1', [hostId]);
+      const hostKat = hostKatQ.rows[0] && hostKatQ.rows[0].kategoria_kryesore;
+
+      const hostPerjashtimetQ = await pool.query(
+        'SELECT kategoria FROM kategori_perjashtime WHERE biznes_id=$1', [hostId]);
+      const hostPerjashton = new Set(hostPerjashtimetQ.rows.map(r => r.kategoria));
+
+      const kandIds = kand.rows.map(k => k.biznes_id);
+      const kandKatQ = await pool.query(
+        'SELECT id, kategoria_kryesore FROM bizneset WHERE id = ANY($1)', [kandIds]);
+      const kandKatMap = {};
+      kandKatQ.rows.forEach(r => { kandKatMap[r.id] = r.kategoria_kryesore; });
+
+      let kandidatetQePerjashtojneHostin = new Set();
+      if (hostKat) {
+        const q = await pool.query(
+          'SELECT biznes_id FROM kategori_perjashtime WHERE kategoria=$1 AND biznes_id = ANY($2)',
+          [hostKat, kandIds]);
+        kandidatetQePerjashtojneHostin = new Set(q.rows.map(r => r.biznes_id));
+      }
+
+      kand.rows = kand.rows.filter(k => {
+        const katKandidati = kandKatMap[k.biznes_id];
+        if (katKandidati && hostPerjashton.has(katKandidati)) return false;       // (a)
+        if (kandidatetQePerjashtojneHostin.has(k.biznes_id)) return false;        // (b)
+        return true;
+      });
+    } catch (e) { /* nese kufizimet deshtojne, vazhdo pa filtrin — mos e ndal Ankand-in fare */ }
+  }
+
   // Filtri i tipit — VETEM per Ankand (i paprekur). Per Balance, filtri i tipit
   // NUK zbatohet ketu — balanca.js pranon te gjitha tipet dhe ben vete
   // "perjashtimin e konkurrenteve" (AI=0 + e njejta kategori) brenda vetes.
