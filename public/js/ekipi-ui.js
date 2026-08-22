@@ -15,7 +15,6 @@ var EKIPI_TABS = [
   { k: 'anetaret', l: 'Anëtarët' },
   { k: 'rolet', l: 'Rolet' },
   { k: 'cakto', l: 'Cakto role' },
-  { k: 'kufizimet', l: 'Kufizimet e Kategorive' },
   { k: 'ftesat', l: 'Ftesat' },
   { k: 'aktiviteti', l: 'Regjistri i aktivitetit' },
   { k: 'analitika', l: 'Analitika' }
@@ -70,7 +69,6 @@ function ekipiShkoTek(tab) {
   if (tab === 'anetaret') return ekipiAnetaret(body);
   if (tab === 'rolet') return ekipiRolet(body);
   if (tab === 'cakto') return ekipiCaktoRole(body);
-  if (tab === 'kufizimet') return ekipiKufizimetKategori(body);
   if (tab === 'ftesat') return ekipiFtesat(body);
   if (tab === 'aktiviteti') return ekipiAktiviteti(body);
   if (tab === 'analitika') { body.innerHTML = '<h2 class="h">Analitika</h2><p class="small mut" style="margin-top:8px;">Së shpejti.</p>'; return; }
@@ -317,45 +315,6 @@ async function ekipiCaktoRolTe(anetarId, rolId) {
 }
 
 // ═══ FTESAT ═══
-// ═══ KUFIZIMET E KATEGORIVE ═══
-var _ekKufizimetZgjedhur = null; // Set() me kategorite AKTUALISHT te perjashtuara
-async function ekipiKufizimetKategori(body) {
-  body.innerHTML = '<h2 class="h">Kufizimet e Kategorive</h2>' +
-    '<p class="small mut" style="margin:4px 0 14px;">Shenjo kategoritë prej të cilave <b>s\'do të marrësh apo japësh</b> ekspozim fare (as në Ankand, as në Balance). Kategoria jote e njohur si konkurrencë është e shenjuar automatikisht — hiqe nëse do.</p>' +
-    '<div id="ekKufizimetLista"><p class="small mut">Po ngarkoj…</p></div>' +
-    '<button class="primary" style="margin-top:16px;" onclick="ekipiRuajKufizimet()">Ruaj</button>' +
-    '<span class="small" id="ekKufizimetStat" style="margin-left:10px;"></span>';
-  try {
-    var r = await (await fetch('/api/kategori-kufizimet')).json();
-    _ekKufizimetZgjedhur = new Set(r.perjashtuar || []);
-    var el = document.getElementById('ekKufizimetLista');
-    el.innerHTML = (r.kategorite || []).map(function (k) {
-      var eshtePerjashtuar = _ekKufizimetZgjedhur.has(k);
-      var eshteVetja = (k === r.vetjaKat);
-      return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;">' +
-        '<input type="checkbox" ' + (eshtePerjashtuar ? 'checked' : '') +
-          ' style="width:15px;height:15px;min-width:15px;flex:0 0 15px;margin:0;cursor:pointer;" ' +
-          'onchange="ekipiToggloKufizim(\'' + k.replace(/'/g, "\\'") + '\',this.checked)">' +
-        '<span style="font-size:13px;flex:1;">' + ekipiEsc(k) + (eshteVetja ? ' <span class="small mut">(kategoria jote)</span>' : '') + '</span>' +
-        '</div>';
-    }).join('');
-  } catch (e) { body.innerHTML += '<p class="small">Gabim gjatë ngarkimit.</p>'; }
-}
-function ekipiToggloKufizim(kategoria, ePerjashtuar) {
-  if (!_ekKufizimetZgjedhur) return;
-  if (ePerjashtuar) _ekKufizimetZgjedhur.add(kategoria); else _ekKufizimetZgjedhur.delete(kategoria);
-}
-async function ekipiRuajKufizimet() {
-  var stat = document.getElementById('ekKufizimetStat');
-  try {
-    await fetch('/api/kategori-kufizimet', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ perjashtuar: Array.from(_ekKufizimetZgjedhur || []) })
-    });
-    if (stat) { stat.textContent = '✓ U ruajt.'; setTimeout(function () { stat.textContent = ''; }, 2000); }
-  } catch (e) { if (stat) stat.textContent = 'Gabim: ' + e.message; }
-}
-
 async function ekipiFtesat(body) {
   body.innerHTML = '<h2 class="h">Ftesat</h2>';
   try {
