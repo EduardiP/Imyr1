@@ -2153,6 +2153,12 @@ async function mainKufizimetKategori(m){
   try{
     const r=await(await fetch('/api/kategori-kufizimet')).json();
     _kufKatZgjedhur = new Set(r.perjashtuar||[]);
+    if(r.vetjaKatVjeteruar){
+      m.innerHTML = '<div style="padding:12px 16px;background:#3a2f14;border:1px solid #a38333;border-radius:8px;margin-bottom:16px;color:#ffcf80;">'+
+        '⚠️ Kategoria jote aktuale ("'+esc(r.vetjaKat)+'") është nga sistemi i vjetër dhe s\'përputhet me listën e re — prandaj s\'është shenjuar automatikisht si konkurrencë. '+
+        '<a href="#" onclick="event.preventDefault();nav({v:\'profile\',nav:\'pershkrimi\'});" style="color:var(--acc);">Ri-analizo përshkrimin</a> për ta përditësuar.'+
+        '</div>' + m.innerHTML;
+    }
     const el=$('kufKatLista');
     el.innerHTML=(r.kategorite||[]).map(function(k){
       const eshtePerjashtuar=_kufKatZgjedhur.has(k);
