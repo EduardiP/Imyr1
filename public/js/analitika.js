@@ -247,6 +247,24 @@ function mainAnaTrafiku(m){
         '</div>'+
         '<div id="anaAnkandKarusel" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;padding-right:4px;"></div>'+
       '</div>'+
+    '</div>'+
+    '<div class="card" style="margin-top:16px;">'+
+      '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Automatiku — Ndarja e hapësirës</h3>'+
+      '<p class="small mut" style="margin:0 0 12px;">Si e ke ndarë hapësirën tënde reklamuese mes pishinës Ankand dhe Balance, ditë-për-ditë.</p>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
+        '<button class="btn" onclick="anaPresetAutomatik(7)">7 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetAutomatik(30)">30 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetAutomatik(90)">90 ditët e fundit</button>'+
+        '<span style="flex:1"></span>'+
+        '<div style="position:relative;">'+
+          '<button type="button" id="anaKalBtn_automatik" class="btn" style="min-width:170px;"></button>'+
+          '<div id="anaKalPanel_automatik" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;width:230px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+        '</div>'+
+        '<input type="date" id="anaNgaAutomatik" style="display:none;">'+
+        '<input type="date" id="anaDeriAutomatik" style="display:none;">'+
+      '</div>'+
+      '<p class="small mut" id="anaAutomatikModi" style="margin:0 0 10px;"></p>'+
+      '<canvas id="anaAutomatikCanvas" height="100"></canvas>'+
     '</div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
   window.__anaKalendaret = window.__anaKalendaret || {};
@@ -281,6 +299,16 @@ function mainAnaTrafiku(m){
   anaRenderDetPerspektiv();
   anaRenderDetNenPanel();
   ngarkoAnaDetaje();
+
+  // ─── Automatiku — ndarja e hapesires (Ankand vs Balance) ───
+  $('anaNgaAutomatik').value=anaFmt(nga); $('anaDeriAutomatik').value=anaFmt(sot);
+  anaKrijoKalendarRangu({
+    id:'automatik', btnId:'anaKalBtn_automatik', panelId:'anaKalPanel_automatik',
+    getNga:()=>$('anaNgaAutomatik').value, getDeri:()=>$('anaDeriAutomatik').value,
+    setNga:v=>{ $('anaNgaAutomatik').value=v; }, setDeri:v=>{ $('anaDeriAutomatik').value=v; },
+    onRuaj: ngarkoAnaAutomatik
+  });
+  ngarkoAnaAutomatik();
 }
 
 // ═══ Seksioni "Detajet e pjesëmarrjeve në Ankand" — 4 butona kryesorë, secili hap panelin e vet ═══
@@ -308,12 +336,16 @@ function anaDetEmriFiltri(lloji){
 
 function anaRenderDetKryesori(){
   const el=$('anaDetKryesoriRow'); if(!el) return;
+  const eshteDhene = (_anaDetPerspektiv==='dhene');
+  // Pozicioni/Reklama s'kane kuptim ne "Dhene" (renditja/reklama ime specifike jane
+  // koncepte qe vlejne vetem kur UNE konkurroj, jo kur te tjeret konkurrojne te hapesira ime)
+  if(eshteDhene && (_anaDetAktiv==='pozicioni' || _anaDetAktiv==='reklama')) _anaDetAktiv='pesha';
   const llojet=[
     {k:'pesha', aktiv: _anaDetPeshaMode!=='te_gjitha'},
     {k:'pozicioni', aktiv: _anaDetPozicioni!=='te_gjitha'},
     {k:'reklama', aktiv: !!_anaDetReklamaId},
     {k:'kategoria', aktiv: !!_anaDetKategoria}
-  ];
+  ].filter(function(x){ return !(eshteDhene && (x.k==='pozicioni' || x.k==='reklama')); });
   el.innerHTML='';
   llojet.forEach(function(x){
     const btn=document.createElement('button');
@@ -348,6 +380,8 @@ function anaDetPerspektivSet(p){
   if(_anaDetPerspektiv===p) return;
   _anaDetPerspektiv=p;
   anaRenderDetPerspektiv();
+  anaRenderDetKryesori(); // fshin/shfaq Pozicioni+Reklama sipas perspektives
+  anaRenderDetNenPanel();
   ngarkoAnaDetaje();       // rifreskon tabelen + listen e reklamave/kategorive
   anaRenderDetRezultati(); // rifreskon grafikun aktual (Pesha/Pozicioni/Reklama/Kategoria)
 }
@@ -726,6 +760,41 @@ async function anaDetNgarkoKategoriaChart(){
 
 
 function anaNgarkoOreDheAnkand(){ ngarkoAnaOre(); ngarkoAnaAnkandKategorite(); }
+
+// ═══ "Automatiku — Ndarja e hapësirës" — Ankand vs Balance, dite-per-dite ═══
+var _anaAutomatikChart=null;
+function anaPresetAutomatik(dite){
+  const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-(dite-1));
+  $('anaNgaAutomatik').value=anaFmt(nga); $('anaDeriAutomatik').value=anaFmt(sot);
+  if(window.__anaKalendaret && window.__anaKalendaret.automatik) window.__anaKalendaret.automatik.refreshLabel();
+  ngarkoAnaAutomatik();
+}
+async function ngarkoAnaAutomatik(){
+  const ngaEl=$('anaNgaAutomatik'), deriEl=$('anaDeriAutomatik');
+  if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
+  let d;
+  try{ d=await(await fetch('/api/analytics/automatik-ndarja?nga='+ngaEl.value+'&deri='+deriEl.value)).json(); }catch(e){ return; }
+  const modiEl=$('anaAutomatikModi');
+  if(modiEl){
+    modiEl.textContent = d.hostingMode==='automatik'
+      ? '✓ Mënyra jote aktuale: Automatik'
+      : ('Mënyra jote aktuale: Manual' + (d.baraziPerqindje!=null ? ' ('+d.baraziPerqindje+'% te Balance)' : ''));
+  }
+  const rows=d.rows||[];
+  const labels=rows.map(r=>r.data);
+  const canvas=$('anaAutomatikCanvas'); if(!canvas||typeof Chart==='undefined') return;
+  if(_anaAutomatikChart){ _anaAutomatikChart.destroy(); _anaAutomatikChart=null; }
+  const ctx=canvas.getContext('2d');
+  _anaAutomatikChart=new Chart(ctx,{type:'line',data:{labels,datasets:[
+    {label:'Ankand', data:rows.map(r=>r.ankand), borderColor:'#f0883e', backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:'#f0883e'},
+    {label:'Balance', data:rows.map(r=>r.balance), borderColor:'#4a9eff', backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:'#4a9eff'}
+  ]},
+    options:{responsive:true,interaction:{mode:'index',intersect:false},
+      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
+      plugins:{legend:{labels:{color:'#e6edf3'}}}},
+    plugins:[anaMultiColorLinePlugin]
+  });
+}
 
 // ═══ "Sipas orës së ditës" — VETEM 1 metrikë (radio), qirinj (bare), 24 shtylla ═══
 var _anaOreMetrikaAktive='shfaqje', _anaOreChart=null;
