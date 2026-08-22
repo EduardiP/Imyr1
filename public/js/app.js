@@ -29,6 +29,7 @@ const NAV2 = [
     {l:'Performanca', nav:'rekPerformanca'}
   ]},
   { k:'konvertimet', l:'Konvertimet' },
+  { k:'kufizimetKat', l:'Kufizimet e Kategorive' },
   { k:'analytics', l:'Analytics', subs:[
     {l:'Trafiku', nav:'anaTrafiku'},
     {l:'Automatiku', nav:'anaAutomatik'},
@@ -495,6 +496,7 @@ function renderMain(s){
   if(curNav==='njoftimet')  return mainNjoftimet(m);
   if(curNav==='konvertimi') return mainKonvertimi(m);
   if(curNav==='konvertimet') return mainKonvertimi(m);
+  if(curNav==='kufizimetKat') return mainKufizimetKategori(m);
   if(curNav==='lidhjaSnippet') return mainLidhjaSnippet(m);
   if(curNav==='biznesi')    return mainBiznesi(m);
   if(curNav==='ekipi')      return mainEkipi(m);
@@ -2141,6 +2143,44 @@ function renderStepBody(i){
 
 // STEP 3 — Konvertimi (faqja qe shfaqet vetem pas regjistrimit)
 // Pamja e VETME e lidhjes se konvertimit (brenda profilit, si Creatives)
+var _kufKatZgjedhur = null; // Set() me kategorite AKTUALISHT te perjashtuara
+async function mainKufizimetKategori(m){
+  m.innerHTML='<h2 class="h">Kufizimet e Kategorive</h2>'+
+    '<p class="small mut" style="margin:4px 0 14px;">Shenjo kategoritë prej të cilave <b>s\'do të marrësh apo japësh</b> ekspozim fare (as në Ankand, as në Balance). Kategoria jote e njohur si konkurrencë është e shenjuar automatikisht — hiqe nëse do.</p>'+
+    '<div id="kufKatLista"><p class="small mut">Po ngarkoj…</p></div>'+
+    '<button class="primary" style="margin-top:16px;" onclick="kufKatRuaj()">Ruaj</button>'+
+    '<span class="small" id="kufKatStat" style="margin-left:10px;"></span>';
+  try{
+    const r=await(await fetch('/api/kategori-kufizimet')).json();
+    _kufKatZgjedhur = new Set(r.perjashtuar||[]);
+    const el=$('kufKatLista');
+    el.innerHTML=(r.kategorite||[]).map(function(k){
+      const eshtePerjashtuar=_kufKatZgjedhur.has(k);
+      const eshteVetja=(k===r.vetjaKat);
+      return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;">'+
+        '<input type="checkbox" '+(eshtePerjashtuar?'checked':'')+
+          ' style="width:15px;height:15px;min-width:15px;flex:0 0 15px;margin:0;cursor:pointer;" '+
+          'onchange="kufKatToggloi(\''+k.replace(/'/g,"\\'")+'\',this.checked)">'+
+        '<span style="font-size:13px;flex:1;">'+esc(k)+(eshteVetja?' <span class="small mut">(kategoria jote)</span>':'')+'</span>'+
+        '</div>';
+    }).join('');
+  }catch(e){ m.innerHTML+='<p class="small">Gabim gjatë ngarkimit.</p>'; }
+}
+function kufKatToggloi(kategoria, ePerjashtuar){
+  if(!_kufKatZgjedhur) return;
+  if(ePerjashtuar) _kufKatZgjedhur.add(kategoria); else _kufKatZgjedhur.delete(kategoria);
+}
+async function kufKatRuaj(){
+  const stat=$('kufKatStat');
+  try{
+    await fetch('/api/kategori-kufizimet', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ perjashtuar: Array.from(_kufKatZgjedhur||[]) })
+    });
+    if(stat){ stat.textContent='✓ U ruajt.'; setTimeout(()=>{ stat.textContent=''; },2000); }
+  }catch(e){ if(stat) stat.textContent='Gabim: '+e.message; }
+}
+
 function mainKonvertimi(m){
   ndertoKonvertim(m, false);
 }
