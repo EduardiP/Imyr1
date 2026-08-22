@@ -130,32 +130,93 @@ async function ekipiPezullo(id) { await fetch('/api/ekipi/anetaret/' + id + '/pe
 async function ekipiAktivizo(id) { await fetch('/api/ekipi/anetaret/' + id + '/aktivizo', { method: 'POST' }); ekipiShkoTek('anetaret'); }
 async function ekipiHiq(id) { if (!confirm('Ta heqësh këtë anëtar?')) return; await fetch('/api/ekipi/anetaret/' + id, { method: 'DELETE' }); ekipiShkoTek('anetaret'); }
 
-// ═══ ROLET (matricë lejesh) ═══
+// ═══ ROLET (liste kartash — jo me matrice; secili rol zgjerohet vete per te ndryshuar lejet) ═══
 var EKIPI_LEJE_ETIKETA = {
   creative_krijo: 'Krijo Creative', creative_shiko: 'Shiko Creative',
   snippet_ndrysho: 'Ndrysho Ad Space', faturimi_shiko: 'Shiko Faturimin',
   ekipi_menaxho: 'Menaxho Ekipin', analytics_shiko: 'Shiko Analytics',
   konvertimet_shiko: 'Shiko Konvertimet'
 };
+var _ekRolHapur = null; // id-ja e rolit aktualisht te zgjeruar (per te ndryshuar lejet), ose null
+
 async function ekipiRolet(body) {
-  body.innerHTML = '<h2 class="h">Rolet</h2><p class="small mut" style="margin:4px 0 14px;">Matrica e lejeve — çka lejon çdo rol.</p>';
-  try {
-    var r = await (await fetch('/api/ekipi/rolet')).json();
-    var rolet = r.rolet || [];
-    var kolonat = Object.keys(EKIPI_LEJE_ETIKETA);
-    var h = '<div class="ktabela"><div class="krow khead"><span class="kc1">Leja</span>' +
-      rolet.map(ro => '<span class="kc3">' + ekipiEsc(ro.emri) + '</span>').join('') + '</div>';
-    kolonat.forEach(function (k) {
-      h += '<div class="krow"><span class="kc1">' + EKIPI_LEJE_ETIKETA[k] + '</span>' +
-        rolet.map(function (ro) {
-          var aktive = ro.leje && ro.leje[k];
-          return '<span class="kc3"><input type="checkbox" ' + (aktive ? 'checked' : '') +
-            ' onchange="ekipiNdryshoLeje(' + ro.id + ',\'' + k + '\',this.checked)"></span>';
-        }).join('') + '</div>';
-    });
-    body.innerHTML += h + '</div>';
-  } catch (e) { body.innerHTML += '<p class="small">Gabim gjatë ngarkimit.</p>'; }
+  body.innerHTML = '<h2 class="h">Rolet</h2>' +
+    '<p class="small mut" style="margin:4px 0 14px;">Krijo role dhe përcakto çka lejon secili. Kliko një rol për t\'i ndryshuar lejet.</p>' +
+    '<button class="btn cta" style="margin-bottom:16px;" onclick="ekipiHapKrijoRol()">+ Krijo rol</button>' +
+    '<div id="ekKrijoRolForma"></div>' +
+    '<div id="ekRoletLista"><p class="small mut">Po ngarkoj…</p></div>';
+  await ekipiNgarkoRoletListen();
 }
+
+async function ekipiNgarkoRoletListen() {
+  var el = document.getElementById('ekRoletLista'); if (!el) return;
+  try {
+    var [roletR, anetaretR] = await Promise.all([
+      fetch('/api/ekipi/rolet').then(r => r.json()),
+      fetch('/api/ekipi/anetaret').then(r => r.json())
+    ]);
+    var rolet = roletR.rolet || [];
+    var anetaret = anetaretR.anetaret || [];
+    if (!rolet.length) { el.innerHTML = '<p class="small mut">Ende s\'ke role. Krijo të parin lart.</p>'; return; }
+    var h = '';
+    rolet.forEach(function (ro) {
+      var nrAnetare = anetaret.filter(function (a) { return a.roli === ro.emri; }).length;
+      var hapur = (_ekRolHapur === ro.id);
+      h += '<div style="border:1px solid var(--line);border-radius:8px;margin-bottom:10px;overflow:hidden;">' +
+        '<button type="button" onclick="ekipiToggloRolin(' + ro.id + ')" style="width:100%;text-align:left;padding:14px 16px;background:' + (hapur ? 'rgba(74,158,255,.1)' : 'transparent') + ';border:none;color:var(--txt);cursor:pointer;font-family:inherit;display:flex;justify-content:space-between;align-items:center;">' +
+        '<span style="font-weight:600;font-size:14px;">' + ekipiEsc(ro.emri) + '</span>' +
+        '<span class="small mut">' + nrAnetare + ' anëtar' + (nrAnetare === 1 ? '' : 'ë') + ' ' + (hapur ? '▲' : '▼') + '</span>' +
+        '</button>' +
+        '<div id="ekRolLejet_' + ro.id + '" style="' + (hapur ? '' : 'display:none;') + 'padding:4px 16px 16px;">' +
+        ekipiRenderLejetForRol(ro) +
+        '</div></div>';
+    });
+    el.innerHTML = h;
+  } catch (e) { el.innerHTML = '<p class="small">Gabim gjatë ngarkimit.</p>'; }
+}
+
+function ekipiRenderLejetForRol(roli) {
+  var kolonat = Object.keys(EKIPI_LEJE_ETIKETA);
+  return kolonat.map(function (k) {
+    var aktive = roli.leje && roli.leje[k];
+    return '<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;cursor:pointer;">' +
+      '<input type="checkbox" ' + (aktive ? 'checked' : '') + ' onchange="ekipiNdryshoLeje(' + roli.id + ',\'' + k + '\',this.checked)">' +
+      EKIPI_LEJE_ETIKETA[k] + '</label>';
+  }).join('');
+}
+
+async function ekipiToggloRolin(rolId) {
+  _ekRolHapur = (_ekRolHapur === rolId) ? null : rolId;
+  await ekipiNgarkoRoletListen();
+}
+
+function ekipiHapKrijoRol() {
+  var el = document.getElementById('ekKrijoRolForma'); if (!el) return;
+  el.innerHTML = '<div class="card" style="margin-bottom:16px;">' +
+    '<label>Emri i rolit</label>' +
+    '<input id="ekRolEmriRiInp" placeholder="p.sh. Menaxher">' +
+    '<button class="primary" style="margin-top:10px;" onclick="ekipiKrijoRolTani()">Krijo</button> ' +
+    '<button class="btn" style="margin-top:10px;" onclick="document.getElementById(\'ekKrijoRolForma\').innerHTML=\'\'">Anulo</button>' +
+    '<span class="small" id="ekRolKrijoStat" style="margin-left:8px;"></span>' +
+    '</div>';
+}
+async function ekipiKrijoRolTani() {
+  var inp = document.getElementById('ekRolEmriRiInp');
+  var emri = (inp || {}).value || '';
+  var stat = document.getElementById('ekRolKrijoStat');
+  if (!emri.trim()) { if (stat) stat.textContent = 'Vendos emrin.'; return; }
+  try {
+    var r = await (await fetch('/api/ekipi/rolet', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emri: emri, leje: {} })
+    })).json();
+    if (r.error) { if (stat) stat.textContent = r.error; return; }
+    document.getElementById('ekKrijoRolForma').innerHTML = '';
+    _ekRolHapur = r.id; // hape menjehere rolin e ri per te vendosur lejet
+    await ekipiNgarkoRoletListen();
+  } catch (e) { if (stat) stat.textContent = 'Gabim: ' + e.message; }
+}
+
 async function ekipiNdryshoLeje(rolId, celesi, vlera) {
   var r = await (await fetch('/api/ekipi/rolet')).json();
   var roli = (r.rolet || []).find(x => x.id === rolId);
@@ -169,7 +230,9 @@ async function ekipiNdryshoLeje(rolId, celesi, vlera) {
 
 // ═══ CAKTO ROLE (te anëtar specifik) ═══
 async function ekipiCaktoRole(body) {
-  body.innerHTML = '<h2 class="h">Cakto role</h2><p class="small mut" style="margin:4px 0 14px;">Zgjidh rolin për çdo anëtar.</p>';
+  body.innerHTML = '<h2 class="h">Cakto role</h2><p class="small mut" style="margin:4px 0 14px;">Zgjidh rolin për çdo anëtar.</p>' +
+    '<button class="btn cta" style="margin-bottom:16px;" onclick="ekipiHapKrijoRol()">+ Krijo rol</button>' +
+    '<div id="ekKrijoRolForma"></div>';
   try {
     var [anetaretR, roletR] = await Promise.all([
       fetch('/api/ekipi/anetaret').then(r => r.json()),
@@ -256,4 +319,3 @@ async function ekipiAktiviteti(body) {
     body.innerHTML += h + '</div>';
   } catch (e) { body.innerHTML += '<p class="small">Gabim gjatë ngarkimit.</p>'; }
 }
-
