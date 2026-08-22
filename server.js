@@ -844,6 +844,40 @@ app.get('/api/analytics/ankand-pozicion-detaje', iLoguar, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// --- BALANCE: "Bilanci sipas kategorisë" — per çdo kategori biznesi kundrejt të cilit
+// ke marrë pjesë në Balance, sa ke DHËNË vs sa ke MARRË (per shfaqje). Gjithmonë
+// burimi='barazi' (hardcoded) — koncepti i katrorëve VETËM per dhogarinë Balance. ---
+app.get('/api/analytics/balance-kategorite-katror', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const ngaD=new Date(nga), deriD=new Date(deri);
+    if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+
+    const vetja = await pool.query('SELECT kategoria_kryesore FROM bizneset WHERE id=$1', [req.biznesId]);
+    const vetjaKat = vetja.rows.length ? vetja.rows[0].kategoria_kryesore : null;
+
+    const r = await pool.query(`
+      SELECT b.kategoria_kryesore AS kategoria,
+        COUNT(*) FILTER (WHERE e.biznes_id=$1)::int    AS dhene,
+        COUNT(*) FILTER (WHERE e.reklamues_id=$1)::int AS marre
+      FROM ngjarjet e
+      JOIN bizneset b ON b.id = (CASE WHEN e.biznes_id=$1 THEN e.reklamues_id ELSE e.biznes_id END)
+      WHERE (e.biznes_id=$1 OR e.reklamues_id=$1) AND e.lloji='view' AND e.burimi='barazi'
+        AND e.created_at::date BETWEEN $2 AND $3
+        AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''
+      GROUP BY b.kategoria_kryesore
+      ORDER BY b.kategoria_kryesore`, [req.biznesId, nga, deri]);
+
+    res.json({ nga, deri, vetjaKat, kategorite: r.rows.map(x => ({
+      kategoria: x.kategoria, dhene: x.dhene, marre: x.marre, net: x.marre - x.dhene
+    })) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // --- PROFILI I ZGJERUAR: pikët e profilit + analitika për çdo snippet ---
 app.get('/api/profili', iLoguar, async (req, res) => {
   try {
