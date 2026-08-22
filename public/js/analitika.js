@@ -530,11 +530,11 @@ function anaRenderDetRezultati(){
 // ── BALANCE — "Bilanci sipas kategorisë": katrorë (si te paneli admin), nje kolone
 // per kategori, siper vijes se mesit nese ke MARRE me shume, poshte nese ke DHENE me
 // shume; kategoria e VET biznesit theksohet me ngjyre tjeter ──
-var _anaBilKatMaksKatroreVizuale=16, _anaBilKatNjesia=9;
+var _anaBilKatNjesia=20, _anaBilKatBoshllek=3, _anaBilKatMaksVizual=12;
 async function anaDetRezBilanciKategori(el){
   el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 4px;">Bilanci sipas kategorisë</h4>'+
     '<p class="small mut" style="margin:0 0 12px;">Për secilën kategori: katrorë sipër vijes së mesit nëse ke marrë më shumë shfaqje, poshtë nëse ke dhënë më shumë. Kategoria jote theksohet me ngjyrë tjetër.</p>'+
-    '<div id="anaBilKatGrafiku" style="display:flex;gap:16px;align-items:flex-start;overflow-x:auto;padding:6px 4px 0;"></div>';
+    '<div id="anaBilKatGrafiku" style="display:flex;gap:20px;align-items:flex-start;overflow-x:auto;padding:6px 4px 0;"></div>';
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
@@ -542,17 +542,22 @@ async function anaDetRezBilanciKategori(el){
   const grafEl=$('anaBilKatGrafiku'); if(!grafEl) return;
   const kategorite=d.kategorite||[];
   if(!kategorite.length){ grafEl.innerHTML='<p class="small mut">Asnjë pjesëmarrje në Balance në këtë periudhë.</p>'; return; }
-  const NJ=_anaBilKatNjesia, MAKS=_anaBilKatMaksKatroreVizuale, LARTESIA=MAKS*(NJ+2)+40;
+  const NJ=_anaBilKatNjesia, BOSH=_anaBilKatBoshllek, MAKS=_anaBilKatMaksVizual;
+  // Lartesia E DINAMIKE — bazuar te vlera maksimale REALE e |net| ne kete pergjigje,
+  // jo nje supozim fiks — keshtu s'mbetet hapesire boshe kur vlerat jane te vogla.
+  let maksReal=1;
+  kategorite.forEach(function(k){ if(Math.abs(k.net)>maksReal) maksReal=Math.abs(k.net); });
+  const numriPerAne = Math.min(maksReal, MAKS);
+  const LARTESIA = numriPerAne*(NJ+BOSH) + 10;
   grafEl.innerHTML = kategorite.map(function(k,i){
     const eshteVetja = (k.kategoria===d.vetjaKat);
     const ngjyra = eshteVetja ? '#f0883e' : anaKatPaleta(i);
     const nShfaq = Math.min(Math.abs(k.net), MAKS);
     const teproj = Math.abs(k.net) > MAKS;
-    const katroret = Array.from({length:nShfaq}).map(function(){
-      return '<div style="width:22px;height:'+NJ+'px;background:'+ngjyra+';border-radius:2px;"></div>';
-    }).join('<div style="height:2px;"></div>');
-    const brendaLart = k.net>0 ? ('<div style="display:flex;flex-direction:column-reverse;gap:2px;align-items:center;">'+katroret+'</div>'+(teproj?'<div class="small" style="color:'+ngjyra+';font-size:10px;">+'+Math.abs(k.net)+'</div>':'')) : '';
-    const brendaPoshte = k.net<0 ? ('<div style="display:flex;flex-direction:column;gap:2px;align-items:center;">'+katroret+'</div>'+(teproj?'<div class="small" style="color:'+ngjyra+';font-size:10px;">−'+Math.abs(k.net)+'</div>':'')) : '';
+    const njeKatror = '<div style="width:'+NJ+'px;height:'+NJ+'px;background:'+ngjyra+';border-radius:3px;flex:0 0 auto;"></div>';
+    const katroret = Array.from({length:nShfaq}).map(function(){ return njeKatror; }).join('<div style="height:'+BOSH+'px;"></div>');
+    const brendaLart = k.net>0 ? ('<div style="display:flex;flex-direction:column-reverse;align-items:center;">'+katroret+'</div>'+(teproj?'<div class="small" style="color:'+ngjyra+';font-size:10px;margin-top:2px;">+'+Math.abs(k.net)+'</div>':'')) : '';
+    const brendaPoshte = k.net<0 ? ('<div style="display:flex;flex-direction:column;align-items:center;">'+katroret+'</div>'+(teproj?'<div class="small" style="color:'+ngjyra+';font-size:10px;margin-bottom:2px;">−'+Math.abs(k.net)+'</div>':'')) : '';
     return '<div style="flex:0 0 auto;width:64px;display:flex;flex-direction:column;align-items:center;">'+
       '<div style="height:'+LARTESIA+'px;display:flex;flex-direction:column;justify-content:flex-end;width:100%;align-items:center;">'+brendaLart+'</div>'+
       '<div style="width:100%;height:2px;background:rgba(230,237,243,.4);margin:2px 0;"></div>'+
