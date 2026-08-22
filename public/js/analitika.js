@@ -247,24 +247,6 @@ function mainAnaTrafiku(m){
         '</div>'+
         '<div id="anaAnkandKarusel" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;padding-right:4px;"></div>'+
       '</div>'+
-    '</div>'+
-    '<div class="card" style="margin-top:16px;">'+
-      '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Automatiku — Ndarja e hapësirës</h3>'+
-      '<p class="small mut" style="margin:0 0 12px;">Si e ke ndarë hapësirën tënde reklamuese mes pishinës Ankand dhe Balance, ditë-për-ditë.</p>'+
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
-        '<button class="btn" onclick="anaPresetAutomatik(7)">7 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPresetAutomatik(30)">30 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPresetAutomatik(90)">90 ditët e fundit</button>'+
-        '<span style="flex:1"></span>'+
-        '<div style="position:relative;">'+
-          '<button type="button" id="anaKalBtn_automatik" class="btn" style="min-width:170px;"></button>'+
-          '<div id="anaKalPanel_automatik" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;width:230px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
-        '</div>'+
-        '<input type="date" id="anaNgaAutomatik" style="display:none;">'+
-        '<input type="date" id="anaDeriAutomatik" style="display:none;">'+
-      '</div>'+
-      '<p class="small mut" id="anaAutomatikModi" style="margin:0 0 10px;"></p>'+
-      '<canvas id="anaAutomatikCanvas" height="100"></canvas>'+
     '</div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
   window.__anaKalendaret = window.__anaKalendaret || {};
@@ -299,16 +281,6 @@ function mainAnaTrafiku(m){
   anaRenderDetPerspektiv();
   anaRenderDetNenPanel();
   ngarkoAnaDetaje();
-
-  // ─── Automatiku — ndarja e hapesires (Ankand vs Balance) ───
-  $('anaNgaAutomatik').value=anaFmt(nga); $('anaDeriAutomatik').value=anaFmt(sot);
-  anaKrijoKalendarRangu({
-    id:'automatik', btnId:'anaKalBtn_automatik', panelId:'anaKalPanel_automatik',
-    getNga:()=>$('anaNgaAutomatik').value, getDeri:()=>$('anaDeriAutomatik').value,
-    setNga:v=>{ $('anaNgaAutomatik').value=v; }, setDeri:v=>{ $('anaDeriAutomatik').value=v; },
-    onRuaj: ngarkoAnaAutomatik
-  });
-  ngarkoAnaAutomatik();
 }
 
 // ═══ Seksioni "Detajet e pjesëmarrjeve në Ankand" — 4 butona kryesorë, secili hap panelin e vet ═══
@@ -768,6 +740,38 @@ function anaNgarkoOreDheAnkand(){ ngarkoAnaOre(); ngarkoAnaAnkandKategorite(); }
 
 // ═══ "Automatiku — Ndarja e hapësirës" — Ankand vs Balance, dite-per-dite ═══
 var _anaAutomatikChart=null;
+function mainAnaAutomatik(m){
+  m.innerHTML='<h2 class="h">Automatiku</h2>'+
+    '<div class="card">'+
+      '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Ndarja e hapësirës</h3>'+
+      '<p class="small mut" style="margin:0 0 12px;">Si e ke ndarë hapësirën tënde reklamuese mes pishinës Ankand dhe Balance, ditë-për-ditë.</p>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
+        '<button class="btn" onclick="anaPresetAutomatik(7)">7 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetAutomatik(30)">30 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetAutomatik(90)">90 ditët e fundit</button>'+
+        '<span style="flex:1"></span>'+
+        '<div style="position:relative;">'+
+          '<button type="button" id="anaKalBtn_automatik" class="btn" style="min-width:170px;"></button>'+
+          '<div id="anaKalPanel_automatik" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;width:230px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+        '</div>'+
+        '<input type="date" id="anaNgaAutomatik" style="display:none;">'+
+        '<input type="date" id="anaDeriAutomatik" style="display:none;">'+
+      '</div>'+
+      '<p class="small mut" id="anaAutomatikModi" style="margin:0 0 10px;"></p>'+
+      '<canvas id="anaAutomatikCanvas" height="110"></canvas>'+
+    '</div>';
+  const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
+  $('anaNgaAutomatik').value=anaFmt(nga); $('anaDeriAutomatik').value=anaFmt(sot);
+  window.__anaKalendaret = window.__anaKalendaret || {};
+  anaKrijoKalendarRangu({
+    id:'automatik', btnId:'anaKalBtn_automatik', panelId:'anaKalPanel_automatik',
+    getNga:()=>$('anaNgaAutomatik').value, getDeri:()=>$('anaDeriAutomatik').value,
+    setNga:v=>{ $('anaNgaAutomatik').value=v; }, setDeri:v=>{ $('anaDeriAutomatik').value=v; },
+    onRuaj: ngarkoAnaAutomatik
+  });
+  ngarkoAnaAutomatik();
+}
+
 function anaPresetAutomatik(dite){
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-(dite-1));
   $('anaNgaAutomatik').value=anaFmt(nga); $('anaDeriAutomatik').value=anaFmt(sot);
