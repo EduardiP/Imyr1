@@ -1960,13 +1960,87 @@ function pastroHtml(html) {
 
 // Kategorite kryesore (korniza; AI zgjedh SAKTESISHT nje prej tyre)
 const KATEGORITE = [
-  'Marketing & Growth', 'Sales & CRM', 'Finance & Accounting', 'HR & Recruiting',
-  'Productivity & Collaboration', 'Developer Tools & Infrastructure', 'Design & Creative',
-  'Customer Support & Success', 'Analytics & Data', 'E-commerce Tools',
-  'Security & Compliance', 'AI/ML Tools'
+  // Marketing
+  'Email Marketing', 'SEO Tools', 'Social Media Management', 'Content Marketing Platforms',
+  'Marketing Automation', 'Affiliate Marketing Software', 'PPC/Ad Management', 'Landing Page Builders',
+  // Sales & CRM
+  'CRM Software', 'Sales Engagement/Enablement', 'Lead Generation Tools', 'Sales Intelligence',
+  'Proposal & Contract Software', 'Sales Forecasting',
+  // Finance
+  'Accounting Software', 'Invoicing & Billing', 'Expense Management', 'Payroll Software',
+  'Payment Processing', 'Financial Planning & Budgeting',
+  // HR
+  'Recruiting/ATS Software', 'Core HR/HRIS', 'Employee Onboarding', 'Performance Management',
+  'Learning & Development (LMS)', 'Employee Engagement',
+  // Produktivitet
+  'Project Management', 'Task Management', 'Note-Taking Apps', 'Document Management',
+  'Team Chat/Communication', 'Video Conferencing', 'Cloud File Storage', 'Calendar & Scheduling',
+  // Dev Tools
+  'API Management', 'CI/CD Tools', 'Cloud Infrastructure/Hosting', 'Monitoring & Observability',
+  'Database Tools', 'No-Code/Low-Code Platforms', 'Version Control',
+  // Design
+  'Graphic Design Tools', 'UI/UX Design Tools', 'Video Editing Software', 'Website Builders',
+  'Prototyping Tools',
+  // Support
+  'Helpdesk Software', 'Live Chat Software', 'Knowledge Base Software',
+  'Customer Feedback/Survey Tools', 'Call Center Software',
+  // Analitike
+  'Business Intelligence', 'Web Analytics', 'Product Analytics', 'Data Visualization',
+  'A/B Testing Tools',
+  // E-commerce
+  'E-commerce Platforms', 'Inventory Management', 'Dropshipping Tools', 'Shipping & Fulfillment',
+  'Subscription Management', 'Point of Sale (POS)',
+  // Siguri
+  'Cybersecurity/Antivirus', 'Identity & Access Management', 'Password Management',
+  'VPN Services', 'Backup & Recovery',
+  // AI/ML
+  'AI Writing Tools', 'AI Image Generation', 'Chatbot/Conversational AI',
+  'AI Automation Tools', 'AI Video Generation'
 ];
 
 // --- ANALIZO (AI): kategori kryesore + nenkategori + permbledhje per algoritmin ---
+// --- KUFIZIMET E KATEGORIVE: cilat kategori biznesi klienti VETE i ka perjashtuar
+// (s'do te marrin/japin ekspozim me to). Parazgjedhje (VETEM here e pare, para se
+// klienti te ruaje ndonjehere vete): kategoria E VET (konkurrenca e njohur) e
+// perjashtuar automatikisht; te tjerat lejohen. Pasi klienti ruan njehere (edhe
+// bosh), parazgjedhja s'aplikohet me — respektohet gjithmone çka ka ruajtur vete.
+pool.query(`CREATE TABLE IF NOT EXISTS kategori_perjashtime (
+  biznes_id INTEGER NOT NULL, kategoria TEXT NOT NULL,
+  PRIMARY KEY (biznes_id, kategoria)
+)`).catch(e => console.error('migrim kategori_perjashtime:', e.message));
+pool.query(`CREATE TABLE IF NOT EXISTS kategori_kufizime_konfiguruar (biznes_id INTEGER PRIMARY KEY)`)
+  .catch(e => console.error('migrim kategori_kufizime_konfiguruar:', e.message));
+
+app.get('/api/kategori-kufizimet', iLoguar, async (req, res) => {
+  try {
+    const vetja = await pool.query('SELECT kategoria_kryesore FROM bizneset WHERE id=$1', [req.biznesId]);
+    const vetjaKat = vetja.rows.length ? vetja.rows[0].kategoria_kryesore : null;
+    const uKonfigurua = await pool.query('SELECT 1 FROM kategori_kufizime_konfiguruar WHERE biznes_id=$1', [req.biznesId]);
+    let perjashtuar;
+    if (uKonfigurua.rows.length) {
+      // Klienti e ka ruajtur vete tashme — respekto SAKTESISHT ate qe ka zgjedhur.
+      const r = await pool.query('SELECT kategoria FROM kategori_perjashtime WHERE biznes_id=$1', [req.biznesId]);
+      perjashtuar = r.rows.map(x => x.kategoria);
+    } else {
+      // Hera e pare — parazgjedhje: vetem kategoria e vet (konkurrenca e njohur).
+      perjashtuar = vetjaKat ? [vetjaKat] : [];
+    }
+    res.json({ kategorite: KATEGORITE, vetjaKat, perjashtuar });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/kategori-kufizimet', iLoguar, async (req, res) => {
+  const perjashtuar = Array.isArray(req.body.perjashtuar) ? req.body.perjashtuar.filter(k => KATEGORITE.includes(k)) : [];
+  try {
+    await pool.query('DELETE FROM kategori_perjashtime WHERE biznes_id=$1', [req.biznesId]);
+    for (const k of perjashtuar) {
+      await pool.query('INSERT INTO kategori_perjashtime (biznes_id, kategoria) VALUES ($1,$2) ON CONFLICT DO NOTHING', [req.biznesId, k]);
+    }
+    await pool.query('INSERT INTO kategori_kufizime_konfiguruar (biznes_id) VALUES ($1) ON CONFLICT DO NOTHING', [req.biznesId]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/analizo/mbetur', iLoguar, async (req, res) => {
   try {
     const r = await pool.query(
@@ -2045,7 +2119,12 @@ app.post('/api/analizo', iLoguar, async (req, res) => {
       return res.json({ ok: true, ai: false, note: 'Analiza AI dështoi: ' + e.message });
     }
 
-    const kk = parsed.kategoria_kryesore || null;
+    // Verifikim REAL ne kod (jo vetem kerkese te AI) — siguron qe kategoria e ruajtur
+    // perputhet me nje nga KATEGORITE (rast-pandjeshem, per siguri), duke perdorur
+    // GJITHMONE drejtshkrimin KANONIK te listes. Nese AI-ja kthen diçka qe s'perputhet
+    // fare (rralle, por e mundur), s'ruhet variant i shpikur — mbetet null.
+    const kkRaw = parsed.kategoria_kryesore || null;
+    const kk = kkRaw ? (KATEGORITE.find(k => k.toLowerCase() === kkRaw.toLowerCase()) || null) : null;
     const nk = Array.isArray(parsed.nenkategorite) ? parsed.nenkategorite.join(', ') : (parsed.nenkategorite || null);
     const perm = parsed.permbledhje || null;
 
