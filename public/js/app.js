@@ -2146,25 +2146,30 @@ function renderStepBody(i){
 var _kufKatZgjedhur = null; // Set() me kategorite AKTUALISHT te perjashtuara
 async function mainKufizimetKategori(m){
   m.innerHTML='<h2 class="h">Kufizimet e Kategorive</h2>'+
-    '<p class="small mut" style="margin:4px 0 14px;">Shenjo kategoritë prej të cilave <b>s\'do të marrësh apo japësh</b> ekspozim fare (as në Ankand, as në Balance). Kategoria jote e njohur si konkurrencë është e shenjuar automatikisht — hiqe nëse do.</p>'+
+    '<p class="small mut" style="margin:4px 0 14px;">Kategori të <b>shënuara</b> = mund t\'i shfaqin reklamat e tyre te ti (dhe reklamat e tua te ta). Kategori <b>e pashënuar</b> = e bllokuar plotësisht (as marrje, as dhënie ekspozimi). Kategoria jote (konkurrenca e njohur) fillon e pashënuar — shëno nëse do ta lejosh.</p>'+
     '<div id="kufKatLista"><p class="small mut">Po ngarkoj…</p></div>'+
     '<button class="primary" style="margin-top:16px;" onclick="kufKatRuaj()">Ruaj</button>'+
     '<span class="small" id="kufKatStat" style="margin-left:10px;"></span>';
   try{
     const r=await(await fetch('/api/kategori-kufizimet')).json();
+    // BACKEND-i vazhdon te kthej "perjashtuar" (kategorite e BLLOKUARA) — vetem SHFAQJA
+    // ketu eshte e KTHYER: checkbox i SHENUAR = LEJUAR (jo ne "perjashtuar"), i pashenuar
+    // = BLLOKUAR (eshte ne "perjashtuar"). _kufKatZgjedhur mban gjithmone kategorite E
+    // BLLOKUARA (njesoj si backend-i), thjesht checkbox-i i shfaqet TI PERMBYSUR.
     _kufKatZgjedhur = new Set(r.perjashtuar||[]);
     if(r.vetjaKatVjeteruar){
       m.innerHTML = '<div style="padding:12px 16px;background:#3a2f14;border:1px solid #a38333;border-radius:8px;margin-bottom:16px;color:#ffcf80;">'+
-        '⚠️ Kategoria jote aktuale ("'+esc(r.vetjaKat)+'") është nga sistemi i vjetër dhe s\'përputhet me listën e re — prandaj s\'është shenjuar automatikisht si konkurrencë. '+
+        '⚠️ Kategoria jote aktuale ("'+esc(r.vetjaKat)+'") është nga sistemi i vjetër dhe s\'përputhet me listën e re — prandaj s\'është trajtuar automatikisht si konkurrencë. '+
         '<a href="#" onclick="event.preventDefault();nav({v:\'profile\',nav:\'pershkrimi\'});" style="color:var(--acc);">Ri-analizo përshkrimin</a> për ta përditësuar.'+
         '</div>' + m.innerHTML;
     }
     const el=$('kufKatLista');
     el.innerHTML=(r.kategorite||[]).map(function(k){
-      const eshtePerjashtuar=_kufKatZgjedhur.has(k);
+      const eshteBllokuar=_kufKatZgjedhur.has(k);
+      const eshteLejuar=!eshteBllokuar;   // checkbox i SHENUAR = lejuar
       const eshteVetja=(k===r.vetjaKat);
       return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;">'+
-        '<input type="checkbox" '+(eshtePerjashtuar?'checked':'')+
+        '<input type="checkbox" '+(eshteLejuar?'checked':'')+
           ' style="width:15px;height:15px;min-width:15px;flex:0 0 15px;margin:0;cursor:pointer;" '+
           'onchange="kufKatToggloi(\''+k.replace(/'/g,"\\'")+'\',this.checked)">'+
         '<span style="font-size:13px;flex:1;">'+esc(k)+(eshteVetja?' <span class="small mut">(kategoria jote)</span>':'')+'</span>'+
@@ -2172,9 +2177,11 @@ async function mainKufizimetKategori(m){
     }).join('');
   }catch(e){ m.innerHTML+='<p class="small">Gabim gjatë ngarkimit.</p>'; }
 }
-function kufKatToggloi(kategoria, ePerjashtuar){
+function kufKatToggloi(kategoria, eSHENUAR){
   if(!_kufKatZgjedhur) return;
-  if(ePerjashtuar) _kufKatZgjedhur.add(kategoria); else _kufKatZgjedhur.delete(kategoria);
+  // eSHENUAR (checkbox u be checked) = LEJUAR = HIQ nga bashkesia e bllokuarave.
+  // eSHENUAR=false (u zhgjidh) = BLLOKUAR = SHTO ne bashkesine e bllokuarave.
+  if(eSHENUAR) _kufKatZgjedhur.delete(kategoria); else _kufKatZgjedhur.add(kategoria);
 }
 async function kufKatRuaj(){
   const stat=$('kufKatStat');
