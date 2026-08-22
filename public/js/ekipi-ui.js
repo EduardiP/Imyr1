@@ -175,14 +175,52 @@ async function ekipiNgarkoRoletListen() {
   } catch (e) { el.innerHTML = '<p class="small">Gabim gjatë ngarkimit.</p>'; }
 }
 
+// Struktura E RE e `leje`: { ankand:{aktiv,...7leje}, barazi:{aktiv,...7leje} }
+// (me pare ishte e sheshte: {creative_krijo:true,...} — kjo e trajtojme si "Ankand aktiv,
+// me keto leje" per role te vjetra, per prapambetje, pa i thyer.)
+function ekipiNormalizoLejet(leje) {
+  leje = leje || {};
+  if (!leje.ankand && !leje.barazi && Object.keys(leje).length > 0) {
+    return { ankand: Object.assign({ aktiv: true }, leje), barazi: { aktiv: false } };
+  }
+  return { ankand: leje.ankand || { aktiv: false }, barazi: leje.barazi || { aktiv: false } };
+}
+
 function ekipiRenderLejetForRol(roli) {
-  var kolonat = Object.keys(EKIPI_LEJE_ETIKETA);
-  return kolonat.map(function (k) {
-    var aktive = roli.leje && roli.leje[k];
-    return '<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;cursor:pointer;">' +
-      '<input type="checkbox" ' + (aktive ? 'checked' : '') + ' onchange="ekipiNdryshoLeje(' + roli.id + ',\'' + k + '\',this.checked)">' +
-      EKIPI_LEJE_ETIKETA[k] + '</label>';
-  }).join('');
+  var leje = ekipiNormalizoLejet(roli.leje);
+  return ekipiRenderDhogariBlok(roli.id, 'ankand', 'Ankand', leje.ankand) +
+    ekipiRenderDhogariBlok(roli.id, 'barazi', 'Balance', leje.barazi);
+}
+
+// Nje "porte" (Ankand ose Balance) — checkbox kryesor; VETEM kur eshte i shenuar,
+// shfaqen 7 lejet e detajuara POSHTE tij (te fshehura ndryshe).
+// CSS eksplicit ne çdo rresht (div, JO <label>) — qellimisht mbrojtes, qe s'i len
+// vend ndonje rregulli global CSS te "shtrije" checkbox-in larg tekstit (siç ndodhi me pare).
+function ekipiRenderDhogariBlok(rolId, dhogariKey, dhogariLabel, dhogariLeje) {
+  var aktiv = !!dhogariLeje.aktiv;
+  var h = '<div style="margin-bottom:12px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;">' +
+    '<div style="display:flex;align-items:center;gap:10px;">' +
+      '<input type="checkbox" ' + (aktiv ? 'checked' : '') +
+        ' style="width:16px;height:16px;min-width:16px;flex:0 0 16px;margin:0;padding:0;cursor:pointer;" ' +
+        'onchange="ekipiNdryshoDhogariAktiv(' + rolId + ',\'' + dhogariKey + '\',this.checked)">' +
+      '<span style="font-size:14px;font-weight:600;flex:1;">Qasje te ' + dhogariLabel + '</span>' +
+    '</div>';
+  if (aktiv) {
+    var kolonat = Object.keys(EKIPI_LEJE_ETIKETA);
+    h += '<div style="margin-top:8px;padding-left:26px;display:flex;flex-direction:column;">';
+    kolonat.forEach(function (k) {
+      var vlera = !!dhogariLeje[k];
+      h += '<div style="display:flex;align-items:center;gap:10px;padding:5px 0;">' +
+        '<input type="checkbox" ' + (vlera ? 'checked' : '') +
+          ' style="width:15px;height:15px;min-width:15px;flex:0 0 15px;margin:0;padding:0;cursor:pointer;" ' +
+          'onchange="ekipiNdryshoLeje(' + rolId + ',\'' + dhogariKey + '\',\'' + k + '\',this.checked)">' +
+        '<span style="font-size:13px;flex:1;">' + EKIPI_LEJE_ETIKETA[k] + '</span>' +
+      '</div>';
+    });
+    h += '</div>';
+  }
+  h += '</div>';
+  return h;
 }
 
 async function ekipiToggloRolin(rolId) {
@@ -208,7 +246,7 @@ async function ekipiKrijoRolTani() {
   try {
     var r = await (await fetch('/api/ekipi/rolet', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ emri: emri, leje: {} })
+      body: JSON.stringify({ emri: emri, leje: { ankand: { aktiv: false }, barazi: { aktiv: false } } })
     })).json();
     if (r.error) { if (stat) stat.textContent = r.error; return; }
     document.getElementById('ekKrijoRolForma').innerHTML = '';
@@ -217,14 +255,30 @@ async function ekipiKrijoRolTani() {
   } catch (e) { if (stat) stat.textContent = 'Gabim: ' + e.message; }
 }
 
-async function ekipiNdryshoLeje(rolId, celesi, vlera) {
+// Ndez/fik nje dhogari te tere per nje rol (Ankand ose Balance) — leje te detajuara
+// ruhen si ishin, thjesht fshihen/shfaqen ne UI sipas ketij toggle-i.
+async function ekipiNdryshoDhogariAktiv(rolId, dhogariKey, vlera) {
   var r = await (await fetch('/api/ekipi/rolet')).json();
   var roli = (r.rolet || []).find(x => x.id === rolId);
   if (!roli) return;
-  var lejeReja = Object.assign({}, roli.leje); lejeReja[celesi] = vlera;
+  var leje = ekipiNormalizoLejet(roli.leje);
+  leje[dhogariKey] = Object.assign({}, leje[dhogariKey], { aktiv: vlera });
   await fetch('/api/ekipi/rolet/' + rolId, {
     method: 'PUT', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ leje: lejeReja })
+    body: JSON.stringify({ leje: leje })
+  });
+  await ekipiNgarkoRoletListen();
+}
+
+async function ekipiNdryshoLeje(rolId, dhogariKey, celesi, vlera) {
+  var r = await (await fetch('/api/ekipi/rolet')).json();
+  var roli = (r.rolet || []).find(x => x.id === rolId);
+  if (!roli) return;
+  var leje = ekipiNormalizoLejet(roli.leje);
+  leje[dhogariKey] = Object.assign({}, leje[dhogariKey]); leje[dhogariKey][celesi] = vlera;
+  await fetch('/api/ekipi/rolet/' + rolId, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ leje: leje })
   });
 }
 
