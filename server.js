@@ -2014,7 +2014,12 @@ pool.query(`CREATE TABLE IF NOT EXISTS kategori_kufizime_konfiguruar (biznes_id 
 app.get('/api/kategori-kufizimet', iLoguar, async (req, res) => {
   try {
     const vetja = await pool.query('SELECT kategoria_kryesore FROM bizneset WHERE id=$1', [req.biznesId]);
-    const vetjaKat = vetja.rows.length ? vetja.rows[0].kategoria_kryesore : null;
+    let vetjaKat = vetja.rows.length ? vetja.rows[0].kategoria_kryesore : null;
+    // Kontrollo qe kategoria e ruajtur EKZISTON REALISHT ne listen aktuale (72) — nese
+    // biznesi eshte analizuar PARA ketij perditesimi (nen sistemin e vjeter, 12 kategori),
+    // vlera e ruajtur s'perputhet me asnje nga 72-shja, dhe sinjalizojme kete qartazi
+    // (jo vetem heshtazi s'e shenojme si perjashtim parazgjedhje).
+    const vetjaKatVlefshme = vetjaKat && KATEGORITE.includes(vetjaKat);
     const uKonfigurua = await pool.query('SELECT 1 FROM kategori_kufizime_konfiguruar WHERE biznes_id=$1', [req.biznesId]);
     let perjashtuar;
     if (uKonfigurua.rows.length) {
@@ -2022,10 +2027,14 @@ app.get('/api/kategori-kufizimet', iLoguar, async (req, res) => {
       const r = await pool.query('SELECT kategoria FROM kategori_perjashtime WHERE biznes_id=$1', [req.biznesId]);
       perjashtuar = r.rows.map(x => x.kategoria);
     } else {
-      // Hera e pare — parazgjedhje: vetem kategoria e vet (konkurrenca e njohur).
-      perjashtuar = vetjaKat ? [vetjaKat] : [];
+      // Hera e pare — parazgjedhje: vetem kategoria e vet (konkurrenca e njohur),
+      // VETEM nese ajo vlere ekziston realisht ne listen aktuale.
+      perjashtuar = vetjaKatVlefshme ? [vetjaKat] : [];
     }
-    res.json({ kategorite: KATEGORITE, vetjaKat, perjashtuar });
+    res.json({
+      kategorite: KATEGORITE, vetjaKat, perjashtuar,
+      vetjaKatVjeteruar: !!(vetjaKat && !vetjaKatVlefshme) // true = biznesi duhet te rianalizohet
+    });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
