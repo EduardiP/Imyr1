@@ -295,8 +295,9 @@ function anaDetPreset(dite){
 }
 
 function anaDetEmriFiltri(lloji){
-  if(lloji==='pesha') return _anaDetPeshaMode==='te_gjitha' ? 'Pesha' : (_anaDetPeshaMode==='fiks' ? 'Pesha: '+_anaDetPeshaFiks : 'Pesha: '+_anaDetPeshaMin+'–'+_anaDetPeshaMax);
-  if(lloji==='pozicioni') return _anaDetPozicioni==='te_gjitha' ? 'Pozicioni' : 'Pozicioni: #'+_anaDetPozicioni;
+  const eshteBalance = (window.__llogariaModaliteti==='barazi');
+  if(lloji==='pesha') return eshteBalance ? 'Bilanci' : (_anaDetPeshaMode==='te_gjitha' ? 'Pesha' : (_anaDetPeshaMode==='fiks' ? 'Pesha: '+_anaDetPeshaFiks : 'Pesha: '+_anaDetPeshaMin+'–'+_anaDetPeshaMax));
+  if(lloji==='pozicioni') return eshteBalance ? 'Ecuria ditore' : (_anaDetPozicioni==='te_gjitha' ? 'Pozicioni' : 'Pozicioni: #'+_anaDetPozicioni);
   if(lloji==='reklama') return _anaDetReklamaId ? 'Reklama: '+((_anaDetReklamat.find(r=>r.id==_anaDetReklamaId)||{}).emri||'') : 'Reklama';
   if(lloji==='kategoria') return _anaDetKategoria ? 'Kategoria: '+_anaDetKategoria : 'Kategoria';
 }
@@ -327,6 +328,8 @@ function anaRenderDetKryesori(){
 function anaRenderDetNenPanel(){
   const el=$('anaDetNenPanel'); if(!el) return;
   if(!_anaDetAktiv){ el.innerHTML=''; return; }
+  const eshteBalance = (window.__llogariaModaliteti==='barazi');
+  if(eshteBalance && (_anaDetAktiv==='pesha' || _anaDetAktiv==='pozicioni')){ el.innerHTML=''; return; } // s'ka nen-panel per keto ne Balance
 
   if(_anaDetAktiv==='pesha'){
     const modBtn=function(mode,lbl){
@@ -454,10 +457,75 @@ var _anaDetReklamaChart=null, _anaDetKategoriaChart=null;
 function anaRenderDetRezultati(){
   const el=$('anaDetRezultati'); if(!el) return;
   if(!_anaDetAktiv){ el.innerHTML=''; return; }
+  const eshteBalance = (window.__llogariaModaliteti==='barazi');
+  if(eshteBalance && _anaDetAktiv==='pesha') return anaDetRezBilanciKategori(el);
+  if(eshteBalance && _anaDetAktiv==='pozicioni') return anaDetRezEcuriaDitore(el);
   if(_anaDetAktiv==='pesha') return anaDetRezPesha(el);
   if(_anaDetAktiv==='pozicioni') return anaDetRezPozicioni(el);
   if(_anaDetAktiv==='reklama') return anaDetRezReklama(el);
   if(_anaDetAktiv==='kategoria') return anaDetRezKategoria(el);
+}
+
+// ── BALANCE — "Bilanci sipas kategorisë": katrorë (si te paneli admin), nje kolone
+// per kategori, siper vijes se mesit nese ke MARRE me shume, poshte nese ke DHENE me
+// shume; kategoria e VET biznesit theksohet me ngjyre tjeter ──
+var _anaBilKatMaksKatroreVizuale=16, _anaBilKatNjesia=9;
+async function anaDetRezBilanciKategori(el){
+  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 4px;">Bilanci sipas kategorisë</h4>'+
+    '<p class="small mut" style="margin:0 0 12px;">Për secilën kategori: katrorë sipër vijes së mesit nëse ke marrë më shumë shfaqje, poshtë nëse ke dhënë më shumë. Kategoria jote theksohet me ngjyrë tjetër.</p>'+
+    '<div id="anaBilKatGrafiku" style="display:flex;gap:16px;align-items:flex-start;overflow-x:auto;padding:6px 4px 0;"></div>';
+  const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
+  if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
+  let d;
+  try{ d=await(await fetch('/api/analytics/balance-kategorite-katror?nga='+ngaEl.value+'&deri='+deriEl.value)).json(); }catch(e){ return; }
+  const grafEl=$('anaBilKatGrafiku'); if(!grafEl) return;
+  const kategorite=d.kategorite||[];
+  if(!kategorite.length){ grafEl.innerHTML='<p class="small mut">Asnjë pjesëmarrje në Balance në këtë periudhë.</p>'; return; }
+  const NJ=_anaBilKatNjesia, MAKS=_anaBilKatMaksKatroreVizuale, LARTESIA=MAKS*(NJ+2)+40;
+  grafEl.innerHTML = kategorite.map(function(k,i){
+    const eshteVetja = (k.kategoria===d.vetjaKat);
+    const ngjyra = eshteVetja ? '#f0883e' : anaKatPaleta(i);
+    const nShfaq = Math.min(Math.abs(k.net), MAKS);
+    const teproj = Math.abs(k.net) > MAKS;
+    const katroret = Array.from({length:nShfaq}).map(function(){
+      return '<div style="width:22px;height:'+NJ+'px;background:'+ngjyra+';border-radius:2px;"></div>';
+    }).join('<div style="height:2px;"></div>');
+    const brendaLart = k.net>0 ? ('<div style="display:flex;flex-direction:column-reverse;gap:2px;align-items:center;">'+katroret+'</div>'+(teproj?'<div class="small" style="color:'+ngjyra+';font-size:10px;">+'+Math.abs(k.net)+'</div>':'')) : '';
+    const brendaPoshte = k.net<0 ? ('<div style="display:flex;flex-direction:column;gap:2px;align-items:center;">'+katroret+'</div>'+(teproj?'<div class="small" style="color:'+ngjyra+';font-size:10px;">−'+Math.abs(k.net)+'</div>':'')) : '';
+    return '<div style="flex:0 0 auto;width:64px;display:flex;flex-direction:column;align-items:center;">'+
+      '<div style="height:'+LARTESIA+'px;display:flex;flex-direction:column;justify-content:flex-end;width:100%;align-items:center;">'+brendaLart+'</div>'+
+      '<div style="width:100%;height:2px;background:rgba(230,237,243,.4);margin:2px 0;"></div>'+
+      '<div style="height:'+LARTESIA+'px;display:flex;flex-direction:column;justify-content:flex-start;width:100%;align-items:center;">'+brendaPoshte+'</div>'+
+      '<div class="small" style="font-size:10px;margin-top:6px;text-align:center;color:'+(eshteVetja?ngjyra:'var(--mut)')+';font-weight:'+(eshteVetja?'700':'400')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:64px;">'+esc(k.kategoria)+(eshteVetja?' (ti)':'')+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+// ── BALANCE — "Ecuria ditore": nje vije e vetme (shfaqje), zero ne mes, +/- sipas
+// ditës — ripërdor endpoint-in ekzistues te Deficitit, vetem 1 metrike ──
+var _anaEcuriaDitoreChart=null;
+async function anaDetRezEcuriaDitore(el){
+  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 8px;">Ecuria ditore (Marrë − Dhënë, shfaqje)</h4><canvas id="anaEcuriaDitoreCanvas" height="100"></canvas>';
+  const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
+  if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
+  let d;
+  try{ d=await(await fetch('/api/analytics/deficiti?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika=barazi')).json(); }catch(e){ return; }
+  const rows=d.rows||[];
+  const labels=rows.map(r=>r.data);
+  const canvas=$('anaEcuriaDitoreCanvas'); if(!canvas||typeof Chart==='undefined') return;
+  if(_anaEcuriaDitoreChart){ _anaEcuriaDitoreChart.destroy(); _anaEcuriaDitoreChart=null; }
+  let maksAbs=0; rows.forEach(r=>{ const a=Math.abs(r.shfaqje||0); if(a>maksAbs) maksAbs=a; });
+  const jastek = maksAbs>0 ? maksAbs*1.15 : 5;
+  const ctx=canvas.getContext('2d');
+  _anaEcuriaDitoreChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Shfaqje (Marrë−Dhënë)', data:rows.map(r=>r.shfaqje), borderColor:'#4a9eff', backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:'#4a9eff'}]},
+    options:{responsive:true,interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}},
+        y:{min:-jastek,max:jastek,ticks:{color:'#8b949e',precision:0},grid:{color:function(ctx){ return ctx.tick.value===0 ? 'rgba(230,237,243,.35)' : '#2a313c'; }}}
+      },
+      plugins:{legend:{labels:{color:'#e6edf3'}}}},
+    plugins:[anaMultiColorLinePluginDivergjent]
+  });
 }
 
 // ── Rasti "Pesha" — histogram (qirinj): X=intervale peshe 0-1500, Y=sa here fituar ──
