@@ -704,6 +704,12 @@ app.get('/api/analytics/ankand-detaje', iLoguar, async (req, res) => {
     const ngaD=new Date(nga), deriD=new Date(deri);
     if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
 
+    // "marre" (parazgjedhje) = kam pjesemarrje/perfitim UNE (si reklamues, reklamues_id=une)
+    // "dhene" = TE TJERET kane perfituar nga hapesira IME (si host, host_id=une)
+    const perspektiv = req.query.perspektiv === 'dhene' ? 'dhene' : 'marre';
+    const fushaFiks = perspektiv === 'dhene' ? 'host_id' : 'reklamues_id';
+    const fushaKategori = perspektiv === 'dhene' ? 'reklamues_id' : 'host_id';
+
     const kategoria = (req.query.kategoria || '').trim();
     const peshaMode = (req.query.pesha_mode || 'te_gjitha').trim(); // 'te_gjitha'|'fiks'|'interval'
     const peshaFiks = req.query.pesha_fiks != null ? parseFloat(req.query.pesha_fiks) : null;
@@ -731,11 +737,11 @@ app.get('/api/analytics/ankand-detaje', iLoguar, async (req, res) => {
         SELECT g.*,
           CASE WHEN g.vendim_id IS NOT NULL THEN RANK() OVER (PARTITION BY g.vendim_id ORDER BY g.pesha DESC) ELSE NULL END AS pozicioni
         FROM garat g
-        WHERE g.reklamues_id=$1 AND g.created_at::date BETWEEN $2 AND $3
+        WHERE g.${fushaFiks}=$1 AND g.created_at::date BETWEEN $2 AND $3
       )
       SELECT mp.id, mp.created_at, mp.pesha, mp.ai, mp.profili, mp.ndihma, mp.fitoi, mp.pozicioni, mp.reklama_id,
         b.kategoria_kryesore AS kategoria
-      FROM mp JOIN bizneset b ON b.id = mp.host_id
+      FROM mp JOIN bizneset b ON b.id = mp.${fushaKategori}
       WHERE 1=1 ${filtri}
       ORDER BY mp.created_at DESC
       LIMIT 500`, params);
@@ -743,8 +749,8 @@ app.get('/api/analytics/ankand-detaje', iLoguar, async (req, res) => {
     // Kategoritë e disponueshme (per butonat e filtrit) — te pavarura nga filtri i kategorise vete
     const katOpt = await pool.query(`
       SELECT DISTINCT b.kategoria_kryesore AS kategoria
-      FROM garat g JOIN bizneset b ON b.id = g.host_id
-      WHERE g.reklamues_id=$1 AND g.created_at::date BETWEEN $2 AND $3
+      FROM garat g JOIN bizneset b ON b.id = g.${fushaKategori}
+      WHERE g.${fushaFiks}=$1 AND g.created_at::date BETWEEN $2 AND $3
         AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''
       ORDER BY 1`, [req.biznesId, nga, deri]);
 
@@ -752,11 +758,11 @@ app.get('/api/analytics/ankand-detaje', iLoguar, async (req, res) => {
     const rekOpt = await pool.query(`
       SELECT DISTINCT p.id, p.titulli
       FROM garat g JOIN promovimet p ON p.id = g.reklama_id
-      WHERE g.reklamues_id=$1 AND g.created_at::date BETWEEN $2 AND $3 AND g.reklama_id IS NOT NULL
+      WHERE g.${fushaFiks}=$1 AND g.created_at::date BETWEEN $2 AND $3 AND g.reklama_id IS NOT NULL
       ORDER BY 2`, [req.biznesId, nga, deri]);
 
     res.json({
-      nga, deri,
+      nga, deri, perspektiv,
       rreshtat: r.rows.map(x => ({
         id: x.id, data: x.created_at.toISOString().slice(0,10),
         pesha: x.pesha, ai: x.ai, profili: x.profili, ndihma: x.ndihma,
@@ -777,17 +783,19 @@ app.get('/api/analytics/ankand-pesha-histogram', iLoguar, async (req, res) => {
     if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
     if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
     if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const perspektiv = req.query.perspektiv === 'dhene' ? 'dhene' : 'marre';
+    const fushaFiks = perspektiv === 'dhene' ? 'host_id' : 'reklamues_id';
 
     const r = await pool.query(`
       SELECT LEAST(14, FLOOR(pesha/100))::int AS kosh, COUNT(*)::int AS n
       FROM garat
-      WHERE reklamues_id=$1 AND fitoi=true AND created_at::date BETWEEN $2 AND $3
+      WHERE ${fushaFiks}=$1 AND fitoi=true AND created_at::date BETWEEN $2 AND $3
       GROUP BY kosh`, [req.biznesId, nga, deri]);
 
     const koshat = new Array(15).fill(0); // 0-99,100-199,...,1400-1500
     r.rows.forEach(x => { koshat[x.kosh] = x.n; });
     const etiketa = koshat.map((_, i) => (i*100) + '-' + (i===14 ? 1500 : (i*100+99)));
-    res.json({ nga, deri, etiketa, koshat });
+    res.json({ nga, deri, perspektiv, etiketa, koshat });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -800,17 +808,19 @@ app.get('/api/analytics/ankand-pozicionet-fituara', iLoguar, async (req, res) =>
     if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
     if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
     if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const perspektiv = req.query.perspektiv === 'dhene' ? 'dhene' : 'marre';
+    const fushaFiks = perspektiv === 'dhene' ? 'host_id' : 'reklamues_id';
 
     const r = await pool.query(`
       WITH mp AS (
         SELECT g.*, CASE WHEN g.vendim_id IS NOT NULL THEN RANK() OVER (PARTITION BY g.vendim_id ORDER BY g.pesha DESC) ELSE NULL END AS pozicioni
-        FROM garat g WHERE g.reklamues_id=$1 AND g.created_at::date BETWEEN $2 AND $3
+        FROM garat g WHERE g.${fushaFiks}=$1 AND g.created_at::date BETWEEN $2 AND $3
       )
       SELECT DISTINCT pozicioni, COUNT(*)::int AS n
       FROM mp WHERE fitoi=true AND pozicioni IS NOT NULL
       GROUP BY pozicioni ORDER BY pozicioni`, [req.biznesId, nga, deri]);
 
-    res.json({ nga, deri, pozicionet: r.rows.map(x => ({ pozicioni: x.pozicioni, n: x.n })) });
+    res.json({ nga, deri, perspektiv, pozicionet: r.rows.map(x => ({ pozicioni: x.pozicioni, n: x.n })) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -824,20 +834,23 @@ app.get('/api/analytics/ankand-pozicion-detaje', iLoguar, async (req, res) => {
     if (nga > deri) { const t=nga; nga=deri; deri=t; }
     const pozicioni = parseInt(req.query.pozicioni, 10);
     if (isNaN(pozicioni)) return res.status(400).json({ error: 'pozicioni kërkohet' });
+    const perspektiv = req.query.perspektiv === 'dhene' ? 'dhene' : 'marre';
+    const fushaFiks = perspektiv === 'dhene' ? 'host_id' : 'reklamues_id';
+    const fushaKategori = perspektiv === 'dhene' ? 'reklamues_id' : 'host_id';
 
     const r = await pool.query(`
       WITH mp AS (
         SELECT g.*, CASE WHEN g.vendim_id IS NOT NULL THEN RANK() OVER (PARTITION BY g.vendim_id ORDER BY g.pesha DESC) ELSE NULL END AS pozicioni
-        FROM garat g WHERE g.reklamues_id=$1 AND g.created_at::date BETWEEN $2 AND $3
+        FROM garat g WHERE g.${fushaFiks}=$1 AND g.created_at::date BETWEEN $2 AND $3
       )
       SELECT mp.created_at, mp.pesha, mp.ai, b.kategoria_kryesore AS kategoria, p.titulli AS reklama
       FROM mp
-      JOIN bizneset b ON b.id = mp.host_id
+      JOIN bizneset b ON b.id = mp.${fushaKategori}
       LEFT JOIN promovimet p ON p.id = mp.reklama_id
       WHERE mp.fitoi=true AND mp.pozicioni=$4
       ORDER BY mp.created_at DESC`, [req.biznesId, nga, deri, pozicioni]);
 
-    res.json({ nga, deri, pozicioni, fitoret: r.rows.map(x => ({
+    res.json({ nga, deri, pozicioni, perspektiv, fitoret: r.rows.map(x => ({
       data: x.created_at.toISOString().slice(0,10), pesha: x.pesha, ai: x.ai,
       kategoria: x.kategoria, reklama: x.reklama || '(pa emër)'
     })) });
