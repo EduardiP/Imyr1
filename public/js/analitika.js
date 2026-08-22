@@ -192,15 +192,21 @@ function mainAnalytics(m){
 
 function mainAnaTrafiku(m){
   _anaSelectedAd=null; _anaDropdownOpen=false;
+  _anaDetAktiv='pesha'; // Pesha e zgjedhur si parazgjedhje, jo asnje
   m.innerHTML='<h2 class="h">Trafiku</h2>'+
     '<div class="card" style="margin-bottom:16px;">'+
       '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Detajet e pjesëmarrjeve në Ankand</h3>'+
       '<p class="small mut" style="margin:0 0 12px;">Data vlen për të gjitha filtrat poshtë. Kliko një kategori filtri për ta hapur.</p>'+
+      '<div id="anaDetKryesoriRow" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
         '<button class="btn" onclick="anaDetPreset(7)">7 ditët e fundit</button>'+
         '<button class="btn" onclick="anaDetPreset(30)">30 ditët e fundit</button>'+
         '<button class="btn" onclick="anaDetPreset(90)">90 ditët e fundit</button>'+
         '<span style="flex:1"></span>'+
+        '<div style="position:relative;">'+
+          '<button type="button" id="anaDetRekBtn" class="btn" style="min-width:150px;">Reklamat <span id="anaDetRekBtnCount"></span> ▾</button>'+
+          '<div id="anaDetRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:240px;max-height:280px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+        '</div>'+
         '<div style="position:relative;">'+
           '<button type="button" id="anaKalBtn_det" class="btn" style="min-width:170px;"></button>'+
           '<div id="anaKalPanel_det" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;width:230px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
@@ -208,7 +214,6 @@ function mainAnaTrafiku(m){
         '<input type="date" id="anaNgaDet" style="display:none;">'+
         '<input type="date" id="anaDeriDet" style="display:none;">'+
       '</div>'+
-      '<div id="anaDetKryesoriRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
       '<div id="anaDetNenPanel" style="margin-bottom:14px;"></div>'+
       '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:4px;">'+
         '<div id="anaDetRezultati" style="flex:2;min-width:280px;"></div>'+
@@ -264,7 +269,14 @@ function mainAnaTrafiku(m){
     setNga:v=>{ $('anaNgaDet').value=v; }, setDeri:v=>{ $('anaDeriDet').value=v; },
     onRuaj: ngarkoAnaDetaje
   });
+  $('anaDetRekBtn').addEventListener('click', function(e){
+    e.stopPropagation();
+    const dd=$('anaDetRekDropdown'); if(!dd) return;
+    _anaDetRekDropdownOpen=!_anaDetRekDropdownOpen;
+    dd.classList.toggle('hide', !_anaDetRekDropdownOpen);
+  });
   anaRenderDetKryesori();
+  anaRenderDetNenPanel();
   ngarkoAnaDetaje();
 }
 
@@ -302,9 +314,11 @@ function anaRenderDetKryesori(){
     const btn=document.createElement('button');
     btn.type='button'; btn.textContent=anaDetEmriFiltri(x.k);
     const eshteHapur=_anaDetAktiv===x.k;
-    btn.style.cssText = (x.aktiv||eshteHapur)
-      ? 'padding:7px 14px;border-radius:20px;border:1px solid var(--acc);background:rgba(74,158,255,.15);color:var(--acc);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;'
-      : 'padding:7px 14px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:13px;cursor:pointer;font-family:inherit;';
+    btn.style.cssText = eshteHapur
+      ? 'padding:11px 22px;border-radius:10px;border:2px solid var(--acc);background:var(--acc);color:#06121f;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;'
+      : (x.aktiv
+        ? 'padding:11px 22px;border-radius:10px;border:2px solid var(--acc);background:rgba(74,158,255,.15);color:var(--acc);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;'
+        : 'padding:11px 22px;border-radius:10px;border:2px solid var(--line);background:transparent;color:var(--txt);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;');
     btn.addEventListener('click', function(){ _anaDetAktiv = (_anaDetAktiv===x.k) ? null : x.k; anaRenderDetKryesori(); anaRenderDetNenPanel(); anaRenderDetRezultati(); });
     el.appendChild(btn);
   });
@@ -367,8 +381,28 @@ function anaDetPeshaIntervalChange(){
   anaRenderDetKryesori(); ngarkoAnaDetaje();
 }
 function anaDetPozicioniSet(p){ _anaDetPozicioni = (p==='te_gjitha'||isNaN(p)) ? 'te_gjitha' : p; anaRenderDetKryesori(); anaRenderDetNenPanel(); ngarkoAnaDetaje(); }
-function anaDetReklamaSet(id){ _anaDetReklamaId = id; anaRenderDetKryesori(); anaRenderDetNenPanel(); ngarkoAnaDetaje(); }
+function anaDetReklamaSet(id){ _anaDetReklamaId = id; anaRenderDetKryesori(); anaRenderDetNenPanel(); anaDetRenderRekDropdown(); ngarkoAnaDetaje(); }
 function anaDetKategoriaSet(kat){ _anaDetKategoria = kat; anaRenderDetKryesori(); anaRenderDetNenPanel(); ngarkoAnaDetaje(); }
+
+// ═══ Dropdown UNIVERSAL i reklamave — punon PAVARESISHT cilën kategori (Pesha/
+// Pozicioni/Reklama/Kategoria) ke aktive, gjithmone i paracaktuar "Të gjitha" ═══
+var _anaDetRekDropdownOpen=false;
+function anaDetRenderRekDropdown(){
+  const dd=$('anaDetRekDropdown'); if(!dd) return;
+  dd.innerHTML='';
+  dd.appendChild(anaRekRresht('Të gjitha', !_anaDetReklamaId, true, function(){ anaDetReklamaSet(''); anaDetMbyllRekDropdown(); }));
+  if(!_anaDetReklamat.length){ const p=document.createElement('p'); p.className='small mut'; p.style.padding='6px'; p.textContent="S'ke ende reklama fituese në këtë periudhë."; dd.appendChild(p); anaDetUpdateRekBtnLabel(); return; }
+  const hr=document.createElement('div'); hr.style.cssText='height:1px;background:var(--line);margin:4px 2px;'; dd.appendChild(hr);
+  _anaDetReklamat.forEach(function(r){
+    dd.appendChild(anaRekRresht(esc(r.emri||('#'+r.id)), _anaDetReklamaId==r.id, false, function(){ anaDetReklamaSet(r.id); anaDetMbyllRekDropdown(); }));
+  });
+  anaDetUpdateRekBtnLabel();
+}
+function anaDetMbyllRekDropdown(){ const dd=$('anaDetRekDropdown'); if(dd) dd.classList.add('hide'); _anaDetRekDropdownOpen=false; }
+function anaDetUpdateRekBtnLabel(){
+  const el=$('anaDetRekBtnCount'); if(!el) return;
+  el.textContent = _anaDetReklamaId ? '(1)' : '';
+}
 
 async function ngarkoAnaDetaje(){
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
@@ -385,6 +419,7 @@ async function ngarkoAnaDetaje(){
   _anaDetKategorite = d.kategorite_disponueshme || [];
   _anaDetReklamat = d.reklamat_disponueshme || [];
   if(_anaDetAktiv==='reklama' || _anaDetAktiv==='kategoria') anaRenderDetNenPanel();
+  anaDetRenderRekDropdown();
 
   const rreshtat = d.rreshtat || [];
   const t1=$('anaDetTabela1');
@@ -460,8 +495,9 @@ function anaDetRenderPozicionetLista(){
   el.innerHTML = _anaDetPozicionetLista.map(function(p){
     const hapur = _anaDetPozicioniHapur===p.pozicioni;
     return '<div style="border:1px solid var(--line);border-radius:8px;margin-bottom:8px;overflow:hidden;">'+
-      '<button type="button" onclick="anaDetToggloPozicionin('+p.pozicioni+')" style="width:100%;text-align:left;padding:10px 14px;background:'+(hapur?'rgba(74,158,255,.1)':'transparent')+';border:none;color:var(--txt);cursor:pointer;font-family:inherit;font-size:13px;display:flex;justify-content:space-between;">'+
-        '<span>Pozicioni #'+p.pozicioni+'</span><span class="mut">'+p.n+' fitore '+(hapur?'▲':'▼')+'</span>'+
+      '<button type="button" onclick="anaDetToggloPozicionin('+p.pozicioni+')" style="width:100%;text-align:left;padding:10px 14px;background:'+(hapur?'rgba(74,158,255,.1)':'transparent')+';border:none;color:var(--txt);cursor:pointer;font-family:inherit;font-size:13px;display:flex;align-items:center;gap:10px;">'+
+        '<span style="flex:0 0 28px;height:28px;display:flex;align-items:center;justify-content:center;background:rgba(74,158,255,.15);border:1px solid var(--acc);border-radius:6px;font-weight:700;color:var(--acc);">'+p.pozicioni+'</span>'+
+        '<span style="flex:1;">'+p.n+' fitore</span><span class="mut">'+(hapur?'▲':'▼')+'</span>'+
       '</button>'+
       '<div id="anaDetPozicioniDetaje_'+p.pozicioni+'" style="'+(hapur?'':'display:none;')+'padding:0 14px 12px;"></div>'+
     '</div>';
@@ -543,11 +579,13 @@ async function anaDetNgarkoReklamaChart(){
 // ── Rasti "Kategoria" — ripërdor grafikun "Sipas kategorisë" (nje vije per kategori) ──
 async function anaDetRezKategoria(el){
   el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 8px;">Sipas kategorisë së biznesit</h4>'+
-    '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:10px;">'+
-      '<div id="anaDetKatMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;"></div>'+
-      '<div id="anaDetKatLegend" style="display:flex;flex-direction:column;gap:6px;max-height:80px;overflow-y:auto;"></div>'+
-    '</div>'+
-    '<canvas id="anaDetKategoriaCanvas" height="100"></canvas>';
+    '<div id="anaDetKatMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
+    '<div style="display:flex;gap:14px;align-items:stretch;">'+
+      '<div style="flex:1;min-width:0;"><canvas id="anaDetKategoriaCanvas" height="100"></canvas></div>'+
+      '<div style="flex:0 0 150px;">'+
+        '<div id="anaDetKatLegend" style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;padding-right:2px;"></div>'+
+      '</div>'+
+    '</div>';
   anaDetRenderKatMetrika();
   await anaDetNgarkoKategoriaChart();
 }
@@ -1091,6 +1129,8 @@ document.addEventListener('click', function(){
   if(dd2 && _anaKatDropdownOpen){ dd2.classList.add('hide'); _anaKatDropdownOpen=false; }
   const dd3=$('anaListRekDropdown');
   if(dd3 && _anaListDropdownOpen){ dd3.classList.add('hide'); _anaListDropdownOpen=false; }
+  const dd4=$('anaDetRekDropdown');
+  if(dd4 && _anaDetRekDropdownOpen){ dd4.classList.add('hide'); _anaDetRekDropdownOpen=false; }
 });
 var _anaSelectedAd=null, _anaRekAll=[], _anaDropdownOpen=false;
 var ANA_METRIKA=[
