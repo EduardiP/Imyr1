@@ -2119,7 +2119,14 @@ require('./njoftime-admin')(app, pool, iLoguar, iAdmin);
 
 require('./ndryshime-admin')(app, pool, iLoguar, iAdmin);
 
-require('./ekipi')(app, pool, iLoguar, null);
+// Resend (dergim email-esh) — nese RESEND_API_KEY s'eshte vendosur, resendKlient
+// mbetet null dhe ekipi.js e trajton pa u thyer (thjesht s'dergon email, fail-open).
+let resendKlient = null;
+if (process.env.RESEND_API_KEY) {
+  const { Resend } = require('resend');
+  resendKlient = new Resend(process.env.RESEND_API_KEY);
+}
+require('./ekipi')(app, pool, iLoguar, resendKlient);
 
 require('./pike-reklama').rregjistroRoutet(app, pool, iAdmin);
 
