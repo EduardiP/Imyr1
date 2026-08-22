@@ -31,6 +31,7 @@ const NAV2 = [
   { k:'konvertimet', l:'Konvertimet' },
   { k:'analytics', l:'Analytics', subs:[
     {l:'Trafiku', nav:'anaTrafiku'},
+    {l:'Automatiku', nav:'anaAutomatik'},
     {l:'Deficiti', nav:'anaDeficiti'},
     {l:'Reklamat', nav:'anaReklamat'},
     {l:'Snippet-et', nav:'anaSnippetet'},
@@ -503,6 +504,7 @@ function renderMain(s){
   if(curNav==='snippetStats')  return mainSnippetStatistikat(m);
   if(curNav==='rekPerformanca')  return mainRekPerformanca(m);
   if(curNav==='anaTrafiku')  return mainAnaTrafiku(m);
+  if(curNav==='anaAutomatik')  return mainAnaAutomatik(m);
   if(curNav==='anaDeficiti')  return mainAnaDeficiti(m);
   if(curNav==='anaReklamat')  return mainAnaReklamat(m);
   if(curNav==='anaSnippetet')  return mainAnaSnippetet(m);
