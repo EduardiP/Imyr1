@@ -14,7 +14,7 @@ var EKIPI_TABS = [
   { k: 'permbledhje', l: 'Përmbledhje' },
   { k: 'anetaret', l: 'Anëtarët' },
   { k: 'rolet', l: 'Rolet' },
-  { k: 'cakto', l: 'Cakto role' },
+  { k: 'cakto', l: 'Ndrysho rrolet' },
   { k: 'ftesat', l: 'Ftesat' },
   { k: 'aktiviteti', l: 'Regjistri i aktivitetit' },
   { k: 'analitika', l: 'Analitika' }
@@ -286,7 +286,7 @@ async function ekipiNdryshoLeje(rolId, dhogariKey, celesi, vlera) {
 
 // ═══ CAKTO ROLE (te anëtar specifik) ═══
 async function ekipiCaktoRole(body) {
-  body.innerHTML = '<h2 class="h">Cakto role</h2><p class="small mut" style="margin:4px 0 14px;">Zgjidh rolin për çdo anëtar.</p>' +
+  body.innerHTML = '<h2 class="h">Ndrysho rrolet</h2><p class="small mut" style="margin:4px 0 14px;">Roli fillestar caktohet te ftesa. Këtu e ndryshon më vonë — ose pezullo/fshi anëtarin.</p>' +
     '<button class="btn cta" style="margin-bottom:16px;" onclick="ekipiHapKrijoRol()">+ Krijo rol</button>' +
     '<div id="ekKrijoRolForma"></div>';
   try {
@@ -297,15 +297,40 @@ async function ekipiCaktoRole(body) {
     var anetaret = (anetaretR.anetaret || []).filter(a => !a.eshte_pronar);
     var rolet = roletR.rolet || [];
     if (!anetaret.length) { body.innerHTML += '<p class="small mut">S\'ka anëtarë ende.</p>'; return; }
-    var h = '<div class="ktabela">' + '<div class="krow khead"><span class="kc1">Anëtari</span><span class="kc3">Roli</span></div>';
+    var h = '<div class="ktabela">' + '<div class="krow khead"><span class="kc1">Anëtari</span><span class="kc3">Statusi</span><span class="kc3">Roli</span><span class="kc3">Veprime</span></div>';
     anetaret.forEach(function (a) {
+      var statusEtiketa = a.statusi === 'aktiv' ? '<span style="color:var(--good);">● Aktiv</span>'
+        : a.statusi === 'pezulluar' ? '<span style="color:var(--err);">● Pezulluar</span>'
+        : '<span class="mut">○ Ftesë në pritje</span>';
+      var veprimePezullim = a.statusi === 'aktiv'
+        ? '<button class="btn" onclick="ekipiCaktoPezullo(' + a.id + ')">Pezullo</button>'
+        : a.statusi === 'pezulluar'
+          ? '<button class="btn" onclick="ekipiCaktoAktivizo(' + a.id + ')">Aktivizo</button>'
+          : '';
       h += '<div class="krow"><span class="kc1">' + ekipiEsc(a.emri || a.email) + '</span>' +
+        '<span class="kc3">' + statusEtiketa + '</span>' +
         '<span class="kc3"><select onchange="ekipiCaktoRolTe(' + a.id + ',this.value)" style="background:#0e1116;color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:4px;">' +
         rolet.map(ro => '<option value="' + ro.id + '"' + (a.roli === ro.emri ? ' selected' : '') + '>' + ekipiEsc(ro.emri) + '</option>').join('') +
-        '</select></span></div>';
+        '</select></span>' +
+        '<span class="kc3">' + veprimePezullim + ' <button class="btn" onclick="ekipiCaktoHiq(' + a.id + ')">Fshij</button></span></div>';
     });
     body.innerHTML += h + '</div>';
   } catch (e) { body.innerHTML += '<p class="small">Gabim gjatë ngarkimit.</p>'; }
+}
+// Veprime lokale per KETE faqe (Ndrysho rrolet) — ndryshe nga ekipiPezullo/etj. te
+// "Anetaret", keto RIFRESKOJNE TE NJEJTEN faqe (jo ridrejtim tek 'anetaret').
+async function ekipiCaktoPezullo(id) {
+  await fetch('/api/ekipi/anetaret/' + id + '/pezullo', { method: 'POST' });
+  ekipiCaktoRole(document.getElementById('ekBody'));
+}
+async function ekipiCaktoAktivizo(id) {
+  await fetch('/api/ekipi/anetaret/' + id + '/aktivizo', { method: 'POST' });
+  ekipiCaktoRole(document.getElementById('ekBody'));
+}
+async function ekipiCaktoHiq(id) {
+  if (!confirm('Ta heqësh këtë anëtar?')) return;
+  await fetch('/api/ekipi/anetaret/' + id, { method: 'DELETE' });
+  ekipiCaktoRole(document.getElementById('ekBody'));
 }
 async function ekipiCaktoRolTe(anetarId, rolId) {
   await fetch('/api/ekipi/anetaret/' + anetarId + '/rol', {
