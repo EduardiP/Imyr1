@@ -554,6 +554,66 @@ function pxaSetFeat(id){
   document.getElementById('pxaFeatRightLabel').innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span>' + pxaFeatLabels[id];
 }
 </script>
+<!-- SEGMENTET E RRJETIT (B2B/B2C/B2B2C) -->
+<section class="pxa-section">
+  <div class="pxa-wrap" style="max-width:900px;">
+    <div class="pxa-sec-head">
+      <p class="pxa-sec-eyebrow" style="color:#60a5fa;">Segmentet e rrjetit</p>
+      <h2 class="pxa-sec-h2">B2B me B2B. B2C me B2C.<br><span style="color:#22d3ee;">B2B2C me të gjithë.</span></h2>
+      <p class="pxa-sec-p">Ndarja nuk është një zgjedhje arbitrare — bazohet mbi logjikën e audiencës. Çdo biznes cakton tipin e vet gjatë regjistrimit dhe lidhet vetëm me biznese me audienca kompatibile.</p>
+    </div>
+
+    <div class="pxa-bt-tabs" id="pxaBtTabs">
+      <button class="pxa-bt-tab pxa-active" data-t="B2B" onclick="pxaSetBt('B2B')">B2B</button>
+      <button class="pxa-bt-tab" data-t="B2C" onclick="pxaSetBt('B2C')">B2C</button>
+      <button class="pxa-bt-tab" data-t="B2B2C" onclick="pxaSetBt('B2B2C')">B2B2C</button>
+    </div>
+
+    <div class="pxa-bt-panel" id="pxaBtPanel" style="background:rgba(59,110,240,.05);border-color:rgba(59,110,240,.3);">
+      <div class="pxa-bt-grid">
+        <div>
+          <div class="pxa-bt-type" id="pxaBtType">B2B</div>
+          <h3 class="pxa-bt-title" id="pxaBtTitle">Bizneset B2B</h3>
+          <p class="pxa-bt-desc" id="pxaBtDesc">Platformat dhe shërbimet e biznesit u drejtohen klientëve korporativë. Vendosja e reklamave B2C tek vizitorët B2B nuk do të kishte vlerë — prandaj ndarja është automatike.</p>
+          <div class="pxa-bt-connects" id="pxaBtConnects" style="border-color:#3b82f6;color:#93c5fd;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            <span id="pxaBtConnectsTxt">Lidhet ekskluzivisht me biznese të tjera B2B</span>
+          </div>
+        </div>
+        <div>
+          <div class="pxa-bt-ex-label">Shembuj tipikë</div>
+          <div class="pxa-bt-ex-grid" id="pxaBtExamples"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<script>
+var pxaBtData = {
+  B2B: { title:'Bizneset B2B', desc:'Platformat dhe shërbimet e biznesit u drejtohen klientëve korporativë. Vendosja e reklamave B2C tek vizitorët B2B nuk do të kishte vlerë — prandaj ndarja është automatike.', connects:'Lidhet ekskluzivisht me biznese të tjera B2B', color:'#3b82f6', bg:'rgba(59,110,240,.05)', border:'rgba(59,110,240,.3)',
+    examples:['SaaS për biznese','Platforma HR & Rekrutim','CRM & Automatizim','Dev Tools & API','Kontabilitet & Financa','Siguri & Compliance','Marketing Tools','Analitika & BI'] },
+  B2C: { title:'Bizneset B2C', desc:'Aplikacionet dhe platformat e konsumatorëve u drejtohen individëve. Reklamat B2B nuk do t\'u interesojnë vizitorëve të tyre — platforma e siguron këtë ndarje automatikisht.', connects:'Lidhet ekskluzivisht me biznese të tjera B2C', color:'#22d3ee', bg:'rgba(34,211,238,.05)', border:'rgba(34,211,238,.3)',
+    examples:['Aplikacione konsumatore','E-learning & EdTech','Shëndet & Fitness','Kreativitet & Dizajn','Argëtim & Media','Udhëtim & Rezervim','Financa personale','Lifestyle & Wellness'] },
+  B2B2C: { title:'Platformat B2B2C', desc:'Platformat hibride u shërbejnë njëkohësisht bizneseve dhe konsumatorëve. Për shkak të kësaj natyre të dyfishtë, mund të lidhen me të gjitha llojet e anëtarëve të rrjetit.', connects:'Lidhet me B2B, B2C dhe B2B2C', color:'#a78bfa', bg:'rgba(139,92,246,.05)', border:'rgba(139,92,246,.3)',
+    examples:['E-commerce & Shopify','Marketplace-e','SaaS me model freemium','Platforma rezervimesh','Dyqane dixhitale','Kurse & produkte online','Agjenci dixhitale','Komunitete online'] }
+};
+function pxaSetBt(id){
+  var d = pxaBtData[id];
+  document.querySelectorAll('#pxaBtTabs .pxa-bt-tab').forEach(function(b){ b.classList.toggle('pxa-active', b.dataset.t === id); });
+  document.getElementById('pxaBtType').textContent = id;
+  document.getElementById('pxaBtTitle').textContent = d.title;
+  document.getElementById('pxaBtDesc').textContent = d.desc;
+  document.getElementById('pxaBtConnectsTxt').textContent = d.connects;
+  document.getElementById('pxaBtConnects').style.borderColor = d.color;
+  document.getElementById('pxaBtConnects').style.color = d.color;
+  document.getElementById('pxaBtPanel').style.background = d.bg;
+  document.getElementById('pxaBtPanel').style.borderColor = d.border;
+  document.getElementById('pxaBtExamples').innerHTML = d.examples.map(function(ex){
+    return '<div class="pxa-bt-ex-item"><span class="pxa-bt-ex-dot" style="background:'+d.color+';"></span><span style="font-size:12px;color:#cbd5e1;">'+ex+'</span></div>';
+  }).join('');
+}
+pxaSetBt('B2B');
+</script>
 <!-- PRICING -->
 <section class="pxa-section" id="cmimet">
   <div class="pxa-wrap" style="max-width:960px;text-align:center;">
