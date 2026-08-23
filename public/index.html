@@ -191,6 +191,159 @@
 <script>
 window.addEventListener('scroll', function(){
   var n = document.getElementById('pxaNav');
+<!-- SISTEMI I SHFAQJES (Ankand vs Balance) -->
+<section class="pxa-section">
+  <div class="pxa-wrap">
+    <div class="pxa-sec-head">
+      <p class="pxa-sec-eyebrow" style="color:#60a5fa;">Sistemi i shfaqjes</p>
+      <h2 class="pxa-sec-h2">Dy modele shfaqjeje. Ju zgjidhni.</h2>
+      <p class="pxa-sec-p" style="max-width:520px;margin:0 auto;">Modeli i parazgjedhur është ankandi i pesuar — i fokusuar tek konvertimet. Nëse preferoni barazi absolute, kaloni tek modeli i dytë: merrni saktësisht aq shfaqje sa jepni. Ndryshojeni kudo nga paneli, pa kosto shtesë.</p>
+    </div>
+
+    <!-- 4 hapa -->
+    <div class="pxa-steps4">
+      <div class="pxa-step-card">
+        <div class="pxa-step-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b6ef0" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20 15.3 15.3 0 010-20z"/></svg></div>
+        <div class="pxa-step-num">01</div>
+        <h3 class="pxa-step-title">Vizitori hyn në sit</h3>
+        <p class="pxa-step-body">Snippeti dërgon menjëherë një kërkesë tek Phronexus AI dhe sistemi i ankandeve aktivizohet automatikisht.</p>
+      </div>
+      <div class="pxa-step-card">
+        <div class="pxa-step-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b6ef0" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+        <div class="pxa-step-num">02</div>
+        <h3 class="pxa-step-title">Bizneset paraqesin peshën</h3>
+        <p class="pxa-step-body">Çdo biznes i kualifikuar paraqet pikët AI (0–1000) dhe pikët e profilit — bashkë formojnë peshën në ankand.</p>
+      </div>
+      <div class="pxa-step-card">
+        <div class="pxa-step-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b6ef0" stroke-width="2"><path d="M12 2l2.4 7.2H22l-6 4.6L18.4 21 12 16.4 5.6 21 8 13.8 2 9.2h7.6z"/></svg></div>
+        <div class="pxa-step-num">03</div>
+        <h3 class="pxa-step-title">Fituesi zgjidhet me meritë</h3>
+        <p class="pxa-step-body">Short i pesuar: sa më shumë pikë totale, aq më e lartë gjasa e fitimit. Performancë, jo fat.</p>
+      </div>
+      <div class="pxa-step-card">
+        <div class="pxa-step-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b6ef0" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+        <div class="pxa-step-num">04</div>
+        <h3 class="pxa-step-title">Reklama shfaqet</h3>
+        <p class="pxa-step-body">Nëse biznesi fitues ka shumë reklama aktive, bëhet ankand i dytë mes tyre sipas performancës historike të kategorisë.</p>
+      </div>
+    </div>
+
+    <!-- Zgjedhësi i modelit -->
+    <div class="pxa-model-select">
+      <button type="button" class="pxa-model-card pxa-active" id="pxaModelBtnAuction" onclick="pxaSetModel('auction')">
+        <span class="pxa-model-dot"></span>
+        <div class="pxa-model-top">
+          <div class="pxa-model-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.2H22l-6 4.6L18.4 21 12 16.4 5.6 21 8 13.8 2 9.2h7.6z"/></svg></div>
+          <div>
+            <span class="pxa-model-label">Ankand i pesuar</span><span class="pxa-model-badge">Parazgjedhur</span>
+            <p class="pxa-model-desc">Shfaqjet shpërndahen bazuar në pikë dhe performancë — fokus tek konvertimet</p>
+          </div>
+        </div>
+      </button>
+      <button type="button" class="pxa-model-card" id="pxaModelBtnEqual" onclick="pxaSetModel('equal')">
+        <span class="pxa-model-dot"></span>
+        <div class="pxa-model-top">
+          <div class="pxa-model-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+          <div>
+            <span class="pxa-model-label">Barazi shfaqjesh</span>
+            <p class="pxa-model-desc">Merrni saktësisht aq shfaqje sa ofroni — bilancë e garantuar</p>
+          </div>
+        </div>
+      </button>
+    </div>
+
+    <!-- Paneli 2-kolonësh -->
+    <div class="pxa-model-panel">
+      <div class="pxa-model-panel-grid">
+        <!-- LEFT -->
+        <div class="pxa-model-panel-col">
+          <div id="pxaLeftAuction">
+            <p class="pxa-panel-label">Si llogaritet pesha juaj në ankand</p>
+            <div class="pxa-bar-row">
+              <div class="pxa-bar-head"><span style="font-size:12px;font-weight:600;color:#fff;">Pikat AI <span style="font-size:10px;color:#64748b;font-weight:400;">nga matching</span></span><span style="font-size:12px;font-family:monospace;color:#3b82f6;font-weight:600;">832 / 1000</span></div>
+              <div class="pxa-bar-track"><div class="pxa-bar-fill" style="width:83.2%;"></div></div>
+              <p style="font-size:10px;color:#64748b;margin:6px 0 0;line-height:1.5;">Sa plotësuese janë audiencave bizneset A dhe B — llogaritet nga AI pas matching-ut. Shkalla 0 deri 1000.</p>
+            </div>
+            <div style="margin-bottom:20px;">
+              <div class="pxa-bar-head"><span style="font-size:12px;font-weight:600;color:#fff;">Pikat e Profilit <span style="font-size:10px;color:#64748b;font-weight:400;">nga aktiviteti juaj</span></span><span style="font-size:12px;font-family:monospace;color:#22d3ee;font-weight:600;">47 pikë</span></div>
+              <div class="pxa-mini-grid">
+                <div class="pxa-mini-card"><div style="font-size:9px;font-family:monospace;color:#64748b;">B2B</div><div style="font-size:10px;font-weight:600;color:#fff;">175 shfaqje</div><div style="font-size:9px;color:#22d3ee;font-family:monospace;">= 1 pikë</div></div>
+                <div class="pxa-mini-card"><div style="font-size:9px;font-family:monospace;color:#64748b;">B2C</div><div style="font-size:10px;font-weight:600;color:#fff;">320 shfaqje</div><div style="font-size:9px;color:#22d3ee;font-family:monospace;">= 1 pikë</div></div>
+                <div class="pxa-mini-card"><div style="font-size:9px;font-family:monospace;color:#64748b;">Çdo konvertim</div><div style="font-size:10px;font-weight:600;color:#fff;">i verifikuar</div><div style="font-size:9px;color:#22d3ee;font-family:monospace;">= 1 pikë</div></div>
+              </div>
+              <p style="font-size:10px;color:#64748b;margin:0;line-height:1.5;">Pikat e profilit grumbullohen nga çdo shfaqje dhe konvertim që jepni. Sa më aktiv, aq më e lartë pesha.</p>
+            </div>
+            <div style="border-radius:12px;padding:16px;border:1px solid rgba(59,110,240,.2);background:rgba(59,110,240,.06);margin-bottom:20px;">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                <span style="font-size:10px;font-family:monospace;color:#60a5fa;">Pikat AI + Pikat e Profilit</span>
+                <span style="flex:1;height:1px;background:rgba(59,110,240,.2);"></span>
+                <span style="font-size:10px;font-family:monospace;color:#93c5fd;font-weight:600;">Pesha në ankand</span>
+              </div>
+              <div class="pxa-bar-track" style="height:12px;margin-bottom:8px;"><div class="pxa-bar-fill" style="width:73%;"></div></div>
+              <div style="display:flex;justify-content:space-between;font-size:10px;font-family:monospace;"><span style="color:#64748b;">Probabiliteti i fitimit të ankandeve</span><span style="color:#fff;font-weight:600;">~73%</span></div>
+            </div>
+            <a href="#" onclick="event.preventDefault();startWizard();" class="pxa-cta-main" style="width:100%;padding:14px 20px;">Provoni falas me Ankand të pesuar
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+          </div>
+          <div id="pxaLeftEqual" class="hide">
+            <p class="pxa-panel-label">Gjendja aktuale e bilancit tuaj</p>
+            <div class="pxa-mini-grid" style="grid-template-columns:1fr 1fr;margin-bottom:16px;">
+              <div class="pxa-mini-card" style="text-align:left;padding:14px;"><div style="font-size:10px;font-family:monospace;color:#64748b;margin-bottom:6px;">Shfaqje dhënë</div><div style="font-size:22px;font-weight:700;color:#fff;font-family:'Barlow Condensed',sans-serif;">1,284</div><div style="font-size:10px;color:#34d399;font-family:monospace;">këtë muaj</div></div>
+              <div class="pxa-mini-card" style="text-align:left;padding:14px;"><div style="font-size:10px;font-family:monospace;color:#64748b;margin-bottom:6px;">Shfaqje marrë</div><div style="font-size:22px;font-weight:700;color:#fff;font-family:'Barlow Condensed',sans-serif;">1,247</div><div style="font-size:10px;color:#60a5fa;font-family:monospace;">duke u barazuar</div></div>
+            </div>
+            <div style="border-radius:12px;padding:16px;background:var(--pxa-inner);margin-bottom:16px;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="font-size:10px;font-family:monospace;color:#64748b;">Balanca</span><span style="font-size:10px;font-family:monospace;color:#fbbf24;">−37 shfaqje</span></div>
+              <div class="pxa-bar-track" style="margin-bottom:8px;"><div class="pxa-bar-fill" style="width:97.1%;background:#3b6ef0;"></div></div>
+              <p style="font-size:10px;color:#64748b;margin:0;line-height:1.5;">Diferenca e vogël kompensohet automatikisht — bilanci luhatet natyrshëm dhe stabilizohet brenda disa ditësh.</p>
+            </div>
+            <div style="border-radius:12px;padding:16px;border:1px solid rgba(16,185,129,.2);background:rgba(16,185,129,.06);margin-bottom:20px;display:flex;gap:10px;align-items:flex-start;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" style="flex:0 0 auto;margin-top:2px;"><polyline points="20 6 9 17 4 12"/></svg>
+              <div><div style="font-size:12px;font-weight:600;color:#fff;margin-bottom:4px;">Garancia e barazisë</div><p style="font-size:10px;color:#64748b;margin:0;line-height:1.5;">Në këtë model, platforma siguron që gjatë çdo periudhe mujore shfaqjet e marra të afrohen sa më shumë tek shfaqjet e dhëna. Konkurrentët mbeten gjithmonë të bllokuar.</p></div>
+            </div>
+            <a href="#" onclick="event.preventDefault();startWizard();" style="width:100%;padding:14px 20px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:14px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#fff;text-decoration:none;">Provoni falas me Barazi shfaqjesh
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+          </div>
+        </div>
+        <!-- RIGHT -->
+        <div class="pxa-model-panel-col">
+          <div id="pxaRightAuction">
+            <p class="pxa-panel-label">Faktorët që ndikojnë në ankand</p>
+            <div class="pxa-factor-card"><span class="pxa-factor-dot" style="background:#3b6ef0;"></span><div><div><span style="font-size:12px;font-weight:600;color:#fff;">Matching AI</span> <span style="font-size:9px;font-family:monospace;padding:2px 6px;border-radius:4px;background:rgba(59,110,240,.15);color:#93c5fd;">0 — 1000</span></div><p style="font-size:10px;color:#64748b;margin:4px 0 0;line-height:1.5;">Vlerëson sa plotësuese janë audiencave dy biznese. Llogaritet nga AI gjatë matching-ut — rritet automatikisht kur përmirësohet profili juaj.</p></div></div>
+            <div class="pxa-factor-card"><span class="pxa-factor-dot" style="background:#22d3ee;"></span><div><div><span style="font-size:12px;font-weight:600;color:#fff;">Shfaqje të dhëna</span> <span style="font-size:9px;font-family:monospace;padding:2px 6px;border-radius:4px;background:rgba(34,211,238,.15);color:#67e8f9;">B2B: 175=1pt · B2C: 320=1pt</span></div><p style="font-size:10px;color:#64748b;margin:4px 0 0;line-height:1.5;">Çdo shfaqje që ofroni tek audienca juaj grumbullon pikë profili. Bizneset aktive fitojnë peshë shtesë në çdo ankand të ardhshëm.</p></div></div>
+            <div class="pxa-factor-card"><span class="pxa-factor-dot" style="background:#10b981;"></span><div><div><span style="font-size:12px;font-weight:600;color:#fff;">Konvertime të verifikuara</span> <span style="font-size:9px;font-family:monospace;padding:2px 6px;border-radius:4px;background:rgba(16,185,129,.15);color:#6ee7b7;">Çdo konvertim = 1 pikë</span></div><p style="font-size:10px;color:#64748b;margin:4px 0 0;line-height:1.5;">Kur dikush konvertohet pas një shfaqjeje të rrjetit, platforma e verifikon dhe shton automatikisht 1 pikë profili.</p></div></div>
+            <div class="pxa-warn-box">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f85149" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <p style="font-size:10px;color:#f87171;margin:0;line-height:1.5;"><span style="font-weight:600;font-size:12px;display:block;margin-bottom:2px;">Konkurrentët — kurrë në ankand</span>Pavarësisht sa pikë kanë, bizneset konkurruese bllokohen para se ankandi të fillojë. Kjo nuk është rregullore — është arkitekturë e platformës.</p>
+            </div>
+          </div>
+          <div id="pxaRightEqual" class="hide">
+            <p class="pxa-panel-label">Si funksionon modeli i barazisë</p>
+            <div class="pxa-factor-card"><span class="pxa-factor-dot" style="background:#22d3ee;"></span><div><div><span style="font-size:12px;font-weight:600;color:#fff;">Balanca e shfaqjeve</span> <span style="font-size:9px;font-family:monospace;padding:2px 6px;border-radius:4px;background:rgba(34,211,238,.15);color:#67e8f9;">1 dhënë = 1 marrë</span></div><p style="font-size:10px;color:#64748b;margin:4px 0 0;line-height:1.5;">Platforma mat çdo shfaqje të dhënë dhe siguron që të merrni po aq. Bilanci luhatet pak, por kompensohet automatikisht.</p></div></div>
+            <div class="pxa-factor-card"><span class="pxa-factor-dot" style="background:#10b981;"></span><div><div><span style="font-size:12px;font-weight:600;color:#fff;">Konvertimet gjurmohen gjithsesi</span> <span style="font-size:9px;font-family:monospace;padding:2px 6px;border-radius:4px;background:rgba(16,185,129,.15);color:#6ee7b7;">I disponueshëm</span></div><p style="font-size:10px;color:#64748b;margin:4px 0 0;line-height:1.5;">Edhe në modelin e barazisë, konvertimet regjistrohen dhe tregohen në analitikë — s'ndikojnë shpërndarjen, por japin të dhëna të vlefshme.</p></div></div>
+            <div class="pxa-factor-card"><span class="pxa-factor-dot" style="background:#94a3b8;"></span><div><div><span style="font-size:12px;font-weight:600;color:#fff;">Matching AI & pikët e profilit</span> <span style="font-size:9px;font-family:monospace;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.06);color:#94a3b8;border:1px solid rgba(255,255,255,.1);">S'aplikohet</span></div><p style="font-size:10px;color:#64748b;margin:4px 0 0;line-height:1.5;">Shpërndarja bëhet vetëm mbi bazën e numrit të shfaqjeve të dhëna, pa ankand.</p></div></div>
+            <div style="border-radius:12px;padding:16px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02);display:flex;gap:10px;align-items:flex-start;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" style="flex:0 0 auto;margin-top:2px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <p style="font-size:10px;color:#64748b;margin:0;line-height:1.5;"><span style="font-weight:600;font-size:12px;color:#fff;display:block;margin-bottom:2px;">E njëjta garanci anti-konkurrencë</span>Konkurrentët tuaj mbeten të bllokuar automatikisht pavarësisht modelit të zgjedhur.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<script>
+function pxaSetModel(id){
+  var isA = (id === 'auction');
+  document.getElementById('pxaModelBtnAuction').classList.toggle('pxa-active', isA);
+  document.getElementById('pxaModelBtnEqual').classList.toggle('pxa-active', !isA);
+  document.getElementById('pxaLeftAuction').classList.toggle('hide', !isA);
+  document.getElementById('pxaLeftEqual').classList.toggle('hide', isA);
+  document.getElementById('pxaRightAuction').classList.toggle('hide', !isA);
+  document.getElementById('pxaRightEqual').classList.toggle('hide', isA);
+}
+</script>
   if(n) n.classList.toggle('pxa-scrolled', window.scrollY > 20);
 });
 </script>
