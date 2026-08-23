@@ -2051,12 +2051,8 @@ app.post('/api/kategori-kufizimet', iLoguar, async (req, res) => {
 });
 
 app.get('/api/analizo/mbetur', iLoguar, async (req, res) => {
-  try {
-    const r = await pool.query(
-      `SELECT COUNT(*)::int n FROM analizo_perdorimi WHERE biznes_id=$1 AND krijuar_at > now() - interval '24 hours'`,
-      [req.biznesId]);
-    res.json({ mbetur: Math.max(0, 2 - r.rows[0].n) });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  // Kufizimi u hoq — gjithmone "e pakufizuar" tani.
+  res.json({ mbetur: null, pakufizuar: true });
 });
 
 app.post('/api/analizo', iLoguar, async (req, res) => {
@@ -2086,14 +2082,7 @@ app.post('/api/analizo', iLoguar, async (req, res) => {
       return res.json({ ok: true, ai: false, note: "AI s'është konfiguruar ende (mungon OPENAI_API_KEY)." });
     }
 
-    // Kufi: max 2 analiza reale me AI ne 24 ore, per biznes (ruajtur ne DB — mbahet mend edhe kur kthehesh me vone)
-    const perdorimiQ = await pool.query(
-      `SELECT COUNT(*)::int n FROM analizo_perdorimi WHERE biznes_id=$1 AND krijuar_at > now() - interval '24 hours'`,
-      [req.biznesId]);
-    if (perdorimiQ.rows[0].n >= 2) {
-      return res.status(429).json({ error: 'Ke arritur kufirin: vetëm 2 analiza me AI në 24 orë. Provo më vonë.' });
-    }
-    await pool.query('INSERT INTO analizo_perdorimi (biznes_id) VALUES ($1)', [req.biznesId]);
+    // Kufizimi i vjeter (2/24h) u hoq — krijimi/analiza e pershkrimit me AI tani e pakufizuar.
 
     const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
     const sys = 'Je analist qe klasifikon biznese SaaS per nje rrjet cross-promotion. Kthe VETEM JSON, pa asnje tekst tjeter.';
@@ -2213,6 +2202,9 @@ let resendKlient = null;
 if (process.env.RESEND_API_KEY) {
   const { Resend } = require('resend');
   resendKlient = new Resend(process.env.RESEND_API_KEY);
+  console.log('RESEND: çelësi u gjet, gjatësia=' + process.env.RESEND_API_KEY.length + ', fillon me="' + process.env.RESEND_API_KEY.slice(0,4) + '..."');
+} else {
+  console.log('RESEND: RESEND_API_KEY MUNGON ose ËSHTË BUJË — resendKlient=null, email S\'DO TË DËRGOHET FARE.');
 }
 require('./ekipi')(app, pool, iLoguar, resendKlient);
 
