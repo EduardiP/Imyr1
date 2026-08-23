@@ -222,6 +222,7 @@ module.exports = function (app, pool, iLoguar, resendKlient) {
         [req.biznesId, email, rol_id || null]);
 
       // Dergimi real i email-it — kerkon RESEND_KEY te konfiguruar dhe resendKlient te dhene nga server.js.
+      console.log('EKIPI-FTESE: resendKlient eshte ' + (resendKlient ? 'i vendosur (do provoj dergimin)' : 'NULL (s\'do provoj fare)') + ', per email=' + email);
       if (resendKlient) {
         try {
           let roliEmri = null;
@@ -230,13 +231,14 @@ module.exports = function (app, pool, iLoguar, resendKlient) {
             if (roR.rows.length) roliEmri = roR.rows[0].emri;
           }
           const rolTeksti = roliEmri ? `<p>Roli yt: <b>${roliEmri}</b></p>` : '';
-          await resendKlient.emails.send({
+          const rezultatiResend = await resendKlient.emails.send({
             from: process.env.EKIPI_EMAIL_FROM || 'Imyr <onboarding@resend.dev>',
             to: email,
             subject: 'Je ftuar në ekipin e PronexusAI',
             html: `<p>Je ftuar të bashkohesh.</p>${rolTeksti}<p><a href="https://phronexusai.com/prano-ftesen?kodi=${kodi}">Kliko këtu për të pranuar</a> (skadon në 72 orë).</p>`
           });
-        } catch (e) { console.error('Dergimi i email-it deshtoi:', e.message); }
+          console.log('EKIPI-FTESE: pergjigja e PLOTE nga Resend:', JSON.stringify(rezultatiResend));
+        } catch (e) { console.error('EKIPI-FTESE: Dergimi i email-it deshtoi. Mesazhi:', e.message, '| Objekti i plote:', JSON.stringify(e)); }
       }
 
       await logAktivitet(pool, req.biznesId, req.bizniEmail, 'dergo_ftese', { email });
