@@ -222,14 +222,19 @@ module.exports = function (app, pool, iLoguar, resendKlient) {
         [req.biznesId, email, rol_id || null]);
 
       // Dergimi real i email-it — kerkon RESEND_KEY te konfiguruar dhe resendKlient te dhene nga server.js.
-      // Nese s'e ke ende Resend te lidhur, kjo pjese duhet plotesuar; struktura e te dhenave megjithate eshte gati.
       if (resendKlient) {
         try {
+          let roliEmri = null;
+          if (rol_id) {
+            const roR = await pool.query('SELECT emri FROM ekipi_role_shabllonet WHERE id=$1', [rol_id]);
+            if (roR.rows.length) roliEmri = roR.rows[0].emri;
+          }
+          const rolTeksti = roliEmri ? `<p>Roli yt: <b>${roliEmri}</b></p>` : '';
           await resendKlient.emails.send({
             from: process.env.EKIPI_EMAIL_FROM || 'Imyr <onboarding@resend.dev>',
             to: email,
             subject: 'Je ftuar në ekipin e PronexusAI',
-            html: `<p>Je ftuar të bashkohesh. <a href="https://phronexusai.com/prano-ftesen?kodi=${kodi}">Kliko këtu për të pranuar</a> (skadon në 72 orë).</p>`
+            html: `<p>Je ftuar të bashkohesh.</p>${rolTeksti}<p><a href="https://phronexusai.com/prano-ftesen?kodi=${kodi}">Kliko këtu për të pranuar</a> (skadon në 72 orë).</p>`
           });
         } catch (e) { console.error('Dergimi i email-it deshtoi:', e.message); }
       }
