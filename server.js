@@ -107,7 +107,20 @@ async function iLoguar(req, res, next) {
   try {
     const r = await pool.query('SELECT biznes_id FROM seancat WHERE token=$1', [token]);
     if (!r.rows.length) return res.status(401).json({ error: 'Seanca e pavlefshme.' });
-    req.biznesId = r.rows[0].biznes_id;
+    const idLogimi = r.rows[0].biznes_id;
+
+    // Nese llogaria qe hyri eshte ANETAR EKIPI (jo biznesi kryesor), te gjitha te
+    // dhenat duhet te lexohen/shkruhen nga BIZNESI PRIND (i perbashket), JO nga
+    // rreshti i vet i anetarit (qe eshte bosh — s'ka snippet-e, promovime, etj.).
+    // req.identitetiAnetarId mban ID-ne E VERTETE te personit te loguar (per
+    // kontrollin e lejeve me vone) — req.biznesId mbetet gjithmone biznesi i
+    // PERBASHKET qe cdo endpoint ekzistues tashme e perdor.
+    const bizR = await pool.query(
+      'SELECT pronari_biznes_id, eshte_anetar_ekipi FROM bizneset WHERE id=$1', [idLogimi]);
+    const eshteAnetar = bizR.rows.length && bizR.rows[0].eshte_anetar_ekipi && bizR.rows[0].pronari_biznes_id;
+
+    req.biznesId = eshteAnetar ? bizR.rows[0].pronari_biznes_id : idLogimi;
+    req.identitetiAnetarId = eshteAnetar ? idLogimi : null; // null = pronari vete (qasje e plote)
     next();
   } catch (e) {
     res.status(500).json({ error: e.message });
