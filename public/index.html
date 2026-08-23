@@ -1,157 +1,213 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sq">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PhronexusAI — Cross-Promotion Network for SaaS</title>
-<meta name="description" content="PhronexusAI is the network where SaaS businesses promote each other. Exchange traffic with complementary SaaS companies — no ad budget required.">
+<title>TEST123 — Imyr</title>
+<meta name="description" content="Imyr është rrjeti ku bizneset SaaS promovojnë njëri-tjetrin. Shkëmbe trafik me SaaS plotësuese — pa buxhet reklamash.">
 <link rel="stylesheet" href="/css/style.css?v=83">
 </head>
+<link rel="stylesheet" href="/css/design-new.css">
 <body>
 
 <header class="topbar">
   <div class="side left" id="hdrLeft">
     <nav class="pubnav">
-      <a href="/how-it-works">Product</a>
-      <a href="#cmimet">Pricing</a>
-      <a href="/about">About</a>
-      <a href="/contact">Contact</a>
+      <a href="/how-it-works">Produkti</a>
+      <a href="#cmimet">Çmimet</a>
+      <a href="/about">Rreth nesh</a>
+      <a href="/contact">Kontakt</a>
     </nav>
   </div>
-  <div class="logo">PhronexusAI</div>
+  <div class="logo">IMYR</div>
   <div class="side right" id="hdrRight">
     <button class="btn" onclick="hapModal('hyr')">Log in</button>
     <button class="btn cta" onclick="hapModal('reg')">Register</button>
   </div>
 </header>
 
-<!-- BEFORE LOGIN: public page (everything renders IN PLACE) -->
-<div class="view on" id="v-hero">
+<!-- PARA LOGIN: faqja publike (hapet gjithçka NË VEND) -->
+<div class="pxa-root">
 
-  <section class="shero">
-    <div class="container">
-      <h1>The network where SaaS companies <span class="g">exchange traffic</span>.</h1>
-      <p class="lead">Promote your business to complementary SaaS companies — no ad budget required. One line of code, and you start giving and getting exposure to the right audience.</p>
-      <div class="actions">
-        <button class="sbtn cta lg" onclick="startWizard()">Start Free</button>
-        <a class="sbtn lg" href="/how-it-works">How it works →</a>
-      </div>
-      <div class="trust">No credit card · Set up in minutes · Real analytics</div>
-
-      <div class="hcarousel" id="hcarousel">
-        <div class="hslide on" id="hslide0">
-          <div class="hanim" id="hanim0"></div>
-          <div class="hcap">Two SaaS products exchange ad space — each shows the other, and visitors move between them.</div>
-        </div>
-        <div class="hdots" id="hdots"></div>
-      </div>
+<!-- TOP UTILITY BAR -->
+<div class="pxa-topbar">
+  <div class="pxa-wrap">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span class="pxa-dot-pulse"></span>
+      <span class="pxa-topbar-txt">3 muajt e parë falas · Pa kartë krediti</span>
     </div>
-  </section>
-
-  <section class="sec light" id="si-funksionon">
-    <div class="container center">
-      <p class="eyebrow">How it works</p>
-      <h2>Three steps, and you're part of the network</h2>
-      <p class="lead mut">No complicated campaigns, no budget. Just a fair exchange of exposure between SaaS companies.</p>
-      <div class="grid g3">
-        <div class="tile"><div class="n">1</div><h3>Sign up & describe</h3><p class="mut">Create your account and describe what you offer. PhronexusAI understands your business and finds complementary SaaS companies.</p></div>
-        <div class="tile"><div class="n">2</div><h3>Add one line of code</h3><p class="mut">Copy a snippet and place it on your site. It takes up zero space when there's no promotion to show.</p></div>
-        <div class="tile"><div class="n">3</div><h3>Exchange & measure</h3><p class="mut">Your site shows other SaaS companies; they show you. Track impressions, clicks, and conversions in real time.</p></div>
-      </div>
+    <div class="pxa-topbar-right">
+      <button class="pxa-topbar-btn" title="Zgjidh gjuhën">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/></svg>
+        <span>SQ</span>
+      </button>
+      <span class="pxa-topbar-sep"></span>
+      <button class="pxa-topbar-btn" title="Tema">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
     </div>
-  </section>
-
-  <section class="sec dark" id="perfitimet">
-    <div class="container">
-      <p class="eyebrow">Benefits</p>
-      <h2>Quality traffic, no ad budget</h2>
-      <div class="grid g4">
-        <div class="tile"><div class="n">↔</div><h3>Exchange, not spend</h3><p class="mut">Get exposure by giving exposure. Monetize the traffic you already have, without spending money.</p></div>
-        <div class="tile"><div class="n">◎</div><h3>Targeted audience</h3><p class="mut">Matched with complementary SaaS companies — a warm audience that already understands your product.</p></div>
-        <div class="tile"><div class="n">⚡</div><h3>Total simplicity</h3><p class="mut">One snippet, no complicated dashboards. Set it up once and forget about it.</p></div>
-        <div class="tile"><div class="n">📊</div><h3>Real analytics</h3><p class="mut">Impressions, clicks, and conversions — so you know exactly what value you're getting from the network.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="sec light" id="cmimet">
-    <div class="container center">
-      <p class="eyebrow">Pricing</p>
-      <h2>Start free. Pay only when it's worth it.</h2>
-      <p class="lead mut">The first three months with every feature, free. After that, stay on the free plan, or upgrade to Pro.</p>
-      <div class="plans">
-        <div class="plan">
-          <div class="eyebrow" style="color:var(--light-mut)">Free</div>
-          <div class="price">€0</div><div class="mut">Forever</div>
-          <ul><li>Network traffic exchange</li><li>One active promotion</li><li>Basic analytics</li><li>One snippet</li></ul>
-          <button class="sbtn" onclick="startWizard()" style="width:100%;color:var(--light-txt);border-color:var(--light-line);">Start Free</button>
-        </div>
-        <div class="plan hi">
-          <span class="tag">3 months free</span>
-          <div class="eyebrow" style="color:var(--acc-d)">Pro</div>
-          <div class="price">€5<span style="font-size:16px;font-weight:500;color:var(--light-mut)">/month</span></div>
-          <div class="mut">After the 3-month trial</div>
-          <ul><li>Priority in distribution</li><li>Unlimited promotions</li><li>Full analytics + conversions</li><li>Advanced AI matching</li></ul>
-          <button class="sbtn cta" onclick="startWizard()" style="width:100%;">Try Pro Free</button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="sec dark">
-    <div class="container">
-      <p class="eyebrow center">Frequently Asked Questions</p>
-      <h2 class="center">What you need to know</h2>
-      <div class="faq">
-        <div class="qa"><h4>Does it cost anything?</h4><p>Not to get started. Traffic exchange is free; you only pay if you choose Pro — and the first three months of Pro are free, no card required.</p></div>
-        <div class="qa"><h4>Will random ads show up on my site?</h4><p>No. The network is SaaS-only, and matching is done with complementary businesses, not competitors.</p></div>
-        <div class="qa"><h4>How much space does it take on my site?</h4><p>Zero when there's no promotion to show. When a promotion is displayed, the space takes its size and adapts to your page.</p></div>
-        <div class="qa"><h4>Is this for any kind of business?</h4><p>The initial focus is SaaS companies, since they have access to code and benefit the most from complementary matching.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="sec light">
-    <div class="container">
-      <div class="strip">
-        <h2 style="color:#fff;">Ready to grow your exposure?</h2>
-        <p class="mut" style="color:#cdd4dd;margin-bottom:24px;">Join the network and start exchanging quality traffic today.</p>
-        <button class="sbtn cta lg" onclick="startWizard()">Start Free</button>
-      </div>
-    </div>
-  </section>
-
-  <footer class="site">
-    <div class="container">
-      <div class="fgrid">
-        <div class="fcol" style="max-width:260px;">
-          <div class="brand-s" style="margin-bottom:10px;">PhronexusAI</div>
-          <p class="mut" style="font-size:14px;margin:0;">The network where SaaS businesses promote each other — no ad budget required.</p>
-        </div>
-        <div class="fcol"><h5>Product</h5><a href="/how-it-works">How it works</a><a href="#perfitimet">Benefits</a><a href="#cmimet">Pricing</a></div>
-        <div class="fcol"><h5>Company</h5><a href="/about">About</a><a href="/contact">Contact</a></div>
-        <div class="fcol"><h5>Legal</h5><a href="/privacy">Privacy</a><a href="/terms">Terms</a></div>
-      </div>
-      <div class="fbottom"><span>© 2026 PhronexusAI. All rights reserved.</span><span>Built for SaaS founders.</span></div>
-    </div>
-  </footer>
+  </div>
 </div>
 
-<!-- AFTER LOGIN: home -->
+<!-- NAV -->
+<header class="pxa-nav" id="pxaNav">
+  <div class="pxa-wrap pxa-nav-inner">
+    <a href="/" class="pxa-brand">
+      <svg width="28" height="28" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#3b6ef0" fill-opacity="0.15"/><circle cx="16" cy="7" r="3" fill="#22d3ee"/><circle cx="7" cy="25" r="3" fill="#3b6ef0"/><circle cx="25" cy="25" r="3" fill="#3b6ef0"/><line x1="16" y1="7" x2="7" y2="25" stroke="#3b6ef0" stroke-width="1.5" stroke-opacity="0.55"/><line x1="16" y1="7" x2="25" y2="25" stroke="#3b6ef0" stroke-width="1.5" stroke-opacity="0.55"/><line x1="7" y1="25" x2="25" y2="25" stroke="#22d3ee" stroke-width="1.5" stroke-opacity="0.45"/><circle cx="16" cy="16" r="2" fill="#3b6ef0" fill-opacity="0.5"/></svg>
+      <span class="pxa-brand-name">PHRONEXUS <span>AI</span></span>
+    </a>
+    <nav class="pxa-navlinks">
+      <a href="/how-it-works" class="pxa-navlink">Si Funksionon</a>
+      <a href="#cmimet" class="pxa-navlink">Çmimet</a>
+      <a href="/about" class="pxa-navlink">Rreth nesh</a>
+      <a href="/contact" class="pxa-navlink">Kontakt</a>
+    </nav>
+    <div class="pxa-navauth">
+      <button class="pxa-btn-ghost" onclick="hapModal('hyr')">Hyr</button>
+      <button class="pxa-btn-primary" onclick="hapModal('reg')">Regjistrohu falas</button>
+    </div>
+    <button class="pxa-navburger" onclick="document.getElementById('pxaMobileMenu').classList.toggle('hide')" aria-label="Menu">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+  <div id="pxaMobileMenu" class="hide" style="background:#0c1427;border-top:1px solid rgba(255,255,255,.08);padding:16px 24px;">
+    <a href="/how-it-works" class="pxa-navlink" style="display:block;padding:10px 0;">Si Funksionon</a>
+    <a href="#cmimet" class="pxa-navlink" style="display:block;padding:10px 0;">Çmimet</a>
+    <a href="/about" class="pxa-navlink" style="display:block;padding:10px 0;">Rreth nesh</a>
+    <a href="/contact" class="pxa-navlink" style="display:block;padding:10px 0;">Kontakt</a>
+    <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08);margin-top:8px;">
+      <button class="pxa-btn-ghost" style="border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px;" onclick="hapModal('hyr')">Hyr</button>
+      <button class="pxa-btn-primary" onclick="hapModal('reg')">Regjistrohu falas</button>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="pxa-hero">
+  <div class="pxa-hero-grid"></div>
+  <div class="pxa-hero-glow"></div>
+  <div class="pxa-wrap">
+    <div class="pxa-hero-inner">
+      <div class="pxa-eyebrow"><span class="pxa-eyebrow-dot"></span><span>Rrjeti inteligjent i kross-promovimit</span></div>
+      <h1 class="pxa-h1"><span class="pxa-h1-white">Jo thjesht ekspozim.</span><br><span class="pxa-h1-grad">Konvertim i vërtetë.</span></h1>
+      <p class="pxa-sub">Konkurrentët tuaj <b>nuk shfaqen kurrë tek audienca juaj.</b></p>
+      <p class="pxa-lead">Phronexus AI lidh bizneset SaaS me audiencën e njëra-tjetrës — bazuar te plotësueshmëria, jo rastësia. Zgjidhni vetë modelin: <b>ankand i pesuar</b> (maksimalizon konvertimet, i rekomanduar) ose <b>barazi shfaqjesh</b> (merrni aq sa jepni). Ndryshojeni kudo, kurdo.</p>
+      <div class="pxa-ctas">
+        <a href="#" class="pxa-cta-main" onclick="event.preventDefault();startWizard();">
+          Fillo falas — 3 muaj pa kosto
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+        <a href="/how-it-works" class="pxa-cta-second">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Si funksionon
+        </a>
+      </div>
+      <div class="pxa-trust-row">
+        <div class="pxa-trust-item"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Asnjë konkurrent tek audienca juaj</div>
+        <div class="pxa-trust-item"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.2H22l-6 4.6L18.4 21 12 16.4 5.6 21 8 13.8 2 9.2h7.6z"/></svg>Ankand i pesuar ose barazi — ju zgjidhni</div>
+        <div class="pxa-trust-item"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>Privatësi e garantuar e të dhënave</div>
+      </div>
+    </div>
+
+    <!-- Hero dashboard mockup -->
+    <div class="pxa-hero-dash">
+      <div class="pxa-dash-card">
+        <div class="pxa-dash-titlebar">
+          <span class="pxa-dash-dot" style="background:rgba(248,81,73,.6);"></span>
+          <span class="pxa-dash-dot" style="background:rgba(234,179,8,.6);"></span>
+          <span class="pxa-dash-dot" style="background:rgba(16,185,129,.6);"></span>
+          <span style="margin-left:12px;font-size:10px;font-family:monospace;color:#64748b;">Phronexus AI — Paneli kryesor</span>
+        </div>
+        <div class="pxa-dash-body">
+          <div class="pxa-dash-metrics">
+            <div class="pxa-dash-metric"><div class="pxa-dash-metric-label">Shfaqje dhënë</div><div class="pxa-dash-metric-val">1,284</div><div class="pxa-dash-metric-delta">↑ 18%</div></div>
+            <div class="pxa-dash-metric"><div class="pxa-dash-metric-label">Konvertime</div><div class="pxa-dash-metric-val">47</div><div class="pxa-dash-metric-delta">↑ 34%</div></div>
+            <div class="pxa-dash-metric"><div class="pxa-dash-metric-label">Pikat AI</div><div class="pxa-dash-metric-val">832</div><div class="pxa-dash-metric-delta">↑ 12</div></div>
+          </div>
+          <div class="pxa-dash-chart">
+            <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
+              <span style="font-size:10px;font-family:monospace;color:#64748b;text-transform:uppercase;letter-spacing:.1em;">Konvertime / 7 ditë</span>
+              <span style="font-size:10px;color:#34d399;font-family:monospace;">↑ 34%</span>
+            </div>
+            <svg viewBox="0 0 240 54" style="width:100%;" preserveAspectRatio="none">
+              <defs><linearGradient id="pxaHg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3b6ef0" stop-opacity="0.3"/><stop offset="100%" stop-color="#3b6ef0" stop-opacity="0"/></linearGradient></defs>
+              <polygon points="0,50 34,44 68,38 102,30 136,22 170,14 204,9 240,5 240,54 0,54" fill="url(#pxaHg)"/>
+              <polyline points="0,50 34,44 68,38 102,30 136,22 170,14 204,9 240,5" fill="none" stroke="#3b6ef0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size:10px;font-family:monospace;color:#64748b;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">Ankande të fundit</div>
+            <div class="pxa-dash-list-item"><span style="color:#94a3b8;">B2B · Analytics</span><span class="pxa-badge-win">Fituar</span></div>
+            <div class="pxa-dash-list-item"><span style="color:#94a3b8;">B2B · HR Tools</span><span class="pxa-badge-win">Fituar</span></div>
+            <div class="pxa-dash-list-item"><span style="color:#94a3b8;">B2B · CRM</span><span class="pxa-badge-lose">Humbur</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LOGO BAR -->
+<section class="pxa-logobar">
+  <div class="pxa-wrap">
+    <p class="pxa-logobar-label">Biznese të cilat tashmë janë pjesë e rrjetit</p>
+    <div class="pxa-logos">
+      <span class="pxa-logo-item">InvoicePro</span><span class="pxa-logo-item">LeadFlow</span><span class="pxa-logo-item">StaffSync</span><span class="pxa-logo-item">DataPulse</span>
+      <span class="pxa-logo-item">FormKit</span><span class="pxa-logo-item">MonitorIQ</span><span class="pxa-logo-item">Paylink</span><span class="pxa-logo-item">NestCRM</span>
+    </div>
+  </div>
+</section>
+
+<!-- GUARANTEES -->
+<section class="pxa-section">
+  <div class="pxa-wrap">
+    <div class="pxa-sec-head">
+      <p class="pxa-sec-eyebrow" style="color:#34d399;">Garancitë tona</p>
+      <h2 class="pxa-sec-h2">Tre gjëra që i garantojmë pa asnjë kusht.</h2>
+      <p class="pxa-sec-p">Transparencë e plotë mbi çfarë ofrojmë, çfarë mbroni dhe çfarë mbetet gjithmonë nën kontrollin tuaj.</p>
+    </div>
+    <div class="pxa-guar-grid">
+      <div class="pxa-guar-card" style="background:rgba(16,185,129,.05);border-color:rgba(16,185,129,.2);">
+        <div class="pxa-guar-icon" style="background:rgba(16,185,129,.15);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <h3 class="pxa-guar-title">Asnjë konkurrent kurrë</h3>
+        <p class="pxa-guar-body">Platforma identifikon dhe bllokon çdo biznes konkurrues para se ankandi të fillojë. Kjo nuk është një opsion i aktivizueshëm — është rregulli themelor i rrjetit, i zbatuar automatikisht për çdo anëtar.</p>
+      </div>
+      <div class="pxa-guar-card" style="background:rgba(59,110,240,.05);border-color:rgba(59,110,240,.2);">
+        <div class="pxa-guar-icon" style="background:rgba(59,110,240,.15);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b6ef0" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+        <h3 class="pxa-guar-title">Të dhënat tuaja — vetëm tuajat</h3>
+        <p class="pxa-guar-body">Phronexus AI nuk shet, nuk ndan dhe nuk aksesson të dhënat tuaja pa leje. Profilet e bizneseve, statistikat dhe informacioni i klientëve mbeten gjithmonë ekskluzivisht në pronësinë tuaj.</p>
+      </div>
+      <div class="pxa-guar-card" style="background:rgba(34,211,238,.05);border-color:rgba(34,211,238,.2);">
+        <div class="pxa-guar-icon" style="background:rgba(34,211,238,.15);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+        <h3 class="pxa-guar-title">Ju vendosni çfarë shfaqet</h3>
+        <p class="pxa-guar-body">Rishikoni dhe aprovoni çdo reklamë para se të shfaqet. Vendosni kategoritë e lejuara, bllokoni biznese specifike dhe rregulloni hapësirat e shfaqjes — gjithçka nga paneli juaj.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+<script>
+window.addEventListener('scroll', function(){
+  var n = document.getElementById('pxaNav');
+  if(n) n.classList.toggle('pxa-scrolled', window.scrollY > 20);
+});
+</script>
+<!-- PAS HYRJES: home -->
 <div class="wrap view" id="v-home"><div id="homeBody"></div></div>
 
 <!-- WIZARD -->
 <div class="wrap wide view" id="v-wizard">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-    <button class="btn ghost" onclick="history.back()">← Back</button>
+    <button class="btn ghost" onclick="history.back()">← Mbrapa</button>
     <div class="small" id="wizStepN"></div>
-    <button class="btn ghost" onclick="closeWizard()">Save & exit ✕</button>
+    <button class="btn ghost" onclick="closeWizard()">Ruaj &amp; dil ✕</button>
   </div>
   <div class="hstep" id="hstep"></div>
   <div id="wizBody"></div>
 </div>
 
-<!-- PROFILE / DASHBOARD -->
+<!-- PROFILI / DASHBOARD -->
 <div class="view" id="v-profile">
   <div class="appwrap">
     <aside class="sidebar">
@@ -162,7 +218,7 @@
   </div>
 </div>
 
-<!-- TEAM & ROLES — separate section, outside the dashboard, with its own URL (/ekipi) -->
+<!-- EKIPI & ROLET — seksion i vecante, jashte dashboard-it, me URL te vet (/ekipi) -->
 <div class="view" id="v-ekipi"></div>
 
 <!-- LOGIN MODAL -->
@@ -171,26 +227,26 @@
     <button class="x" onclick="mbyllModal()">✕</button>
     <button class="gbtn" onclick="hyrGoogle()">
       <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"/></svg>
-      Continue with Google
+      Vazhdo me Google
     </button>
-    <p class="kushte-mini">You'll be asked to accept the Terms after your first login.</p>
-    <div class="ndaresi"><span>or</span></div>
+    <p class="kushte-mini">Do të të kërkohet të pranosh Kushtet pas hyrjes së parë.</p>
+    <div class="ndaresi"><span>ose</span></div>
     <div class="tabs">
-      <div class="tab active" id="tabHyr" onclick="shfaq('hyr')">Log in</div>
-      <div class="tab" id="tabReg" onclick="shfaq('reg')">Register</div>
+      <div class="tab active" id="tabHyr" onclick="shfaq('hyr')">Hyr</div>
+      <div class="tab" id="tabReg" onclick="shfaq('reg')">Regjistrohu</div>
     </div>
     <div id="formHyr">
-      <label>Email</label><input id="h_email" type="email" placeholder="email@business.com">
-      <label>Password</label><input id="h_pass" type="password" placeholder="••••••">
-      <button class="primary" id="btnHyr" onclick="hyr()">Log in</button>
+      <label>Email</label><input id="h_email" type="email" placeholder="email@biznesi.com">
+      <label>Fjalëkalimi</label><input id="h_pass" type="password" placeholder="••••••">
+      <button class="primary" id="btnHyr" onclick="hyr()">Hyr</button>
     </div>
     <div id="formReg" class="hide">
-      <label>Business name</label><input id="r_emri" placeholder="My Business">
-      <label>Email</label><input id="r_email" type="email" placeholder="email@business.com">
-      <label>Password (min 6 characters)</label><input id="r_pass" type="password" placeholder="••••••">
-      <label class="kushte-check"><input type="checkbox" id="r_kushte"> I accept the <a href="/terms" target="_blank">Terms</a>, <a href="/privacy" target="_blank">Privacy Policy</a>, and the processing of data required to operate the service (mutual display of promotions and statistics).</label>
-      <label class="kushte-check"><input type="checkbox" id="r_oferta"> I'd like to receive offers and news from PhronexusAI. <span class="mut">(optional)</span></label>
-      <button class="primary" id="btnReg" onclick="regjistrohu()">Create account</button>
+      <label>Emri i biznesit</label><input id="r_emri" placeholder="Biznesi im">
+      <label>Email</label><input id="r_email" type="email" placeholder="email@biznesi.com">
+      <label>Fjalëkalimi (min 6)</label><input id="r_pass" type="password" placeholder="••••••">
+      <label class="kushte-check"><input type="checkbox" id="r_kushte"> Pranoj <a href="/terms" target="_blank">Kushtet</a>, <a href="/privacy" target="_blank">Privatësinë</a> dhe përpunimin e të dhënave për funksionimin e shërbimit (shfaqjen e ndërsjellë të reklamave dhe statistikat).</label>
+      <label class="kushte-check"><input type="checkbox" id="r_oferta"> Dua të marr oferta dhe lajme nga Imyr. <span class="mut">(opsionale)</span></label>
+      <button class="primary" id="btnReg" onclick="regjistrohu()">Krijo llogari</button>
     </div>
     <div class="msg" id="msg"></div>
   </div>
@@ -198,11 +254,11 @@
 
 <div class="backdrop hide" id="modalKushte">
   <div class="card modal">
-    <h2 class="h" style="margin-top:0;">One last step</h2>
-    <p class="small" id="gk_pershND" style="margin:2px 0 16px;">To finish logging in, please accept the terms.</p>
-    <label class="kushte-check"><input type="checkbox" id="gk_kushte"> I accept the <a href="/terms" target="_blank">Terms</a>, <a href="/privacy" target="_blank">Privacy Policy</a>, and the processing of data required to operate the service (mutual display of promotions and statistics).</label>
-    <label class="kushte-check"><input type="checkbox" id="gk_oferta"> I'd like to receive offers and news from PhronexusAI. <span class="mut">(optional)</span></label>
-    <button class="primary" id="gk_btn" onclick="pranoGoogle()">Continue →</button>
+    <h2 class="h" style="margin-top:0;">Një hap i fundit</h2>
+    <p class="small" id="gk_pershND" style="margin:2px 0 16px;">Për të përfunduar hyrjen, prano kushtet.</p>
+    <label class="kushte-check"><input type="checkbox" id="gk_kushte"> Pranoj <a href="/terms" target="_blank">Kushtet</a>, <a href="/privacy" target="_blank">Privatësinë</a> dhe përpunimin e të dhënave për funksionimin e shërbimit (shfaqjen e ndërsjellë të reklamave dhe statistikat).</label>
+    <label class="kushte-check"><input type="checkbox" id="gk_oferta"> Dua të marr oferta dhe lajme nga Imyr. <span class="mut">(opsionale)</span></label>
+    <button class="primary" id="gk_btn" onclick="pranoGoogle()">Vazhdo →</button>
     <div class="msg" id="gk_msg"></div>
   </div>
 </div>
@@ -223,7 +279,6 @@
 <script src="/js/hcarousel.js?v=80"></script>
 <script src="/js/kreative-permasa.js"></script>
 <script src="/js/kreative-chat-ui.js"></script>
-<link rel="stylesheet" href="/css/design-new.css">
 <script>boot();</script>
 </body>
 </html>
