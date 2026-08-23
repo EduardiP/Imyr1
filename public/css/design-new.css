@@ -259,3 +259,22 @@ header.topbar:has(~ #v-hero.on){display:none;}
 .pxa-feat-live-bar-track{height:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin-bottom:12px;}
 .pxa-feat-live-bar-fill{height:100%;border-radius:999px;}
 .pxa-feat-card{border-radius:12px;background:var(--pxa-inner);padding:14px;margin-bottom:10px;}
+
+/* Business Types (Segmentet) */
+.pxa-bt-tabs{display:flex;justify-content:center;gap:8px;margin-bottom:40px;}
+.pxa-bt-tab{padding:10px 20px;border-radius:12px;font-family:var(--pxa-font-d);font-size:14px;font-weight:700;letter-spacing:.05em;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.05);color:#94a3b8;cursor:pointer;transition:all .2s;}
+.pxa-bt-tab.pxa-active{color:#fff;box-shadow:0 8px 20px rgba(0,0,0,.3);}
+.pxa-bt-tab.pxa-active[data-t="B2B"]{background:#2563eb;}
+.pxa-bt-tab.pxa-active[data-t="B2C"]{background:#0891b2;}
+.pxa-bt-tab.pxa-active[data-t="B2B2C"]{background:#7c3aed;}
+.pxa-bt-panel{border-radius:16px;border:1px solid;padding:32px;transition:all .3s;}
+.pxa-bt-grid{display:grid;grid-template-columns:1fr;gap:32px;}
+@media(min-width:768px){.pxa-bt-grid{grid-template-columns:1fr 1fr;}}
+.pxa-bt-type{font-size:11px;font-family:monospace;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-bottom:10px;}
+.pxa-bt-title{font-family:var(--pxa-font-d);font-size:26px;font-weight:700;color:#fff;margin:0 0 12px;}
+.pxa-bt-desc{font-size:14px;color:#cbd5e1;margin:0 0 20px;line-height:1.6;}
+.pxa-bt-connects{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;border:1px solid;font-size:13px;font-weight:500;}
+.pxa-bt-ex-label{font-size:11px;font-family:monospace;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-bottom:14px;}
+.pxa-bt-ex-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.pxa-bt-ex-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.03);}
+.pxa-bt-ex-dot{width:6px;height:6px;border-radius:50%;flex:0 0 auto;}
