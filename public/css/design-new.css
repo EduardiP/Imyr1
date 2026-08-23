@@ -12,6 +12,36 @@
 .pxa-root *{box-sizing:border-box;}
 .pxa-wrap{max-width:1280px;margin:0 auto;padding:0 24px;}
 
+/* Tema e çelët (dita) — mbivendos ndryshoret rrënjë, kaskadohet automatikisht kudo
+   qe perdor var(--pxa-*). Aktivizohet duke shtuar klasen .pxa-light te .pxa-root. */
+.pxa-root.pxa-light{
+  --pxa-bg:#f0f5fb; --pxa-bg2:#ffffff; --pxa-card:#ffffff; --pxa-inner:#f8fafc;
+  --pxa-txt:#0f172a; --pxa-txt-mut:#64748b; --pxa-txt-dim:#94a3b8;
+  --pxa-line:#e2e8f0; --pxa-line2:#e2e8f0;
+}
+.pxa-light .pxa-h1-white{color:#0f172a;}
+.pxa-light .pxa-sub{color:#334155;}
+.pxa-light .pxa-lead{color:#475569;}
+.pxa-light .pxa-lead b{color:#0f172a;}
+.pxa-light .pxa-navlink{color:#334155;}
+.pxa-light .pxa-btn-ghost{color:#475569;}
+.pxa-light .pxa-brand-name{color:#0f172a;}
+.pxa-light .pxa-topbar{background:#f1f5f9;border-color:#e2e8f0;}
+.pxa-light .pxa-topbar-txt{color:#64748b;}
+.pxa-light .pxa-nav.pxa-scrolled{background:rgba(255,255,255,.95);border-color:#e2e8f0;}
+.pxa-light .pxa-sec-h2,.pxa-light .pxa-guar-title,.pxa-light .pxa-step-title,.pxa-light .pxa-price-label,.pxa-light .pxa-faq-q{color:#0f172a;}
+.pxa-light .pxa-sec-p,.pxa-light .pxa-guar-body,.pxa-light .pxa-step-body,.pxa-light .pxa-price-desc,.pxa-light .pxa-faq-a{color:#475569;}
+.pxa-light .pxa-logo-item{color:#94a3b8;}
+.pxa-light .pxa-dash-titlebar{background:#f8fafc;}
+.pxa-light .pxa-hero{background:#f0f5fb;}
+.pxa-light .pxa-hero-grid,.pxa-light .pxa-hero-glow{display:none;}
+.pxa-light .pxa-footer{background:#f8fafc;}
+.pxa-light .pxa-footer-desc,.pxa-light .pxa-footer-col a{color:#94a3b8;}
+.pxa-light .pxa-footer-col h5{color:#0f172a;}
+.pxa-light .pxa-model-card{background:#f8fafc;border-color:#e2e8f0;}
+.pxa-light .pxa-model-desc{color:#94a3b8;}
+.pxa-light .pxa-model-label{color:#64748b;}
+
 /* Header-i i vjeter (topbar, hdrLeft/hdrRight) mbetet strukturalisht (i duhet core.js
    pas login-it), por FSHIHET kur shfaqet hero-ja e re publike — s'duhet 2 header njekohesisht. */
 header.topbar:has(~ #v-hero.on){display:none;}
@@ -193,3 +223,19 @@ header.topbar:has(~ #v-hero.on){display:none;}
 .pxa-footer-col a{display:block;font-size:12px;color:#64748b;text-decoration:none;padding:6px 0;}
 .pxa-footer-col a:hover{color:#cbd5e1;}
 .pxa-footer-bottom{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;font-size:12px;color:#475569;padding-top:24px;border-top:1px solid var(--pxa-line);}
+
+/* How It Works (5 hapa) */
+.pxa-hiw-list{display:flex;flex-direction:column;gap:12px;}
+.pxa-hiw-item{border-radius:16px;border:1px solid var(--pxa-line2);background:var(--pxa-card);padding:24px;display:grid;grid-template-columns:1fr;gap:20px;align-items:start;}
+@media(min-width:768px){.pxa-hiw-item{grid-template-columns:auto 1fr;}}
+.pxa-hiw-iconwrap{display:flex;align-items:center;gap:16px;}
+@media(min-width:768px){.pxa-hiw-iconwrap{flex-direction:column;}}
+.pxa-hiw-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;background:rgba(59,110,240,.15);border:1px solid rgba(59,110,240,.25);}
+.pxa-hiw-icon.pxa-dim{background:rgba(255,255,255,.05);border-color:var(--pxa-line2);}
+.pxa-hiw-top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:8px;}
+.pxa-hiw-num{font-size:10px;font-family:monospace;color:#64748b;}
+.pxa-hiw-badge{font-size:10px;padding:2px 10px;border-radius:999px;font-family:monospace;border:1px solid rgba(59,110,240,.2);background:rgba(59,110,240,.1);color:#93c5fd;}
+.pxa-hiw-badge.pxa-dim{background:rgba(255,255,255,.05);border-color:var(--pxa-line2);color:#94a3b8;}
+.pxa-hiw-badge.pxa-rec{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.2);color:#6ee7b7;}
+.pxa-hiw-title{font-size:15px;font-weight:600;color:#fff;margin:0 0 6px;}
+.pxa-hiw-body{font-size:13px;line-height:1.6;color:#94a3b8;margin:0;}
