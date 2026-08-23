@@ -42,6 +42,44 @@
 .pxa-light .pxa-model-desc{color:#94a3b8;}
 .pxa-light .pxa-model-label{color:#64748b;}
 
+/* ═══ MBULIM I PËRGJITHSHËM — kap CDO tekst/sfond të ngurtësuar (inline style)
+   nëpër TË GJITHA seksionet (Ankand, Platforma, Segmentet, etj.), jo vetëm 2 të
+   parët. Përdor !important qëllimisht, sepse inline style ka përparësi normalisht. ═══ */
+.pxa-light [style*="color:#fff"],
+.pxa-light [style*="color: #fff"],
+.pxa-light [style*="color:#ffffff"]{color:#0f172a !important;}
+
+.pxa-light [style*="color:#cbd5e1"],
+.pxa-light [style*="color:#94a3b8"],
+.pxa-light [style*="color: #94a3b8"]{color:#475569 !important;}
+
+.pxa-light [style*="color:#64748b"]{color:#64748b !important;}
+
+.pxa-light [style*="background:var(--pxa-inner)"],
+.pxa-light [style*="background: var(--pxa-inner)"]{background:#f1f5f9 !important;}
+
+.pxa-light [style*="background:rgba(255,255,255,.02)"],
+.pxa-light [style*="background:rgba(255,255,255,.03)"],
+.pxa-light [style*="background:rgba(255,255,255,.05)"],
+.pxa-light [style*="background:rgba(255,255,255,.06)"],
+.pxa-light [style*="background:rgba(255,255,255,.08)"]{background:#f1f5f9 !important;}
+
+.pxa-light [style*="border-color:var(--pxa-line2)"],
+.pxa-light [style*="border:1px solid rgba(255,255,255,.06)"],
+.pxa-light [style*="border:1px solid rgba(255,255,255,.08)"],
+.pxa-light [style*="border:1px solid rgba(255,255,255,.1)"]{border-color:#e2e8f0 !important;}
+
+/* Panelet/tab-et kryesore (Ankand, Platforma) qe perdorin var(--pxa-card)/var(--pxa-bg)
+   direkt (jo inline) — tashme kaskadohen vete nga mbivendosja e rrenjes me larte,
+   por disa div specifike kane sfond te ngurtesuar shtese qe duhet mbuluar: */
+.pxa-light .pxa-feat-tabs{background:#f1f5f9;}
+.pxa-light .pxa-feat-tab.pxa-active{background:#fff;}
+.pxa-light .pxa-feat-right{background:#f8fafc;}
+.pxa-light .pxa-bt-tab{background:#f1f5f9;color:#64748b;}
+.pxa-light .pxa-bt-ex-item{background:#f1f5f9;}
+.pxa-light .pxa-urgency{color:#92400e;}
+.pxa-light .pxa-price-chip{color:#334155;background:#eff6ff;}
+
 /* Header-i i vjeter (topbar, hdrLeft/hdrRight) mbetet strukturalisht (i duhet core.js
    pas login-it), por FSHIHET kur shfaqet hero-ja e re publike — s'duhet 2 header njekohesisht. */
 header.topbar:has(~ #v-hero.on){display:none;}
