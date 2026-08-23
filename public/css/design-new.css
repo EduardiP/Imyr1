@@ -75,7 +75,7 @@ header.topbar:has(~ #v-hero.on){display:none;}
 .pxa-brand{display:flex;align-items:center;gap:10px;text-decoration:none;}
 .pxa-brand-name{font-family:var(--pxa-font-d);letter-spacing:.06em;font-weight:700;font-size:16px;color:#fff;}
 .pxa-brand-name span{color:var(--pxa-cyan);}
-.pxa-logo-mark path{fill:#fcfcfb;transition:fill .3s;}
+.pxa-logo-mark path{fill:#fcfcfb;fill-rule:evenodd;transition:fill .3s;}
 .pxa-light .pxa-logo-mark path{fill:#0f172a;}
 .pxa-navlinks{display:none;align-items:center;gap:2px;}
 @media(min-width:1024px){.pxa-navlinks{display:flex;}}
