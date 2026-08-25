@@ -18,7 +18,7 @@
   <div class="container center" style="max-width:760px;">
     <div style="background:#eef4ff;border:1px solid #c7d9fb;border-radius:16px;padding:28px 32px;text-align:left;">
       <h2 style="margin:0 0 10px;font-size:22px;">Garancia themelore: asnjëherë konkurrencë</h2>
-      <p class="mut" style="margin:0;">Gjatë regjistrimit, kategoria dhe nënkategoria e biznesit tënd ruhen. Çdo herë që sistemi zgjedh kush shfaqet te faqja jote, bizneset e <b>kategorisë sate</b> përjashtohen automatikisht — para se ankandi apo balanca të fillojnë fare të llogaritin. S'është rregull që mund të harrohet apo çaktivizohet aksidentalisht — është hapi i parë, i pashmangshëm, i çdo vendimi. Plus, ke kontroll shtesë: mund të përjashtosh <b>çdo</b> kategori tjetër që s'të intereson, jo vetëm të tënden.</p>
+      <p class="mut" style="margin:0;">Gjatë regjistrimit, kategoria dhe nënkategoria e biznesit tënd ruhen. Çdo herë që sistemi zgjedh kush shfaqet te faqja jote, bizneset e <b>kategorisë sate</b> përjashtohen automatikisht — para se çfarëdo llogaritjeje tjetër të fillojë. Plus, ke kontroll shtesë: mund të përjashtosh <b>çdo</b> kategori tjetër që s'të intereson.</p>
     </div>
   </div>
 </section>
@@ -26,44 +26,44 @@
 <section class="sec dark">
   <div class="container">
     <div class="center" style="max-width:640px;margin:0 auto 40px;">
-      <p class="eyebrow">Struktura e shpërndarjes</p>
-      <h2>Dy pishina të pavarura, të njëjtën synim</h2>
-      <p class="mut">Çdo shfaqje kalon nëpër njërën nga dy pishinat — <b>Ankand</b> ose <b>Balancë</b>. Ti zgjedh manualisht cilën përdor, ose lë platformën ta vendosë vetë automatikisht, sipas cilës kombinim ka funksionuar historikisht më mirë për ty.</p>
+      <p class="eyebrow">Hapi 1 — para çdo gjëje tjetër</p>
+      <h2>Cila pishinë përdoret: Ankand apo Balancë?</h2>
+      <p class="mut">Ky është vendimi <b>i parë</b>, që ndodh <b>para</b> çdo llogaritjeje tjetër. Çdo herë që dikush viziton faqen tënde, sistemi vendos në cilën nga 2 pishinat bie kjo shfaqje specifike.</p>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
       <div class="tile" style="text-align:left;">
-        <h3>Pishina "Ankand"</h3>
-        <p class="mut">Zgjedh biznesin fitues me <b>short të peshuar</b> — sa më e lartë pesha, aq më e lartë gjasa e fitimit, por jo garanci. Optimizon për konvertime dhe rëndësi.</p>
+        <h3>Menyra Manuale</h3>
+        <p class="mut">Ti vetë vendos përqindjen (p.sh. 70% Ankand / 30% Balancë) nga paneli. Sistemi respekton pikërisht atë raport, gjenerata pas gjenerate.</p>
       </div>
       <div class="tile" style="text-align:left;">
-        <h3>Pishina "Balancë"</h3>
-        <p class="mut">Zgjedh biznesin me <b>deficitin më të madh</b> (ka dhënë më shumë ekspozim sesa ka marrë). Jo short — vendim deterministik, që siguron reciprocitet të drejtë.</p>
+        <h3>Menyra Automatike</h3>
+        <p class="mut">Lë platformën ta vendosë vetë — bazuar te cili raport (Ankand/Balancë) ka sjellë historikisht më shumë konvertime specifikisht për ty, duke rregulluar raportin me kalimin e kohës.</p>
       </div>
     </div>
   </div>
 </section>
 
-<section class="sec light">
+<section class="sec light" id="ankand-detaje">
   <div class="container">
     <div class="center" style="max-width:640px;margin:0 auto 40px;">
-      <p class="eyebrow">Formula ekzakte</p>
+      <p class="eyebrow">Hapi 2A — nëse bie te Ankandi</p>
       <h2>Si llogaritet pesha në Ankand</h2>
     </div>
     <div class="grid g3">
       <div class="tile">
         <div class="n">1</div>
         <h3>Pikët AI (matching)</h3>
-        <p class="mut">Kur regjistrohesh, AI krahason përshkrimin/kategorinë e biznesit tënd me çdo biznes tjetër të <b>të njëjtit tip</b> (b2b↔b2b, b2c↔b2c; b2b2c lidhet me të gjithë). Për çdo çift ruhet një vlerësim numerik — sa plotësuese janë audiencat, jo sa i ngjashëm është produkti.</p>
+        <p class="mut">Kur regjistrohesh, AI krahason përshkrimin/kategorinë e biznesit tënd me çdo biznes tjetër të <b>të njëjtit tip</b> (b2b↔b2b, b2c↔b2c; b2b2c lidhet me të gjithë). Për çdo çift ruhet një vlerësim numerik — sa plotësuese janë audiencat.</p>
       </div>
       <div class="tile">
         <div class="n">2</div>
         <h3>Pikët e Profilit</h3>
-        <p class="mut">Formula ekzakte: <code>shfaqje_dhëna ÷ RATE + konvertime</code>. RATE ndryshon sipas tipit — <b>175</b> për B2B, <b>320</b> për B2C, <b>248</b> për B2B2C (audienca B2C ka nevojë më shumë shfaqje për të barazuar 1 pikë, pasi konverton më rrallë natyrshëm). Çdo konvertim i verifikuar shton 1 pikë direkt.</p>
+        <p class="mut">Formula ekzakte: <code>shfaqje_dhëna ÷ RATE + konvertime</code>. RATE ndryshon sipas tipit — <b>175</b> për B2B, <b>320</b> për B2C, <b>248</b> për B2B2C. Çdo konvertim i verifikuar shton 1 pikë direkt.</p>
       </div>
       <div class="tile">
         <div class="n">3</div>
         <h3>Ndihma për biznese të reja</h3>
-        <p class="mut">Nëse je ndër <b>3 kombinimet</b> me pikë AI më të larta të një reklamuesi, merr një "ndihmë" fillestare — e kufizuar vetëm kur pikët AI janë mes <b>20–320</b> (as shumë të ulëta, as tashmë të forta vetë). Ndihma <b>zbritet</b> automatikisht nga pikët e tua të profilit — sa më aktiv bëhesh, aq më shpejt ndihma zhduket vetë, duke lënë vend për biznese më të reja.</p>
+        <p class="mut">Nëse je ndër <b>3 kombinimet</b> me pikë AI më të larta të një reklamuesi, merr "ndihmë" fillestare — vetëm kur pikët AI janë mes <b>20–320</b>. Ndihma <b>zbritet</b> automatikisht nga pikët e tua të profilit — sa më aktiv bëhesh, aq më shpejt zhduket vetë.</p>
       </div>
     </div>
     <div style="text-align:center;margin-top:20px;">
@@ -75,27 +75,28 @@
   </div>
 </section>
 
-<section class="sec dark">
+<section class="sec dark" id="balance-detaje">
   <div class="container">
     <div class="center" style="max-width:640px;margin:0 auto 40px;">
-      <p class="eyebrow">Formula ekzakte</p>
+      <p class="eyebrow">Hapi 2B — nëse bie te Balanca</p>
       <h2>Si vendos modeli i Balancës</h2>
+      <p class="mut">Ndryshe nga Ankandi (short i peshuar), Balanca s'përdor rastësi — është vendim deterministik, i bazuar te deficiti.</p>
     </div>
     <div class="grid g3">
       <div class="tile">
         <div class="n">1</div>
         <h3>Llogarit deficitin</h3>
-        <p class="mut">Për çdo kandidat: <code>shfaqje_dhëna − shfaqje_marra</code> (vetëm nga pishina Balancë specifikisht). Kush ka dhënë më shumë sesa ka marrë, ka deficit pozitiv — dhe fiton përparësi.</p>
+        <p class="mut">Për çdo kandidat: <code>shfaqje_dhëna − shfaqje_marra</code> (vetëm nga pishina Balancë). Kush ka dhënë më shumë sesa ka marrë, ka deficit pozitiv.</p>
       </div>
       <div class="tile">
         <div class="n">2</div>
         <h3>Fiton deficiti më i madh</h3>
-        <p class="mut">Nëse vetëm <b>1</b> kandidat ka deficitin maksimal, fiton menjëherë — pa llogaritje shtesë. Ky është rasti më i shpeshtë.</p>
+        <p class="mut">Nëse vetëm <b>1</b> kandidat ka deficitin maksimal, fiton menjëherë — pa llogaritje shtesë. Rasti më i shpeshtë.</p>
       </div>
       <div class="tile">
         <div class="n">3</div>
         <h3>Barazim → pikët AI → rastësi</h3>
-        <p class="mut">Nëse 2+ kandidatë kanë të njëjtin deficit maksimal, fiton ai me pikët AI (matching) më të larta ndaj teje si host. Nëse edhe pikët AI barazohen (shumë rrallë), zgjedhja bëhet rastësisht mes tyre.</p>
+        <p class="mut">Nëse 2+ kandidatë barazohen, fiton ai me pikët AI (matching) më të larta ndaj teje. Nëse edhe kjo barazohet (rrallë), zgjedhja bëhet rastësisht.</p>
       </div>
     </div>
   </div>
@@ -103,27 +104,54 @@
 
 <section class="sec light">
   <div class="container">
-    <div class="grid g3" style="margin-top:0;">
+    <div class="center" style="max-width:640px;margin:0 auto 40px;">
+      <p class="eyebrow">Hapi 3 — pas biznesit fitues</p>
+      <h2>Cila reklamë konkretisht shfaqet</h2>
+      <p class="mut">Këtu ndodh vendimi tjetër, i veçantë nga hapi 1 — pasi biznesi fitues është përcaktuar (nga Ankandi <b>ose</b> Balanca), nëse ai ka <b>2 ose më shumë</b> reklama aktive, duhet vendosur cilën specifikisht të shfaqë.</p>
+    </div>
+    <div class="grid g3">
       <div class="tile">
-        <div class="n">4</div>
-        <h3>Ankandi i dytë (të dyja pishinat)</h3>
-        <p class="mut">Pasi biznesi fitues përcaktohet, nëse ai ka disa reklama aktive, një ankand <b>i dytë</b> vendos cilën konkretisht të shfaqë — short i peshuar sipas performancës historike (shikime/konvertime) të secilës reklamë. Reklama e re (më pak se 5 shikime) merr përparësi rotative fillimisht, që të mbledhë të dhëna të mjaftueshme; pas kësaj, performanca reale vendos.</p>
+        <div class="n">A</div>
+        <h3>Reklamë e re (&lt;5 shikime)</h3>
+        <p class="mut">Merr përparësi rotative automatike — çdo reklamë e re kalon nga një fazë "mbledhje të dhënash" para se performanca reale të fillojë të vendosë.</p>
       </div>
       <div class="tile">
-        <div class="n">5</div>
-        <h3>Snippet-i & vendi real</h3>
-        <p class="mut">Vendos një rresht kod te faqja jote. Kjo bën dy gjëra njëkohësisht: fut biznesin tënd në pishinën e ankandit (mund të shfaqësh të tjerët), dhe hap hapësirën reale ku shfaqet reklama kur vjen radha jote të marrësh ekspozim. Zë zero hapësirë kur s'ka reklamë për t'u shfaqur.</p>
+        <div class="n">B</div>
+        <h3>2 reklama, të dyja me histori</h3>
+        <p class="mut">Short i peshuar sipas pikëve të performancës (shikime+konvertime) të secilës — jo 50/50 fikse, ajo me performancë më të lartë ka gjasa më të larta, por jo garanci.</p>
       </div>
       <div class="tile">
-        <div class="n">6</div>
-        <h3>Formatet e reklamave</h3>
-        <p class="mut">Tre formate: imazh, video (link YouTube), ose HTML5 interaktive. Krijimi i asistuar me AI për këto formate është në zhvillim e sipër — sot mbështet ngarkimin dhe ruajtjen e krijimeve.</p>
+        <div class="n">C</div>
+        <h3>3+ reklama aktive</h3>
+        <p class="mut">E njëjta logjikë short-i të peshuar shtrihet te të gjitha reklamat njëkohësisht — secila merr pjesë proporcionalisht me pikët e veta, pavarësisht sa janë gjithsej.</p>
       </div>
     </div>
   </div>
 </section>
 
 <section class="sec dark">
+  <div class="container">
+    <div class="grid g3" style="margin-top:0;">
+      <div class="tile">
+        <div class="n">4</div>
+        <h3>Snippet-i & vendi real</h3>
+        <p class="mut">Vendos një rresht kod te faqja jote. Kjo bën dy gjëra njëkohësisht: fut biznesin tënd në pishinën e ankandit, dhe hap hapësirën reale ku shfaqet reklama. Zë zero hapësirë kur s'ka reklamë për t'u shfaqur.</p>
+      </div>
+      <div class="tile">
+        <div class="n">5</div>
+        <h3>Formatet e reklamave, krijuar me AI</h3>
+        <p class="mut">Tre formate: imazh, video (link YouTube), ose HTML5 interaktive. Mund t'i ngarkosh vetë, ose t'i lësh AI-në t'i krijojë nga zeroja bazuar te përshkrimi i biznesit tënd.</p>
+      </div>
+      <div class="tile">
+        <div class="n">6</div>
+        <h3>Gjurmimi & Analitika</h3>
+        <p class="mut">Konfiguro gjurmimin e konvertimeve (URL konfirmimi, snippet buton, ose global) dhe shiko gjithçka në panel: shfaqje dhënë/marra, performanca e çdo reklame, konvertime të verifikuara.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec light">
   <div class="container center">
     <h2>Kaq — pa palë të treta, pa buxhet reklamash</h2>
     <p class="lead mut" style="max-width:560px;margin:0 auto 24px;">Sa më shumë ekspozim/konvertim jep, aq më lart renditesh natyrshëm në ankand — dhe konkurrentët tuaj s'shfaqen kurrë, në asnjë nga të dyja pishinat.</p>
