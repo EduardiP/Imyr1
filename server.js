@@ -2502,6 +2502,7 @@ app.get('/how-it-works', (req, res) => res.sendFile(path.join(__dirname, 'public
 app.get('/formate-ai', (req, res) => res.sendFile(path.join(__dirname, 'public', 'formate-ai.html')));
 app.get('/gjurmimi-analitika', (req, res) => res.sendFile(path.join(__dirname, 'public', 'gjurmimi-analitika.html')));
 app.get('/ekipet-rolet', (req, res) => res.sendFile(path.join(__dirname, 'public', 'ekipet-rolet.html')));
+app.get('/ai-matching', (req, res) => res.sendFile(path.join(__dirname, 'public', 'ai-matching.html')));
 app.get('/ekipi', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/cilesimet', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 // --- 5 SAAS PROVE (demo-*.js — secili i pavarur; fshiji kur te mbarosh) ---
