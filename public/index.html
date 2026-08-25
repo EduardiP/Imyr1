@@ -752,7 +752,10 @@ window.addEventListener('scroll', function(){
   var n = document.getElementById('pxaNav');
   if(n) n.classList.toggle('pxa-scrolled', window.scrollY > 20);
 });
-</script>
+// Nese faqja rikthehet nga bfcache-i i browser-it (pas "mbrapa" prej nje faqeje tjeter),
+// detyro rifreskim te plote — perndryshe gjendja e vjeter e DOM-it mbetet e ngrire dhe
+// logjika qe fsheh dashboard-in/wizard-in per vizitor jo-te-loguar s'ekzekutohet serish.
+window.addEventListener('pageshow', function(event){
 </div>
 <!-- /v-hero -->
 <!-- PAS HYRJES: home -->
