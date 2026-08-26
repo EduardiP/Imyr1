@@ -51,6 +51,11 @@
 <footer><div class="container"><div class="fbottom"><span>© 2026 PhronexusAI. Të gjitha të drejtat e rezervuara.</span><span><a href="/privacy" style="color:var(--mut)">Privatësia</a> · <a href="/terms" style="color:var(--mut)">Kushtet</a> · <a href="/contact" style="color:var(--mut)">Kontakt</a></span></div></div></footer>
 
 <!-- LOGIN/REGISTER MODAL (embedded per te punuar direkt ne kete faqe) -->
+<style>
+#modal.backdrop{position:fixed !important;inset:0 !important;z-index:200 !important;display:flex !important;
+  align-items:center !important;justify-content:center !important;overflow-y:auto !important;padding:24px 16px !important;}
+#modal .card.modal{max-height:88vh;overflow-y:auto;margin:auto;}
+</style>
 <div class="backdrop hide" id="modal">
   <div class="card modal">
     <button class="x" onclick="mbyllModal()">✕</button>
