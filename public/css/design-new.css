@@ -205,9 +205,10 @@ header.topbar:has(~ #v-hero.on){display:none;}
    (klasa .hide hiqet) por mbetet i padukshem pas tyre. */
 #modal.backdrop{z-index:200 !important;}
 /* Modali duhet te ket scroll TE VETIN (brenda kartes), jo faqja e teresishme te
-   levize kur permbajtja e regjistrimit eshte e gjate. */
-#modal.backdrop{position:fixed !important;inset:0 !important;display:flex !important;
-  align-items:center !important;justify-content:center !important;overflow-y:auto !important;padding:24px 16px !important;}
+   levize kur permbajtja e regjistrimit eshte e gjate. VETEM kur s'ka .hide —
+   perndryshe display:flex !important do te anashkalonte .hide{display:none}
+   (specifikitet #id > .klase), duke e bere modalin gjithmone te dukshem. */
+#modal.backdrop:not(.hide){overflow-y:auto;padding:24px 16px;}
 #modal .card.modal{max-height:88vh;overflow-y:auto;margin:auto;}
 
 /* Pricing */
