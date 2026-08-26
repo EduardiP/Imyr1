@@ -151,6 +151,10 @@ header.topbar:has(~ #v-hero.on){display:none;}
 .pxa-guar-title{font-family:var(--pxa-font-d);font-size:19px;font-weight:700;color:#fff;margin:0 0 12px;}
 .pxa-guar-body{font-size:14px;line-height:1.6;color:#94a3b8;margin:0;}
 
+/* Pse SaaS-et zgjedhin PhronexusAI */
+.pxa-why-callout{border-radius:16px;border:1px solid rgba(16,185,129,.25);background:rgba(16,185,129,.06);padding:24px 28px;margin-top:32px;display:flex;gap:16px;align-items:flex-start;}
+.pxa-why-callout svg{flex:0 0 auto;margin-top:2px;}
+
 /* How Auction Works */
 .pxa-steps4{display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:48px;}
 @media(min-width:768px){.pxa-steps4{grid-template-columns:repeat(2,1fr);}}
@@ -196,6 +200,15 @@ header.topbar:has(~ #v-hero.on){display:none;}
 .pxa-warn-box{border-radius:12px;border:1px solid rgba(248,81,73,.2);background:rgba(248,81,73,.06);padding:16px;display:flex;gap:10px;align-items:flex-start;}
 .pxa-warn-box svg{flex:0 0 auto;margin-top:2px;}
 .hide{display:none !important;}
+/* Modali i login/regjistrimit (#modal, nga auth.js) duhet te rendera GJITHMONE
+   siper topbar/nav-it te ri (z-index 60/50) — perndryshe "hapet" teknikisht
+   (klasa .hide hiqet) por mbetet i padukshem pas tyre. */
+#modal.backdrop{z-index:200 !important;}
+/* Modali duhet te ket scroll TE VETIN (brenda kartes), jo faqja e teresishme te
+   levize kur permbajtja e regjistrimit eshte e gjate. */
+#modal.backdrop{position:fixed !important;inset:0 !important;display:flex !important;
+  align-items:center !important;justify-content:center !important;overflow-y:auto !important;padding:24px 16px !important;}
+#modal .card.modal{max-height:88vh;overflow-y:auto;margin:auto;}
 
 /* Pricing */
 .pxa-urgency{display:inline-flex;align-items:center;gap:10px;border-radius:12px;border:1px solid rgba(245,158,11,.3);background:rgba(245,158,11,.1);padding:12px 20px;margin-bottom:32px;font-size:14px;color:#fbbf24;}
