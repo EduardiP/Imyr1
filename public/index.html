@@ -756,6 +756,9 @@ window.addEventListener('scroll', function(){
 // detyro rifreskim te plote — perndryshe gjendja e vjeter e DOM-it mbetet e ngrire dhe
 // logjika qe fsheh dashboard-in/wizard-in per vizitor jo-te-loguar s'ekzekutohet serish.
 window.addEventListener('pageshow', function(event){
+  if(event.persisted){ location.reload(); }
+});
+</script>
 </div>
 <!-- /v-hero -->
 <!-- PAS HYRJES: home -->
