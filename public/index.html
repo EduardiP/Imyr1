@@ -758,6 +758,19 @@ window.addEventListener('scroll', function(){
 window.addEventListener('pageshow', function(event){
   if(event.persisted){ location.reload(); }
 });
+// Faqet e veçanta (Rreth Nesh, AI Matching, etj.) s'ngarkojnë auth.js —
+// i drejtojne ketu me ?open=reg/hyr, dhe kjo e hap modalin automatikisht.
+(function(){
+  var p = new URLSearchParams(location.search);
+  var open = p.get('open');
+  if(open === 'reg' || open === 'hyr'){
+    var tryOpen = function(){
+      if(typeof hapModal === 'function'){ hapModal(open); }
+      else { setTimeout(tryOpen, 100); }
+    };
+    tryOpen();
+  }
+})();
 </script>
 </div>
 <!-- /v-hero -->
