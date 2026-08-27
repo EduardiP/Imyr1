@@ -17,10 +17,10 @@
 <header class="topbar">
   <div class="side left" id="hdrLeft">
     <nav class="pubnav">
-      <a href="/how-it-works">Produkti</a>
-      <a href="#cmimet">Çmimet</a>
-      <a href="/about">Rreth nesh</a>
-      <a href="/contact">Kontakt</a>
+      <a href="/how-it-works">Product</a>
+      <a href="#cmimet">Pricing</a>
+      <a href="/about">About Us</a>
+      <a href="/contact">Contact</a>
     </nav>
   </div>
   <div class="logo">PhronexusAI</div>
@@ -260,7 +260,7 @@
           <div id="pxaLeftAuction">
             <p class="pxa-panel-label">How your auction weight is calculated</p>
             <div class="pxa-bar-row">
-              <div class="pxa-bar-head"><span style="font-size:12px;font-weight:600;color:var(--pxa-txt);">Pikat AI <span style="font-size:10px;color:var(--pxa-txt-dim);font-weight:400;">from matching</span></span><span style="font-size:12px;font-family:monospace;color:#3b82f6;font-weight:600;">832 / 1000</span></div>
+              <div class="pxa-bar-head"><span style="font-size:12px;font-weight:600;color:var(--pxa-txt);">AI Score <span style="font-size:10px;color:var(--pxa-txt-dim);font-weight:400;">from matching</span></span><span style="font-size:12px;font-family:monospace;color:#3b82f6;font-weight:600;">832 / 1000</span></div>
               <div class="pxa-bar-track"><div class="pxa-bar-fill" style="width:83.2%;"></div></div>
               <p style="font-size:10px;color:var(--pxa-txt-dim);margin:6px 0 0;line-height:1.5;">How complementary the audiences of businesses A and B are — calculated by AI after matching. Scale 0 to 1000.</p>
             </div>
@@ -275,7 +275,7 @@
             </div>
             <div style="border-radius:12px;padding:16px;border:1px solid rgba(59,110,240,.2);background:rgba(59,110,240,.06);margin-bottom:20px;">
               <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-                <span style="font-size:10px;font-family:monospace;color:#60a5fa;">Pikat AI + Profile Points</span>
+                <span style="font-size:10px;font-family:monospace;color:#60a5fa;">AI Score + Profile Points</span>
                 <span style="flex:1;height:1px;background:rgba(59,110,240,.2);"></span>
                 <span style="font-size:10px;font-family:monospace;color:#93c5fd;font-weight:600;">Auction weight</span>
               </div>
@@ -320,7 +320,7 @@
           </div>
           <div id="pxaRightEqual" class="hide">
             <p class="pxa-panel-label">How the balance model works</p>
-            <div class="pxa-factor-card"><span class="pxa-factor-dot" style="background:#22d3ee;"></span><div><div><span style="font-size:12px;font-weight:600;color:var(--pxa-txt);">Balance e shfaqjeve</span> <span style="font-size:9px;font-family:monospace;padding:2px 6px;border-radius:4px;background:rgba(34,211,238,.15);color:#67e8f9;">1 given = 1 received</span></div><p style="font-size:10px;color:var(--pxa-txt-dim);margin:4px 0 0;line-height:1.5;">The platform measures every impression given and ensures you receive just as many. The balance fluctuates slightly but is compensated automatically.</p></div></div>
+            <div class="pxa-factor-card"><span class="pxa-factor-dot" style="background:#22d3ee;"></span><div><div><span style="font-size:12px;font-weight:600;color:var(--pxa-txt);">Impression Balance</span> <span style="font-size:9px;font-family:monospace;padding:2px 6px;border-radius:4px;background:rgba(34,211,238,.15);color:#67e8f9;">1 given = 1 received</span></div><p style="font-size:10px;color:var(--pxa-txt-dim);margin:4px 0 0;line-height:1.5;">The platform measures every impression given and ensures you receive just as many. The balance fluctuates slightly but is compensated automatically.</p></div></div>
             <div class="pxa-factor-card"><span class="pxa-factor-dot" style="background:#10b981;"></span><div><div><span style="font-size:12px;font-weight:600;color:var(--pxa-txt);">Conversions are still tracked</span> <span style="font-size:9px;font-family:monospace;padding:2px 6px;border-radius:4px;background:rgba(16,185,129,.15);color:#6ee7b7;">Available</span></div><p style="font-size:10px;color:var(--pxa-txt-dim);margin:4px 0 0;line-height:1.5;">Even in the balance model, conversions are recorded and shown in analytics — they don't affect distribution, but provide valuable data.</p></div></div>
             <div class="pxa-factor-card"><span class="pxa-factor-dot" style="background:#94a3b8;"></span><div><div><span style="font-size:12px;font-weight:600;color:var(--pxa-txt);">Matching AI &amp; profile points</span> <span style="font-size:9px;font-family:monospace;padding:2px 6px;border-radius:4px;background:var(--pxa-inner);color:var(--pxa-txt-mut);border:1px solid var(--pxa-line2);">Doesn't apply</span></div><p style="font-size:10px;color:var(--pxa-txt-dim);margin:4px 0 0;line-height:1.5;">Distribution is based solely on the number of impressions given, with no auction.</p></div></div>
             <div style="border-radius:12px;padding:16px;border:1px solid var(--pxa-line);background:var(--pxa-inner);display:flex;gap:10px;align-items:flex-start;">
@@ -784,9 +784,9 @@ window.addEventListener('pageshow', function(event){
 <!-- WIZARD -->
 <div class="wrap wide view" id="v-wizard">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-    <button class="btn ghost" onclick="history.back()">← Mbrapa</button>
+    <button class="btn ghost" onclick="history.back()">← Back</button>
     <div class="small" id="wizStepN"></div>
-    <button class="btn ghost" onclick="closeWizard()">Ruaj &amp; dil ✕</button>
+    <button class="btn ghost" onclick="closeWizard()">Save &amp; exit ✕</button>
   </div>
   <div class="hstep" id="hstep"></div>
   <div id="wizBody"></div>
