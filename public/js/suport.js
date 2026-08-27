@@ -12,7 +12,7 @@
     wrap.id = 'suportWrap';
     wrap.innerHTML =
       // Butoni-robot (poshte majtas)
-      '<button id="suportBtn" aria-label="Ndihmë" title="Ndihmë">'+
+      '<button id="suportBtn" aria-label="Help" title="Help">'+
         '<svg width="30" height="30" viewBox="0 0 48 48" fill="none">'+
           '<rect x="10" y="16" width="28" height="20" rx="6" fill="#fff"/>'+
           '<circle cx="19" cy="26" r="3" fill="#3552d6"/>'+
@@ -29,17 +29,17 @@
         '<div id="suportHead">'+
           '<div style="display:flex;align-items:center;gap:8px;">'+
             '<span style="font-size:18px;">🤖</span>'+
-            '<div><div style="font-weight:600;font-size:14px;">Asistenti i PhronexusAI</div>'+
-            '<div style="font-size:11px;opacity:.8;">Këtu për të ndihmuar</div></div>'+
+            '<div><div style="font-weight:600;font-size:14px;">PhronexusAI Assistant</div>'+
+            '<div style="font-size:11px;opacity:.8;">Here to help</div></div>'+
           '</div>'+
           '<div style="display:flex;gap:4px;">'+
-            '<button id="suportUl" title="Ul poshtë" aria-label="Ul poshtë">⌄</button>'+
-            '<button id="suportX" title="Mbyll" aria-label="Mbyll">✕</button>'+
+            '<button id="suportUl" title="Minimize" aria-label="Minimize">⌄</button>'+
+            '<button id="suportX" title="Close" aria-label="Close">✕</button>'+
           '</div>'+
         '</div>'+
         '<div id="suportChat"></div>'+
         '<div id="suportInputRow">'+
-          '<input id="suportInput" placeholder="Shkruaj pyetjen tënde..." autocomplete="off">'+
+          '<input id="suportInput" placeholder="Type your question..." autocomplete="off">'+
           '<button id="suportSend">➤</button>'+
         '</div>'+
       '</div>';
@@ -55,7 +55,7 @@
   function pershendetja(){
     if(hist.length) return;  // vetem heren e pare
     var chat = el('suportChat'); if(!chat) return;
-    var msg = "Përshëndetje! Jam asistenti i PhronexusAI. Si mund të të ndihmoj? Mund të më pyesësh si funksionon platforma, për çmimet, ose si të fillosh.";
+    var msg = "Hi! I'm the PhronexusAI assistant. How can I help? Ask me how the platform works, about pricing, or how to get started.";
     chat.innerHTML = '<div class="suportMsg bot">'+esc(msg)+'</div>';
   }
 
@@ -101,7 +101,7 @@
         body:JSON.stringify({mesazhet:hist})});
       if(!resp.ok || !resp.body){
         var er = await resp.json().catch(function(){return {};});
-        if(bula) bula.innerHTML = '<span class="err">'+esc(er.error||'Gabim.')+'</span>';
+        if(bula) bula.innerHTML = '<span class="err">'+esc(er.error||'Error.')+'</span>';
         return;
       }
       // Lexo stream-in cope-cope
@@ -132,12 +132,12 @@
           });
           var jj = await rr.json();
           if (jj.ok) {
-            chat.innerHTML += '<div class="suportMsg bot" style="background:#0e2a1a;border-left:3px solid #10b981;">✓ Kërkesa u dërgua te ekipi. Do të të kontaktojnë sa më shpejt.</div>';
+            chat.innerHTML += '<div class="suportMsg bot" style="background:#0e2a1a;border-left:3px solid #10b981;">✓ Your request has been sent to the team. They'll get back to you as soon as possible.</div>';
           } else {
-            chat.innerHTML += '<div class="suportMsg bot"><span class="err">Nuk u dërgua: ' + esc(jj.error || 'gabim') + '</span></div>';
+            chat.innerHTML += '<div class="suportMsg bot"><span class="err">Couldn't send: ' + esc(jj.error || 'gabim') + '</span></div>';
           }
         } catch (e) {
-          chat.innerHTML += '<div class="suportMsg bot"><span class="err">Gabim në dërgim.</span></div>';
+          chat.innerHTML += '<div class="suportMsg bot"><span class="err">Error sending.</span></div>';
         }
         chat.scrollTop = chat.scrollHeight;
         hist.push({role: 'assistant', content: plotPastruar});
@@ -145,7 +145,7 @@
         hist.push({role: 'assistant', content: plot});
       }
     }catch(e){
-      if(bula) bula.innerHTML = '<span class="err">Gabim në lidhje.</span>';
+      if(bula) bula.innerHTML = '<span class="err">Connection error.</span>';
     }
     chat.scrollTop = chat.scrollHeight;
   }
