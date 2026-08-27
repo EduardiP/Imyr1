@@ -132,9 +132,9 @@
           });
           var jj = await rr.json();
           if (jj.ok) {
-            chat.innerHTML += '<div class="suportMsg bot" style="background:#0e2a1a;border-left:3px solid #10b981;">✓ Your request has been sent to the team. They'll get back to you as soon as possible.</div>';
+            chat.innerHTML += '<div class="suportMsg bot" style="background:#0e2a1a;border-left:3px solid #10b981;">✓ Your request has been sent to the team. We will contact you as soon as possible.</div>';
           } else {
-            chat.innerHTML += '<div class="suportMsg bot"><span class="err">Couldn't send: ' + esc(jj.error || 'gabim') + '</span></div>';
+            chat.innerHTML += '<div class="suportMsg bot"><span class="err">Failed to send: ' + esc(jj.error || 'error') + '</span></div>';
           }
         } catch (e) {
           chat.innerHTML += '<div class="suportMsg bot"><span class="err">Error sending.</span></div>';
