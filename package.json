@@ -1,7 +1,7 @@
 {
-  "name": "imyr",
+  "name": "phronexusai",
   "version": "1.0.0",
-  "description": "Imyr — rrjet cross-promotion per biznese",
+  "description": "PhronexusAI — cross-promotion network for SaaS businesses",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
