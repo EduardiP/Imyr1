@@ -1701,7 +1701,7 @@ function krShfaqRezultatin(k){
     '<div id="krImgWrap">'+preview+'</div>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">'+
       '<button class="btn" onclick="krHapPamjenPlote(\''+esc(k.output_url)+'\')" title="Shiko madhësinë reale">🔍</button>'+
-      '<a class="btn" href="'+esc(k.output_url)+'" download="kreative_'+k.id+(k.lloji==='video'?'.mp4':k.lloji==='html5'?'.html':'.png')+'" style="text-decoration:none;">⬇ Shkarko</a>'+
+      (k.lloji==='video' ? '<a class="btn" href="'+esc(k.output_url)+'" download="kreative_'+k.id+'.mp4" style="text-decoration:none;">⬇ Shkarko</a>' : '')+
       '<button class="btn" onclick="krRuaj('+k.id+')">💾 Ruaje</button>'+
       '<button class="btn" onclick="krHapModifiko('+k.id+',\''+esc(k.lloji)+'\')">✏️ Modifiko</button>'+
     '</div>'+
