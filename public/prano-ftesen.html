@@ -1,0 +1,59 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accept Invitation — PhronexusAI</title>
+<link rel="stylesheet" href="/css/style.css"></head><body style="display:flex;align-items:center;justify-content:center;min-height:100vh;">
+
+<div class="card modal" style="max-width:420px;width:100%;margin:20px;">
+  <h2 class="h" style="margin-top:0;">You're invited to a team</h2>
+  <p class="small mut" id="pfInfo" style="margin:2px 0 16px;">Checking your invitation...</p>
+
+  <div id="pfForm" class="hide">
+    <label>Your name</label><input id="pf_emri" placeholder="Full name">
+    <label>Password (min 6)</label><input id="pf_pass" type="password" placeholder="••••••">
+    <button class="primary" id="pfBtn" onclick="pranoFtesen()" style="margin-top:14px;width:100%;">Accept & log in</button>
+  </div>
+
+  <div class="msg" id="pfMsg"></div>
+</div>
+
+<script>
+function esc(t){ const d=document.createElement('div'); d.textContent=(t==null?'':t); return d.innerHTML; }
+
+var kodi = new URLSearchParams(location.search).get('kodi');
+
+if(!kodi){
+  document.getElementById('pfInfo').textContent = 'This link is invalid — the invitation code is missing.';
+} else {
+  document.getElementById('pfInfo').textContent = 'Enter your name and password to accept the invitation.';
+  document.getElementById('pfForm').classList.remove('hide');
+}
+
+async function pranoFtesen(){
+  var emri = document.getElementById('pf_emri').value.trim();
+  var pass = document.getElementById('pf_pass').value;
+  var msg = document.getElementById('pfMsg');
+  var btn = document.getElementById('pfBtn');
+
+  if(!emri){ msg.textContent = 'Enter your name.'; msg.className='msg err'; return; }
+  if(!pass || pass.length < 6){ msg.textContent = 'Password must be at least 6 characters.'; msg.className='msg err'; return; }
+
+  btn.disabled = true;
+  try{
+    var r = await (await fetch('/api/ekipi/ftesat/prano', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ kodi: kodi, fjalekalimi: pass, emri: emri })
+    })).json();
+
+    if(r.error){ msg.textContent = r.error; msg.className='msg err'; btn.disabled=false; return; }
+
+    msg.textContent = 'Invitation accepted! Redirecting to login...';
+    msg.className = 'msg ok';
+    setTimeout(function(){ location.href = '/'; }, 1500);
+  }catch(e){
+    msg.textContent = 'Error: ' + e.message;
+    msg.className = 'msg err';
+    btn.disabled = false;
+  }
+}
+</script>
+
+</body></html>
