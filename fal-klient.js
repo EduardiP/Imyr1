@@ -153,4 +153,44 @@ async function gjeneroHTML5(pershkrimi, imazhetEtiketuara, width, height) {
   return teksti;
 }
 
-module.exports = { gjeneroImazh, modifikoImazh, gjeneroVideo, gjeneroHTML5 };
+// ═══ HTML5 — MODIFIKIM (jo krijim i ri) — jep kodin EKZISTUES si baze, Claude e ndryshon
+// vetem sipas kerkeses, duke ruajtur strukturen/imazhet/permasat ekzistuese ═══
+const QELLIMI_HTML5_MODIFIKIM =
+  'You are an expert HTML5 display ad designer. You will be given the EXISTING HTML code of a ' +
+  'banner ad, followed by an instruction describing what to CHANGE. Modify the existing HTML ' +
+  'according to the instruction, while KEEPING everything else (layout, images, structure, exact ' +
+  'pixel dimensions, animations not mentioned in the instruction) exactly as it was — this is an ' +
+  'edit, not a new design from scratch. ' +
+  'CRITICAL — NO CLICKABLE ELEMENTS: this HTML will be embedded inside an OUTER click-through wrapper ' +
+  'added by the ad platform (the entire banner becomes one single clickable link). Therefore your ' +
+  'output must NEVER contain its own <a> tags, onclick handlers, <button> elements with functional ' +
+  'behavior, or any JS click listeners. Any CTA text must be PURELY VISUAL (styled div/span, no ' +
+  'click functionality of its own). ' +
+  'Output ONLY the complete, updated raw HTML code, no markdown, no explanation, no backticks.';
+
+async function modifikoHTML5(htmlEkzistues, pershkrimi) {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) throw new Error("ANTHROPIC_API_KEY s'është konfiguruar te serveri.");
+  const userMsg = 'EXISTING HTML:\n\n' + htmlEkzistues + '\n\nINSTRUCTION — what to change:\n' + pershkrimi;
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4000,
+      system: QELLIMI_HTML5_MODIFIKIM,
+      messages: [{ role: 'user', content: userMsg }]
+    })
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error((data && data.error && data.error.message) || 'Anthropic gabim');
+  const tekstiRi = data.content && data.content.map(c => c.text || '').join('');
+  if (!tekstiRi || !tekstiRi.includes('<')) throw new Error("Claude s'ktheu HTML të vlefshëm.");
+  return tekstiRi;
+}
+
+module.exports = { gjeneroImazh, modifikoImazh, gjeneroVideo, gjeneroHTML5, modifikoHTML5 };
