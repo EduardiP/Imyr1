@@ -74,20 +74,20 @@ async function renderDashStatusBalance(){
   }catch(e){}
   el.innerHTML='';
   const rreshtat=[
-    { done: !!(prog && prog.llogaria),   label:'Biznesi', veprim:()=>nav({v:'profile',nav:'biznesi'}) },
-    { done: !!(prog && prog.pershkrimi), label:'Përshkrimi', veprim:()=>nav({v:'profile',nav:'pershkrimi'}) },
+    { done: !!(prog && prog.llogaria), auto: !!(prog && prog.llogaria && prog.biznesiAuto), label:'Biznesi', veprim:()=>nav({v:'profile',nav:'biznesi'}) },
+    { done: !!(prog && prog.pershkrimi), auto: !!(prog && prog.pershkrimi && prog.pershkrimiAuto), label:'Përshkrimi', veprim:()=>nav({v:'profile',nav:'pershkrimi'}) },
     { done: !!(prog && prog.lidhja),     label:'Lidhja e snippet-it', veprim:()=>nav({v:'profile',nav:'lidhjaSnippet'}) },
     { done: kaReklameBarazi || gjendjaKrijimi==='manual', auto: !kaReklameBarazi && gjendjaKrijimi==='auto', label:'Krijo reklamë (Balance)', veprim:()=>nav({v:'profile',nav:'reklamat',sub:'create'}) },
     { done: !!(prog && prog.konvertimi), label:'Lidh konvertimin', veprim:()=>nav({v:'profile',nav:'konvertimet'}) }
   ];
   rreshtat.forEach(r=>{
     const d=document.createElement('div');
-    d.className='vs'+(r.done?' done':(r.auto?' auto':' click'));
-    const shenja = r.done ? '✓' : (r.auto ? '★' : '+');
-    const etiketa = r.done ? '' : (r.auto ? ' — krijuar automatikisht, kliko për ta rregulluar' : ' — plotëso');
+    d.className='vs'+(r.auto?' auto':(r.done?' done':' click'));
+    const shenja = r.auto ? '★' : (r.done ? '✓' : '+');
+    const etiketa = r.auto ? ' — krijuar automatikisht, kliko për ta rregulluar' : (r.done ? '' : ' — plotëso');
     d.innerHTML='<span class="vd">'+shenja+'</span>'+
       '<span class="vl">'+r.label+etiketa+'</span>';
-    if(!r.done) d.onclick=r.veprim;
+    if(!r.done || r.auto) d.onclick=r.veprim;
     el.appendChild(d);
   });
 }
