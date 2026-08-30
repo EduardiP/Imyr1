@@ -141,4 +141,16 @@ module.exports = function (app, pool, iAdmin, kombinimi) {
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
+  // --- Lista e pritjes per "Teams & Roles" (regjistrimet e interesit) ---
+  app.get('/api/admin/lista-pritjes', iAdmin, async (req, res) => {
+    try {
+      const r = await pool.query(
+        `SELECT lp.id, lp.email, lp.krijuar_at, b.emri AS biznesi, b.logo_url
+         FROM ekipi_lista_pritjes lp
+         LEFT JOIN bizneset b ON b.id = lp.biznes_id
+         ORDER BY lp.krijuar_at DESC`);
+      res.json(r.rows);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
 };
