@@ -2088,11 +2088,15 @@ async function rekKontrolloSnippet(){
   const el=$('rekShiritSnippet'); if(!el) return;
   try{
     const pr=await(await fetch('/api/progres')).json();
-    if(!pr.lidhja){
+    const neGraceperiod = !!(pr.biznesiAuto && pr.ditet < 7);
+    if(!pr.lidhja && !neGraceperiod){
       el.innerHTML='<div onclick="nav({v:\'profile\',nav:\'lidhjaSnippet\'})" style="cursor:pointer;background:#3a1212;border:1px solid var(--err);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;">'+
         '<div style="flex:1;"><div style="color:var(--err);font-weight:600;">Reklamat e tua nuk po shfaqen</div>'+
         '<div class="small" style="margin-top:2px;">S\'ke asnjë hapësirë reklame aktive. Meqë s\'po shfaq reklamat e të tjerëve, as reklamat e tua s\'po marrin shfaqje. Kliko për të mësuar si →</div></div>'+
         '<button class="btn cta" style="white-space:nowrap;" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'lidhjaSnippet\'})">Shiko</button></div>';
+    } else if(!pr.lidhja && neGraceperiod){
+      el.innerHTML='<div style="background:#0e2a1a;border:1px solid var(--good);border-radius:10px;padding:12px 14px;">'+
+        '<div class="small" style="color:#7ee2a8;">Reklama jote tashmë është aktive te rrjeti, edhe pa lidhur hapësirë ende — lidhe brenda 7 ditëve të para që të vazhdojë të shfaqet.</div></div>';
     } else { el.innerHTML=''; }
   }catch(e){}
 }
