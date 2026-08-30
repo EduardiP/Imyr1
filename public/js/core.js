@@ -143,11 +143,33 @@ function setHeaderLoggedIn(){
       '<input id="kerkInput" placeholder="Kërko…" autocomplete="off" oninput="kerkoRun(this.value)">'+
       '<div id="kerkRez" class="hide"></div>'+
     '</div>'+
+    '<button class="pxa-topbar-btn" title="Choose language" style="margin-right:6px;">'+
+      '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/></svg>'+
+      '<span>EN</span>'+
+    '</button>'+
+    '<button class="pxa-topbar-btn" title="Theme" onclick="document.body.classList.toggle(\'pxa-light\')" style="margin-right:10px;">'+
+      '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'+
+    '</button>'+
     '<div class="zile-wrap"><button class="zile" onclick="toggleNjoftimet(event)" aria-label="Njoftimet">'+
       '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>'+
       '<span id="zileBadge" class="zile-badge hide">0</span>'+
     '</button><div id="njBox" class="njBox hide"></div></div>';
   ngarkoNjoftimet();
+  dashFooterVendos();
+}
+
+// Footer minimal, per dashboard (pas login) — 1 rresht, i ndare nga footer-i i madh publik.
+function dashFooterVendos(){
+  if(document.getElementById('dashFooter')) return; // shtohet vetem 1 here
+  var f = document.createElement('div');
+  f.id = 'dashFooter';
+  f.style.cssText = 'text-align:center;padding:14px 10px;font-size:12px;color:var(--mut);border-top:1px solid var(--line);margin-top:20px;';
+  f.innerHTML = '© 2026 PhronexusAI · '+
+    '<a href="/privacy" target="_blank" style="color:inherit;">Privacy</a> · '+
+    '<a href="/terms" target="_blank" style="color:inherit;">Terms</a> · '+
+    '<a href="/refund" target="_blank" style="color:inherit;">Refund Policy</a> · '+
+    '<a href="/contact" target="_blank" style="color:inherit;">Contact</a>';
+  document.body.appendChild(f);
 }
 function toggleMenu(e){ e.stopPropagation(); const m=$('menuBox'); if(m) m.classList.toggle('hide'); const n=$('njBox'); if(n) n.classList.add('hide'); }
 function toggleNjoftimet(e){ e.stopPropagation(); const n=$('njBox'); if(n) n.classList.toggle('hide'); const m=$('menuBox'); if(m) m.classList.add('hide'); }
