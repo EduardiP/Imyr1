@@ -45,9 +45,9 @@ async function switchLlogaria(){
   // Perditeso ndryshoret lokale
   window.__llogariaModaliteti = iRi;
   if(window.une) window.une.logjika_shperndarjes = iRi;
-  // Rifresko labelin e menyse dhe pamjen
+  // Rifresko labelin e menyse, pastaj cohu te dashboard-i i llogarise se RE
   if(typeof renderUserMenu === 'function') renderUserMenu();
-  renderMain({nav: curNav});
+  nav({v:'profile', nav:'dashboard'});
 }
 
 // ================= DASHBOARD (Balance) =================
