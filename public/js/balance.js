@@ -69,11 +69,11 @@ async function renderDashStatusBalance(){
   }catch(e){}
   el.innerHTML='';
   const rreshtat=[
-    { done:true,  label:'Biznesi' },
-    { done:true,  label:'Përshkrimi' },
-    { done:true,  label:'Lidhja e snippet-it' },
+    { done: !!(prog && prog.llogaria),   label:'Biznesi' },
+    { done: !!(prog && prog.pershkrimi), label:'Përshkrimi' },
+    { done: !!(prog && prog.lidhja),     label:'Lidhja e snippet-it' },
     { done:kaReklameBarazi, label:'Krijo reklamë (Balance)', veprim:()=>nav({v:'profile',nav:'reklamat',sub:'create'}) },
-    { done:true,  label:'Lidh konvertimin' }
+    { done: !!(prog && prog.konvertimi), label:'Lidh konvertimin' }
   ];
   rreshtat.forEach(r=>{
     const d=document.createElement('div');
