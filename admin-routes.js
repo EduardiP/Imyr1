@@ -13,7 +13,10 @@ module.exports = function (app, pool, iAdmin, kombinimi) {
          FROM bizneset
          WHERE website IS NOT NULL AND tipi IS NOT NULL
            AND (permbledhje IS NOT NULL OR pershkrimi IS NOT NULL)
-           AND snippet_active = true
+           AND (
+             snippet_active = true
+             OR EXISTS (SELECT 1 FROM perputhjet p WHERE p.reklamues_id = bizneset.id OR p.host_id = bizneset.id)
+           )
          ORDER BY emri ASC`);
       res.json(r.rows);
     } catch (e) { res.status(500).json({ error: e.message }); }
