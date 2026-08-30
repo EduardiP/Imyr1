@@ -1466,6 +1466,46 @@ app.get('/api/reklamat', iLoguar, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// --- ECURIA DITORE E NJE REKLAME SPECIFIKE (per grafikun te faqja e detajeve) ---
+app.get('/api/reklamat/:id/ecuria', iLoguar, async (req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT to_char(created_at, 'YYYY-MM-DD') AS dita,
+              COUNT(*) FILTER (WHERE lloji='view')::int  AS shikime,
+              COUNT(*) FILTER (WHERE lloji='click')::int AS klikime
+       FROM ngjarjet
+       WHERE reklamues_id=$1 AND reklama_id=$2 AND created_at > now() - interval '30 days'
+       GROUP BY dita ORDER BY dita ASC`,
+      [req.biznesId, req.params.id]);
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- TARGETIMI (shtet + pajisje) PER NJE REKLAME SPECIFIKE — GDPR-miqesor, momentar, jo i ruajtur per vizitor ---
+app.get('/api/reklamat/:id/audienca', iLoguar, async (req, res) => {
+  try {
+    await pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS target_vendet TEXT[]`);
+    await pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS target_pajisje TEXT[]`);
+    const r = await pool.query(
+      'SELECT target_vendet, target_pajisje FROM promovimet WHERE id=$1 AND biznes_id=$2',
+      [req.params.id, req.biznesId]);
+    if (!r.rows.length) return res.status(404).json({ error: 'Reklama s\'u gjet.' });
+    res.json({ vendet: r.rows[0].target_vendet || [], pajisjet: r.rows[0].target_pajisje || [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.post('/api/reklamat/:id/audienca', iLoguar, async (req, res) => {
+  const vendet = Array.isArray(req.body.vendet) ? req.body.vendet : [];
+  const pajisjet = Array.isArray(req.body.pajisjet) ? req.body.pajisjet : [];
+  try {
+    await pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS target_vendet TEXT[]`);
+    await pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS target_pajisje TEXT[]`);
+    await pool.query(
+      'UPDATE promovimet SET target_vendet=$1, target_pajisje=$2 WHERE id=$3 AND biznes_id=$4',
+      [vendet.length ? vendet : null, pajisjet.length ? pajisjet : null, req.params.id, req.biznesId]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // --- STATUSI (a u lidh snippet-i te dyqani) ---
 // Dritarja e "gjalle": nese e kemi pare snippet-in brenda kesaj kohe, quhet aktiv tani.
 const DRITARJA_LIVE_MS = 10 * 60 * 1000; // 10 minuta
