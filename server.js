@@ -415,6 +415,8 @@ app.get('/api/une', iLoguar, async (req, res) => {
 // --- PROGRESI (cilat hapa jane plotesuar) ---
 app.get('/api/progres', iLoguar, async (req, res) => {
   try {
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS biznesi_auto BOOLEAN NOT NULL DEFAULT false`);
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pershkrimi_auto BOOLEAN NOT NULL DEFAULT false`);
     const b = await pool.query(
       'SELECT permbledhje, pershkrimi, snippet_active, track_active, url_konvertimi, website, tipi, biznesi_auto, pershkrimi_auto FROM bizneset WHERE id=$1', [req.biznesId]);
     const p = await pool.query('SELECT 1 FROM promovimet WHERE biznes_id=$1 AND aktiv=true LIMIT 1', [req.biznesId]);
