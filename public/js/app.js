@@ -2160,15 +2160,8 @@ async function hapReklame(id, m){
   let rows=window.__reklamat;
   if(!rows){ try{ rows=await(await fetch('/api/reklamat')).json(); window.__reklamat=rows; }catch(e){ rows=[]; } }
   const r=(rows||[]).find(x=>x.id===id)||{};
-  _rekTab='reklama';
   m.innerHTML=
     '<h2 class="h">'+esc(r.emri||'Reklama')+'</h2>'+
-    '<div style="display:flex;gap:10px;margin:14px 0 18px;border-bottom:1px solid var(--line);">'+
-      '<button class="rekTabBtn active" id="rekTabReklama" onclick="rekSetTab(\'reklama\','+id+')">Reklama</button>'+
-      '<button class="rekTabBtn" id="rekTabAudienca" onclick="rekSetTab(\'audienca\','+id+')">Audienca</button>'+
-    '</div>'+
-    '<style>.rekTabBtn{background:none;border:none;color:var(--mut);padding:8px 4px;margin-right:18px;cursor:pointer;font-size:14px;font-weight:600;border-bottom:2px solid transparent;}'+
-      '.rekTabBtn.active{color:var(--txt);border-color:var(--acc);}</style>'+
     '<div id="rekTabPermbajtja"></div>';
   rekRenderReklama(r, id);
 }
