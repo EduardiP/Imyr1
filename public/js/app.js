@@ -2120,9 +2120,19 @@ function renderZgjedhja(){
     '<div class="wrap" style="max-width:640px;margin:60px auto;">'+
       '<h2 class="h" style="text-align:center;">Si dëshiron ta fillosh?</h2>'+
       '<p class="small mut" style="text-align:center;margin:6px 0 28px;">Zgjidh njërën, mund ta ndryshosh më vonë.</p>'+
-      '<div style="display:flex;gap:10px;margin-bottom:20px;">'+
-        '<button class="btn" id="zgjBtnManual" style="flex:1;" onclick="zgjSetTab(\'manual\')">Manual</button>'+
-        '<button class="btn" id="zgjBtnAuto" style="flex:1;" onclick="zgjSetTab(\'automatic\')">Automatic</button>'+
+      '<style>'+
+        '.zgjTabBtn{flex:1;padding:16px;border-radius:12px;border:1.5px solid var(--line);background:#0e1116;color:var(--txt);'+
+          'font-size:15px;font-weight:600;cursor:pointer;position:relative;transition:border-color .15s,background .15s;}'+
+        '.zgjTabBtn:active{transform:none;}'+
+        '.zgjTabBtn.sel{border-color:var(--acc);background:rgba(59,110,240,.08);}'+
+        '.zgjBadge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--acc);color:#fff;'+
+          'font-size:10px;font-weight:700;letter-spacing:.03em;padding:3px 10px;border-radius:20px;text-transform:uppercase;}'+
+      '</style>'+
+      '<div style="display:flex;gap:14px;margin-bottom:24px;">'+
+        '<button class="zgjTabBtn sel" id="zgjBtnAuto" onclick="zgjSetTab(\'automatic\')">'+
+          '<span class="zgjBadge">Rekomandohet</span>Automatic'+
+        '</button>'+
+        '<button class="zgjTabBtn" id="zgjBtnManual" onclick="zgjSetTab(\'manual\')">Manual</button>'+
       '</div>'+
       '<div id="zgjPermbajtja"></div>'+
     '</div>';
@@ -2131,8 +2141,8 @@ function renderZgjedhja(){
 function zgjSetTab(t){
   _zgjTab = t;
   const bM=$('zgjBtnManual'), bA=$('zgjBtnAuto');
-  if(bM) bM.className = 'btn'+(t==='manual'?' primary':'');
-  if(bA) bA.className = 'btn'+(t==='automatic'?' primary':'');
+  if(bM) bM.className = 'zgjTabBtn'+(t==='manual'?' sel':'');
+  if(bA) bA.className = 'zgjTabBtn'+(t==='automatic'?' sel':'');
   const c = $('zgjPermbajtja'); if(!c) return;
   if(t==='manual'){
     c.innerHTML =
