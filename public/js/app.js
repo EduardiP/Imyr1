@@ -2113,7 +2113,7 @@ function renderVStep(){
 function startWizard(){ if(une){ openWizard(nextIncomplete()); } else { hapModal('reg'); } }
 
 // ---------- ZGJEDHJA (Manual vs Automatic), shfaqet 1 here, menjehere pas hyrjes se pare ----------
-var _zgjTab = 'manual';
+var _zgjTab = 'automatic';
 function renderZgjedhja(){
   const el = $('v-zgjedhja'); if(!el) return;
   el.innerHTML =
@@ -2126,7 +2126,7 @@ function renderZgjedhja(){
       '</div>'+
       '<div id="zgjPermbajtja"></div>'+
     '</div>';
-  zgjSetTab('manual');
+  zgjSetTab('automatic');
 }
 function zgjSetTab(t){
   _zgjTab = t;
