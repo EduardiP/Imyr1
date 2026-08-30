@@ -2200,20 +2200,34 @@ function rekRenderReklama(r, id){
       konvKuti+
     '</div>'+
     '<p class="small">Variantet e krijuara (Image / Video / HTML5) do të shfaqen këtu — për të parë cili performon më mirë në testim.</p>'+
-    '<div class="card" style="margin-top:18px;"><h3 class="h" style="font-size:15px;margin:0 0 12px;">Ecuria (30 ditët e fundit)</h3><canvas id="rekEcuriaCanvas" height="90"></canvas></div>';
-  rekVizatoEcurine(id);
+    '<div class="card" style="margin-top:18px;">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">'+
+        '<h3 class="h" style="font-size:15px;margin:0;">Ecuria</h3>'+
+        '<div style="display:flex;gap:8px;">'+
+          '<button class="btn" onclick="rekEcuriaPreset('+id+',7)">7 ditë</button>'+
+          '<button class="btn" onclick="rekEcuriaPreset('+id+',30)">30 ditë</button>'+
+          '<button class="btn" onclick="rekEcuriaPreset('+id+',90)">90 ditë</button>'+
+        '</div>'+
+      '</div>'+
+      '<canvas id="rekEcuriaCanvas" height="90"></canvas></div>';
+  rekVizatoEcurine(id, 30);
 }
-async function rekVizatoEcurine(id){
+function rekEcuriaPreset(id, dite){ rekVizatoEcurine(id, dite); }
+async function rekVizatoEcurine(id, dite){
+  dite = dite || 30;
   try{
-    const rows=await(await fetch('/api/reklamat/'+id+'/ecuria')).json();
+    const rows=await(await fetch('/api/reklamat/'+id+'/ecuria?dite='+dite)).json();
     const ctx=$('rekEcuriaCanvas'); if(!ctx||!window.Chart) return;
     if(window.__rekChart) window.__rekChart.destroy();
+    const ctrData = rows.map(x => x.shikime>0 ? Math.round((x.klikime/x.shikime)*1000)/10 : 0);
     window.__rekChart=new Chart(ctx,{type:'line',data:{
       labels:rows.map(x=>x.dita),
       datasets:[
         {label:'Shikime',data:rows.map(x=>x.shikime),borderColor:'#4a9eff',tension:.3},
-        {label:'Klikime',data:rows.map(x=>x.klikime),borderColor:'#3fb950',tension:.3}
-      ]},options:{responsive:true,scales:{y:{beginAtZero:true}}}});
+        {label:'Klikime',data:rows.map(x=>x.klikime),borderColor:'#3fb950',tension:.3},
+        {label:'Konvertime',data:rows.map(x=>x.konvertime),borderColor:'#f0b429',tension:.3},
+        {label:'CTR %',data:ctrData,borderColor:'#e05fa0',tension:.3,yAxisID:'y1'}
+      ]},options:{responsive:true,scales:{y:{beginAtZero:true},y1:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false}}}}});
   }catch(e){}
 }
 async function rekRenderAudienca(id){
@@ -2221,22 +2235,33 @@ async function rekRenderAudienca(id){
   c.innerHTML='<p class="small">Po ngarkoj…</p>';
   let cur={vendet:[],pajisjet:[]};
   try{ cur=await(await fetch('/api/reklamat/'+id+'/audienca')).json(); }catch(e){}
-  const VENDET=['Shqipëri','Kosovë','Itali','Gjermani','SHBA','Mbretëri e Bashkuar','Francë','Tjetër (global)'];
+  const VENDET=['Australi','Austri','Belgjikë','Bosnjë','Brazil','Bullgari','Danimarkë','Egjipt','Emiratet e Bashkuara Arabe','Finlandë','Francë','Gjermani','Greqi','Hollandë','Indi','Indonezi','Irlandë','Islandë','Itali','Izrael','Japoni','Kanada','Kinë','Kore Jugore','Kroaci','Malajzi','Meksikë','Mbretëri e Bashkuar','Norvegji','Poloni','Portugali','Rumani','Serbi','Singapor','Spanjë','SHBA','Suedi','Zvicër','Tajlandë','Turqi','Ukrainë','Zelandë e Re'];
   const PAJISJET=[{v:'desktop',l:'Desktop'},{v:'mobile',l:'Mobile'}];
   c.innerHTML=
     '<p class="small mut" style="margin-bottom:16px;">Zgjidh shtetet/pajisjet ku dëshiron ta shfaqësh (të gjitha të zgjedhura = shfaqet kudo).</p>'+
-    '<div class="small" style="font-weight:600;margin-bottom:8px;">Shtetet</div>'+
-    '<div style="display:flex;flex-wrap:nowrap;gap:8px;margin-bottom:20px;overflow-x:auto;padding-bottom:6px;">'+
-      VENDET.map(v=>'<label style="display:flex;align-items:center;gap:6px;background:#0e1116;border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;white-space:nowrap;flex:0 0 auto;">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'+
+      '<div class="small" style="font-weight:600;">Shtetet</div>'+
+      '<button class="btn" style="padding:4px 10px;font-size:12px;" onclick="rekAudTeGjitha(\'.rekAudVend\',this)">Të gjitha</button>'+
+    '</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;">'+
+      VENDET.map(v=>'<label style="display:flex;align-items:center;gap:6px;background:#0e1116;border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;white-space:nowrap;">'+
         '<input type="checkbox" value="'+esc(v)+'" class="rekAudVend" '+((cur.vendet.length===0||cur.vendet.includes(v))?'checked':'')+'> '+esc(v)+'</label>').join('')+
     '</div>'+
-    '<div class="small" style="font-weight:600;margin-bottom:8px;">Pajisjet</div>'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'+
+      '<div class="small" style="font-weight:600;">Pajisjet</div>'+
+      '<button class="btn" style="padding:4px 10px;font-size:12px;" onclick="rekAudTeGjitha(\'.rekAudPaj\',this)">Të gjitha</button>'+
+    '</div>'+
     '<div style="display:flex;gap:8px;margin-bottom:20px;">'+
       PAJISJET.map(p=>'<label style="display:flex;align-items:center;gap:6px;background:#0e1116;border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;">'+
         '<input type="checkbox" value="'+p.v+'" class="rekAudPaj" '+((cur.pajisjet.length===0||cur.pajisjet.includes(p.v))?'checked':'')+'> '+p.l+'</label>').join('')+
     '</div>'+
     '<button class="primary" id="rekAudRuaj" onclick="rekAudRuaj('+id+')">Ruaj</button>'+
     '<div class="msg" id="rekAudMsg"></div>';
+}
+function rekAudTeGjitha(selektori, btn){
+  const kutizat=document.querySelectorAll(selektori);
+  const teGjithaZgjedhur=Array.from(kutizat).every(k=>k.checked);
+  kutizat.forEach(k=>k.checked=!teGjithaZgjedhur);
 }
 async function rekAudRuaj(id){
   const vendet=Array.from(document.querySelectorAll('.rekAudVend:checked')).map(x=>x.value);
