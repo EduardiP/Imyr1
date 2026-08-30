@@ -2111,6 +2111,58 @@ function renderVStep(){
 
 // ---------- WIZARD ----------
 function startWizard(){ if(une){ openWizard(nextIncomplete()); } else { hapModal('reg'); } }
+
+// ---------- ZGJEDHJA (Manual vs Automatic), shfaqet 1 here, menjehere pas hyrjes se pare ----------
+var _zgjTab = 'manual';
+function renderZgjedhja(){
+  const el = $('v-zgjedhja'); if(!el) return;
+  el.innerHTML =
+    '<div class="wrap" style="max-width:640px;margin:60px auto;">'+
+      '<h2 class="h" style="text-align:center;">Si dëshiron ta fillosh?</h2>'+
+      '<p class="small mut" style="text-align:center;margin:6px 0 28px;">Zgjidh njërën, mund ta ndryshosh më vonë.</p>'+
+      '<div style="display:flex;gap:10px;margin-bottom:20px;">'+
+        '<button class="btn" id="zgjBtnManual" style="flex:1;" onclick="zgjSetTab(\'manual\')">Manual</button>'+
+        '<button class="btn" id="zgjBtnAuto" style="flex:1;" onclick="zgjSetTab(\'automatic\')">Automatic</button>'+
+      '</div>'+
+      '<div id="zgjPermbajtja"></div>'+
+    '</div>';
+  zgjSetTab('manual');
+}
+function zgjSetTab(t){
+  _zgjTab = t;
+  const bM=$('zgjBtnManual'), bA=$('zgjBtnAuto');
+  if(bM) bM.className = 'btn'+(t==='manual'?' primary':'');
+  if(bA) bA.className = 'btn'+(t==='automatic'?' primary':'');
+  const c = $('zgjPermbajtja'); if(!c) return;
+  if(t==='manual'){
+    c.innerHTML =
+      '<div class="card">'+
+        '<p class="small" style="margin:0 0 16px;">Plotëso vetë të dhënat e biznesit, përshkrimin, dhe lidh snippet-in — hap pas hapi, me kontroll të plotë mbi çdo detaj.</p>'+
+        '<button class="primary" style="width:100%;" onclick="nav({v:\'wizard\',step:0})">Vazhdo manualisht →</button>'+
+      '</div>';
+  } else {
+    c.innerHTML =
+      '<div class="card">'+
+        '<p class="small" style="margin:0 0 16px;">Jep vetëm URL-në e biznesit tënd — platforma plotëson vetë emrin, kategorinë, dhe përshkrimin, dhe krijon një reklamë fillestare automatikisht, që të fillosh menjëherë.</p>'+
+        '<label>URL e biznesit</label><input id="zgjAutoUrl" placeholder="https://biznesi-im.com">'+
+        '<button class="primary" style="width:100%;margin-top:14px;" id="zgjAutoBtn" onclick="zgjVazhdoAutomatik()">Vazhdo automatikisht →</button>'+
+        '<div class="msg" id="zgjAutoMsg"></div>'+
+      '</div>';
+  }
+}
+async function zgjVazhdoAutomatik(){
+  const url = ($('zgjAutoUrl').value||'').trim();
+  const msg = $('zgjAutoMsg'), btn = $('zgjAutoBtn');
+  if(!url){ msg.textContent='Fut URL-në e biznesit tënd.'; msg.className='msg err'; return; }
+  btn.disabled = true; msg.textContent='Duke analizuar faqen tënde…'; msg.className='msg';
+  try{
+    const r = await (await fetch('/api/zgjedhja-automatike',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({url})})).json();
+    if(r.error){ msg.textContent=r.error; msg.className='msg err'; btn.disabled=false; return; }
+    await refreshProg();
+    nav({v:'profile',nav:'dashboard'});
+  }catch(e){ msg.textContent='Gabim: '+e.message; msg.className='msg err'; btn.disabled=false; }
+}
 function closeWizard(){
   if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
   if(!une){ nav({v:'hero'}); return; }
