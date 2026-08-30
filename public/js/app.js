@@ -2224,16 +2224,16 @@ async function rekRenderAudienca(id){
   const VENDET=['Shqipëri','Kosovë','Itali','Gjermani','SHBA','Mbretëri e Bashkuar','Francë','Tjetër (global)'];
   const PAJISJET=[{v:'desktop',l:'Desktop'},{v:'mobile',l:'Mobile'}];
   c.innerHTML=
-    '<p class="small mut" style="margin-bottom:16px;">Zgjidh shtetet/pajisjet ku dëshiron ta shfaqësh (lëre bosh për të gjitha).</p>'+
+    '<p class="small mut" style="margin-bottom:16px;">Zgjidh shtetet/pajisjet ku dëshiron ta shfaqësh (të gjitha të zgjedhura = shfaqet kudo).</p>'+
     '<div class="small" style="font-weight:600;margin-bottom:8px;">Shtetet</div>'+
-    '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;">'+
-      VENDET.map(v=>'<label style="display:flex;align-items:center;gap:6px;background:#0e1116;border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;">'+
-        '<input type="checkbox" value="'+esc(v)+'" class="rekAudVend" '+(cur.vendet.includes(v)?'checked':'')+'> '+esc(v)+'</label>').join('')+
+    '<div style="display:flex;flex-wrap:nowrap;gap:8px;margin-bottom:20px;overflow-x:auto;padding-bottom:6px;">'+
+      VENDET.map(v=>'<label style="display:flex;align-items:center;gap:6px;background:#0e1116;border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;white-space:nowrap;flex:0 0 auto;">'+
+        '<input type="checkbox" value="'+esc(v)+'" class="rekAudVend" '+((cur.vendet.length===0||cur.vendet.includes(v))?'checked':'')+'> '+esc(v)+'</label>').join('')+
     '</div>'+
     '<div class="small" style="font-weight:600;margin-bottom:8px;">Pajisjet</div>'+
     '<div style="display:flex;gap:8px;margin-bottom:20px;">'+
       PAJISJET.map(p=>'<label style="display:flex;align-items:center;gap:6px;background:#0e1116;border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;">'+
-        '<input type="checkbox" value="'+p.v+'" class="rekAudPaj" '+(cur.pajisjet.includes(p.v)?'checked':'')+'> '+p.l+'</label>').join('')+
+        '<input type="checkbox" value="'+p.v+'" class="rekAudPaj" '+((cur.pajisjet.length===0||cur.pajisjet.includes(p.v))?'checked':'')+'> '+p.l+'</label>').join('')+
     '</div>'+
     '<button class="primary" id="rekAudRuaj" onclick="rekAudRuaj('+id+')">Ruaj</button>'+
     '<div class="msg" id="rekAudMsg"></div>';
