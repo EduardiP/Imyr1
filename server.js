@@ -514,6 +514,11 @@ app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
 
     res.json({ ok: true, emri, tipi, kategoria_kryesore: kk, permbledhje: perm });
 
+    // Nis kombinimin AI MENJEHERE pas pershkrimit (i njejti moment si rruga manuale) —
+    // jo me pas snippet-it, dhe PARA gjenerimit te reklamës, per te ndjekur te njejten
+    // rradhe si nje plotesim manual: emri/kategoria/pershkrimi → kombinimi → reklama.
+    kombinimi.kombinoBiznesin(req.biznesId).catch(() => {});
+
     // HAPI 6 — (fire-and-forget, ndodh VETEM pasi pergjigja e mesiperme eshte derguar tashme —
     // Fal.ai eshte API krejt tjeter nga OpenAI, s'konfliktohet me hapat 2/4 me larte)
     (async () => {
@@ -2260,6 +2265,11 @@ app.post('/api/analizo', iLoguar, async (req, res) => {
       [req.biznesId, kk, nk, perm]);
 
     res.json({ ok: true, ai: true, kategoria_kryesore: kk, nenkategorite: nk, permbledhje: perm });
+
+    // Nis kombinimin AI MENJEHERE pas pershkrimit — jo me pas snippet-it, siç ishte
+    // me pare — kjo lejon ekspozim te hershem (biznese te tjera, qe kane snippet aktiv,
+    // mund ta shfaqin edhe para se ky biznes te lidhe vete snippet-in).
+    kombinimi.kombinoBiznesin(req.biznesId).catch(() => {});
 
     // Gjenerim AUTOMATIK i nje reklame (imazh) menjehere pas pershkrimit — s'e ndal
     // pergjigjen e mesiperme (async, "fire and forget"), thjesht per te aktivizuar hyrjen
