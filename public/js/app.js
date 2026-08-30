@@ -15,9 +15,8 @@
 const NAV2 = [
   { k:'dashboard', l:'Dashboard' },
   { k:'snippetet', l:'Hapësira e reklamave', subs:[
-    {l:'Lidh / Krijo hapësirë', akcion:'snipKrijo'},
-    {l:'Cakto madhësinë', nav:'madhesiaShumefishte'},
-    {l:'Hapësirat e mia', nav:'snippetet'}
+    {l:'Hapësirat e mia', nav:'snippetet'},
+    {l:'Cakto madhësinë', nav:'madhesiaShumefishte'}
   ]},
   { k:'kreative', l:'Creative', subs:[
     {l:'Krijo', nav:'kreative', tab:'krijo'},
@@ -1081,10 +1080,12 @@ async function snipDetaje(m, id){
     const krye='<div style="margin-bottom:10px;"><a href="#" style="color:#4a9eff;text-decoration:none;font-size:13px;" onclick="event.preventDefault();nav({v:\'profile\',nav:\'snippetet\'})">← Të gjitha snippet-et</a></div>'+
       '<h2 class="h">'+esc(sn.emri||('Snippet '+id))+'</h2>';
     if(sn.snippet_active){
-      // I LIDHUR → thjesht konfirmim, madhesia tani caktohet ne faqe te vecante
+      // I LIDHUR → konfirmim + madhesia PER KETE snippet specifik
       b.innerHTML=krye+
         '<div class="miniStat" style="margin:10px 0 18px;"><span class="vd">✓</span> I lidhur</div>'+
-        '<p class="small mut">Për të caktuar madhësinë e kësaj hapësire, shko te <a href="#" style="color:#4a9eff;" onclick="event.preventDefault();nav({v:\'profile\',nav:\'madhesiaShumefishte\'})">Cakto madhësinë →</a></p>';
+        '<div id="madhWrapNjeSnip"></div>';
+      const w=b.querySelector('#madhWrapNjeSnip');
+      if(w) ndertoMadhesineNjeSnip(w, id, sn);
     } else {
       // PA LIDHUR → kodi + kopjo + URL + verifiko (madhesia s'perzihet me ketu)
       b.innerHTML=krye+
@@ -1795,6 +1796,74 @@ function mainLidhja(m){
   }
 }
 
+// ===== CAKTIMI I MADHESISE PER 1 SNIPPET SPECIFIK (brenda faqes se vet snippet-it) =====
+var _madNjeSnip = { w:210, h:261, MAXW:260, MAXH:290, MINW:134, MINH:155,
+  mw:290, mh:260, mMAXW:320, mMAXH:400, mMINW:260, mMINH:192, pajisje:'desktop', pozicioni:'qender', snipId:null };
+async function ndertoMadhesineNjeSnip(cont, snipId, snipData){
+  if(!cont) return;
+  _madNjeSnip.snipId = snipId;
+  cont.innerHTML='<p class="small">Po ngarkoj…</p>';
+  try{
+    const r=await(await fetch('/api/madhesia')).json();
+    _madNjeSnip.MAXW=r.max_w||260; _madNjeSnip.MAXH=r.max_h||290; _madNjeSnip.MINW=r.min_w||134; _madNjeSnip.MINH=r.min_h||155;
+    _madNjeSnip.mMAXW=r.m_max_w||320; _madNjeSnip.mMAXH=r.m_max_h||400; _madNjeSnip.mMINW=r.m_min_w||260; _madNjeSnip.mMINH=r.m_min_h||192;
+    const dsk = (snipData && snipData.madhesia_desktop) || r.desktop || '210x261';
+    const mob = (snipData && snipData.madhesia_mobile) || r.mobile || '290x260';
+    const poz = (snipData && snipData.pozicioni) || r.pozicioni || 'qender';
+    const p=dsk.split('x'); _madNjeSnip.w=parseInt(p[0],10)||210; _madNjeSnip.h=parseInt(p[1],10)||261;
+    const pm=mob.split('x'); _madNjeSnip.mw=parseInt(pm[0],10)||290; _madNjeSnip.mh=parseInt(pm[1],10)||260;
+    _madNjeSnip.pozicioni=poz;
+  }catch(e){}
+  cont.innerHTML=
+    '<div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--line);">'+
+    '<div class="small" style="margin-bottom:10px;font-weight:600;">Madhësia e kësaj hapësire</div>'+
+    '<div style="display:flex;gap:10px;margin-bottom:14px;">'+
+      '<button class="madhPaj active" data-p="desktop" onclick="madhPajisjaNjeSnip(\'desktop\')">Desktop</button>'+
+      '<button class="madhPaj" data-p="mobile" onclick="madhPajisjaNjeSnip(\'mobile\')">Mobile</button>'+
+    '</div>'+
+    '<div id="madhDesktopNjeSnip"></div></div>';
+  const dd=cont.querySelector('#madhDesktopNjeSnip');
+  if(dd) ndertoKanavasinNjeSnip(dd, 'desktop');
+}
+function madhPajisjaNjeSnip(p){
+  _madNjeSnip.pajisje=p;
+  document.querySelectorAll('#madhWrapNjeSnip .madhPaj').forEach(b=>b.classList.toggle('active', b.getAttribute('data-p')===p));
+  const d=document.querySelector('#madhDesktopNjeSnip');
+  if(d) ndertoKanavasinNjeSnip(d, p);
+}
+function ndertoKanavasinNjeSnip(cont, pajisje){
+  if(!cont) return;
+  const eshteMob = pajisje==='mobile';
+  const MAXW = eshteMob?_madNjeSnip.mMAXW:_madNjeSnip.MAXW, MAXH = eshteMob?_madNjeSnip.mMAXH:_madNjeSnip.MAXH;
+  const MINW = eshteMob?_madNjeSnip.mMINW:_madNjeSnip.MINW, MINH = eshteMob?_madNjeSnip.mMINH:_madNjeSnip.MINH;
+  const W = eshteMob?_madNjeSnip.mw:_madNjeSnip.w, H = eshteMob?_madNjeSnip.mh:_madNjeSnip.h;
+  cont.innerHTML=
+    '<div style="display:flex;align-items:center;gap:14px;margin-top:8px;flex-wrap:wrap;">'+
+      '<label class="small">Gjerësi <input id="madhWns" type="number" value="'+W+'" min="'+MINW+'" max="'+MAXW+'" style="width:70px;" onchange="madhNumratNjeSnip()"></label>'+
+      '<label class="small">Lartësi <input id="madhHns" type="number" value="'+H+'" min="'+MINH+'" max="'+MAXH+'" style="width:70px;" onchange="madhNumratNjeSnip()"></label>'+
+    '</div>'+
+    '<button class="primary" id="madhRuajNs" onclick="ruajMadhesineNjeSnip()" style="margin-top:14px;">Ruaj</button>'+
+    '<div class="msg" id="madhMsgNs"></div>';
+}
+function madhNumratNjeSnip(){
+  const w=parseInt((document.getElementById('madhWns')||{}).value,10);
+  const h=parseInt((document.getElementById('madhHns')||{}).value,10);
+  if(_madNjeSnip.pajisje==='mobile'){ _madNjeSnip.mw=w; _madNjeSnip.mh=h; } else { _madNjeSnip.w=w; _madNjeSnip.h=h; }
+}
+async function ruajMadhesineNjeSnip(){
+  const btn=$('madhRuajNs'); if(btn) btn.disabled=true;
+  const msg=$('madhMsgNs'); if(msg){ msg.className='msg'; msg.textContent='Po ruaj…'; }
+  const trupi = _madNjeSnip.pajisje==='mobile'
+    ? { mobile:_madNjeSnip.mw+'x'+_madNjeSnip.mh, pozicioni:_madNjeSnip.pozicioni }
+    : { desktop:_madNjeSnip.w+'x'+_madNjeSnip.h, pozicioni:_madNjeSnip.pozicioni };
+  try{
+    const r=await(await fetch('/api/snippetet/'+_madNjeSnip.snipId+'/madhesia',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(trupi)})).json();
+    if(msg){ msg.className=r.error?'msg err':'msg ok'; msg.textContent=r.error?('Gabim: '+r.error):'U ruajt.'; }
+  }catch(e){ if(msg){ msg.className='msg err'; msg.textContent='Gabim.'; } }
+  if(btn) btn.disabled=false;
+}
+
 // ===== CAKTIMI I MADHESISE (korniza interaktive) =====
 var _mad = { w:210, h:261, MAXW:260, MAXH:290, MINW:134, MINH:155,
              mw:290, mh:260, mMAXW:320, mMAXH:400, mMINW:260, mMINH:192, pajisje:'desktop', pozicioni:'qender' };
@@ -1849,11 +1918,15 @@ async function ndertoMadhesine(cont, ruajVetem, snipCeles, snipData){
       '<button class="madhPaj active" data-p="desktop" onclick="madhPajisja(\'desktop\')">Desktop</button>'+
       '<button class="madhPaj" data-p="mobile" onclick="madhPajisja(\'mobile\')">Mobile</button>'+
     '</div>'+
-    '<div id="madhDesktop"></div>'+
-    '<div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--line);">'+
-      '<div class="small" style="margin-bottom:10px;font-weight:600;">Aplikoje te këto hapësira:</div>'+
-      '<div id="madhSnipLista"></div>'+
-    '</div>';
+    '<div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start;">'+
+      '<div id="madhDesktop" style="flex:1 1 320px;"></div>'+
+      '<div style="flex:1 1 260px;">'+
+        '<div class="small" style="margin-bottom:10px;font-weight:600;">Aplikoje te këto hapësira:</div>'+
+        '<div id="madhSnipLista"></div>'+
+      '</div>'+
+    '</div>'+
+    '<button class="primary" id="madhRuaj" onclick="ruajMadhesine()" style="margin-top:20px;">Ruaj</button>'+
+    '<div class="msg" id="madhMsg"></div>';
   const dd=cont.querySelector('#madhDesktop');
   if(dd) ndertoKanavasin(dd, 'desktop');
   const sl=cont.querySelector('#madhSnipLista');
@@ -1900,9 +1973,7 @@ function ndertoKanavasin(cont, pajisje){
         '<button class="madhPoz'+(_mad.pozicioni==='qender'?' active':'')+'" data-poz="qender" onclick="madhPozicioni(\'qender\')">Qendër</button>'+
         '<button class="madhPoz'+(_mad.pozicioni==='djathtas'?' active':'')+'" data-poz="djathtas" onclick="madhPozicioni(\'djathtas\')">Djathtas</button>'+
       '</div>'+
-    '</div>'+
-    '<button class="primary" id="madhRuaj" onclick="ruajMadhesine()" style="margin-top:14px;">Ruaj</button>'+
-    '<div class="msg" id="madhMsg"></div>';
+    '</div>';
   madhLidhTerheqjen();
   const iW=_mq('madhW'), iH=_mq('madhH');
   if(iW) iW.oninput=()=>madhNgaNumrat();
