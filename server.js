@@ -326,12 +326,13 @@ app.post('/api/biz-baza', iLoguar, async (req, res) => {
   const tipi = ['b2b','b2c','b2b2c'].includes(req.body.tipi) ? req.body.tipi : null;
   if (!emri || !website || !tipi) return res.status(400).json({ error: 'Emri, website dhe tipi jane te detyrueshem.' });
   try {
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS biznesi_auto BOOLEAN NOT NULL DEFAULT false`);
     if (['ankand','barazi'].includes(req.body.logjika_shperndarjes)) {
-      await pool.query('UPDATE bizneset SET emri=$2, website=$3, tipi=$4, logjika_shperndarjes=$5 WHERE id=$1',
+      await pool.query('UPDATE bizneset SET emri=$2, website=$3, tipi=$4, logjika_shperndarjes=$5, biznesi_auto=false WHERE id=$1',
         [req.biznesId, emri, website, tipi, req.body.logjika_shperndarjes]);
     } else {
       // Nese s'dergohet eksplicit, mos e prek fare — mos rivendos aksidentalisht ne 'ankand'
-      await pool.query('UPDATE bizneset SET emri=$2, website=$3, tipi=$4 WHERE id=$1', [req.biznesId, emri, website, tipi]);
+      await pool.query('UPDATE bizneset SET emri=$2, website=$3, tipi=$4, biznesi_auto=false WHERE id=$1', [req.biznesId, emri, website, tipi]);
     }
     res.json({ ok: true });
     // Studjo platformen ne sfond (pa e bllokuar pergjigjen) dhe ruaje
@@ -415,7 +416,7 @@ app.get('/api/une', iLoguar, async (req, res) => {
 app.get('/api/progres', iLoguar, async (req, res) => {
   try {
     const b = await pool.query(
-      'SELECT permbledhje, pershkrimi, snippet_active, track_active, url_konvertimi, website, tipi FROM bizneset WHERE id=$1', [req.biznesId]);
+      'SELECT permbledhje, pershkrimi, snippet_active, track_active, url_konvertimi, website, tipi, biznesi_auto, pershkrimi_auto FROM bizneset WHERE id=$1', [req.biznesId]);
     const p = await pool.query('SELECT 1 FROM promovimet WHERE biznes_id=$1 AND aktiv=true LIMIT 1', [req.biznesId]);
     const uLidhur = await pool.query('SELECT 1 FROM konvertimet WHERE biznes_id=$1 AND track_active=true LIMIT 1', [req.biznesId]);
     const zLidhur = await pool.query('SELECT 1 FROM zonat WHERE biznes_id=$1 AND track_active=true AND fshire=false LIMIT 1', [req.biznesId]);
@@ -429,7 +430,9 @@ app.get('/api/progres', iLoguar, async (req, res) => {
       pershkrimi: !!(row.permbledhje || row.pershkrimi),// pershkrimi/AI u dha
       lidhja: snLidhur.rows.length > 0,                 // te pakten nje snippet reklame aktiv
       konvertimi: konvertimIPlote,                       // snippet + (URL ose kod) i lidhur
-      reklama: p.rows.length > 0                         // reklama u krijua
+      reklama: p.rows.length > 0,                        // reklama u krijua
+      biznesiAuto: !!row.biznesi_auto,
+      pershkrimiAuto: !!row.pershkrimi_auto
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -471,8 +474,10 @@ app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
     const tipi = ['b2b','b2c','b2b2c'].includes(p1.tipi) ? p1.tipi : 'b2b';
 
     // HAPI 3 — ruaj emrin/tipin/website + vendos Ankand si logjike e vetme e regjistrimit automatik
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS biznesi_auto BOOLEAN NOT NULL DEFAULT false`);
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pershkrimi_auto BOOLEAN NOT NULL DEFAULT false`);
     await pool.query(
-      'UPDATE bizneset SET emri=$2, tipi=$3, website=$4, logjika_shperndarjes=$5 WHERE id=$1',
+      'UPDATE bizneset SET emri=$2, tipi=$3, website=$4, logjika_shperndarjes=$5, biznesi_auto=true WHERE id=$1',
       [req.biznesId, emri, tipi, url, 'ankand']);
 
     // HAPI 4 — THIRRJA E DYTE AI (VETEM pasi e para te ket perfunduar): kategoria + permbledhje,
@@ -502,7 +507,7 @@ app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
 
     // HAPI 5 — ruaj pershkrimin (vetem PASI hapi 4 te kete perfunduar plotesisht)
     await pool.query(
-      'UPDATE bizneset SET kategoria_kryesore=$2, nenkategorite=$3, permbledhje=$4, kategoria=$2 WHERE id=$1',
+      'UPDATE bizneset SET kategoria_kryesore=$2, nenkategorite=$3, permbledhje=$4, kategoria=$2, pershkrimi_auto=true WHERE id=$1',
       [req.biznesId, kk, nk, perm]);
 
     res.json({ ok: true, emri, tipi, kategoria_kryesore: kk, permbledhje: perm });
@@ -2180,7 +2185,8 @@ app.post('/api/analizo', iLoguar, async (req, res) => {
   const pershkrimi = (req.body.pershkrimi || '').trim();
   const lejo = !!req.body.lejo;
   try {
-    await pool.query('UPDATE bizneset SET pershkrimi=$2, lejo_analize=$3 WHERE id=$1',
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pershkrimi_auto BOOLEAN NOT NULL DEFAULT false`);
+    await pool.query('UPDATE bizneset SET pershkrimi=$2, lejo_analize=$3, pershkrimi_auto=false WHERE id=$1',
       [req.biznesId, pershkrimi || null, lejo]);
 
     // nese lejohet, merr tekstin e faqes se biznesit
