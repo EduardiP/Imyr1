@@ -434,6 +434,101 @@ app.get('/api/progres', iLoguar, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ═══ REGJISTRIMI "AUTOMATIC" — 1 URL, gjithcka tjeter ndodh vete, HAP PAS HAPI (jo paralel) ═══
+app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
+  let url = (req.body && req.body.url || '').trim();
+  if (!url) return res.status(400).json({ error: 'Fut URL-në e biznesit tënd.' });
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) return res.status(500).json({ error: "AI s'është konfiguruar te serveri (mungon OPENAI_API_KEY)." });
+  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+
+  try {
+    // HAPI 1 — merr faqen NJE HERE, ripërdoret te të dy thirrjet AI poshtë (s'e rifetch-on)
+    let webTekst = '';
+    try { const f = await merrFaqen(url); webTekst = pastroHtml(f.body).slice(0, 4000); } catch (e) {}
+    if (!webTekst) return res.status(400).json({ error: "S'u arrit të lexohej faqja — sigurohu që URL-ja është e saktë dhe publike." });
+
+    // HAPI 2 — THIRRJA E PARE AI: vetem emri + tipi (b2b/b2c/b2b2c)
+    const sys1 = 'Je analist qe identifikon emrin dhe tipin e nje biznesi SaaS nga teksti i faqes se tij. Kthe VETEM JSON, pa asnje tekst tjeter.';
+    const user1 =
+      'Teksti i nxjerre nga faqja e biznesit:\n' + webTekst + '\n\n' +
+      'Kthe JSON: {"emri": string (emri i shkurter i biznesit/produktit), ' +
+      '"tipi": string (SAKTESISHT nje nga: "b2b", "b2c", "b2b2c" — b2b nese u sherben bizneseve, ' +
+      'b2c nese u sherben individeve, b2b2c nese te dyjave)}';
+
+    const r1 = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({ model, response_format: { type: 'json_object' },
+        messages: [{ role: 'system', content: sys1 }, { role: 'user', content: user1 }] })
+    });
+    const d1 = await r1.json();
+    if (d1.error) return res.status(500).json({ error: 'AI: ' + d1.error.message });
+    const p1 = JSON.parse(d1.choices[0].message.content);
+    const emri = (p1.emri || '').trim().slice(0, 120) || 'Biznesi im';
+    const tipi = ['b2b','b2c','b2b2c'].includes(p1.tipi) ? p1.tipi : 'b2b';
+
+    // HAPI 3 — ruaj emrin/tipin/website + vendos Ankand si logjike e vetme e regjistrimit automatik
+    await pool.query(
+      'UPDATE bizneset SET emri=$2, tipi=$3, website=$4, logjika_shperndarjes=$5 WHERE id=$1',
+      [req.biznesId, emri, tipi, url, 'ankand']);
+
+    // HAPI 4 — THIRRJA E DYTE AI (VETEM pasi e para te ket perfunduar): kategoria + permbledhje,
+    // e njejta logjike si /api/analizo, thjesht automatike, duke ripërdorur TE NJEJTIN webTekst.
+    const sys2 = 'Je analist qe klasifikon biznese SaaS per nje rrjet cross-promotion. Kthe VETEM JSON, pa asnje tekst tjeter.';
+    const user2 =
+      'Zgjidh SAKTESISHT nje kategori kryesore nga kjo liste: ' + KATEGORITE.join('; ') + '.\n\n' +
+      'Teksti i nxjerre nga faqja e biznesit:\n' + webTekst + '\n\n' +
+      'Detyra: shpjego QARTE cfare ofron ky biznes, me gjuhe te thjeshte e te kuptueshme.\n\n' +
+      'Kthe JSON me keto fusha:\n' +
+      '{"kategoria_kryesore": string (SAKTESISHT nje nga lista), ' +
+      '"nenkategorite": string[] (2-4 nenkategori specifike), ' +
+      '"permbledhje": string (2-4 fjali te qarta qe shpjegojne cfare ofron biznesi dhe kujt i sherben)}';
+
+    const r2 = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({ model, response_format: { type: 'json_object' },
+        messages: [{ role: 'system', content: sys2 }, { role: 'user', content: user2 }] })
+    });
+    const d2 = await r2.json();
+    if (d2.error) return res.status(500).json({ error: 'AI: ' + d2.error.message });
+    const p2 = JSON.parse(d2.choices[0].message.content);
+    const kk = p2.kategoria_kryesore && KATEGORITE.find(k => k.toLowerCase() === p2.kategoria_kryesore.toLowerCase()) || null;
+    const nk = Array.isArray(p2.nenkategorite) ? p2.nenkategorite.join(', ') : (p2.nenkategorite || null);
+    const perm = p2.permbledhje || null;
+
+    // HAPI 5 — ruaj pershkrimin (vetem PASI hapi 4 te kete perfunduar plotesisht)
+    await pool.query(
+      'UPDATE bizneset SET kategoria_kryesore=$2, nenkategorite=$3, permbledhje=$4, kategoria=$2 WHERE id=$1',
+      [req.biznesId, kk, nk, perm]);
+
+    res.json({ ok: true, emri, tipi, kategoria_kryesore: kk, permbledhje: perm });
+
+    // HAPI 6 — (fire-and-forget, ndodh VETEM pasi pergjigja e mesiperme eshte derguar tashme —
+    // Fal.ai eshte API krejt tjeter nga OpenAI, s'konfliktohet me hapat 2/4 me larte)
+    (async () => {
+      try {
+        await pool.query(`ALTER TABLE kreativitetet ADD COLUMN IF NOT EXISTS auto_krijuar BOOLEAN NOT NULL DEFAULT false`);
+        const ekzistuese = await pool.query(`SELECT 1 FROM kreativitetet WHERE biznes_id=$1 LIMIT 1`, [req.biznesId]);
+        if (ekzistuese.rows.length) return;
+        const falKlient = require('./fal-klient');
+        const imgUrl = await falKlient.gjeneroImazh(perm || webTekst.slice(0,300), null, null);
+        await pool.query(
+          `INSERT INTO kreativitetet (biznes_id, lloji, emri, pershkrimi, output_url, status, auto_krijuar)
+           VALUES ($1,'imazh','Reklamë e krijuar automatikisht',$2,$3,'gati',true)`,
+          [req.biznesId, perm || webTekst.slice(0,300), imgUrl]);
+        await pool.query(
+          `INSERT INTO promovimet (biznes_id, titulli, imazh_url, link, aktiv, logjika_shperndarjes)
+           VALUES ($1,'Reklamë e krijuar automatikisht',$2,$3,true,'ankand')`,
+          [req.biznesId, imgUrl, url]);
+      } catch (e) { console.error('Gjenerim automatik reklame (zgjedhja-automatike) deshtoi:', e.message); }
+    })();
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // A ka reklamë, dhe a është vetëm AUTOMATIKE apo edhe MANUALE (krijuar/miratuar nga klienti)
 app.get('/api/kreative/statusi-krijimit', iLoguar, async (req, res) => {
   try {
