@@ -1935,12 +1935,18 @@ async function ruajMadhesine(){
   if(btn) btn.disabled=false;
 }
 function mainLidhjaSnippet(m){
+  const neGraceperiod = !!(prog && prog.biznesiAuto && prog.ditet < 7);
+  const paralajmerimi = neGraceperiod
+    ? '<div style="background:#0e2a1a;border:1px solid var(--good);border-radius:10px;padding:16px;margin:12px 0 18px;">'+
+        '<p style="margin:0;color:#7ee2a8;">Reklama jote tashmë është aktive dhe mund të shfaqet te rrjeti gjatë 7 ditëve të para, edhe pa lidhur hapësirë ende. Lidhe kur të jesh gati, brenda kësaj periudhe, që të vazhdojë të shfaqet edhe më tej.</p>'+
+      '</div>'
+    : '<div style="background:#3a1212;border:1px solid var(--err);border-radius:10px;padding:16px;margin:12px 0 18px;">'+
+        '<p style="margin:0 0 10px;color:#f5b6b6;">S\'ke asnjë hapësirë reklame aktive te faqja jote.</p>'+
+        '<p class="small" style="margin:0;">Rrjeti ynë punon me shkëmbim: ti shfaq reklamat e bizneseve të tjera te faqja jote, dhe ata shfaqin tuajat te faqet e tyre. Meqë tani s\'po shfaq asnjë reklamë (s\'ke hapësirë aktive), <b>as reklamat e tua s\'po marrin shfaqje</b> te rrjeti.</p>'+
+      '</div>';
   m.innerHTML=
-    '<h2 class="h">Reklamat e tua nuk po shfaqen</h2>'+
-    '<div style="background:#3a1212;border:1px solid var(--err);border-radius:10px;padding:16px;margin:12px 0 18px;">'+
-      '<p style="margin:0 0 10px;color:#f5b6b6;">S\'ke asnjë hapësirë reklame aktive te faqja jote.</p>'+
-      '<p class="small" style="margin:0;">Rrjeti ynë punon me shkëmbim: ti shfaq reklamat e bizneseve të tjera te faqja jote, dhe ata shfaqin tuajat te faqet e tyre. Meqë tani s\'po shfaq asnjë reklamë (s\'ke hapësirë aktive), <b>as reklamat e tua s\'po marrin shfaqje</b> te rrjeti.</p>'+
-    '</div>'+
+    '<h2 class="h">'+(neGraceperiod ? 'Lidhja e hapësirës së reklamave' : 'Reklamat e tua nuk po shfaqen')+'</h2>'+
+    paralajmerimi+
     '<div class="small" style="margin-bottom:18px;">'+
       '<p><b>Si ta rregullosh:</b></p>'+
       '<p>1. Krijo një hapësirë reklame (i vë një emër, p.sh. "Fund faqe").</p>'+
