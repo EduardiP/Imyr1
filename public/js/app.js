@@ -926,7 +926,7 @@ async function ngarkoSnippetet(){
       const status = sn.snippet_active ? '<span style="color:var(--good);">● I lidhur</span>' : '<span style="color:var(--mut);">○ Pa lidhur</span>';
       const tgl = '<label class="tgl" title="'+(sn.pauzuar?'I pauzuar':'Aktiv')+'"><input type="checkbox" '+(sn.pauzuar?'':'checked')+' onchange="snipPauza('+sn.id+',this.checked)"><span class="slider"></span></label>';
       h+='<div class="rekrow" style="grid-template-columns:2fr 1fr 1fr auto auto auto;align-items:center;" id="snipRow'+sn.id+'">'+
-         '<span class="nm" id="snipEmri'+sn.id+'" onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})" style="cursor:pointer;">'+esc(sn.emri||('Hapësira '+sn.id))+'</span>'+
+         '<span class="nm" id="snipEmri'+sn.id+'" onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})" style="cursor:pointer;">'+esc(sn.emri||'(Pa emër)')+'</span>'+
          '<span onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})" style="cursor:pointer;">'+status+'</span>'+
          '<span class="small" onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})" style="cursor:pointer;">'+esc(sn.madhesia_desktop||'—')+'</span>'+
          tgl+
@@ -1078,7 +1078,7 @@ async function snipDetaje(m, id){
     const sn=await(await fetch('/api/snippetet/'+id)).json();
     if(sn.error){ b.innerHTML='<p class="small err">'+esc(sn.error)+'</p>'; return; }
     const krye='<div style="margin-bottom:10px;"><a href="#" style="color:#4a9eff;text-decoration:none;font-size:13px;" onclick="event.preventDefault();nav({v:\'profile\',nav:\'snippetet\'})">← Të gjitha snippet-et</a></div>'+
-      '<h2 class="h">'+esc(sn.emri||('Snippet '+id))+'</h2>';
+      '<h2 class="h">'+esc(sn.emri||'(Pa emër — vendos një poshtë)')+'</h2>';
     if(sn.snippet_active){
       // I LIDHUR → konfirmim + madhesia PER KETE snippet specifik
       b.innerHTML=krye+
@@ -1888,7 +1888,7 @@ async function madhListoSnippetet(cont){
     cont.innerHTML=lista.map(sn=>
       '<label style="display:flex;align-items:center;gap:8px;padding:7px 0;cursor:pointer;">'+
         '<input type="checkbox" onchange="madhToggleSnip('+sn.id+',this.checked)"> '+
-        '<span>'+esc(sn.emri||('Hapësira '+sn.id))+'</span>'+
+        '<span>'+esc(sn.emri||'(Pa emër)')+'</span>'+
         '<span class="small mut">('+esc(sn.madhesia_desktop||'—')+')</span>'+
       '</label>'
     ).join('');
