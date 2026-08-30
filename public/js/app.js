@@ -15,9 +15,9 @@
 const NAV2 = [
   { k:'dashboard', l:'Dashboard' },
   { k:'snippetet', l:'Hapësira e reklamave', subs:[
-    {l:'Krijo', akcion:'snipKrijo'},
-    {l:'Hapësirat e mia', nav:'snippetet'},
-    {l:'Statistikat', nav:'snippetStats'}
+    {l:'Lidh / Krijo hapësirë', akcion:'snipKrijo'},
+    {l:'Cakto madhësinë', nav:'madhesiaShumefishte'},
+    {l:'Hapësirat e mia', nav:'snippetet'}
   ]},
   { k:'kreative', l:'Creative', subs:[
     {l:'Krijo', nav:'kreative', tab:'krijo'},
@@ -503,6 +503,7 @@ function renderMain(s){
   if(curNav==='pershkrimi') return mainPershkrimi(m);
   if(curNav==='lidhja')     return mainLidhja(m);
   if(curNav==='snippetet')  return mainSnippetet(m, s);
+  if(curNav==='madhesiaShumefishte') return mainMadhesiaShumefishte(m);
   if(curNav==='snippetStats')  return mainSnippetStatistikat(m);
   if(curNav==='rekPerformanca')  return mainRekPerformanca(m);
   if(curNav==='anaTrafiku')  return mainAnaTrafiku(m);
@@ -1080,14 +1081,12 @@ async function snipDetaje(m, id){
     const krye='<div style="margin-bottom:10px;"><a href="#" style="color:#4a9eff;text-decoration:none;font-size:13px;" onclick="event.preventDefault();nav({v:\'profile\',nav:\'snippetet\'})">← Të gjitha snippet-et</a></div>'+
       '<h2 class="h">'+esc(sn.emri||('Snippet '+id))+'</h2>';
     if(sn.snippet_active){
-      // I LIDHUR → thjesht "I lidhur" + caktimi i madhesise
+      // I LIDHUR → thjesht konfirmim, madhesia tani caktohet ne faqe te vecante
       b.innerHTML=krye+
         '<div class="miniStat" style="margin:10px 0 18px;"><span class="vd">✓</span> I lidhur</div>'+
-        '<div id="madhWrap"></div>';
-      const w=b.querySelector('#madhWrap');
-      if(w) ndertoMadhesine(w, true, sn.celes, sn);
+        '<p class="small mut">Për të caktuar madhësinë e kësaj hapësire, shko te <a href="#" style="color:#4a9eff;" onclick="event.preventDefault();nav({v:\'profile\',nav:\'madhesiaShumefishte\'})">Cakto madhësinë →</a></p>';
     } else {
-      // PA LIDHUR → kodi + kopjo + URL + verifiko
+      // PA LIDHUR → kodi + kopjo + URL + verifiko (madhesia s'perzihet me ketu)
       b.innerHTML=krye+
         '<div style="margin:6px 0 14px;">'+
           '<label>Emri i kësaj hapësire</label>'+
@@ -1102,10 +1101,7 @@ async function snipDetaje(m, id){
           '<input id="snipUrl" value="'+esc((une&&une.website)||'')+'" placeholder="https://faqja-ime.com">'+
           '<button class="primary" id="snipVbtn" onclick="snipVerifiko('+id+')">Hap faqen dhe konfirmo →</button>'+
           '<div class="status wait hide" id="snipStatus"></div>'+
-        '</div>'+
-        '<div id="madhWrap" style="margin-top:22px;"></div>';
-      const w=b.querySelector('#madhWrap');
-      if(w) ndertoMadhesine(w, true, sn.celes, sn);
+        '</div>';
       vizatoClaudeSuport(id);
     }
   }catch(e){ b.innerHTML='<p class="small err">Gabim.</p>'; }
@@ -1802,19 +1798,48 @@ function mainLidhja(m){
 // ===== CAKTIMI I MADHESISE (korniza interaktive) =====
 var _mad = { w:210, h:261, MAXW:260, MAXH:290, MINW:134, MINH:155,
              mw:290, mh:260, mMAXW:320, mMAXH:400, mMINW:260, mMINH:192, pajisje:'desktop', pozicioni:'qender' };
+var _madSnipZgjedhur = new Set(); // ID-te e snippet-eve te zgjedhur per te aplikuar madhesine
+
+async function mainMadhesiaShumefishte(m){
+  window.__pamjeVecante=true;
+  _madSnipZgjedhur = new Set();
+  m.innerHTML='<h2 class="h">Cakto madhësinë</h2>'+
+    '<p class="small" style="margin-bottom:18px;">Zgjidh pajisjen, pastaj zgjidh cilat hapësira do të marrin këtë madhësi.</p>'+
+    '<div id="madhWrap"><p class="small">Po ngarkoj…</p></div>';
+  const w=$('madhWrap');
+  await ndertoMadhesine(w);
+}
+
+async function madhListoSnippetet(cont){
+  cont.innerHTML='<p class="small">Po ngarkoj hapësirat…</p>';
+  try{
+    const r=await(await fetch('/api/snippetet')).json();
+    const lista=r.snippetet||[];
+    if(!lista.length){ cont.innerHTML='<p class="small mut">Ende s\'ke asnjë hapësirë të krijuar.</p>'; return; }
+    cont.innerHTML=lista.map(sn=>
+      '<label style="display:flex;align-items:center;gap:8px;padding:7px 0;cursor:pointer;">'+
+        '<input type="checkbox" onchange="madhToggleSnip('+sn.id+',this.checked)"> '+
+        '<span>'+esc(sn.emri||('Hapësira '+sn.id))+'</span>'+
+        '<span class="small mut">('+esc(sn.madhesia_desktop||'—')+')</span>'+
+      '</label>'
+    ).join('');
+  }catch(e){ cont.innerHTML='<p class="small err">Gabim në ngarkim.</p>'; }
+}
+function madhToggleSnip(id, checked){
+  if(checked) _madSnipZgjedhur.add(id); else _madSnipZgjedhur.delete(id);
+}
+
 async function ndertoMadhesine(cont, ruajVetem, snipCeles, snipData){
   if(!cont) return;
-  _mad.snipId = _snipAktiv || null;   // nese jemi te nje snippet, ruaj per snippet
+  _mad.snipId = null; // s'aplikohet me per 1 snippet — tani per te zgjedhurit (_madSnipZgjedhur)
   cont.innerHTML='<p class="small">Po ngarkoj…</p>';
   try{
-    // Kufijte i marrim gjithmone nga /api/madhesia; vlerat aktuale nga snippet-i nese kemi
     const r=await(await fetch('/api/madhesia')).json();
     _mad.MAXW=r.max_w||260; _mad.MAXH=r.max_h||290; _mad.MINW=r.min_w||134; _mad.MINH=r.min_h||155;
     _mad.mMAXW=r.m_max_w||320; _mad.mMAXH=r.m_max_h||400; _mad.mMINW=r.m_min_w||260; _mad.mMINH=r.m_min_h||192;
-    // Vlerat aktuale: nga snippet-i (nese dhene) ose nga biznesi (Lidhja e vjeter)
-    const dsk = (snipData && snipData.madhesia_desktop) || r.desktop || '210x261';
-    const mob = (snipData && snipData.madhesia_mobile) || r.mobile || '290x260';
-    const poz = (snipData && snipData.pozicioni) || r.pozicioni || 'qender';
+    const dsk = r.desktop || '210x261';
+    const mob = r.mobile || '290x260';
+    const poz = r.pozicioni || 'qender';
     const p=dsk.split('x'); _mad.w=parseInt(p[0],10)||210; _mad.h=parseInt(p[1],10)||261;
     const pm=mob.split('x'); _mad.mw=parseInt(pm[0],10)||290; _mad.mh=parseInt(pm[1],10)||260;
     _mad.pozicioni=poz;
@@ -1824,9 +1849,15 @@ async function ndertoMadhesine(cont, ruajVetem, snipCeles, snipData){
       '<button class="madhPaj active" data-p="desktop" onclick="madhPajisja(\'desktop\')">Desktop</button>'+
       '<button class="madhPaj" data-p="mobile" onclick="madhPajisja(\'mobile\')">Mobile</button>'+
     '</div>'+
-    '<div id="madhDesktop"></div>';
+    '<div id="madhDesktop"></div>'+
+    '<div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--line);">'+
+      '<div class="small" style="margin-bottom:10px;font-weight:600;">Aplikoje te këto hapësira:</div>'+
+      '<div id="madhSnipLista"></div>'+
+    '</div>';
   const dd=cont.querySelector('#madhDesktop');
   if(dd) ndertoKanavasin(dd, 'desktop');
+  const sl=cont.querySelector('#madhSnipLista');
+  if(sl) madhListoSnippetet(sl);
 }
 function madhPozicioni(p){
   _mad.pozicioni=p;
@@ -1926,11 +1957,21 @@ async function ruajMadhesine(){
   const trupi = _mad.pajisje==='mobile'
     ? { mobile:_mad.mw+'x'+_mad.mh, pozicioni:_mad.pozicioni }
     : { desktop:_mad.w+'x'+_mad.h, pozicioni:_mad.pozicioni };
-  const url = _mad.snipId ? ('/api/snippetet/'+_mad.snipId+'/madhesia') : '/api/madhesia';
+
+  if(!_madSnipZgjedhur.size){
+    if(msg){ msg.className='msg err'; msg.textContent='Zgjidh të paktën një hapësirë sipër.'; }
+    if(btn) btn.disabled=false;
+    return;
+  }
+
   try{
-    const r=await(await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(trupi)})).json();
-    if(msg){ msg.className=r.error?'msg err':'msg ok'; msg.textContent=r.error?('Gabim: '+r.error):('U ruajt: '+(r.desktop||r.mobile||'')); }
+    let dështoi=false;
+    for(const id of _madSnipZgjedhur){
+      const r=await(await fetch('/api/snippetet/'+id+'/madhesia',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(trupi)})).json();
+      if(r.error) dështoi=true;
+    }
+    if(msg){ msg.className=dështoi?'msg err':'msg ok'; msg.textContent=dështoi?'Disa dështuan.':('U ruajt për '+_madSnipZgjedhur.size+' hapësira.'); }
   }catch(e){ if(msg){ msg.className='msg err'; msg.textContent='Gabim.'; } }
   if(btn) btn.disabled=false;
 }
