@@ -2687,7 +2687,8 @@ function stepLlogaria(b){
         '</div>'+
         '<button class="primary" id="a_btn" onclick="wizPlotesoBizMeModalitet()">Vazhdo →</button><div class="msg" id="a_msg"></div>';
       if(une.tipi){ const btn=document.querySelector('#a_tipi button[data-v="'+une.tipi+'"]'); if(btn) segPick(btn); }
-      const ankandBtn=document.querySelector('#a_logjika button[data-v="ankand"]'); if(ankandBtn) segPick(ankandBtn);
+      const modPreferuar = window.__preferuarModaliteti || 'ankand';
+      const modBtn=document.querySelector('#a_logjika button[data-v="'+modPreferuar+'"]'); if(modBtn) segPick(modBtn);
       return;
     }
     b.innerHTML='<h2 class="h">Biznesi ✓</h2><p class="small">Të dhënat u ruajtën për <b>'+esc(une.emri)+'</b>.</p>'+
