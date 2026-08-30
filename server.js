@@ -1469,16 +1469,23 @@ app.get('/api/reklamat', iLoguar, async (req, res) => {
 // --- ECURIA DITORE E NJE REKLAME SPECIFIKE (per grafikun te faqja e detajeve) ---
 app.get('/api/reklamat/:id/ecuria', iLoguar, async (req, res) => {
   try {
+    const nga = req.query.nga ? new Date(req.query.nga) : null;
+    const deri = req.query.deri ? new Date(req.query.deri) : null;
     const dite = parseInt(req.query.dite, 10) || 30;
     const r = await pool.query(
-      `SELECT to_char(created_at, 'YYYY-MM-DD') AS dita,
-              COUNT(*) FILTER (WHERE lloji='view')::int      AS shikime,
-              COUNT(*) FILTER (WHERE lloji='click')::int     AS klikime,
-              COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
-       FROM ngjarjet
-       WHERE reklamues_id=$1 AND reklama_id=$2 AND created_at > now() - ($3 || ' days')::interval
+      `SELECT to_char(dita, 'YYYY-MM-DD') AS dita,
+              COALESCE(COUNT(n.*) FILTER (WHERE n.lloji='view'),0)::int      AS shikime,
+              COALESCE(COUNT(n.*) FILTER (WHERE n.lloji='click'),0)::int    AS klikime,
+              COALESCE(COUNT(n.*) FILTER (WHERE n.lloji='konvertim'),0)::int AS konvertime
+       FROM generate_series(
+         $3::timestamptz, $4::timestamptz, interval '1 day'
+       ) AS dita
+       LEFT JOIN ngjarjet n ON n.reklamues_id=$1 AND n.reklama_id=$2
+         AND date_trunc('day', n.created_at) = date_trunc('day', dita)
        GROUP BY dita ORDER BY dita ASC`,
-      [req.biznesId, req.params.id, dite]);
+      [req.biznesId, req.params.id,
+       nga || new Date(Date.now() - dite*86400000),
+       deri || new Date()]);
     res.json(r.rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
