@@ -2206,9 +2206,9 @@ function rekRenderReklama(r, id){
         '<button class="btn" onclick="rekEcuriaPreset('+id+',30)">30 ditë</button>'+
         '<button class="btn" onclick="rekEcuriaPreset('+id+',90)">90 ditë</button>'+
         '<span class="small mut">ose:</span>'+
-        '<input type="date" id="rekNga" class="small">'+
+        '<input type="date" id="rekNga" class="small" style="width:150px;">'+
         '<span class="small">—</span>'+
-        '<input type="date" id="rekDeri" class="small">'+
+        '<input type="date" id="rekDeri" class="small" style="width:150px;">'+
         '<button class="btn" onclick="rekEcuriaPersonalizuar('+id+')">Apliko</button>'+
       '</div>'+
       '<div id="rekEcuriaWrap"><canvas id="rekEcuriaCanvas" height="90"></canvas></div>'+
@@ -2225,15 +2225,18 @@ async function rekVizatoEcurine(id, dite, nga, deri){
   dite = dite || 30;
   let url = '/api/reklamat/'+id+'/ecuria?';
   url += (nga && deri) ? ('nga='+nga+'&deri='+deri) : ('dite='+dite);
+  const wrap=$('rekEcuriaWrap');
   try{
     const rows=await(await fetch(url)).json();
-    const wrap=$('rekEcuriaWrap');
-    if(!rows.length || rows.every(x=>x.shikime===0 && x.klikime===0 && x.konvertime===0)){
-      if(wrap) wrap.innerHTML='<canvas id="rekEcuriaCanvas" height="90"></canvas>'+
-        '<p class="small mut" style="text-align:center;margin-top:-70px;position:relative;">Ende s\'ka të dhëna për këtë periudhë.</p>';
-    } else if(wrap && !$('rekEcuriaCanvas')){
-      wrap.innerHTML='<canvas id="rekEcuriaCanvas" height="90"></canvas>';
+    const skaDhena = !rows.length || rows.every(x=>x.shikime===0 && x.klikime===0 && x.konvertime===0);
+
+    if(skaDhena){
+      if(window.__rekChart){ window.__rekChart.destroy(); window.__rekChart=null; }
+      if(wrap) wrap.innerHTML='<p class="small mut" style="text-align:center;padding:30px 0;">Ende s\'ka të dhëna për këtë periudhë.</p>';
+      return;
     }
+    if(wrap && !$('rekEcuriaCanvas')) wrap.innerHTML='<canvas id="rekEcuriaCanvas" height="90"></canvas>';
+
     const ctx=$('rekEcuriaCanvas'); if(!ctx||!window.Chart) return;
     if(window.__rekChart) window.__rekChart.destroy();
     const zgjedhur = Array.from(document.querySelectorAll('.rekMetrika:checked')).map(x=>x.value);
