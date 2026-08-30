@@ -851,20 +851,28 @@ async function ngarkoDashAnalitika(){
       '</div>';
   }catch(e){ card.innerHTML='<p class="small">Gabim.</p>'; }
 }
-function renderDashStatus(){
-  const el=$('vstep'); if(!el) return; el.innerHTML='';
+async function renderDashStatus(){
+  const el=$('vstep'); if(!el) return; el.innerHTML='<p class="small mut">Po kontrolloj…</p>';
+  let gjendjaKrijimi = 'asnje';
+  try{
+    const r = await (await fetch('/api/kreative/statusi-krijimit')).json();
+    gjendjaKrijimi = r.gjendja || 'asnje';
+  }catch(e){}
+  el.innerHTML='';
   const rreshtat=[
     { done: !!prog.llogaria,   label:'Biznesi',             veprim:()=>nav({v:'profile',nav:'biznesi'}) },
     { done: !!prog.pershkrimi, label:'Përshkrimi',          veprim:()=>nav({v:'profile',nav:'pershkrimi'}) },
     { done: !!prog.lidhja,     label:'Lidhja e snippet-it', veprim:()=> prog.lidhja ? nav({v:'profile',nav:'snippetet'}) : nav({v:'profile',nav:'lidhjaSnippet'}) },
-    { done: !!prog.reklama,    label:'Krijo produkt',       veprim:()=>nav({v:'profile',nav:'reklamat',sub:'create'}) },
+    { done: gjendjaKrijimi==='manual', auto: gjendjaKrijimi==='auto', label:'Krijo produkt', veprim:()=>nav({v:'profile',nav:'reklamat',sub:'create'}) },
     { done: !!prog.konvertimi, label:'Lidh konvertimin',    veprim:()=>nav({v:'profile',nav:'konvertimi'}) }
   ];
   rreshtat.forEach(r=>{
     const d=document.createElement('div');
-    d.className='vs'+(r.done?' done':' click');
-    d.innerHTML='<span class="vd">'+(r.done?'✓':'+')+'</span>'+
-      '<span class="vl">'+r.label+(r.done?'':' — plotëso')+'</span>';
+    d.className='vs'+(r.done?' done':(r.auto?' auto':' click'));
+    const shenja = r.done ? '✓' : (r.auto ? '★' : '+');
+    const etiketa = r.done ? '' : (r.auto ? ' — krijuar automatikisht, kliko për ta rregulluar' : ' — plotëso');
+    d.innerHTML='<span class="vd">'+shenja+'</span>'+
+      '<span class="vl">'+r.label+etiketa+'</span>';
     if(!r.done) d.onclick=r.veprim;
     el.appendChild(d);
   });
