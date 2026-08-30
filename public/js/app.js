@@ -2103,7 +2103,24 @@ function renderVStep(){
 
 // ---------- WIZARD ----------
 function startWizard(){ if(une){ openWizard(nextIncomplete()); } else { hapModal('reg'); } }
-function closeWizard(){ if(pollTimer){clearInterval(pollTimer);pollTimer=null;} nav({v: une?'home':'hero'}); }
+function closeWizard(){
+  if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
+  if(!une){ nav({v:'hero'}); return; }
+  // Cohu direkt te dashboard-i i sakte, sipas modalitetit te zgjedhur ne wizard
+  nav({v:'profile', nav:'dashboard'});
+}
+
+// Ruaj modalitetin Ankand/Balance PARA se te vazhdoje wizPlotesoBiz() origjinal — s'e prek fare ate funksion.
+async function wizPlotesoBizMeModalitet(){
+  const m = segVal('a_logjika') || 'ankand';
+  try{
+    await fetch('/api/logjika-shperndarjes',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({logjika_shperndarjes: m})});
+    window.__llogariaModaliteti = m;
+    if(une) une.logjika_shperndarjes = m;
+  }catch(e){ /* fail-open — vazhdo gjithsesi, s'e ndal regjistrimin per kete */ }
+  wizPlotesoBiz();
+}
 function openWizard(i){ const max=STEPS.length; if(i>max) i=max; nav({v:'wizard', step:i}); }
 function renderWizard(i){
   if(!une) i=0;
@@ -2655,8 +2672,14 @@ function stepLlogaria(b){
         '</div>'+
         '<label>Faqja (website)</label><input id="a_web" placeholder="https://saasi-im.com" value="'+esc(une.website||'')+'">'+
         segHTML('a_tipi')+
-        '<button class="primary" id="a_btn" onclick="wizPlotesoBiz()">Vazhdo →</button><div class="msg" id="a_msg"></div>';
+        '<label style="margin-top:12px;">Modeli i shpërndarjes</label>'+
+        '<div class="seg" id="a_logjika">'+
+          '<button type="button" data-v="ankand" onclick="segPick(this)">Ankand (rekomandohet)</button>'+
+          '<button type="button" data-v="barazi" onclick="segPick(this)">Barazi</button>'+
+        '</div>'+
+        '<button class="primary" id="a_btn" onclick="wizPlotesoBizMeModalitet()">Vazhdo →</button><div class="msg" id="a_msg"></div>';
       if(une.tipi){ const btn=document.querySelector('#a_tipi button[data-v="'+une.tipi+'"]'); if(btn) segPick(btn); }
+      const ankandBtn=document.querySelector('#a_logjika button[data-v="ankand"]'); if(ankandBtn) segPick(ankandBtn);
       return;
     }
     b.innerHTML='<h2 class="h">Biznesi ✓</h2><p class="small">Të dhënat u ruajtën për <b>'+esc(une.emri)+'</b>.</p>'+
