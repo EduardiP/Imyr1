@@ -434,6 +434,19 @@ app.get('/api/progres', iLoguar, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// A ka reklamë, dhe a është vetëm AUTOMATIKE apo edhe MANUALE (krijuar/miratuar nga klienti)
+app.get('/api/kreative/statusi-krijimit', iLoguar, async (req, res) => {
+  try {
+    const manual = await pool.query(
+      `SELECT 1 FROM kreativitetet WHERE biznes_id=$1 AND auto_krijuar=false LIMIT 1`, [req.biznesId]);
+    if (manual.rows.length) return res.json({ gjendja: 'manual' });
+    const auto = await pool.query(
+      `SELECT 1 FROM kreativitetet WHERE biznes_id=$1 AND auto_krijuar=true LIMIT 1`, [req.biznesId]);
+    if (auto.rows.length) return res.json({ gjendja: 'auto' });
+    res.json({ gjendja: 'asnje' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/analytics/reklamat', iLoguar, async (req, res) => {
   try {
     let nga = req.query.nga, deri = req.query.deri;
@@ -2144,6 +2157,36 @@ app.post('/api/analizo', iLoguar, async (req, res) => {
       [req.biznesId, kk, nk, perm]);
 
     res.json({ ok: true, ai: true, kategoria_kryesore: kk, nenkategorite: nk, permbledhje: perm });
+
+    // Gjenerim AUTOMATIK i nje reklame (imazh) menjehere pas pershkrimit — s'e ndal
+    // pergjigjen e mesiperme (async, "fire and forget"), thjesht per te aktivizuar hyrjen
+    // e klientit ne rrjet me shpejt, pa pritur qe ai vete te krijoje reklamen e pare.
+    (async () => {
+      try {
+        await pool.query(`ALTER TABLE kreativitetet ADD COLUMN IF NOT EXISTS auto_krijuar BOOLEAN NOT NULL DEFAULT false`);
+        const ekzistuese = await pool.query(`SELECT 1 FROM kreativitetet WHERE biznes_id=$1 LIMIT 1`, [req.biznesId]);
+        if (ekzistuese.rows.length) return; // ka tashme te pakten 1 kreativitet — mos krijo automatikisht
+
+        const bizRow = await pool.query('SELECT website, logjika_shperndarjes FROM bizneset WHERE id=$1', [req.biznesId]);
+        let link = (bizRow.rows[0] && bizRow.rows[0].website || '').trim();
+        if (!link) return; // pa website s'ka ku te coje reklama — mos krijo asgje automatikisht
+        if (!/^https?:\/\//i.test(link)) link = 'https://' + link;
+        const logjika = (bizRow.rows[0] && bizRow.rows[0].logjika_shperndarjes) || 'ankand';
+
+        const falKlient = require('./fal-klient');
+        const url = await falKlient.gjeneroImazh(perm || pershkrimi, null, null);
+
+        await pool.query(
+          `INSERT INTO kreativitetet (biznes_id, lloji, emri, pershkrimi, output_url, status, auto_krijuar)
+           VALUES ($1,'imazh','Reklamë e krijuar automatikisht',$2,$3,'gati',true)`,
+          [req.biznesId, perm || pershkrimi, url]);
+
+        await pool.query(
+          `INSERT INTO promovimet (biznes_id, titulli, imazh_url, link, aktiv, logjika_shperndarjes)
+           VALUES ($1,'Reklamë e krijuar automatikisht',$2,$3,true,$4)`,
+          [req.biznesId, url, link, logjika]);
+      } catch (e) { console.error('Gjenerim automatik reklame deshtoi:', e.message); }
+    })();
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
