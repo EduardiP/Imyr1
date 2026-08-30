@@ -2196,10 +2196,10 @@ function rekRenderReklama(r, id){
     '<div class="card" style="margin-top:18px;">'+
       '<h3 class="h" style="font-size:15px;margin:0 0 12px;">Ecuria</h3>'+
       '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;">'+
-        '<label class="small" style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" class="rekMetrika" value="shikime" checked onchange="rekVizatoEcurine('+id+')"> Shikime</label>'+
-        '<label class="small" style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" class="rekMetrika" value="klikime" checked onchange="rekVizatoEcurine('+id+')"> Klikime</label>'+
-        '<label class="small" style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" class="rekMetrika" value="konvertime" checked onchange="rekVizatoEcurine('+id+')"> Konvertime</label>'+
-        '<label class="small" style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" class="rekMetrika" value="ctr" checked onchange="rekVizatoEcurine('+id+')"> CTR %</label>'+
+        '<label class="small" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:5px 10px;border-radius:8px;border:1px solid #4a9eff;color:#4a9eff;"><input type="checkbox" class="rekMetrika" value="shikime" checked onchange="rekVizatoEcurine('+id+')"> Shikime</label>'+
+        '<label class="small" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:5px 10px;border-radius:8px;border:1px solid #3fb950;color:#3fb950;"><input type="checkbox" class="rekMetrika" value="klikime" checked onchange="rekVizatoEcurine('+id+')"> Klikime</label>'+
+        '<label class="small" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:5px 10px;border-radius:8px;border:1px solid #f0b429;color:#f0b429;"><input type="checkbox" class="rekMetrika" value="konvertime" checked onchange="rekVizatoEcurine('+id+')"> Konvertime</label>'+
+        '<label class="small" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:5px 10px;border-radius:8px;border:1px solid #e05fa0;color:#e05fa0;"><input type="checkbox" class="rekMetrika" value="ctr" checked onchange="rekVizatoEcurine('+id+')"> CTR %</label>'+
       '</div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
         '<button class="btn" onclick="rekEcuriaPreset('+id+',7)">7 ditë</button>'+
@@ -2239,15 +2239,17 @@ async function rekVizatoEcurine(id, dite, nga, deri){
     const zgjedhur = Array.from(document.querySelectorAll('.rekMetrika:checked')).map(x=>x.value);
     const ctrData = rows.map(x => x.shikime>0 ? Math.round((x.klikime/x.shikime)*1000)/10 : 0);
     const teGjithaDS = [
-      {k:'shikime',label:'Shikime',data:rows.map(x=>x.shikime),borderColor:'#4a9eff'},
-      {k:'klikime',label:'Klikime',data:rows.map(x=>x.klikime),borderColor:'#3fb950'},
-      {k:'konvertime',label:'Konvertime',data:rows.map(x=>x.konvertime),borderColor:'#f0b429'},
-      {k:'ctr',label:'CTR %',data:ctrData,borderColor:'#e05fa0',yAxisID:'y1'}
+      {k:'shikime',label:'Shikime',data:rows.map(x=>x.shikime),borderColor:'#4a9eff',yAxisID:'y_shikime'},
+      {k:'klikime',label:'Klikime',data:rows.map(x=>x.klikime),borderColor:'#3fb950',yAxisID:'y_klikime'},
+      {k:'konvertime',label:'Konvertime',data:rows.map(x=>x.konvertime),borderColor:'#f0b429',yAxisID:'y_konvertime'},
+      {k:'ctr',label:'CTR %',data:ctrData,borderColor:'#e05fa0',yAxisID:'y_ctr'}
     ];
+    const scales={};
+    teGjithaDS.forEach(d=>{ scales[d.yAxisID]={display:false,beginAtZero:true}; });
     window.__rekChart=new Chart(ctx,{type:'line',data:{
       labels:rows.map(x=>x.dita),
       datasets:teGjithaDS.filter(d=>zgjedhur.includes(d.k)).map(d=>Object.assign({tension:.3},d))
-    },options:{responsive:true,scales:{y:{beginAtZero:true},y1:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false}}}}});
+    },options:{responsive:true,scales:scales}});
   }catch(e){}
 }
 async function rekRenderAudienca(id){
