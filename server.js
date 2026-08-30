@@ -1472,21 +1472,25 @@ app.get('/api/reklamat/:id/ecuria', iLoguar, async (req, res) => {
     const nga = req.query.nga ? new Date(req.query.nga) : null;
     const deri = req.query.deri ? new Date(req.query.deri) : null;
     const dite = parseInt(req.query.dite, 10) || 30;
-    const r = await pool.query(
-      `SELECT to_char(dita, 'YYYY-MM-DD') AS dita,
-              COALESCE(COUNT(n.*) FILTER (WHERE n.lloji='view'),0)::int      AS shikime,
-              COALESCE(COUNT(n.*) FILTER (WHERE n.lloji='click'),0)::int    AS klikime,
-              COALESCE(COUNT(n.*) FILTER (WHERE n.lloji='konvertim'),0)::int AS konvertime
-       FROM generate_series(
-         $3::timestamptz, $4::timestamptz, interval '1 day'
-       ) AS dita
-       LEFT JOIN ngjarjet n ON n.reklamues_id=$1 AND n.reklama_id=$2
-         AND date_trunc('day', n.created_at) = date_trunc('day', dita)
-       GROUP BY dita ORDER BY dita ASC`,
-      [req.biznesId, req.params.id,
-       nga || new Date(Date.now() - dite*86400000),
-       deri || new Date()]);
-    res.json(r.rows);
+    const ngaFinal = nga || new Date(Date.now() - dite*86400000);
+    const deriFinal = deri || new Date();
+    const r = await pool.query(`
+      SELECT gs::date AS dita,
+        COALESCE(v.n,0)::int  AS shfaqje,
+        COALESCE(sh.n,0)::int AS shikime,
+        COALESCE(k.n,0)::int  AS klikime,
+        COALESCE(kv.n,0)::int AS konvertime
+      FROM generate_series($3::date, $4::date, '1 day') AS gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND reklama_id=$2 AND lloji='view' GROUP BY d) v ON v.d=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND reklama_id=$2 AND lloji='shikim' GROUP BY d) sh ON sh.d=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND reklama_id=$2 AND lloji='click' GROUP BY d) k ON k.d=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND reklama_id=$2 AND lloji='konvertim' GROUP BY d) kv ON kv.d=gs
+      ORDER BY gs`,
+      [req.biznesId, req.params.id, ngaFinal, deriFinal]);
+    res.json(r.rows.map(x => ({
+      dita: x.dita.toISOString().slice(0,10),
+      shfaqje: x.shfaqje, shikime: x.shikime, klikime: x.klikime, konvertime: x.konvertime
+    })));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
