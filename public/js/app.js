@@ -2235,33 +2235,42 @@ async function rekRenderAudienca(id){
   c.innerHTML='<p class="small">Po ngarkoj…</p>';
   let cur={vendet:[],pajisjet:[]};
   try{ cur=await(await fetch('/api/reklamat/'+id+'/audienca')).json(); }catch(e){}
-  const VENDET=['Australi','Austri','Belgjikë','Bosnjë','Brazil','Bullgari','Danimarkë','Egjipt','Emiratet e Bashkuara Arabe','Finlandë','Francë','Gjermani','Greqi','Hollandë','Indi','Indonezi','Irlandë','Islandë','Itali','Izrael','Japoni','Kanada','Kinë','Kore Jugore','Kroaci','Malajzi','Meksikë','Mbretëri e Bashkuar','Norvegji','Poloni','Portugali','Rumani','Serbi','Singapor','Spanjë','SHBA','Suedi','Zvicër','Tajlandë','Turqi','Ukrainë','Zelandë e Re'];
+  const VENDET=['Australi','Austri','Belgjikë','Bosnjë','Brazil','Bullgari','Danimarkë','Egjipt','Emiratet e Bashkuara Arabe','Finlandë','Francë','Gjermani','Greqi','Hollandë','Indi','Indonezi','Irlandë','Islandë','Itali','Izrael','Japoni','Kanada','Kinë','Kore Jugore','Kroaci','Malajzi','Meksikë','Mbretëri e Bashkuar','Norvegji','Poloni','Portugali','Rumani','Serbi','Singapor','Spanjë','SHBA','Suedi','Zvicër','Tajlandë','Turqi','Ukrainë','Zelandë e Re','Tjetër (çdo shtet tjetër i palistuar)'];
   const PAJISJET=[{v:'desktop',l:'Desktop'},{v:'mobile',l:'Mobile'}];
+  const teGjithaVend = cur.vendet.length===0;
+  const teGjithaPaj = cur.pajisjet.length===0;
   c.innerHTML=
     '<p class="small mut" style="margin-bottom:16px;">Zgjidh shtetet/pajisjet ku dëshiron ta shfaqësh (të gjitha të zgjedhura = shfaqet kudo).</p>'+
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'+
       '<div class="small" style="font-weight:600;">Shtetet</div>'+
-      '<button class="btn" style="padding:4px 10px;font-size:12px;" onclick="rekAudTeGjitha(\'.rekAudVend\',this)">Të gjitha</button>'+
+      '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;">'+
+        '<input type="checkbox" id="rekAudVendTeGjitha" '+(teGjithaVend?'checked':'')+' onchange="rekAudTeGjitha(\'.rekAudVend\',this.checked)"> Të gjitha'+
+      '</label>'+
     '</div>'+
-    '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;">'+
-      VENDET.map(v=>'<label style="display:flex;align-items:center;gap:6px;background:#0e1116;border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;white-space:nowrap;">'+
-        '<input type="checkbox" value="'+esc(v)+'" class="rekAudVend" '+((cur.vendet.length===0||cur.vendet.includes(v))?'checked':'')+'> '+esc(v)+'</label>').join('')+
+    '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;max-height:220px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:10px;">'+
+      VENDET.map(v=>'<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 2px;">'+
+        '<input type="checkbox" value="'+esc(v)+'" class="rekAudVend" onchange="rekAudSyncTeGjitha(\'.rekAudVend\',\'rekAudVendTeGjitha\')" '+((teGjithaVend||cur.vendet.includes(v))?'checked':'')+'> '+esc(v)+'</label>').join('')+
     '</div>'+
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'+
       '<div class="small" style="font-weight:600;">Pajisjet</div>'+
-      '<button class="btn" style="padding:4px 10px;font-size:12px;" onclick="rekAudTeGjitha(\'.rekAudPaj\',this)">Të gjitha</button>'+
+      '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;">'+
+        '<input type="checkbox" id="rekAudPajTeGjitha" '+(teGjithaPaj?'checked':'')+' onchange="rekAudTeGjitha(\'.rekAudPaj\',this.checked)"> Të gjitha'+
+      '</label>'+
     '</div>'+
     '<div style="display:flex;gap:8px;margin-bottom:20px;">'+
       PAJISJET.map(p=>'<label style="display:flex;align-items:center;gap:6px;background:#0e1116;border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;">'+
-        '<input type="checkbox" value="'+p.v+'" class="rekAudPaj" '+((cur.pajisjet.length===0||cur.pajisjet.includes(p.v))?'checked':'')+'> '+p.l+'</label>').join('')+
+        '<input type="checkbox" value="'+p.v+'" class="rekAudPaj" onchange="rekAudSyncTeGjitha(\'.rekAudPaj\',\'rekAudPajTeGjitha\')" '+((teGjithaPaj||cur.pajisjet.includes(p.v))?'checked':'')+'> '+p.l+'</label>').join('')+
     '</div>'+
     '<button class="primary" id="rekAudRuaj" onclick="rekAudRuaj('+id+')">Ruaj</button>'+
     '<div class="msg" id="rekAudMsg"></div>';
 }
-function rekAudTeGjitha(selektori, btn){
-  const kutizat=document.querySelectorAll(selektori);
-  const teGjithaZgjedhur=Array.from(kutizat).every(k=>k.checked);
-  kutizat.forEach(k=>k.checked=!teGjithaZgjedhur);
+function rekAudTeGjitha(selektori, tashmeTeZgjedhura){
+  document.querySelectorAll(selektori).forEach(k=>k.checked=tashmeTeZgjedhura);
+}
+function rekAudSyncTeGjitha(selektoriKuti, idTeGjitha){
+  const kutizat=document.querySelectorAll(selektoriKuti);
+  const teGjitha=$(idTeGjitha);
+  if(teGjitha) teGjitha.checked = Array.from(kutizat).every(k=>k.checked);
 }
 async function rekAudRuaj(id){
   const vendet=Array.from(document.querySelectorAll('.rekAudVend:checked')).map(x=>x.value);
