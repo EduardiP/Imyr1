@@ -1469,14 +1469,16 @@ app.get('/api/reklamat', iLoguar, async (req, res) => {
 // --- ECURIA DITORE E NJE REKLAME SPECIFIKE (per grafikun te faqja e detajeve) ---
 app.get('/api/reklamat/:id/ecuria', iLoguar, async (req, res) => {
   try {
+    const dite = parseInt(req.query.dite, 10) || 30;
     const r = await pool.query(
       `SELECT to_char(created_at, 'YYYY-MM-DD') AS dita,
-              COUNT(*) FILTER (WHERE lloji='view')::int  AS shikime,
-              COUNT(*) FILTER (WHERE lloji='click')::int AS klikime
+              COUNT(*) FILTER (WHERE lloji='view')::int      AS shikime,
+              COUNT(*) FILTER (WHERE lloji='click')::int     AS klikime,
+              COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
        FROM ngjarjet
-       WHERE reklamues_id=$1 AND reklama_id=$2 AND created_at > now() - interval '30 days'
+       WHERE reklamues_id=$1 AND reklama_id=$2 AND created_at > now() - ($3 || ' days')::interval
        GROUP BY dita ORDER BY dita ASC`,
-      [req.biznesId, req.params.id]);
+      [req.biznesId, req.params.id, dite]);
     res.json(r.rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
