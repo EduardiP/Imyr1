@@ -51,6 +51,9 @@ button.primary:disabled { opacity:.5; }
 .vs { display:flex; gap:12px; align-items:center; padding:11px 10px; border-radius:9px; }
 .vs .vd { width:26px; height:26px; border-radius:50%; border:2px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:12px; flex:0 0 auto; color:var(--mut); }
 .vs.done .vd { background:var(--good); border-color:var(--good); color:#04240f; }
+.vs.auto .vd { background:var(--acc); border-color:var(--acc); color:#04162f; }
+.vs.auto { cursor:pointer; }
+.vs.auto:hover { background:#0e1116; }
 .vs.cur .vd { border-color:var(--acc); color:var(--acc); }
 .vs .vl { font-size:14px; }
 .vs.locked { opacity:.45; }
