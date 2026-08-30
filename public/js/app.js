@@ -32,11 +32,7 @@ const NAV2 = [
   { k:'analytics', l:'Analytics', subs:[
     {l:'Trafiku', nav:'anaTrafiku'},
     {l:'Automatiku', nav:'anaAutomatik'},
-    {l:'Deficiti', nav:'anaDeficiti'},
-    {l:'Reklamat', nav:'anaReklamat'},
-    {l:'Snippet-et', nav:'anaSnippetet'},
-    {l:'Dhënie', nav:'anaDhenie'},
-    {l:'Marrje', nav:'anaMarrje'}
+    {l:'Deficiti', nav:'anaDeficiti'}
   ]},
   { k:'insights', l:'Vështrime', subs:[
     {l:'Pika AI & kombinimet kryesore', nav:'insights'},
