@@ -112,7 +112,10 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
      WHERE p.biznes_id <> $1 AND p.aktiv = true AND COALESCE(p.pauzuar,false) = false
        AND COALESCE(p.logjika_shperndarjes,'ankand') = $2
        AND (p.teksti IS NOT NULL OR p.imazh_url IS NOT NULL OR p.video_url IS NOT NULL OR p.html5_url IS NOT NULL)
-       AND EXISTS (SELECT 1 FROM snippetet s WHERE s.biznes_id = b.id AND s.snippet_active = true AND COALESCE(s.pauzuar,false) = false)`,
+       AND (
+         EXISTS (SELECT 1 FROM snippetet s WHERE s.biznes_id = b.id AND s.snippet_active = true AND COALESCE(s.pauzuar,false) = false)
+         OR (COALESCE(b.biznesi_auto,false) = true AND b.created_at > now() - interval '7 days')
+       )`,
     [hostId, logjikaKerkuar]);
 
   // ═══ KUFIZIMET E KATEGORIVE — perjashtim DYANSHEM, vlen per te dyja pishinat ═══
