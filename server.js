@@ -1126,7 +1126,7 @@ app.get('/api/profili-balance', iLoguar, async (req, res) => {
 app.get('/api/njoftimet', iLoguar, async (req, res) => {
   try {
     const b = await pool.query(
-      'SELECT created_at, snippet_active, track_active, url_konvertimi FROM bizneset WHERE id=$1', [req.biznesId]);
+      'SELECT created_at, snippet_active, track_active, url_konvertimi, biznesi_auto FROM bizneset WHERE id=$1', [req.biznesId]);
     const p = await pool.query('SELECT COUNT(*)::int n FROM promovimet WHERE biznes_id=$1 AND aktiv=true AND pauzuar=false', [req.biznesId]);
     const uLidhur = await pool.query('SELECT 1 FROM konvertimet WHERE biznes_id=$1 AND track_active=true LIMIT 1', [req.biznesId]);
     const zLidhur = await pool.query('SELECT 1 FROM zonat WHERE biznes_id=$1 AND track_active=true AND fshire=false LIMIT 1', [req.biznesId]);
@@ -1134,11 +1134,12 @@ app.get('/api/njoftimet', iLoguar, async (req, res) => {
     const kaSnippetAktiv = snLidhur.rows.length > 0;
     const row = b.rows[0] || {};
     const ditet = Math.floor((Date.now() - new Date(row.created_at).getTime()) / 86400000);
+    const neGraceperiodAuto = !!row.biznesi_auto && ditet < 7;
     const kaReklame = p.rows[0].n > 0;
     const kaKonvertimTeLidhur = !!row.track_active && (uLidhur.rows.length > 0 || zLidhur.rows.length > 0);
     const njf = [];
 
-    if (!kaSnippetAktiv) {
+    if (!kaSnippetAktiv && !neGraceperiodAuto) {
       njf.push({ tip: 'snippet', titull: 'Reklamat e tua nuk po shfaqen',
         teksti: "S'ke asnjë hapësirë reklame aktive. Meqë s'po shfaq reklamat e të tjerëve, as reklamat e tua s'po marrin shfaqje te rrjeti. Lidh një hapësirë që të kthehet gjithçka në normalitet.", veprim: 'lidhja' });
     }
