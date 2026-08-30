@@ -2154,21 +2154,101 @@ async function reklamaPauza(id, aktiv){
 }
 
 
+var _rekTab = 'reklama';
 async function hapReklame(id, m){
   m.innerHTML='<p class="small">Po ngarkoj…</p>';
   let rows=window.__reklamat;
   if(!rows){ try{ rows=await(await fetch('/api/reklamat')).json(); window.__reklamat=rows; }catch(e){ rows=[]; } }
   const r=(rows||[]).find(x=>x.id===id)||{};
-  const konvLidhur = !!(une && une.url_konvertimi);
-  const konvKuti = '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.konvertime||0)+'</div><div class="small">Konvertime</div></div>';
+  _rekTab='reklama';
   m.innerHTML=
     '<h2 class="h">'+esc(r.emri||'Reklama')+'</h2>'+
+    '<div style="display:flex;gap:10px;margin:14px 0 18px;border-bottom:1px solid var(--line);">'+
+      '<button class="rekTabBtn active" id="rekTabReklama" onclick="rekSetTab(\'reklama\','+id+')">Reklama</button>'+
+      '<button class="rekTabBtn" id="rekTabAudienca" onclick="rekSetTab(\'audienca\','+id+')">Audienca</button>'+
+    '</div>'+
+    '<style>.rekTabBtn{background:none;border:none;color:var(--mut);padding:8px 4px;margin-right:18px;cursor:pointer;font-size:14px;font-weight:600;border-bottom:2px solid transparent;}'+
+      '.rekTabBtn.active{color:var(--txt);border-color:var(--acc);}</style>'+
+    '<div id="rekTabPermbajtja"></div>';
+  rekRenderReklama(r, id);
+}
+function rekSetTab(t, id){
+  _rekTab=t;
+  const bR=$('rekTabReklama'), bA=$('rekTabAudienca');
+  if(bR) bR.className='rekTabBtn'+(t==='reklama'?' active':'');
+  if(bA) bA.className='rekTabBtn'+(t==='audienca'?' active':'');
+  const rows=window.__reklamat||[];
+  const r=rows.find(x=>x.id===id)||{};
+  if(t==='reklama') rekRenderReklama(r, id); else rekRenderAudienca(id);
+}
+function rekFormatPreviewHTML(r){
+  if(r.imazh_url) return '<img src="'+esc(r.imazh_url)+'" style="max-width:100%;max-height:220px;border-radius:10px;display:block;">';
+  if(r.video_url) return '<div class="small mut">Video: '+esc(r.video_url)+'</div>';
+  if(r.html5_url) return '<iframe src="'+esc(r.html5_url)+'" style="width:100%;height:220px;border:none;border-radius:10px;"></iframe>';
+  if(r.teksti) return '<div style="padding:16px;background:#0e1116;border-radius:10px;">'+esc(r.teksti)+'</div>';
+  return '<p class="small mut">Pa format ende.</p>';
+}
+function rekRenderReklama(r, id){
+  const konvLidhur = !!(une && une.url_konvertimi);
+  const konvKuti = '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.konvertime||0)+'</div><div class="small">Konvertime</div></div>';
+  const c=$('rekTabPermbajtja'); if(!c) return;
+  c.innerHTML=
+    '<div style="margin-bottom:16px;">'+rekFormatPreviewHTML(r)+'</div>'+
     '<div style="display:flex;gap:10px;margin:14px 0;">'+
       '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.shikime||0)+'</div><div class="small">Shikime</div></div>'+
       '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.klikime||0)+'</div><div class="small">Klikime</div></div>'+
       konvKuti+
     '</div>'+
-    '<p class="small">Variantet e krijuara (Image / Video / HTML5) do të shfaqen këtu — për të parë cili performon më mirë në testim.</p>';
+    '<p class="small">Variantet e krijuara (Image / Video / HTML5) do të shfaqen këtu — për të parë cili performon më mirë në testim.</p>'+
+    '<div class="card" style="margin-top:18px;"><h3 class="h" style="font-size:15px;margin:0 0 12px;">Ecuria (30 ditët e fundit)</h3><canvas id="rekEcuriaCanvas" height="90"></canvas></div>';
+  rekVizatoEcurine(id);
+}
+async function rekVizatoEcurine(id){
+  try{
+    const rows=await(await fetch('/api/reklamat/'+id+'/ecuria')).json();
+    const ctx=$('rekEcuriaCanvas'); if(!ctx||!window.Chart) return;
+    if(window.__rekChart) window.__rekChart.destroy();
+    window.__rekChart=new Chart(ctx,{type:'line',data:{
+      labels:rows.map(x=>x.dita),
+      datasets:[
+        {label:'Shikime',data:rows.map(x=>x.shikime),borderColor:'#4a9eff',tension:.3},
+        {label:'Klikime',data:rows.map(x=>x.klikime),borderColor:'#3fb950',tension:.3}
+      ]},options:{responsive:true,scales:{y:{beginAtZero:true}}}});
+  }catch(e){}
+}
+async function rekRenderAudienca(id){
+  const c=$('rekTabPermbajtja'); if(!c) return;
+  c.innerHTML='<p class="small">Po ngarkoj…</p>';
+  let cur={vendet:[],pajisjet:[]};
+  try{ cur=await(await fetch('/api/reklamat/'+id+'/audienca')).json(); }catch(e){}
+  const VENDET=['Shqipëri','Kosovë','Itali','Gjermani','SHBA','Mbretëri e Bashkuar','Francë','Tjetër (global)'];
+  const PAJISJET=[{v:'desktop',l:'Desktop'},{v:'mobile',l:'Mobile'}];
+  c.innerHTML=
+    '<p class="small mut" style="margin-bottom:16px;">Zgjidh shtetet/pajisjet ku dëshiron ta shfaqësh (lëre bosh për të gjitha).</p>'+
+    '<div class="small" style="font-weight:600;margin-bottom:8px;">Shtetet</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;">'+
+      VENDET.map(v=>'<label style="display:flex;align-items:center;gap:6px;background:#0e1116;border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;">'+
+        '<input type="checkbox" value="'+esc(v)+'" class="rekAudVend" '+(cur.vendet.includes(v)?'checked':'')+'> '+esc(v)+'</label>').join('')+
+    '</div>'+
+    '<div class="small" style="font-weight:600;margin-bottom:8px;">Pajisjet</div>'+
+    '<div style="display:flex;gap:8px;margin-bottom:20px;">'+
+      PAJISJET.map(p=>'<label style="display:flex;align-items:center;gap:6px;background:#0e1116;border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;">'+
+        '<input type="checkbox" value="'+p.v+'" class="rekAudPaj" '+(cur.pajisjet.includes(p.v)?'checked':'')+'> '+p.l+'</label>').join('')+
+    '</div>'+
+    '<button class="primary" id="rekAudRuaj" onclick="rekAudRuaj('+id+')">Ruaj</button>'+
+    '<div class="msg" id="rekAudMsg"></div>';
+}
+async function rekAudRuaj(id){
+  const vendet=Array.from(document.querySelectorAll('.rekAudVend:checked')).map(x=>x.value);
+  const pajisjet=Array.from(document.querySelectorAll('.rekAudPaj:checked')).map(x=>x.value);
+  const btn=$('rekAudRuaj'), msg=$('rekAudMsg');
+  if(btn) btn.disabled=true;
+  try{
+    const r=await(await fetch('/api/reklamat/'+id+'/audienca',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({vendet,pajisjet})})).json();
+    if(msg){ msg.className=r.error?'msg err':'msg ok'; msg.textContent=r.error||'U ruajt.'; }
+  }catch(e){ if(msg){ msg.className='msg err'; msg.textContent='Gabim.'; } }
+  if(btn) btn.disabled=false;
 }
 function krijoReklame(m, s){
   s = s || {};
