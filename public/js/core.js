@@ -27,7 +27,7 @@ function segHTML(id){ return '<label>Kujt nga vizitorët e faqes tënde u shërb
     '<button type="button" data-v="b2c" onclick="segPick(this)">Individëve</button>'+
     '<button type="button" data-v="b2b2c" onclick="segPick(this)">Të dyjave</button>'+
   '</div>'; }
-function showView(v){ ['hero','home','wizard','profile','analitika-full','ekipi'].forEach(x=>{ const el=$('v-'+x); if(el) el.classList.toggle('on', x===v); }); }
+function showView(v){ ['hero','home','wizard','profile','analitika-full','ekipi','zgjedhja'].forEach(x=>{ const el=$('v-'+x); if(el) el.classList.toggle('on', x===v); }); }
 
 async function refreshProg(){
   try { prog = await (await fetch('/api/progres')).json(); }
@@ -38,7 +38,7 @@ function nextIncomplete(){ for(let i=0;i<STEPS.length;i++){ if(!prog[STEPS[i].ke
 // Herën e parë (asnjë hap i plotësuar) → udhëzuesi me 3 pikat; përndryshe → paneli (dashboard)
 function pasHyrjes(){
   const asgjeEBere = prog && !prog.llogaria && !prog.pershkrimi && !prog.lidhja;
-  if(asgjeEBere) return {v:'wizard', step:0};
+  if(asgjeEBere) return {v:'zgjedhja'};
   return {v:'profile', nav:'dashboard'};
 }
 
@@ -52,6 +52,7 @@ function stateToUrl(s){
   if(s.v==='home') return '/fillim';
   if(s.v==='analitika-full') return '/analytics';
   if(s.v==='ekipi') return '/ekipi';
+  if(s.v==='zgjedhja') return '/fillo/zgjedh';
   if(s.v!=='profile') return '/';
 
   const n = s.nav || 'dashboard';
@@ -95,6 +96,7 @@ function urlToState(pathname){
   if(p==='/analytics') return {v:'analitika-full'};
   if(p==='/ekipi') return {v:'ekipi'};
   if(p==='/fillim') return {v:'home'};
+  if(p==='/fillo/zgjedh') return {v:'zgjedhja'};
   if(p.indexOf('/fillo')===0){
     const parts=p.split('/'); const step=parseInt(parts[2],10);
     return {v:'wizard', step:isNaN(step)?0:step};
@@ -260,6 +262,7 @@ function applyState(s, replace){
   else if(s.v==='home' && une){ renderHome(); showView('home'); }
   else if(s.v==='analitika-full' && une){ renderAnalyticsFull(); showView('analitika-full'); }
   else if(s.v==='ekipi' && une){ ekipiNdertoSkeleten(); showView('ekipi'); }
+  else if(s.v==='zgjedhja' && une){ renderZgjedhja(); showView('zgjedhja'); }
   else { showView('hero'); }
   if(replace) history.replaceState(s,'',stateToUrl(s));
 }
