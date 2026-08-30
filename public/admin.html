@@ -198,6 +198,9 @@ c.innerHTML=
 '<h2 class="h">Kërkesat nga asistenti virtual</h2>'+
 '<p class="small" style="margin:2px 0 12px;">Klientët që kërkuan të kontaktojnë ekipin përmes chat-it.</p>'+
 '<div id="kerkesatLista" style="margin-bottom:28px;"><p class="small">Po ngarkoj…</p></div>'+
+'<h2 class="h">Lista e pritjes — Teams & Roles</h2>'+
+'<p class="small" style="margin:2px 0 12px;">Klientët që u regjistruan interesin për veçorinë "Teams & Roles".</p>'+
+'<div id="pritjeLista" style="margin-bottom:28px;"><p class="small">Po ngarkoj…</p></div>'+
 '<h2 class="h">Dërgo njoftim</h2>'+
 '<p class="small" style="margin:2px 0 18px;">Zgjidh një ose disa biznese dhe dërgo një njoftim te ikona e ziles së tyre.</p>'+
 '<label>Titulli *</label><input id="njTit" placeholder="Titulli i njoftimit">'+
@@ -243,6 +246,24 @@ njBizneset = await(await fetch('/api/admin/njoftime/bizneset')).json();
 njRenderLista();
 }catch(e){ $('njLista').innerHTML='<p class="small" style="padding:14px;">Gabim.</p>'; }
 ngarkoKerkesat();
+ngarkoListenPritjes();
+}
+
+async function ngarkoListenPritjes(){
+const el=$('pritjeLista'); if(!el) return;
+try{
+const rows=await(await fetch('/api/admin/lista-pritjes')).json();
+if(!rows.length){ el.innerHTML='<p class="small mut">S\'ka regjistrime ende.</p>'; return; }
+el.innerHTML='<div class="kerkesaTbl">'+rows.map(r=>{
+const ini=((r.biznesi||'?').trim().charAt(0)||'?').toUpperCase();
+const logo=r.logo_url?'<img src="'+esc(r.logo_url)+'" class="njBizLogo">':'<span class="njBizLogo njBizLogoTxt">'+esc(ini)+'</span>';
+const data=new Date(r.krijuar_at).toLocaleDateString('sq-AL');
+return '<div class="kerkesaTr">'+
+'<div class="kerkesaIdent">'+logo+'<div><div class="njBizNm">'+esc(r.biznesi||'—')+'</div><div class="njBizEm">'+esc(r.email||'—')+'</div></div></div>'+
+'<span class="small mut">'+data+'</span>'+
+'</div>';
+}).join('')+'</div>';
+}catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; }
 }
 
 var _njKerkim='', _njTip='';
