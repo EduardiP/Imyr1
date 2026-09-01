@@ -161,6 +161,11 @@ async function mainInsights(m){
         kutia('Klikime të marra', null, '', d.klikimeMarre.yti, d.klikimeMarre.mesatarja)+
         kutia('Konvertime të marra', null, '', d.konvertimeMarre.yti, d.konvertimeMarre.mesatarja)+
       '</div>'+
+      '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
+        kutia('Shfaqje të dhëna', null, '', d.shfaqjeDhene.yti, d.shfaqjeDhene.mesatarja)+
+        kutia('Klikime të dhëna', null, '', d.klikimeDhene.yti, d.klikimeDhene.mesatarja)+
+        kutia('Konvertime të dhëna', null, '', d.konvertimeDhene.yti, d.konvertimeDhene.mesatarja)+
+      '</div>'+
     '</div>';
 }
 
