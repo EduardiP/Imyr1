@@ -148,26 +148,39 @@ async function mainInsights(m){
   }
 
   wrap.innerHTML=
-    '<div style="display:flex;flex-direction:column;gap:14px;">'+
-      '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
-        kutia('Pikë AI — Si reklamues', 'Sa tërheqës je për audiencat e bizneseve që të shfaqin.', '', d.pikeAIReklamues.yti, d.pikeAIReklamues.mesatarja)+
-        kutia('Pikë AI — Si host', 'Sa relevante janë, mesatarisht, reklamat e të tjerëve për audiencën tënde.', '', d.pikeAIHost.yti, d.pikeAIHost.mesatarja)+
+    '<div style="display:flex;flex-direction:column;gap:20px;">'+
+      '<div>'+
+        '<h4 class="small mut" style="text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;">Pikët AI</h4>'+
+        '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
+          kutia('Pikë AI — Si reklamues', 'Sa tërheqës je për audiencat e bizneseve që të shfaqin.', '', d.pikeAIReklamues.yti, d.pikeAIReklamues.mesatarja)+
+          kutia('Pikë AI — Si host', 'Sa relevante janë, mesatarisht, reklamat e të tjerëve për audiencën tënde.', '', d.pikeAIHost.yti, d.pikeAIHost.mesatarja)+
+        '</div>'+
       '</div>'+
-      '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
-        kutia('Shfaqje të marra', null, '', d.shfaqjeMarre.yti, d.shfaqjeMarre.mesatarja, 180)+
-        kutia('Shikime të marra', null, '', d.shikimeMarre.yti, d.shikimeMarre.mesatarja, 180)+
-        kutia('Klikime të marra', null, '', d.klikimeMarre.yti, d.klikimeMarre.mesatarja, 180)+
-        kutia('Konvertime të marra', null, '', d.konvertimeMarre.yti, d.konvertimeMarre.mesatarja, 180)+
+      '<div>'+
+        '<h4 class="small mut" style="text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;">Marrë (si reklamues)</h4>'+
+        '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
+          kutia('Shfaqje të marra', null, '', d.shfaqjeMarre.yti, d.shfaqjeMarre.mesatarja, 180)+
+          kutia('Shikime të marra', null, '', d.shikimeMarre.yti, d.shikimeMarre.mesatarja, 180)+
+          kutia('Klikime të marra', null, '', d.klikimeMarre.yti, d.klikimeMarre.mesatarja, 180)+
+          kutia('Konvertime të marra', null, '', d.konvertimeMarre.yti, d.konvertimeMarre.mesatarja, 180)+
+        '</div>'+
       '</div>'+
-      '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
-        kutia('Shfaqje të dhëna', null, '', d.shfaqjeDhene.yti, d.shfaqjeDhene.mesatarja, 180)+
-        kutia('Shikime të dhëna', null, '', d.shikimeDhene.yti, d.shikimeDhene.mesatarja, 180)+
-        kutia('Klikime të dhëna', null, '', d.klikimeDhene.yti, d.klikimeDhene.mesatarja, 180)+
-        kutia('Konvertime të dhëna', null, '', d.konvertimeDhene.yti, d.konvertimeDhene.mesatarja, 180)+
+      '<div>'+
+        '<h4 class="small mut" style="text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;">Dhënë (si host)</h4>'+
+        '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
+          kutia('Shfaqje të dhëna', null, '', d.shfaqjeDhene.yti, d.shfaqjeDhene.mesatarja, 180)+
+          kutia('Shikime të dhëna', null, '', d.shikimeDhene.yti, d.shikimeDhene.mesatarja, 180)+
+          kutia('Klikime të dhëna', null, '', d.klikimeDhene.yti, d.klikimeDhene.mesatarja, 180)+
+          kutia('Konvertime të dhëna', null, '', d.konvertimeDhene.yti, d.konvertimeDhene.mesatarja, 180)+
+        '</div>'+
       '</div>'+
-      '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
-        kutia('CTR (Klikime ÷ Shfaqje)', null, '%', d.ctr.yti, d.ctr.mesatarja)+
-        kutia('Konvertim-për-shfaqje', null, '%', d.konvertimi.yti, d.konvertimi.mesatarja)+
+      '<div>'+
+        '<h4 class="small mut" style="text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;">Raportet</h4>'+
+        '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
+          kutia('CTR (Klikime ÷ Shfaqje)', null, '%', d.ctr.yti, d.ctr.mesatarja, 180)+
+          kutia('CVR (Konvertime ÷ Klikime)', null, '%', d.cvr.yti, d.cvr.mesatarja, 180)+
+          kutia('Konvertim-për-shfaqje', null, '%', d.konvertimi.yti, d.konvertimi.mesatarja, 180)+
+        '</div>'+
       '</div>'+
     '</div>';
 }
