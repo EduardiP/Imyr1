@@ -670,13 +670,14 @@ async function anaDetNgarkoReklamaChart(){
   try{ d=await(await fetch(url)).json(); }catch(e){ return; }
   const rows=d.rows||[]; const labels=rows.map(r=>r.data);
   const datasets=[];
-  ANA_METRIKA.forEach(x=>{ if(_anaDetRekMetrikaAktive[x.k]) datasets.push({label:x.l, data: rows.map(r=>anaVlera(r,x)), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c}); });
+  ANA_METRIKA.forEach(x=>{ if(_anaDetRekMetrikaAktive[x.k]) datasets.push({label:x.l, data: rows.map(r=>anaVlera(r,x)), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c, yAxisID: x.percentazh?'yPerqindje':'y'}); });
   const canvas=$('anaDetReklamaCanvas'); if(!canvas||typeof Chart==='undefined') return;
   if(_anaDetReklamaChart){ _anaDetReklamaChart.destroy(); _anaDetReklamaChart=null; }
   const ctx=canvas.getContext('2d');
   _anaDetReklamaChart=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
-      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
+      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}},
+        yPerqindje:{beginAtZero:true,max:100,position:'right',ticks:{color:'#8b949e',callback:v=>v+'%'},grid:{drawOnChartArea:false}}},
       plugins:{legend:{labels:{color:'#e6edf3'}}}},
     plugins:[anaMultiColorLinePlugin]
   });
@@ -839,9 +840,13 @@ async function ngarkoAnaOre(){
   const canvas=$('anaOreCanvas'); if(!canvas||typeof Chart==='undefined') return;
   if(_anaOreChart){ _anaOreChart.destroy(); _anaOreChart=null; }
   const ctx=canvas.getContext('2d');
+  const eshtePerqindje = !!d.perqindje;
   _anaOreChart=new Chart(ctx,{type:'bar',data:{labels,datasets:[{data:oret,backgroundColor:ngjyra,borderRadius:3,maxBarThickness:22}]},
     options:{responsive:true,
-      scales:{x:{ticks:{color:'#8b949e'},grid:{display:false}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
+      scales:{x:{ticks:{color:'#8b949e'},grid:{display:false}},
+        y: eshtePerqindje
+          ? {beginAtZero:true,max:100,ticks:{color:'#8b949e',callback:v=>v+'%'},grid:{color:'#2a313c'}}
+          : {beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
       plugins:{legend:{display:false}}}
   });
 }
@@ -1151,7 +1156,7 @@ async function ngarkoAnaDeficit(){
 
   const datasets=[];
   ANA_METRIKA.forEach(x=>{
-    if(_anaDeficitMetrikaAktive[x.k]) datasets.push({label:x.l, data: rows.map(r=>anaVlera(r,x)), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
+    if(_anaDeficitMetrikaAktive[x.k]) datasets.push({label:x.l, data: rows.map(r=>anaVlera(r,x)), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c, yAxisID: x.percentazh?'yPerqindje':'y', _percentazh: !!x.percentazh});
   });
 
   // Rang SIMETRIK rreth zeros — llogarit vleren maksimale absolute (pozitive ose
@@ -1159,8 +1164,9 @@ async function ngarkoAnaDeficit(){
   // (-maks/+maks), qe zero te bjere GJITHMONE saktesisht ne MES te grafikut, sado
   // qe te dhenat te priren nga njera ane. Nese s'ka fare te dhena (te gjitha 0),
   // perdor nje rang minimal fiks qe grafiku te mos rrudhet ne nje vije te sheshte.
+  // PERQINDJET (CTR/CVR/etj) PERJASHTOHEN nga kjo llogaritje — kane bosht te vetin fiks 0-100.
   let maksAbs=0;
-  datasets.forEach(ds=>{ ds.data.forEach(v=>{ const a=Math.abs(v||0); if(a>maksAbs) maksAbs=a; }); });
+  datasets.forEach(ds=>{ if(ds._percentazh) return; ds.data.forEach(v=>{ const a=Math.abs(v||0); if(a>maksAbs) maksAbs=a; }); });
   const jastek = maksAbs>0 ? maksAbs*1.15 : 5; // 15% hapesire shtese siper/poshte majes, per lexueshmeri
 
   const ctx=canvas.getContext('2d');
@@ -1169,7 +1175,8 @@ async function ngarkoAnaDeficit(){
       scales:{
         x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}},
         // Rang simetrik (-jastek..+jastek) — zero gjithmone saktesisht ne mes, jo vetem "lejohet negative"
-        y:{min:-jastek, max:jastek, ticks:{color:'#8b949e',precision:0}, grid:{color:function(ctx){ return ctx.tick.value===0 ? 'rgba(230,237,243,.35)' : '#2a313c'; }}}
+        y:{min:-jastek, max:jastek, ticks:{color:'#8b949e',precision:0}, grid:{color:function(ctx){ return ctx.tick.value===0 ? 'rgba(230,237,243,.35)' : '#2a313c'; }}},
+        yPerqindje:{beginAtZero:true,max:100,position:'right',ticks:{color:'#8b949e',callback:v=>v+'%'},grid:{drawOnChartArea:false}}
       },
       plugins:{legend:{labels:{color:'#e6edf3', generateLabels:function(chart){
         const items=Chart.defaults.plugins.legend.labels.generateLabels(chart);
@@ -1311,9 +1318,9 @@ var ANA_METRIKA=[
   {k:'shikime',    l:'Shikime',    c:'#4a9eff'},
   {k:'klikime',    l:'Klikime',    c:'#3fb950'},
   {k:'konvertime', l:'Konvertime', c:'#f85149'},
-  {k:'ctr',           l:'CTR % (Klikim/Shikim)',    c:'#e05fa0', derived: r => (r.shikime>0) ? Math.round((r.klikime/r.shikime)*1000)/10 : 0},
-  {k:'konvPerShikim', l:'Konvertim/Shikim %',        c:'#a371f7', derived: r => (r.shikime>0) ? Math.round((r.konvertime/r.shikime)*1000)/10 : 0},
-  {k:'cvr',            l:'CVR % (Konvertim/Klikim)', c:'#56d4dd', derived: r => (r.klikime>0) ? Math.round((r.konvertime/r.klikime)*1000)/10 : 0}
+  {k:'ctr',           l:'CTR % (Klikim/Shikim)',    c:'#e05fa0', derived: r => (r.shikime>0) ? Math.round((r.klikime/r.shikime)*1000)/10 : 0, percentazh:true},
+  {k:'konvPerShikim', l:'Konvertim/Shikim %',        c:'#a371f7', derived: r => (r.shikime>0) ? Math.round((r.konvertime/r.shikime)*1000)/10 : 0, percentazh:true},
+  {k:'cvr',            l:'CVR % (Konvertim/Klikim)', c:'#56d4dd', derived: r => (r.klikime>0) ? Math.round((r.konvertime/r.klikime)*1000)/10 : 0, percentazh:true}
 ];
 // Merr vleren e nje rreshti per nje metrike — direkte (r.k) per te 4 origjinalet,
 // e llogaritur (derived) per 3 te rejat (perqindje, nga te njejtat te dhena, pa kerkuar backend).
@@ -1406,14 +1413,15 @@ async function ngarkoAnalitika(){
   const labels=rows.map(r=>r.data);
   const datasets=[];
   ANA_METRIKA.forEach(x=>{
-    if(_anaMetrikaAktive[x.k]) datasets.push({label:x.l, data: rows.map(r=>anaVlera(r,x)), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
+    if(_anaMetrikaAktive[x.k]) datasets.push({label:x.l, data: rows.map(r=>anaVlera(r,x)), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c, yAxisID: x.percentazh?'yPerqindje':'y'});
   });
   const canvas=$('anaCanvas'); if(!canvas||typeof Chart==='undefined') return;
   const ctx=canvas.getContext('2d');
   if(_anaChart) _anaChart.destroy();
   _anaChart=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
-      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
+      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}},
+        yPerqindje:{beginAtZero:true,max:100,position:'right',ticks:{color:'#8b949e',callback:v=>v+'%'},grid:{drawOnChartArea:false}}},
       plugins:{legend:{labels:{color:'#e6edf3', generateLabels:function(chart){
         const items=Chart.defaults.plugins.legend.labels.generateLabels(chart);
         items.forEach(it=>{ it.lineDash=[]; it.lineWidth=2; });
@@ -1605,7 +1613,8 @@ async function ngarkoAnaKategorite(){
   let d;
   try{ d=await(await fetch(url)).json(); }catch(e){ return; }
   // Vetem kategorite me te pakten 1 tek METRIKA aktualisht e zgjedhur, ne kete periudhe
-  const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>p[_anaKatMetrikaAktive]>0));
+  const katMetrikaObj = ANA_METRIKA.find(x=>x.k===_anaKatMetrikaAktive) || {k:_anaKatMetrikaAktive};
+  const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>anaVlera(p,katMetrikaObj)>0));
   anaRenderKatLegend(kategorite);
   const canvas=$('anaKatCanvas'); if(!canvas||typeof Chart==='undefined') return;
   if(_anaKatChart){ _anaKatChart.destroy(); _anaKatChart=null; }
@@ -1615,14 +1624,18 @@ async function ngarkoAnaKategorite(){
   }
   const labels=kategorite[0].pikat.map(p=>p.data);
   const datasets=kategorite.map((k,i)=>({
-    label:k.emri, data:k.pikat.map(p=>p[_anaKatMetrikaAktive]),
+    label:k.emri, data:k.pikat.map(p=>anaVlera(p,katMetrikaObj)),
     borderColor:anaKatPaleta(i), backgroundColor:'transparent',
     tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:anaKatPaleta(i)
   }));
   const ctx=canvas.getContext('2d');
+  const eshtePerqindje = !!katMetrikaObj.percentazh;
   _anaKatChart=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
-      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
+      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}},
+        y: eshtePerqindje
+          ? {beginAtZero:true,max:100,ticks:{color:'#8b949e',callback:v=>v+'%'},grid:{color:'#2a313c'}}
+          : {beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
       plugins:{legend:{display:false}}},
     plugins:[anaMultiColorLinePlugin]
   });
