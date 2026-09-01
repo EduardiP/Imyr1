@@ -603,16 +603,29 @@ app.get('/api/vshtrime', iLoguar, async (req, res) => {
          ) sub`, [lloji]);
       return { yti: yti.rows[0].v, mesatarja: rr(rrjeti.rows[0].v) };
     }
+    async function numriDhene(lloji){
+      const yti = await pool.query(
+        `SELECT COUNT(*)::int AS v FROM ngjarjet WHERE biznes_id=$1 AND lloji=$2`, [req.biznesId, lloji]);
+      const rrjeti = await pool.query(
+        `SELECT AVG(n)::float AS v FROM (
+           SELECT biznes_id, COUNT(*) AS n FROM ngjarjet WHERE lloji=$1 GROUP BY biznes_id
+         ) sub`, [lloji]);
+      return { yti: yti.rows[0].v, mesatarja: rr(rrjeti.rows[0].v) };
+    }
     const shfaqjeMarre = await numriMarre('view');
     const klikimeMarre = await numriMarre('click');
     const konvertimeMarre = await numriMarre('konvertim');
+    const shfaqjeDhene = await numriDhene('view');
+    const klikimeDhene = await numriDhene('click');
+    const konvertimeDhene = await numriDhene('konvertim');
 
     res.json({
       ctr:       { yti: rr(ctrYti.rows[0].v),  mesatarja: rr(ctrRrjeti.rows[0].v) },
       konvertimi:{ yti: rr(konvYti.rows[0].v),  mesatarja: rr(konvRrjeti.rows[0].v) },
       pikeAIReklamues: { yti: rr(aiYti.rows[0].v),     mesatarja: rr(aiRrjetiReklamues.rows[0].v) },
       pikeAIHost:       { yti: rr(aiYtiHost.rows[0].v), mesatarja: rr(aiRrjetiHost.rows[0].v) },
-      shfaqjeMarre, klikimeMarre, konvertimeMarre
+      shfaqjeMarre, klikimeMarre, konvertimeMarre,
+      shfaqjeDhene, klikimeDhene, konvertimeDhene
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
