@@ -34,11 +34,7 @@ const NAV2 = [
     {l:'Automatiku', nav:'anaAutomatik'},
     {l:'Deficiti', nav:'anaDeficiti'}
   ]},
-  { k:'insights', l:'Vështrime', subs:[
-    {l:'Pika AI & kombinimet kryesore', nav:'insights'},
-    {l:'Faza e ndihmës', nav:'insights'},
-    {l:'Shëndeti i reklamave', nav:'insights'}
-  ]}
+  { k:'insights', l:'Vështrime' },
 ];
 var _nav2OpenKey = null; // cila kategori NAV2 ka panelin e nenkategorive te hapur (vetem nje njekohesisht)
 
@@ -119,10 +115,37 @@ function renderHome(){
   $('homeHi').textContent = une.emri;
 }
 
-function mainInsights(m){
-  m.innerHTML='<h2 class="h">Insights</h2>'+
-    '<p class="small" style="margin:8px 0 16px;">Statistika agregate nga motori AI.</p>'+
-    '<div class="card"><p class="small mut">Kjo veçori vjen së shpejti.</p></div>';
+async function mainInsights(m){
+  m.innerHTML='<h2 class="h">Vështrime</h2>'+
+    '<p class="small" style="margin:8px 0 18px;">Si krahasohesh me mesataren e rrjetit.</p>'+
+    '<div id="vshtWrap"><p class="small mut">Po ngarkoj…</p></div>';
+  const wrap=$('vshtWrap');
+  let d;
+  try{ d=await(await fetch('/api/vshtrime')).json(); }catch(e){ wrap.innerHTML='<p class="small">Gabim në ngarkim.</p>'; return; }
+
+  function kutia(titull, njesi, yti, mesatarja){
+    if(yti===null || mesatarja===null){
+      return '<div class="card" style="margin-bottom:14px;">'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 6px;">'+titull+'</h3>'+
+        '<p class="small mut">Ende s\'ka mjaftueshëm të dhëna.</p></div>';
+    }
+    const ndryshimi = mesatarja>0 ? Math.round(((yti-mesatarja)/mesatarja)*1000)/10 : 0;
+    const poziti = ndryshimi>=0;
+    const ngjyra = poziti ? 'var(--good)' : 'var(--err)';
+    const shenja = poziti ? '↑' : '↓';
+    return '<div class="card" style="margin-bottom:14px;">'+
+      '<h3 class="h" style="font-size:15px;margin:0 0 10px;">'+titull+'</h3>'+
+      '<div style="display:flex;gap:24px;align-items:baseline;flex-wrap:wrap;">'+
+        '<div><div style="font-size:26px;font-weight:700;">'+yti+njesi+'</div><div class="small mut">Ti</div></div>'+
+        '<div><div style="font-size:26px;font-weight:700;color:var(--mut);">'+mesatarja+njesi+'</div><div class="small mut">Mesatarja e rrjetit</div></div>'+
+        '<div style="color:'+ngjyra+';font-weight:600;font-size:14px;">'+shenja+' '+Math.abs(ndryshimi)+'% '+(poziti?'mbi':'nën')+' mesataren</div>'+
+      '</div></div>';
+  }
+
+  wrap.innerHTML=
+    kutia('CTR (Klikime ÷ Shfaqje)', '%', d.ctr.yti, d.ctr.mesatarja)+
+    kutia('Konvertim-për-shfaqje', '%', d.konvertimi.yti, d.konvertimi.mesatarja)+
+    kutia('Pikët AI mesatare (përputhjet e tua)', '', d.pikeAI.yti, d.pikeAI.mesatarja);
 }
 
 async function ngarkoHtml5(){
