@@ -123,10 +123,11 @@ async function mainInsights(m){
   let d;
   try{ d=await(await fetch('/api/vshtrime')).json(); }catch(e){ wrap.innerHTML='<p class="small">Gabim në ngarkim.</p>'; return; }
 
-  function kutia(titull, shpjegim, njesi, yti, mesatarja){
+  function kutia(titull, shpjegim, njesi, yti, mesatarja, minGjeresia){
+    minGjeresia = minGjeresia || 260;
     const shpjegimHTML = shpjegim ? '<p class="small mut" style="margin:0 0 10px;">'+shpjegim+'</p>' : '';
     if(yti===null || mesatarja===null){
-      return '<div class="card" style="flex:1;min-width:260px;">'+
+      return '<div class="card" style="flex:1;min-width:'+minGjeresia+'px;">'+
         '<h3 class="h" style="font-size:15px;margin:0 0 6px;">'+titull+'</h3>'+
         shpjegimHTML+
         '<p class="small mut">Ende s\'ka mjaftueshëm të dhëna.</p></div>';
@@ -135,7 +136,7 @@ async function mainInsights(m){
     const poziti = ndryshimi>=0;
     const ngjyra = poziti ? 'var(--good)' : 'var(--err)';
     const shenja = poziti ? '↑' : '↓';
-    return '<div class="card" style="flex:1;min-width:260px;">'+
+    return '<div class="card" style="flex:1;min-width:'+minGjeresia+'px;">'+
       '<h3 class="h" style="font-size:15px;margin:0 0 6px;">'+titull+'</h3>'+
       shpjegimHTML+
       '<div style="display:flex;gap:20px;align-items:baseline;flex-wrap:wrap;">'+
@@ -153,16 +154,16 @@ async function mainInsights(m){
         kutia('Pikë AI — Si host', 'Sa relevante janë, mesatarisht, reklamat e të tjerëve për audiencën tënde.', '', d.pikeAIHost.yti, d.pikeAIHost.mesatarja)+
       '</div>'+
       '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
-        kutia('Shfaqje të marra', null, '', d.shfaqjeMarre.yti, d.shfaqjeMarre.mesatarja)+
-        kutia('Shikime të marra', null, '', d.shikimeMarre.yti, d.shikimeMarre.mesatarja)+
-        kutia('Klikime të marra', null, '', d.klikimeMarre.yti, d.klikimeMarre.mesatarja)+
-        kutia('Konvertime të marra', null, '', d.konvertimeMarre.yti, d.konvertimeMarre.mesatarja)+
+        kutia('Shfaqje të marra', null, '', d.shfaqjeMarre.yti, d.shfaqjeMarre.mesatarja, 180)+
+        kutia('Shikime të marra', null, '', d.shikimeMarre.yti, d.shikimeMarre.mesatarja, 180)+
+        kutia('Klikime të marra', null, '', d.klikimeMarre.yti, d.klikimeMarre.mesatarja, 180)+
+        kutia('Konvertime të marra', null, '', d.konvertimeMarre.yti, d.konvertimeMarre.mesatarja, 180)+
       '</div>'+
       '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
-        kutia('Shfaqje të dhëna', null, '', d.shfaqjeDhene.yti, d.shfaqjeDhene.mesatarja)+
-        kutia('Shikime të dhëna', null, '', d.shikimeDhene.yti, d.shikimeDhene.mesatarja)+
-        kutia('Klikime të dhëna', null, '', d.klikimeDhene.yti, d.klikimeDhene.mesatarja)+
-        kutia('Konvertime të dhëna', null, '', d.konvertimeDhene.yti, d.konvertimeDhene.mesatarja)+
+        kutia('Shfaqje të dhëna', null, '', d.shfaqjeDhene.yti, d.shfaqjeDhene.mesatarja, 180)+
+        kutia('Shikime të dhëna', null, '', d.shikimeDhene.yti, d.shikimeDhene.mesatarja, 180)+
+        kutia('Klikime të dhëna', null, '', d.klikimeDhene.yti, d.klikimeDhene.mesatarja, 180)+
+        kutia('Konvertime të dhëna', null, '', d.konvertimeDhene.yti, d.konvertimeDhene.mesatarja, 180)+
       '</div>'+
       '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
         kutia('CTR (Klikime ÷ Shfaqje)', null, '%', d.ctr.yti, d.ctr.mesatarja)+
