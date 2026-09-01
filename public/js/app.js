@@ -158,11 +158,13 @@ async function mainInsights(m){
       '</div>'+
       '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
         kutia('Shfaqje të marra', null, '', d.shfaqjeMarre.yti, d.shfaqjeMarre.mesatarja)+
+        kutia('Shikime të marra', null, '', d.shikimeMarre.yti, d.shikimeMarre.mesatarja)+
         kutia('Klikime të marra', null, '', d.klikimeMarre.yti, d.klikimeMarre.mesatarja)+
         kutia('Konvertime të marra', null, '', d.konvertimeMarre.yti, d.konvertimeMarre.mesatarja)+
       '</div>'+
       '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
         kutia('Shfaqje të dhëna', null, '', d.shfaqjeDhene.yti, d.shfaqjeDhene.mesatarja)+
+        kutia('Shikime të dhëna', null, '', d.shikimeDhene.yti, d.shikimeDhene.mesatarja)+
         kutia('Klikime të dhëna', null, '', d.klikimeDhene.yti, d.klikimeDhene.mesatarja)+
         kutia('Konvertime të dhëna', null, '', d.konvertimeDhene.yti, d.konvertimeDhene.mesatarja)+
       '</div>'+
