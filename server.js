@@ -573,6 +573,13 @@ app.get('/api/vshtrime', iLoguar, async (req, res) => {
       `SELECT COUNT(*) FILTER (WHERE lloji='konvertim')::float / NULLIF(COUNT(*) FILTER (WHERE lloji='view'),0) * 100 AS v
        FROM ngjarjet`);
 
+    const cvrYti = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE lloji='konvertim')::float / NULLIF(COUNT(*) FILTER (WHERE lloji='click'),0) * 100 AS v
+       FROM ngjarjet WHERE reklamues_id=$1`, [req.biznesId]);
+    const cvrRrjeti = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE lloji='konvertim')::float / NULLIF(COUNT(*) FILTER (WHERE lloji='click'),0) * 100 AS v
+       FROM ngjarjet`);
+
     const aiYti = await pool.query(
       `SELECT AVG(skori)::float AS v FROM perputhjet WHERE reklamues_id=$1 AND skori IS NOT NULL`, [req.biznesId]);
     const aiYtiHost = await pool.query(
@@ -624,6 +631,7 @@ app.get('/api/vshtrime', iLoguar, async (req, res) => {
     res.json({
       ctr:       { yti: rr(ctrYti.rows[0].v),  mesatarja: rr(ctrRrjeti.rows[0].v) },
       konvertimi:{ yti: rr(konvYti.rows[0].v),  mesatarja: rr(konvRrjeti.rows[0].v) },
+      cvr:       { yti: rr(cvrYti.rows[0].v),  mesatarja: rr(cvrRrjeti.rows[0].v) },
       pikeAIReklamues: { yti: rr(aiYti.rows[0].v),     mesatarja: rr(aiRrjetiReklamues.rows[0].v) },
       pikeAIHost:       { yti: rr(aiYtiHost.rows[0].v), mesatarja: rr(aiRrjetiHost.rows[0].v) },
       shfaqjeMarre, shikimeMarre, klikimeMarre, konvertimeMarre,
