@@ -577,15 +577,26 @@ app.get('/api/vshtrime', iLoguar, async (req, res) => {
       `SELECT AVG(skori)::float AS v FROM perputhjet WHERE reklamues_id=$1 AND skori IS NOT NULL`, [req.biznesId]);
     const aiYtiHost = await pool.query(
       `SELECT AVG(skori)::float AS v FROM perputhjet WHERE host_id=$1 AND skori IS NOT NULL`, [req.biznesId]);
-    const aiRrjeti = await pool.query(
-      `SELECT AVG(skori)::float AS v FROM perputhjet WHERE skori IS NOT NULL`);
+
+    // Mesatarja e rrjetit: mesatarja E SECILIT biznes SE PARI, pastaj mesatarja e atyre —
+    // JO mesatarja e sheshte e te gjitha rreshtave (qe do te ishte i njejti numer per te dyja drejtimet).
+    const aiRrjetiReklamues = await pool.query(
+      `SELECT AVG(mesatarja_biznesi)::float AS v FROM (
+         SELECT reklamues_id, AVG(skori) AS mesatarja_biznesi
+         FROM perputhjet WHERE skori IS NOT NULL GROUP BY reklamues_id
+       ) sub`);
+    const aiRrjetiHost = await pool.query(
+      `SELECT AVG(mesatarja_biznesi)::float AS v FROM (
+         SELECT host_id, AVG(skori) AS mesatarja_biznesi
+         FROM perputhjet WHERE skori IS NOT NULL GROUP BY host_id
+       ) sub`);
 
     const rr = n => n === null || n === undefined || isNaN(n) ? null : Math.round(n * 10) / 10;
     res.json({
       ctr:       { yti: rr(ctrYti.rows[0].v),  mesatarja: rr(ctrRrjeti.rows[0].v) },
       konvertimi:{ yti: rr(konvYti.rows[0].v),  mesatarja: rr(konvRrjeti.rows[0].v) },
-      pikeAIReklamues: { yti: rr(aiYti.rows[0].v),     mesatarja: rr(aiRrjeti.rows[0].v) },
-      pikeAIHost:       { yti: rr(aiYtiHost.rows[0].v), mesatarja: rr(aiRrjeti.rows[0].v) }
+      pikeAIReklamues: { yti: rr(aiYti.rows[0].v),     mesatarja: rr(aiRrjetiReklamues.rows[0].v) },
+      pikeAIHost:       { yti: rr(aiYtiHost.rows[0].v), mesatarja: rr(aiRrjetiHost.rows[0].v) }
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
