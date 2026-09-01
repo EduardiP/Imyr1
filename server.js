@@ -560,17 +560,17 @@ app.get('/api/kreative/statusi-krijimit', iLoguar, async (req, res) => {
 app.get('/api/vshtrime', iLoguar, async (req, res) => {
   try {
     const ctrYti = await pool.query(
-      `SELECT COUNT(*) FILTER (WHERE lloji='click')::float / NULLIF(COUNT(*) FILTER (WHERE lloji='view'),0) * 100 AS v
+      `SELECT COUNT(*) FILTER (WHERE lloji='click')::float / NULLIF(COUNT(*) FILTER (WHERE lloji='shikim'),0) * 100 AS v
        FROM ngjarjet WHERE reklamues_id=$1`, [req.biznesId]);
     const ctrRrjeti = await pool.query(
-      `SELECT COUNT(*) FILTER (WHERE lloji='click')::float / NULLIF(COUNT(*) FILTER (WHERE lloji='view'),0) * 100 AS v
+      `SELECT COUNT(*) FILTER (WHERE lloji='click')::float / NULLIF(COUNT(*) FILTER (WHERE lloji='shikim'),0) * 100 AS v
        FROM ngjarjet`);
 
     const konvYti = await pool.query(
-      `SELECT COUNT(*) FILTER (WHERE lloji='konvertim')::float / NULLIF(COUNT(*) FILTER (WHERE lloji='view'),0) * 100 AS v
+      `SELECT COUNT(*) FILTER (WHERE lloji='konvertim')::float / NULLIF(COUNT(*) FILTER (WHERE lloji='shikim'),0) * 100 AS v
        FROM ngjarjet WHERE reklamues_id=$1`, [req.biznesId]);
     const konvRrjeti = await pool.query(
-      `SELECT COUNT(*) FILTER (WHERE lloji='konvertim')::float / NULLIF(COUNT(*) FILTER (WHERE lloji='view'),0) * 100 AS v
+      `SELECT COUNT(*) FILTER (WHERE lloji='konvertim')::float / NULLIF(COUNT(*) FILTER (WHERE lloji='shikim'),0) * 100 AS v
        FROM ngjarjet`);
 
     const cvrYti = await pool.query(
