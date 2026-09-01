@@ -670,7 +670,7 @@ async function anaDetNgarkoReklamaChart(){
   try{ d=await(await fetch(url)).json(); }catch(e){ return; }
   const rows=d.rows||[]; const labels=rows.map(r=>r.data);
   const datasets=[];
-  ANA_METRIKA.forEach(x=>{ if(_anaDetRekMetrikaAktive[x.k]) datasets.push({label:x.l, data:rows.map(r=>r[x.k]), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c}); });
+  ANA_METRIKA.forEach(x=>{ if(_anaDetRekMetrikaAktive[x.k]) datasets.push({label:x.l, data: rows.map(r=>anaVlera(r,x)), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c}); });
   const canvas=$('anaDetReklamaCanvas'); if(!canvas||typeof Chart==='undefined') return;
   if(_anaDetReklamaChart){ _anaDetReklamaChart.destroy(); _anaDetReklamaChart=null; }
   const ctx=canvas.getContext('2d');
@@ -1151,7 +1151,7 @@ async function ngarkoAnaDeficit(){
 
   const datasets=[];
   ANA_METRIKA.forEach(x=>{
-    if(_anaDeficitMetrikaAktive[x.k]) datasets.push({label:x.l, data:rows.map(r=>r[x.k]), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
+    if(_anaDeficitMetrikaAktive[x.k]) datasets.push({label:x.l, data: rows.map(r=>anaVlera(r,x)), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
   });
 
   // Rang SIMETRIK rreth zeros — llogarit vleren maksimale absolute (pozitive ose
@@ -1310,9 +1310,15 @@ var ANA_METRIKA=[
   {k:'shfaqje',    l:'Shfaqje',    c:'#f0883e'},
   {k:'shikime',    l:'Shikime',    c:'#4a9eff'},
   {k:'klikime',    l:'Klikime',    c:'#3fb950'},
-  {k:'konvertime', l:'Konvertime', c:'#f85149'}
+  {k:'konvertime', l:'Konvertime', c:'#f85149'},
+  {k:'ctr',           l:'CTR % (Klikim/Shikim)',    c:'#e05fa0', derived: r => (r.shikime>0) ? Math.round((r.klikime/r.shikime)*1000)/10 : 0},
+  {k:'konvPerShikim', l:'Konvertim/Shikim %',        c:'#a371f7', derived: r => (r.shikime>0) ? Math.round((r.konvertime/r.shikime)*1000)/10 : 0},
+  {k:'cvr',            l:'CVR % (Konvertim/Klikim)', c:'#56d4dd', derived: r => (r.klikime>0) ? Math.round((r.konvertime/r.klikime)*1000)/10 : 0}
 ];
-var _anaMetrikaAktive={shfaqje:true,shikime:true,klikime:true,konvertime:true};
+// Merr vleren e nje rreshti per nje metrike — direkte (r.k) per te 4 origjinalet,
+// e llogaritur (derived) per 3 te rejat (perqindje, nga te njejtat te dhena, pa kerkuar backend).
+function anaVlera(row, metrika){ return metrika.derived ? metrika.derived(row) : row[metrika.k]; }
+var _anaMetrikaAktive={shfaqje:true,shikime:true,klikime:true,konvertime:true,ctr:false,konvPerShikim:false,cvr:false};
 function anaStilBtnMetrike(btn,x){
   const on=_anaMetrikaAktive[x.k];
   btn.style.cssText = on
@@ -1400,7 +1406,7 @@ async function ngarkoAnalitika(){
   const labels=rows.map(r=>r.data);
   const datasets=[];
   ANA_METRIKA.forEach(x=>{
-    if(_anaMetrikaAktive[x.k]) datasets.push({label:x.l, data:rows.map(r=>r[x.k]), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
+    if(_anaMetrikaAktive[x.k]) datasets.push({label:x.l, data: rows.map(r=>anaVlera(r,x)), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
   });
   const canvas=$('anaCanvas'); if(!canvas||typeof Chart==='undefined') return;
   const ctx=canvas.getContext('2d');
