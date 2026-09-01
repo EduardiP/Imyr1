@@ -147,11 +147,20 @@ async function mainInsights(m){
   }
 
   wrap.innerHTML=
-    kutia('CTR (Klikime ÷ Shfaqje)', null, '%', d.ctr.yti, d.ctr.mesatarja)+
-    kutia('Konvertim-për-shfaqje', null, '%', d.konvertimi.yti, d.konvertimi.mesatarja)+
-    '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;">'+
-      kutia('Si reklamues', 'Sa tërheqës je për audiencat e bizneseve që të shfaqin.', '', d.pikeAIReklamues.yti, d.pikeAIReklamues.mesatarja)+
-      kutia('Si host', 'Sa relevante janë, mesatarisht, reklamat e të tjerëve për audiencën tënde.', '', d.pikeAIHost.yti, d.pikeAIHost.mesatarja)+
+    '<div style="display:flex;flex-direction:column;gap:14px;">'+
+      '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
+        kutia('CTR (Klikime ÷ Shfaqje)', null, '%', d.ctr.yti, d.ctr.mesatarja)+
+        kutia('Konvertim-për-shfaqje', null, '%', d.konvertimi.yti, d.konvertimi.mesatarja)+
+      '</div>'+
+      '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
+        kutia('Si reklamues', 'Sa tërheqës je për audiencat e bizneseve që të shfaqin.', '', d.pikeAIReklamues.yti, d.pikeAIReklamues.mesatarja)+
+        kutia('Si host', 'Sa relevante janë, mesatarisht, reklamat e të tjerëve për audiencën tënde.', '', d.pikeAIHost.yti, d.pikeAIHost.mesatarja)+
+      '</div>'+
+      '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
+        kutia('Shfaqje të marra', null, '', d.shfaqjeMarre.yti, d.shfaqjeMarre.mesatarja)+
+        kutia('Klikime të marra', null, '', d.klikimeMarre.yti, d.klikimeMarre.mesatarja)+
+        kutia('Konvertime të marra', null, '', d.konvertimeMarre.yti, d.konvertimeMarre.mesatarja)+
+      '</div>'+
     '</div>';
 }
 
