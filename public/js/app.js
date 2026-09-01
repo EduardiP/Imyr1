@@ -177,9 +177,9 @@ async function mainInsights(m){
       '<div>'+
         '<h4 class="small mut" style="text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;">Raportet</h4>'+
         '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
-          kutia('CTR (Klikime ÷ Shfaqje)', null, '%', d.ctr.yti, d.ctr.mesatarja, 180)+
+          kutia('CTR (Klikime ÷ Shikime)', null, '%', d.ctr.yti, d.ctr.mesatarja, 180)+
           kutia('CVR (Konvertime ÷ Klikime)', null, '%', d.cvr.yti, d.cvr.mesatarja, 180)+
-          kutia('Konvertim-për-shfaqje', null, '%', d.konvertimi.yti, d.konvertimi.mesatarja, 180)+
+          kutia('Konvertim-për-shikim', null, '%', d.konvertimi.yti, d.konvertimi.mesatarja, 180)+
         '</div>'+
       '</div>'+
     '</div>';
