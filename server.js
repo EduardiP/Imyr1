@@ -575,6 +575,8 @@ app.get('/api/vshtrime', iLoguar, async (req, res) => {
 
     const aiYti = await pool.query(
       `SELECT AVG(skori)::float AS v FROM perputhjet WHERE reklamues_id=$1 AND skori IS NOT NULL`, [req.biznesId]);
+    const aiYtiHost = await pool.query(
+      `SELECT AVG(skori)::float AS v FROM perputhjet WHERE host_id=$1 AND skori IS NOT NULL`, [req.biznesId]);
     const aiRrjeti = await pool.query(
       `SELECT AVG(skori)::float AS v FROM perputhjet WHERE skori IS NOT NULL`);
 
@@ -582,7 +584,8 @@ app.get('/api/vshtrime', iLoguar, async (req, res) => {
     res.json({
       ctr:       { yti: rr(ctrYti.rows[0].v),  mesatarja: rr(ctrRrjeti.rows[0].v) },
       konvertimi:{ yti: rr(konvYti.rows[0].v),  mesatarja: rr(konvRrjeti.rows[0].v) },
-      pikeAI:    { yti: rr(aiYti.rows[0].v),    mesatarja: rr(aiRrjeti.rows[0].v) }
+      pikeAIReklamues: { yti: rr(aiYti.rows[0].v),     mesatarja: rr(aiRrjeti.rows[0].v) },
+      pikeAIHost:       { yti: rr(aiYtiHost.rows[0].v), mesatarja: rr(aiRrjeti.rows[0].v) }
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
