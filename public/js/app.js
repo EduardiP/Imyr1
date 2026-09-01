@@ -123,29 +123,36 @@ async function mainInsights(m){
   let d;
   try{ d=await(await fetch('/api/vshtrime')).json(); }catch(e){ wrap.innerHTML='<p class="small">Gabim në ngarkim.</p>'; return; }
 
-  function kutia(titull, njesi, yti, mesatarja){
+  function kutia(titull, shpjegim, njesi, yti, mesatarja){
+    const shpjegimHTML = shpjegim ? '<p class="small mut" style="margin:0 0 10px;">'+shpjegim+'</p>' : '';
     if(yti===null || mesatarja===null){
-      return '<div class="card" style="margin-bottom:14px;">'+
+      return '<div class="card" style="flex:1;min-width:260px;">'+
         '<h3 class="h" style="font-size:15px;margin:0 0 6px;">'+titull+'</h3>'+
+        shpjegimHTML+
         '<p class="small mut">Ende s\'ka mjaftueshëm të dhëna.</p></div>';
     }
     const ndryshimi = mesatarja>0 ? Math.round(((yti-mesatarja)/mesatarja)*1000)/10 : 0;
     const poziti = ndryshimi>=0;
     const ngjyra = poziti ? 'var(--good)' : 'var(--err)';
     const shenja = poziti ? '↑' : '↓';
-    return '<div class="card" style="margin-bottom:14px;">'+
-      '<h3 class="h" style="font-size:15px;margin:0 0 10px;">'+titull+'</h3>'+
-      '<div style="display:flex;gap:24px;align-items:baseline;flex-wrap:wrap;">'+
-        '<div><div style="font-size:26px;font-weight:700;">'+yti+njesi+'</div><div class="small mut">Ti</div></div>'+
-        '<div><div style="font-size:26px;font-weight:700;color:var(--mut);">'+mesatarja+njesi+'</div><div class="small mut">Mesatarja e rrjetit</div></div>'+
-        '<div style="color:'+ngjyra+';font-weight:600;font-size:14px;">'+shenja+' '+Math.abs(ndryshimi)+'% '+(poziti?'mbi':'nën')+' mesataren</div>'+
-      '</div></div>';
+    return '<div class="card" style="flex:1;min-width:260px;">'+
+      '<h3 class="h" style="font-size:15px;margin:0 0 6px;">'+titull+'</h3>'+
+      shpjegimHTML+
+      '<div style="display:flex;gap:20px;align-items:baseline;flex-wrap:wrap;">'+
+        '<div><div style="font-size:24px;font-weight:700;">'+yti+njesi+'</div><div class="small mut">Ti</div></div>'+
+        '<div><div style="font-size:24px;font-weight:700;color:var(--mut);">'+mesatarja+njesi+'</div><div class="small mut">Mesatarja</div></div>'+
+      '</div>'+
+      '<div style="color:'+ngjyra+';font-weight:600;font-size:13px;margin-top:8px;">'+shenja+' '+Math.abs(ndryshimi)+'% '+(poziti?'mbi':'nën')+' mesataren</div>'+
+      '</div>';
   }
 
   wrap.innerHTML=
-    kutia('CTR (Klikime ÷ Shfaqje)', '%', d.ctr.yti, d.ctr.mesatarja)+
-    kutia('Konvertim-për-shfaqje', '%', d.konvertimi.yti, d.konvertimi.mesatarja)+
-    kutia('Pikët AI mesatare (përputhjet e tua)', '', d.pikeAI.yti, d.pikeAI.mesatarja);
+    kutia('CTR (Klikime ÷ Shfaqje)', null, '%', d.ctr.yti, d.ctr.mesatarja)+
+    kutia('Konvertim-për-shfaqje', null, '%', d.konvertimi.yti, d.konvertimi.mesatarja)+
+    '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;">'+
+      kutia('Si reklamues', 'Sa tërheqës je për audiencat e bizneseve që të shfaqin.', '', d.pikeAIReklamues.yti, d.pikeAIReklamues.mesatarja)+
+      kutia('Si host', 'Sa relevante janë, mesatarisht, reklamat e të tjerëve për audiencën tënde.', '', d.pikeAIHost.yti, d.pikeAIHost.mesatarja)+
+    '</div>';
 }
 
 async function ngarkoHtml5(){
