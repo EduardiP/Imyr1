@@ -167,6 +167,7 @@ function dashFooterVendos(){
   f.id = 'dashFooter';
   f.style.cssText = 'text-align:center;padding:14px 10px;font-size:12px;color:var(--mut);border-top:1px solid var(--line);margin-top:20px;';
   f.innerHTML = '© 2026 PhronexusAI · '+
+    '<a href="/how-it-works" target="_blank" style="color:inherit;">How It Works</a> · '+
     '<a href="/privacy" target="_blank" style="color:inherit;">Privacy</a> · '+
     '<a href="/terms" target="_blank" style="color:inherit;">Terms</a> · '+
     '<a href="/refund" target="_blank" style="color:inherit;">Refund Policy</a> · '+
