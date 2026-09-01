@@ -613,9 +613,11 @@ app.get('/api/vshtrime', iLoguar, async (req, res) => {
       return { yti: yti.rows[0].v, mesatarja: rr(rrjeti.rows[0].v) };
     }
     const shfaqjeMarre = await numriMarre('view');
+    const shikimeMarre = await numriMarre('shikim');
     const klikimeMarre = await numriMarre('click');
     const konvertimeMarre = await numriMarre('konvertim');
     const shfaqjeDhene = await numriDhene('view');
+    const shikimeDhene = await numriDhene('shikim');
     const klikimeDhene = await numriDhene('click');
     const konvertimeDhene = await numriDhene('konvertim');
 
@@ -624,8 +626,8 @@ app.get('/api/vshtrime', iLoguar, async (req, res) => {
       konvertimi:{ yti: rr(konvYti.rows[0].v),  mesatarja: rr(konvRrjeti.rows[0].v) },
       pikeAIReklamues: { yti: rr(aiYti.rows[0].v),     mesatarja: rr(aiRrjetiReklamues.rows[0].v) },
       pikeAIHost:       { yti: rr(aiYtiHost.rows[0].v), mesatarja: rr(aiRrjetiHost.rows[0].v) },
-      shfaqjeMarre, klikimeMarre, konvertimeMarre,
-      shfaqjeDhene, klikimeDhene, konvertimeDhene
+      shfaqjeMarre, shikimeMarre, klikimeMarre, konvertimeMarre,
+      shfaqjeDhene, shikimeDhene, klikimeDhene, konvertimeDhene
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
