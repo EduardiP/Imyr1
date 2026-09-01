@@ -149,12 +149,8 @@ async function mainInsights(m){
   wrap.innerHTML=
     '<div style="display:flex;flex-direction:column;gap:14px;">'+
       '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
-        kutia('CTR (Klikime ÷ Shfaqje)', null, '%', d.ctr.yti, d.ctr.mesatarja)+
-        kutia('Konvertim-për-shfaqje', null, '%', d.konvertimi.yti, d.konvertimi.mesatarja)+
-      '</div>'+
-      '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
-        kutia('Si reklamues', 'Sa tërheqës je për audiencat e bizneseve që të shfaqin.', '', d.pikeAIReklamues.yti, d.pikeAIReklamues.mesatarja)+
-        kutia('Si host', 'Sa relevante janë, mesatarisht, reklamat e të tjerëve për audiencën tënde.', '', d.pikeAIHost.yti, d.pikeAIHost.mesatarja)+
+        kutia('Pikë AI — Si reklamues', 'Sa tërheqës je për audiencat e bizneseve që të shfaqin.', '', d.pikeAIReklamues.yti, d.pikeAIReklamues.mesatarja)+
+        kutia('Pikë AI — Si host', 'Sa relevante janë, mesatarisht, reklamat e të tjerëve për audiencën tënde.', '', d.pikeAIHost.yti, d.pikeAIHost.mesatarja)+
       '</div>'+
       '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
         kutia('Shfaqje të marra', null, '', d.shfaqjeMarre.yti, d.shfaqjeMarre.mesatarja)+
@@ -167,6 +163,10 @@ async function mainInsights(m){
         kutia('Shikime të dhëna', null, '', d.shikimeDhene.yti, d.shikimeDhene.mesatarja)+
         kutia('Klikime të dhëna', null, '', d.klikimeDhene.yti, d.klikimeDhene.mesatarja)+
         kutia('Konvertime të dhëna', null, '', d.konvertimeDhene.yti, d.konvertimeDhene.mesatarja)+
+      '</div>'+
+      '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
+        kutia('CTR (Klikime ÷ Shfaqje)', null, '%', d.ctr.yti, d.ctr.mesatarja)+
+        kutia('Konvertim-për-shfaqje', null, '%', d.konvertimi.yti, d.konvertimi.mesatarja)+
       '</div>'+
     '</div>';
 }
