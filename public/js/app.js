@@ -541,7 +541,7 @@ function renderMain(s){
   if(curNav==='reklamat2')    return mainReklamat(m, s);
   if(curNav==='konvertimet2') return mainKonvertimi(m);
   if(curNav==='analytics2')   return mainAnalytics(m);
-  if(curNav==='insights2')    return mainInsights(m);
+  if(curNav==='insights')    return mainInsights(m);
 }
 async function mainProfili(m){
   m.innerHTML='<p class="small">Po ngarkoj…</p>';
