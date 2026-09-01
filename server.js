@@ -556,6 +556,37 @@ app.get('/api/kreative/statusi-krijimit', iLoguar, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// --- VESHTRIME: benchmark-e (yti vs mesatarja e rrjetit), per 3 metrika ---
+app.get('/api/vshtrime', iLoguar, async (req, res) => {
+  try {
+    const ctrYti = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE lloji='click')::float / NULLIF(COUNT(*) FILTER (WHERE lloji='view'),0) * 100 AS v
+       FROM ngjarjet WHERE reklamues_id=$1`, [req.biznesId]);
+    const ctrRrjeti = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE lloji='click')::float / NULLIF(COUNT(*) FILTER (WHERE lloji='view'),0) * 100 AS v
+       FROM ngjarjet`);
+
+    const konvYti = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE lloji='konvertim')::float / NULLIF(COUNT(*) FILTER (WHERE lloji='view'),0) * 100 AS v
+       FROM ngjarjet WHERE reklamues_id=$1`, [req.biznesId]);
+    const konvRrjeti = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE lloji='konvertim')::float / NULLIF(COUNT(*) FILTER (WHERE lloji='view'),0) * 100 AS v
+       FROM ngjarjet`);
+
+    const aiYti = await pool.query(
+      `SELECT AVG(skori)::float AS v FROM perputhjet WHERE reklamues_id=$1 AND skori IS NOT NULL`, [req.biznesId]);
+    const aiRrjeti = await pool.query(
+      `SELECT AVG(skori)::float AS v FROM perputhjet WHERE skori IS NOT NULL`);
+
+    const rr = n => n === null || n === undefined || isNaN(n) ? null : Math.round(n * 10) / 10;
+    res.json({
+      ctr:       { yti: rr(ctrYti.rows[0].v),  mesatarja: rr(ctrRrjeti.rows[0].v) },
+      konvertimi:{ yti: rr(konvYti.rows[0].v),  mesatarja: rr(konvRrjeti.rows[0].v) },
+      pikeAI:    { yti: rr(aiYti.rows[0].v),    mesatarja: rr(aiRrjeti.rows[0].v) }
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/analytics/reklamat', iLoguar, async (req, res) => {
   try {
     let nga = req.query.nga, deri = req.query.deri;
