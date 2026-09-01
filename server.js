@@ -870,8 +870,33 @@ app.get('/api/analytics/ore', iLoguar, async (req, res) => {
     const ngaD=new Date(nga), deriD=new Date(deri);
     if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
     const logjika = ['ankand','barazi'].includes(req.query.logjika) ? req.query.logjika : 'ankand';
+    const metrikaKerkuar = req.query.metrika || 'shfaqje';
+
+    // Metrikat e REJA (perqindje) — kerkojne 2 numerime (numerues+emerues) per ore, jo 1
+    const RAPORTET = {
+      ctr:           { numerues: 'click', emerues: 'shikim' },
+      konvPerShikim: { numerues: 'konvertim', emerues: 'shikim' },
+      cvr:           { numerues: 'konvertim', emerues: 'click' }
+    };
+
+    if (RAPORTET[metrikaKerkuar]) {
+      const { numerues, emerues } = RAPORTET[metrikaKerkuar];
+      const r = await pool.query(`
+        SELECT EXTRACT(HOUR FROM created_at)::int AS ora,
+          COUNT(*) FILTER (WHERE lloji=$4)::float AS num,
+          COUNT(*) FILTER (WHERE lloji=$5)::float AS emr
+        FROM ngjarjet
+        WHERE reklamues_id=$1 AND burimi=$6 AND created_at::date BETWEEN $2 AND $3
+          AND lloji IN ($4,$5)
+        GROUP BY ora`, [req.biznesId, nga, deri, numerues, emerues, logjika]);
+
+      const oret = new Array(24).fill(0);
+      r.rows.forEach(x => { oret[x.ora] = x.emr > 0 ? Math.round((x.num / x.emr) * 1000) / 10 : 0; });
+      return res.json({ nga, deri, metrika: metrikaKerkuar, oret, perqindje: true });
+    }
+
     const metrikaMap = { shfaqje:'view', shikime:'shikim', klikime:'click', konvertime:'konvertim' };
-    const lloji = metrikaMap[req.query.metrika] || 'view';
+    const lloji = metrikaMap[metrikaKerkuar] || 'view';
 
     const r = await pool.query(`
       SELECT EXTRACT(HOUR FROM created_at)::int AS ora, COUNT(*)::int AS n
@@ -881,7 +906,7 @@ app.get('/api/analytics/ore', iLoguar, async (req, res) => {
 
     const oret = new Array(24).fill(0);
     r.rows.forEach(x => { oret[x.ora] = x.n; });
-    res.json({ nga, deri, metrika: req.query.metrika || 'shfaqje', oret });
+    res.json({ nga, deri, metrika: metrikaKerkuar, oret });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
