@@ -650,7 +650,7 @@ var _anaDetRekMetrikaAktive={shfaqje:true,shikime:true,klikime:true,konvertime:t
 function anaDetRenderReklamaMetrika(){
   const el=$('anaDetReklamaMetrikaRow'); if(!el) return;
   el.innerHTML='';
-  ANA_METRIKA.forEach(x=>{
+  ANA_METRIKA_BAZE.forEach(x=>{
     const btn=document.createElement('button');
     btn.type='button'; btn.textContent=x.l;
     const on=_anaDetRekMetrikaAktive[x.k];
@@ -670,14 +670,13 @@ async function anaDetNgarkoReklamaChart(){
   try{ d=await(await fetch(url)).json(); }catch(e){ return; }
   const rows=d.rows||[]; const labels=rows.map(r=>r.data);
   const datasets=[];
-  ANA_METRIKA.forEach(x=>{ if(_anaDetRekMetrikaAktive[x.k]) datasets.push({label:x.l, data: rows.map(r=>anaVlera(r,x)), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c, yAxisID: x.percentazh?'yPerqindje':'y'}); });
+  ANA_METRIKA_BAZE.forEach(x=>{ if(_anaDetRekMetrikaAktive[x.k]) datasets.push({label:x.l, data: rows.map(r=>anaVlera(r,x)), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c}); });
   const canvas=$('anaDetReklamaCanvas'); if(!canvas||typeof Chart==='undefined') return;
   if(_anaDetReklamaChart){ _anaDetReklamaChart.destroy(); _anaDetReklamaChart=null; }
   const ctx=canvas.getContext('2d');
   _anaDetReklamaChart=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
-      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}},
-        yPerqindje:{beginAtZero:true,max:100,position:'right',ticks:{color:'#8b949e',callback:v=>v+'%'},grid:{drawOnChartArea:false}}},
+      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
       plugins:{legend:{labels:{color:'#e6edf3'}}}},
     plugins:[anaMultiColorLinePlugin]
   });
@@ -718,7 +717,8 @@ async function anaDetNgarkoKategoriaChart(){
   let url='/api/analytics/kategorite?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand');
   let d;
   try{ d=await(await fetch(url)).json(); }catch(e){ return; }
-  const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>p[_anaDetKatMetrikaAktive]>0));
+  const detKatMetrikaObj = ANA_METRIKA.find(x=>x.k===_anaDetKatMetrikaAktive) || {k:_anaDetKatMetrikaAktive};
+  const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>anaVlera(p,detKatMetrikaObj)>0));
   const legEl=$('anaDetKatLegend');
   if(legEl) legEl.innerHTML = !kategorite.length ? '<p class="small mut" style="margin:0;">Asnjë kategori.</p>' :
     kategorite.map((k,i)=>'<div style="display:flex;align-items:center;gap:7px;font-size:12px;"><span style="width:10px;height:10px;border-radius:50%;background:'+anaKatPaleta(i)+';"></span>'+esc(k.emri)+'</div>').join('');
@@ -726,11 +726,15 @@ async function anaDetNgarkoKategoriaChart(){
   if(_anaDetKategoriaChartRef){ _anaDetKategoriaChartRef.destroy(); _anaDetKategoriaChartRef=null; }
   if(!kategorite.length){ const ctx0=canvas.getContext('2d'); ctx0.clearRect(0,0,canvas.width,canvas.height); return; }
   const labels=kategorite[0].pikat.map(p=>p.data);
-  const datasets=kategorite.map((k,i)=>({label:k.emri, data:k.pikat.map(p=>p[_anaDetKatMetrikaAktive]), borderColor:anaKatPaleta(i), backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:anaKatPaleta(i)}));
+  const datasets=kategorite.map((k,i)=>({label:k.emri, data:k.pikat.map(p=>anaVlera(p,detKatMetrikaObj)), borderColor:anaKatPaleta(i), backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:anaKatPaleta(i)}));
   const ctx=canvas.getContext('2d');
+  const detKatEshtePerqindje = !!detKatMetrikaObj.percentazh;
   _anaDetKategoriaChartRef=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
-      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
+      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}},
+        y: detKatEshtePerqindje
+          ? {beginAtZero:true,max:100,ticks:{color:'#8b949e',callback:v=>v+'%'},grid:{color:'#2a313c'}}
+          : {beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
       plugins:{legend:{display:false}}},
     plugins:[anaMultiColorLinePlugin]
   });
@@ -1127,7 +1131,7 @@ function anaNgarkoDeficitinTeGjithe(){
 function anaRenderDeficitMetrika(){
   const el=$('anaDeficitMetrikaRow'); if(!el) return;
   el.innerHTML='';
-  ANA_METRIKA.forEach(x=>{
+  ANA_METRIKA_BAZE.forEach(x=>{
     const btn=document.createElement('button');
     btn.type='button'; btn.textContent=x.l;
     const on=_anaDeficitMetrikaAktive[x.k];
@@ -1155,8 +1159,8 @@ async function ngarkoAnaDeficit(){
   if(_anaDeficitChart){ _anaDeficitChart.destroy(); _anaDeficitChart=null; }
 
   const datasets=[];
-  ANA_METRIKA.forEach(x=>{
-    if(_anaDeficitMetrikaAktive[x.k]) datasets.push({label:x.l, data: rows.map(r=>anaVlera(r,x)), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c, yAxisID: x.percentazh?'yPerqindje':'y', _percentazh: !!x.percentazh});
+  ANA_METRIKA_BAZE.forEach(x=>{
+    if(_anaDeficitMetrikaAktive[x.k]) datasets.push({label:x.l, data: rows.map(r=>anaVlera(r,x)), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
   });
 
   // Rang SIMETRIK rreth zeros — llogarit vleren maksimale absolute (pozitive ose
@@ -1166,7 +1170,7 @@ async function ngarkoAnaDeficit(){
   // perdor nje rang minimal fiks qe grafiku te mos rrudhet ne nje vije te sheshte.
   // PERQINDJET (CTR/CVR/etj) PERJASHTOHEN nga kjo llogaritje — kane bosht te vetin fiks 0-100.
   let maksAbs=0;
-  datasets.forEach(ds=>{ if(ds._percentazh) return; ds.data.forEach(v=>{ const a=Math.abs(v||0); if(a>maksAbs) maksAbs=a; }); });
+  datasets.forEach(ds=>{ ds.data.forEach(v=>{ const a=Math.abs(v||0); if(a>maksAbs) maksAbs=a; }); });
   const jastek = maksAbs>0 ? maksAbs*1.15 : 5; // 15% hapesire shtese siper/poshte majes, per lexueshmeri
 
   const ctx=canvas.getContext('2d');
@@ -1176,7 +1180,6 @@ async function ngarkoAnaDeficit(){
         x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}},
         // Rang simetrik (-jastek..+jastek) — zero gjithmone saktesisht ne mes, jo vetem "lejohet negative"
         y:{min:-jastek, max:jastek, ticks:{color:'#8b949e',precision:0}, grid:{color:function(ctx){ return ctx.tick.value===0 ? 'rgba(230,237,243,.35)' : '#2a313c'; }}},
-        yPerqindje:{beginAtZero:true,max:100,position:'right',ticks:{color:'#8b949e',callback:v=>v+'%'},grid:{drawOnChartArea:false}}
       },
       plugins:{legend:{labels:{color:'#e6edf3', generateLabels:function(chart){
         const items=Chart.defaults.plugins.legend.labels.generateLabels(chart);
@@ -1199,7 +1202,7 @@ var _anaDeficitDhenieRows=[]; // cache-i i fundit i /api/analytics/deficiti — 
 function anaRenderDhenNgaMetrika(){
   const el=$('anaDhenNgaMetrikaRow'); if(!el) return;
   el.innerHTML='';
-  ANA_METRIKA.forEach(x=>{
+  ANA_METRIKA_BAZE.forEach(x=>{
     const btn=document.createElement('button');
     btn.type='button'; btn.textContent=x.l;
     const on=_anaDhenNgaMetrikaAktive[x.k];
@@ -1217,7 +1220,7 @@ function anaRenderDhenNgaMetrika(){
 function anaRenderMarrjaMetrika(){
   const el=$('anaMarrjaMetrikaRow'); if(!el) return;
   el.innerHTML='';
-  ANA_METRIKA.forEach(x=>{
+  ANA_METRIKA_BAZE.forEach(x=>{
     const btn=document.createElement('button');
     btn.type='button'; btn.textContent=x.l;
     const on=_anaMarrjaMetrikaAktive[x.k];
@@ -1254,7 +1257,7 @@ function anaVizatoDhenNga(){
   if(_anaDhenNgaChart){ _anaDhenNgaChart.destroy(); _anaDhenNgaChart=null; }
   const labels=_anaDeficitDhenieRows.map(r=>r.data);
   const datasets=[];
-  ANA_METRIKA.forEach(x=>{
+  ANA_METRIKA_BAZE.forEach(x=>{
     if(_anaDhenNgaMetrikaAktive[x.k]) datasets.push({label:x.l, data:_anaDeficitDhenieRows.map(r=>r[x.k+'_dhene']), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
   });
   const ctx=canvas.getContext('2d');
@@ -1274,7 +1277,7 @@ function anaVizatoMarrja(){
   if(_anaMarrjaChart){ _anaMarrjaChart.destroy(); _anaMarrjaChart=null; }
   const labels=_anaDeficitDhenieRows.map(r=>r.data);
   const datasets=[];
-  ANA_METRIKA.forEach(x=>{
+  ANA_METRIKA_BAZE.forEach(x=>{
     if(_anaMarrjaMetrikaAktive[x.k]) datasets.push({label:x.l, data:_anaDeficitDhenieRows.map(r=>r[x.k+'_marre']), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
   });
   const ctx=canvas.getContext('2d');
@@ -1322,6 +1325,7 @@ var ANA_METRIKA=[
   {k:'konvPerShikim', l:'Konvertim/Shikim %',        c:'#a371f7', derived: r => (r.shikime>0) ? Math.round((r.konvertime/r.shikime)*1000)/10 : 0, percentazh:true},
   {k:'cvr',            l:'CVR % (Konvertim/Klikim)', c:'#56d4dd', derived: r => (r.klikime>0) ? Math.round((r.konvertime/r.klikime)*1000)/10 : 0, percentazh:true}
 ];
+var ANA_METRIKA_BAZE = ANA_METRIKA.slice(0,4); // vetem 4 origjinalet, per grafiket multi-select
 // Merr vleren e nje rreshti per nje metrike — direkte (r.k) per te 4 origjinalet,
 // e llogaritur (derived) per 3 te rejat (perqindje, nga te njejtat te dhena, pa kerkuar backend).
 function anaVlera(row, metrika){ return metrika.derived ? metrika.derived(row) : row[metrika.k]; }
@@ -1335,7 +1339,7 @@ function anaStilBtnMetrike(btn,x){
 function anaRenderMetrika(){
   const el=$('anaMetrikaRow'); if(!el) return;
   el.innerHTML='';
-  ANA_METRIKA.forEach(x=>{
+  ANA_METRIKA_BAZE.forEach(x=>{
     const btn=document.createElement('button');
     btn.type='button'; btn.textContent=x.l;
     anaStilBtnMetrike(btn,x);
@@ -1412,16 +1416,15 @@ async function ngarkoAnalitika(){
   const rows=d.rows||[];
   const labels=rows.map(r=>r.data);
   const datasets=[];
-  ANA_METRIKA.forEach(x=>{
-    if(_anaMetrikaAktive[x.k]) datasets.push({label:x.l, data: rows.map(r=>anaVlera(r,x)), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c, yAxisID: x.percentazh?'yPerqindje':'y'});
+  ANA_METRIKA_BAZE.forEach(x=>{
+    if(_anaMetrikaAktive[x.k]) datasets.push({label:x.l, data: rows.map(r=>anaVlera(r,x)), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
   });
   const canvas=$('anaCanvas'); if(!canvas||typeof Chart==='undefined') return;
   const ctx=canvas.getContext('2d');
   if(_anaChart) _anaChart.destroy();
   _anaChart=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
-      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}},
-        yPerqindje:{beginAtZero:true,max:100,position:'right',ticks:{color:'#8b949e',callback:v=>v+'%'},grid:{drawOnChartArea:false}}},
+      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
       plugins:{legend:{labels:{color:'#e6edf3', generateLabels:function(chart){
         const items=Chart.defaults.plugins.legend.labels.generateLabels(chart);
         items.forEach(it=>{ it.lineDash=[]; it.lineWidth=2; });
@@ -1856,7 +1859,8 @@ async function ngarkoAnaKatDhene(){
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
   try{ d=await(await fetch('/api/analytics/kategorite-dhene?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand'))).json(); }catch(e){ return; }
-  const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>p[_anaKatDheneMetrikaAktive]>0));
+  const katDheneMetrikaObj = ANA_METRIKA.find(x=>x.k===_anaKatDheneMetrikaAktive) || {k:_anaKatDheneMetrikaAktive};
+  const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>anaVlera(p,katDheneMetrikaObj)>0));
   anaRenderKatDheneLegend(kategorite);
   const canvas=$('anaKatDheneCanvas'); if(!canvas||typeof Chart==='undefined') return;
   if(_anaKatDheneChart){ _anaKatDheneChart.destroy(); _anaKatDheneChart=null; }
@@ -1866,14 +1870,18 @@ async function ngarkoAnaKatDhene(){
   }
   const labels=kategorite[0].pikat.map(p=>p.data);
   const datasets=kategorite.map((k,i)=>({
-    label:k.emri, data:k.pikat.map(p=>p[_anaKatDheneMetrikaAktive]),
+    label:k.emri, data:k.pikat.map(p=>anaVlera(p,katDheneMetrikaObj)),
     borderColor:anaKatPaleta(i), backgroundColor:'transparent',
     tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:anaKatPaleta(i)
   }));
   const ctx=canvas.getContext('2d');
+  const katDheneEshtePerqindje = !!katDheneMetrikaObj.percentazh;
   _anaKatDheneChart=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
-      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
+      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}},
+        y: katDheneEshtePerqindje
+          ? {beginAtZero:true,max:100,ticks:{color:'#8b949e',callback:v=>v+'%'},grid:{color:'#2a313c'}}
+          : {beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
       plugins:{legend:{display:false}}},
     plugins:[anaMultiColorLinePlugin]
   });
@@ -2058,7 +2066,8 @@ async function ngarkoSnStatistikat(){
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
   try{ d=await(await fetch('/api/analytics/kategorite-dhene?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand'))).json(); }catch(e){ return; }
-  const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>p[_snStatMetrikaAktive]>0));
+  const snStatMetrikaObj = ANA_METRIKA.find(x=>x.k===_snStatMetrikaAktive) || {k:_snStatMetrikaAktive};
+  const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>anaVlera(p,snStatMetrikaObj)>0));
   const legEl=$('snStatLegend');
   if(legEl){
     legEl.innerHTML = !kategorite.length
@@ -2078,14 +2087,18 @@ async function ngarkoSnStatistikat(){
   }
   const labels=kategorite[0].pikat.map(p=>p.data);
   const datasets=kategorite.map((k,i)=>({
-    label:k.emri, data:k.pikat.map(p=>p[_snStatMetrikaAktive]),
+    label:k.emri, data:k.pikat.map(p=>anaVlera(p,snStatMetrikaObj)),
     borderColor:anaKatPaleta(i), backgroundColor:'transparent',
     tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:anaKatPaleta(i)
   }));
   const ctx=canvas.getContext('2d');
+  const snStatEshtePerqindje = !!snStatMetrikaObj.percentazh;
   _snStatChart=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
-      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
+      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}},
+        y: snStatEshtePerqindje
+          ? {beginAtZero:true,max:100,ticks:{color:'#8b949e',callback:v=>v+'%'},grid:{color:'#2a313c'}}
+          : {beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
       plugins:{legend:{display:false}}},
     plugins:[anaMultiColorLinePlugin]
   });
