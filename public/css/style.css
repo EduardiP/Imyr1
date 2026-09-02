@@ -133,14 +133,14 @@ h2.h { font-size:20px; margin:0 0 4px; }
 .fmt .lbl { font-size:13px; font-weight:600; }
 .fmt .dim { font-size:11px; color:var(--mut); }
 /* CAKTUESI I MADHESISE — butonat Desktop/Mobile */
-.madhPaj{ flex:1; padding:11px 14px; background:#0e1116; border:1px solid var(--line); border-radius:9px;
-color:var(--txt); font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:.15s; }
-.madhPaj:hover{ border-color:var(--mut); }
-.madhPaj.active{ border-color:var(--acc); background:#0a1b2e; color:var(--acc); }
-.madhPoz{ flex:1; padding:7px 10px; background:#0e1116; border:1px solid var(--line); border-radius:7px;
-color:var(--txt); font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; transition:.15s; }
-.madhPoz:hover{ border-color:var(--mut); }
-.madhPoz.active{ border-color:var(--acc); background:#0a1b2e; color:var(--acc); }
+.madhPaj{ padding:9px 18px; background:none; border:none; border-radius:9px;
+color:var(--mut2); font-size:13px; font-weight:600; cursor:pointer; font-family:var(--f-body); transition:.15s; }
+.madhPaj:hover{ color:var(--txt); }
+.madhPaj.active{ background:var(--card); color:#fff; }
+.madhPoz{ flex:1; padding:8px 10px; background:var(--card2); border:1px solid var(--line); border-radius:9px;
+color:var(--mut2); font-size:12px; font-weight:600; cursor:pointer; font-family:var(--f-body); transition:.15s; }
+.madhPoz:hover{ border-color:var(--mut2); color:var(--txt); }
+.madhPoz.active{ border-color:var(--acc); background:rgba(59,110,240,.12); color:var(--acc2); }
 /* ===== FAQJA PUBLIKE (landing + legal) — brenda aplikacionit ===== */
 :root{ --dark:#0e1116; --light:#f6f7f9; --light-txt:#1a1f27; --light-mut:#5b636e; --light-line:#e3e7ec; --acc-d:#2f7fd8; }
 .container{max-width:1080px;margin:0 auto;padding:0 24px;}
