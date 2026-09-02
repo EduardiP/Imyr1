@@ -716,6 +716,20 @@ async function mainNjoftimet(m){
     el.innerHTML=h;
   }catch(e){ $('njLista').innerHTML='<p class="small">Gabim.</p>'; }
 }
+const DASH_QUICK_ACTIONS = [
+  { label:'Krijo reklamë', desc:'Shto reklamë të re', accent:'#3b6ef0',
+    icon:'<path d="M3 11l18-5-5 18-4-8-9-5z"/>',
+    onclick:"nav({v:'profile',nav:'reklamat',sub:'create'})" },
+  { label:'Lidh & gjurmo konvertimet', desc:'Konfiguro gjurmimin', accent:'#22d3ee',
+    icon:'<path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L11.5 4.5"/><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l1.36-1.36"/>',
+    onclick:"nav({v:'profile',nav:'konvertimet'})" },
+  { label:'Analytics', desc:'Trafiku & performanca', accent:'#a78bfa',
+    icon:'<line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/>',
+    onclick:"nav({v:'profile',nav:'anaTrafiku'})" },
+  { label:'Upgrado planin', desc:'Shfaq të gjitha avantazhet →', accent:'#f59e0b',
+    icon:'<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
+    onclick:"nav({v:'profile',nav:'plani'})" }
+];
 function mainDashboard(m){
   if(window.__llogariaModaliteti==='barazi') return mainDashboardBalance(m);
   m.innerHTML='<h2 class="h">Statusi i llogarisë</h2>'+
@@ -753,6 +767,19 @@ function mainDashboard(m){
         '<h3 class="h" style="font-size:15px;margin:0 0 10px;">Gjurmimi i konvertimeve</h3>'+
         '<div id="dashKonvertimetList"><p class="small">Po ngarkoj…</p></div>'+
       '</div>'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:16px;">'+
+      DASH_QUICK_ACTIONS.map(function(qa){
+        return '<button class="btn" style="display:flex;align-items:flex-start;gap:10px;padding:14px;text-align:left;height:auto;" onclick="'+qa.onclick+'">'+
+          '<div style="width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;background:'+qa.accent+'18;">'+
+            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="'+qa.accent+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+qa.icon+'</svg>'+
+          '</div>'+
+          '<div style="min-width:0;">'+
+            '<p style="font-size:12px;font-weight:600;color:var(--txt);margin:0 0 2px;font-family:var(--f-body);">'+qa.label+'</p>'+
+            '<p style="font-size:11px;color:var(--mut2);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+qa.desc+'</p>'+
+          '</div>'+
+        '</button>';
+      }).join('')+
     '</div>';
   renderDashStatus();
   ngarkoDashAnalitika();
