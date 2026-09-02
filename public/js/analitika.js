@@ -757,11 +757,15 @@ function mainAnaAutomatik(m){
       '<div style="width:38px;height:38px;border-radius:12px;background:rgba(34,211,238,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18"/></svg>'+
       '</div>'+
-      '<h2 class="h" style="margin:0;">Automatiku</h2>'+
+      '<h2 class="h" style="margin:0;">Përzgjedhjet e Pishinave</h2>'+
     '</div>'+
     '<div class="card">'+
       '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Ndarja e hapësirës</h3>'+
       '<p class="small mut" style="margin:0 0 12px;">Si e ke ndarë hapësirën tënde reklamuese mes pishinës Ankand dhe Balance, ditë-për-ditë.</p>'+
+      '<div class="tabs" style="max-width:280px;margin-bottom:14px;">'+
+        '<div class="tab active" id="anaAutTabA" onclick="anaAutomatikSetTab(\'automatik\')">Automatik</div>'+
+        '<div class="tab" id="anaAutTabM" onclick="anaAutomatikSetTab(\'manual\')">Manual</div>'+
+      '</div>'+
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
         '<button class="btn" onclick="anaPresetAutomatik(7)">7 ditët e fundit</button>'+
         '<button class="btn" onclick="anaPresetAutomatik(30)">30 ditët e fundit</button>'+
@@ -775,7 +779,7 @@ function mainAnaAutomatik(m){
         '<input type="date" id="anaDeriAutomatik" style="display:none;">'+
       '</div>'+
       '<p class="small mut" id="anaAutomatikModi" style="margin:0 0 10px;"></p>'+
-      '<canvas id="anaAutomatikCanvas" height="110"></canvas>'+
+      '<div id="anaAutomatikChartWrap"><canvas id="anaAutomatikCanvas" height="110"></canvas></div>'+
     '</div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
   $('anaNgaAutomatik').value=anaFmt(nga); $('anaDeriAutomatik').value=anaFmt(sot);
@@ -795,6 +799,14 @@ function anaPresetAutomatik(dite){
   if(window.__anaKalendaret && window.__anaKalendaret.automatik) window.__anaKalendaret.automatik.refreshLabel();
   ngarkoAnaAutomatik();
 }
+var _anaAutomatikTab = 'automatik';
+function anaAutomatikSetTab(t){
+  _anaAutomatikTab = t;
+  const bA=$('anaAutTabA'), bM=$('anaAutTabM');
+  if(bA) bA.className = 'tab'+(t==='automatik'?' active':'');
+  if(bM) bM.className = 'tab'+(t==='manual'?' active':'');
+  ngarkoAnaAutomatik();
+}
 async function ngarkoAnaAutomatik(){
   const ngaEl=$('anaNgaAutomatik'), deriEl=$('anaDeriAutomatik');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
@@ -806,7 +818,21 @@ async function ngarkoAnaAutomatik(){
       ? '✓ Mënyra jote aktuale: Automatik'
       : ('Mënyra jote aktuale: Manual' + (d.baraziPerqindje!=null ? ' ('+d.baraziPerqindje+'% te Balance)' : ''));
   }
-  const rows=d.rows||[];
+  const gjitha=d.rows||[];
+  const rows = gjitha.filter(r => _anaAutomatikTab==='automatik' ? r.automatik : !r.automatik);
+  const kaTeDhena = rows.some(r => (r.ankand+r.balance) > 0);
+  const wrap=$('anaAutomatikChartWrap'); if(!wrap) return;
+
+  if(!kaTeDhena){
+    const emriMenyre = _anaAutomatikTab==='automatik' ? 'Automatik' : 'Manual';
+    wrap.innerHTML = '<div style="text-align:center;padding:36px 20px;">'+
+      '<p class="small" style="margin:0 0 14px;">Ende s\'ke të dhëna për mënyrën "'+emriMenyre+'" — ka gjasë s\'e ke aktivizuar ende këtë mënyrë.</p>'+
+      '<button class="btn cta" onclick="hapCilesimet()">Aktivizo te Cilësimet →</button>'+
+    '</div>';
+    return;
+  }
+  if(!$('anaAutomatikCanvas')) wrap.innerHTML='<canvas id="anaAutomatikCanvas" height="90"></canvas>';
+
   const labels=rows.map(r=>r.data);
   const canvas=$('anaAutomatikCanvas'); if(!canvas||typeof Chart==='undefined') return;
   if(_anaAutomatikChart){ _anaAutomatikChart.destroy(); _anaAutomatikChart=null; }
