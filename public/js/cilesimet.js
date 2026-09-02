@@ -5,76 +5,56 @@
 var _cilTab='account'; // 'account' | 'hosting' | 'advertising'
 var _cilOpenKey=null;   // 'delivery' kur "Ad Delivery" eshte hapur si dropdown
 
+var CIL_ICONS = {
+  account:  '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>',
+  delivery: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
+  kufizimetKat: '<path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z"/>'
+};
 var CIL_STRUKTURA=[
   { k:'account', l:'Account' },
   { k:'delivery', l:'Ad Delivery', subs:[
     { k:'hosting', l:'Hosting' },
     { k:'advertising', l:'Advertising' }
-  ]}
+  ]},
+  { k:'kufizimetKat', l:'Kufizimet e Kategorive' }
 ];
 
 function renderCilesimetNav(){
   const el=$('snav'); if(!el) return;
-  const snav2=$('snav2'); if(snav2) snav2.innerHTML=''; // fshi mbetjet e vjetra te NAV2, s'duhet te shfaqet ketu
   el.innerHTML='';
-  const header=document.createElement('div');
-  header.style.cssText='padding:8px 10px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);';
-  header.textContent='Cilësimet';
-  el.appendChild(header);
-
   CIL_STRUKTURA.forEach(function(n){
+    const hasSubs = n.subs && n.subs.length;
+    const eshteAktiv=(n.k==='account' && _cilTab==='account')||(n.k==='delivery' && (_cilTab==='hosting'||_cilTab==='advertising'))||(n.k==='kufizimetKat' && curNav==='kufizimetKat');
     const b=document.createElement('button');
     b.type='button';
-    b.style.cssText='display:flex;align-items:center;justify-content:space-between;width:100%;';
-    const lbl=document.createElement('span'); lbl.textContent=n.l; b.appendChild(lbl);
-    const eshteAktiv=(n.k==='account' && _cilTab==='account')||(n.k==='delivery' && (_cilTab==='hosting'||_cilTab==='advertising'));
-    if(eshteAktiv) b.classList.add('active');
-
-    if(n.subs && n.subs.length){
-      const arrow=document.createElement('span');
-      arrow.textContent=(_cilOpenKey===n.k)?'▾':'▸';
-      arrow.style.cssText='margin-left:8px;font-size:11px;color:var(--mut);';
-      b.appendChild(arrow);
-      b.onclick=function(e){
-        e.stopPropagation();
-        if(_cilOpenKey===n.k){ mbyllCilDropdown(); }
-        else { hapCilDropdown(n, b); }
-      };
+    b.className='snItem'+(eshteAktiv?' active':'');
+    b.innerHTML =
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(CIL_ICONS[n.k]||'')+'</svg>'+
+      '<span class="snLbl" style="flex:1;">'+esc(n.l)+'</span>'+
+      (hasSubs ? '<svg class="snChev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:0 0 auto;transition:transform .15s;transform:rotate('+(_cilOpenKey===n.k?'90':'0')+'deg);"><polyline points="9 18 15 12 9 6"/></svg>' : '');
+    if(hasSubs){
+      b.onclick=function(e){ e.stopPropagation(); _cilOpenKey = (_cilOpenKey===n.k) ? null : n.k; renderCilesimetNav(); };
+    } else if(n.k==='kufizimetKat'){
+      b.onclick=function(){ nav({v:'profile', nav:'kufizimetKat'}); };
     } else {
-      b.onclick=function(){ mbyllCilDropdown(); cilShkoTek(n.k); };
+      b.onclick=function(){ cilShkoTek(n.k); };
     }
     el.appendChild(b);
+    if(hasSubs){
+      const subWrap=document.createElement('div');
+      subWrap.className='snSubs'+(_cilOpenKey===n.k?' open':'');
+      n.subs.forEach(function(s){
+        const sb=document.createElement('button');
+        sb.type='button';
+        sb.className = (_cilTab===s.k) ? 'active' : '';
+        sb.textContent=s.l;
+        sb.onclick=function(){ cilShkoTek(s.k); };
+        subWrap.appendChild(sb);
+      });
+      el.appendChild(subWrap);
+    }
   });
 }
-function mbyllCilDropdown(){
-  const dd=$('cilDropdown'); if(dd) dd.remove();
-  if(_cilOpenKey){ _cilOpenKey=null; renderCilesimetNav(); }
-}
-function hapCilDropdown(n, btn){
-  const dd0=$('cilDropdown'); if(dd0) dd0.remove();
-  _cilOpenKey=n.k;
-  const dd=document.createElement('div');
-  dd.id='cilDropdown';
-  dd.style.cssText='position:fixed;width:200px;background:var(--card);border:1px solid var(--line);border-radius:0;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:9999;';
-  n.subs.forEach(function(s){
-    const sb=document.createElement('button');
-    sb.type='button';
-    sb.textContent=s.l;
-    sb.style.cssText='display:block;width:100%;background:none;border:none;padding:9px 10px;cursor:pointer;font-family:inherit;font-size:13px;border-radius:6px;text-align:left;color:var(--txt);';
-    sb.addEventListener('click', function(e){
-      e.stopPropagation();
-      mbyllCilDropdown();
-      cilShkoTek(s.k);
-    });
-    dd.appendChild(sb);
-  });
-  document.body.appendChild(dd);
-  const rect=btn.getBoundingClientRect();
-  dd.style.left=(rect.right+8)+'px';
-  dd.style.top=rect.top+'px';
-  renderCilesimetNav();
-}
-document.addEventListener('click', function(){ mbyllCilDropdown(); });
 
 function hapCilesimet(){
   const s={v:'profile', nav:'cilesimet'};
