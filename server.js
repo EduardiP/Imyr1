@@ -1154,14 +1154,16 @@ app.get('/api/analytics/automatik-ndarja', iLoguar, async (req, res) => {
     const r = await pool.query(`
       SELECT gs::date AS data,
         COALESCE(a.n,0)::int AS ankand,
-        COALESCE(bl.n,0)::int AS balance
+        COALESCE(bl.n,0)::int AS balance,
+        (av.dt IS NOT NULL) AS ishte_automatik
       FROM generate_series($2::date, $3::date, '1 day') AS gs
       LEFT JOIN (SELECT created_at::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1 AND lloji='view' AND burimi='ankand' GROUP BY dt) a  ON a.dt=gs
       LEFT JOIN (SELECT created_at::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1 AND lloji='view' AND burimi='barazi' GROUP BY dt) bl ON bl.dt=gs
+      LEFT JOIN (SELECT DISTINCT created_at::date dt FROM automatik_vendime WHERE host_id=$1) av ON av.dt=gs
       ORDER BY gs`, [req.biznesId, nga, deri]);
 
     res.json({ nga, deri, hostingMode, baraziPerqindje, rows: r.rows.map(x => ({
-      data: x.data.toISOString().slice(0,10), ankand: x.ankand, balance: x.balance
+      data: x.data.toISOString().slice(0,10), ankand: x.ankand, balance: x.balance, automatik: x.ishte_automatik
     })) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
