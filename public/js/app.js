@@ -1993,7 +1993,7 @@ async function mainMadhesiaShumefishte(m){
       '<h2 class="h" style="margin:0;">Cakto madhësinë</h2>'+
     '</div>'+
     '<p class="small" style="margin:6px 0 20px;">Zgjidh pajisjen, pastaj zgjidh cilat hapësira do të marrin këtë madhësi.</p>'+
-    '<div class="card" id="madhWrap" style="max-width:900px;"><p class="small">Po ngarkoj…</p></div>';
+    '<div class="card" id="madhWrap"><p class="small">Po ngarkoj…</p></div>';
   const w=$('madhWrap');
   await ndertoMadhesine(w);
 }
