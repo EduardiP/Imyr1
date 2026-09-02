@@ -194,7 +194,13 @@ function mainAnaTrafiku(m){
   _anaSelectedAd=null; _anaDropdownOpen=false;
   _anaDetAktiv='pesha'; // Pesha e zgjedhur si parazgjedhje, jo asnje
   _anaDetPerspektiv='marre'; // Marrë (ti përfitove) parazgjedhje; Dhënë (të tjerët përfituan) opsional
-  m.innerHTML='<h2 class="h">Trafiku</h2>'+
+  m.innerHTML=
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">'+
+      '<div style="width:38px;height:38px;border-radius:12px;background:rgba(59,110,240,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b6ef0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>'+
+      '</div>'+
+      '<h2 class="h" style="margin:0;">Trafiku</h2>'+
+    '</div>'+
     '<div class="card" style="margin-bottom:16px;">'+
       '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Detajet e pjesëmarrjeve në Ankand</h3>'+
       '<p class="small mut" style="margin:0 0 12px;">Data vlen për të gjitha filtrat poshtë. Kliko një kategori filtri për ta hapur.</p>'+
@@ -746,7 +752,13 @@ function anaNgarkoOreDheAnkand(){ ngarkoAnaOre(); ngarkoAnaAnkandKategorite(); }
 // ═══ "Automatiku — Ndarja e hapësirës" — Ankand vs Balance, dite-per-dite ═══
 var _anaAutomatikChart=null;
 function mainAnaAutomatik(m){
-  m.innerHTML='<h2 class="h">Automatiku</h2>'+
+  m.innerHTML=
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">'+
+      '<div style="width:38px;height:38px;border-radius:12px;background:rgba(34,211,238,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18"/></svg>'+
+      '</div>'+
+      '<h2 class="h" style="margin:0;">Automatiku</h2>'+
+    '</div>'+
     '<div class="card">'+
       '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Ndarja e hapësirës</h3>'+
       '<p class="small mut" style="margin:0 0 12px;">Si e ke ndarë hapësirën tënde reklamuese mes pishinës Ankand dhe Balance, ditë-për-ditë.</p>'+
@@ -907,7 +919,13 @@ function anaRenderAnkandRezultati(){
 
 
 function mainAnaDeficiti(m){
-  m.innerHTML='<h2 class="h">Deficiti</h2>'+
+  m.innerHTML=
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">'+
+      '<div style="width:38px;height:38px;border-radius:12px;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>'+
+      '</div>'+
+      '<h2 class="h" style="margin:0;">Deficiti</h2>'+
+    '</div>'+
     '<div class="card">'+
       '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Deficiti — Marrë − Dhënë</h3>'+
       '<p class="small mut" style="margin:0 0 12px;">Diferenca mes sa ke marrë (si reklamues) dhe sa ke dhënë (si host), për dhogarinë aktuale. Pozitiv = ke marrë më shumë; negativ = ke dhënë më shumë.</p>'+
@@ -1894,8 +1912,14 @@ function mainRekPerformanca(m){
   window.__pamjeVecante=true;
   _anaSelectedAd=null; _anaDropdownOpen=false;
   _anaKatSelectedAd=null; _anaKatDropdownOpen=false; _anaKatMetrikaAktive='shikime';
-  m.innerHTML='<h2 class="h">Performanca — Reklamat e mia</h2>'+
-    '<p class="small" style="margin:2px 0 16px;">Ecuria e reklamave të tua me ditë.</p>'+
+  m.innerHTML=
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">'+
+      '<div style="width:38px;height:38px;border-radius:12px;background:rgba(167,139,250,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>'+
+      '</div>'+
+      '<h2 class="h" style="margin:0;">Performanca — Reklamat e mia</h2>'+
+    '</div>'+
+    '<p class="small" style="margin:6px 0 16px;">Ecuria e reklamave të tua me ditë.</p>'+
     '<div class="card" style="margin-bottom:16px;">'+
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
         '<button class="btn" onclick="anaPreset(7)">7 ditët e fundit</button>'+
