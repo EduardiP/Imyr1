@@ -49,11 +49,8 @@ const NAV2 = [
 var _nav2OpenKey = null; // cila kategori NAV2 ka panelin e nenkategorive te hapur (vetem nje njekohesisht)
 
 function renderNav2(){
-  let wrap=$('snav2');
-  if(!wrap){
-    wrap=document.createElement('nav'); wrap.id='snav2'; wrap.className='snav';
-    const s1=$('snav'); if(s1 && s1.parentNode) s1.parentNode.insertBefore(wrap, s1.nextSibling);
-  }
+  const wrap=$('snav');
+  if(!wrap) return;
   wrap.innerHTML='';
   NAV2.forEach(function(n){
     const hasSubs = n.subs && n.subs.length;
