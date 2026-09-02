@@ -14,12 +14,12 @@
 
 const NAV_ICONS = {
   dashboard:   '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
-  snippetet:   '<path d="M3 11l18-5-5 18-4-8-9-5z"/>',
-  kreative:    '<path d="M18.37 2.63L14 7l-1.5-1.5L17 1l1.37 1.63z"/><path d="M9 8L4 16l4 4 8-5"/><circle cx="7.5" cy="16.5" r="1.5"/>',
-  reklamat:    '<rect x="3" y="3" width="15" height="15" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/>',
-  konvertimet: '<path d="M9 9l3 3-3 3"/><rect x="3" y="4" width="18" height="16" rx="2"/>',
+  snippetet:   '<path d="M3 11v3a1 1 0 0 0 1 1h2l3.5 4.5V5.5L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>',
+  kreative:    '<path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/>',
+  reklamat:    '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
+  konvertimet: '<path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
   kufizimetKat:'<path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z"/>',
-  analytics:   '<line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/>',
+  analytics:   '<rect x="4" y="12" width="4" height="8" rx="1"/><rect x="10" y="7" width="4" height="13" rx="1"/><rect x="16" y="3" width="4" height="17" rx="1"/>',
   insights:    '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>'
 };
 const NAV2 = [
@@ -1284,6 +1284,11 @@ function mainKreative_NEW(m, s){
   s = s || {};
   const tab = s.tab || 'krijo';
   const zgjedhur = s.lloji || null;
+  const KR_TIPE = [
+    { id:'imazh', l:'Imazh', d:'PNG, JPG, WebP · AI-gjeneruar ose i ngarkuar', icon:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>' },
+    { id:'video', l:'Video', d:'MP4, WebM · animacion ose reklamë video', icon:'<path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>' },
+    { id:'html5', l:'HTML5', d:'Banner interaktiv me HTML, CSS, JS', icon:'<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>' }
+  ];
   m.innerHTML = '<h2 class="h">Creative</h2>'+
     '<p class="small" style="margin:8px 0 16px;">Krijo reklama me AI: imazh, video, ose HTML5.</p>'+
     '<div class="tabs" style="max-width:320px;">'+
@@ -1291,16 +1296,20 @@ function mainKreative_NEW(m, s){
       '<div class="tab '+(tab==='lista'?'active':'')+'" onclick="krTab(\'lista\')">Krijimet e mia</div>'+
     '</div>'+
     (tab==='krijo' ? (
-      '<label>Cfare do te krijosh?</label>'+
-      '<div class="krTip">'+
-        '<button class="krT '+(zgjedhur==='imazh'?'sel':'')+'" onclick="krZgjidh(\'imazh\')">'+
-          '<div class="krIco">🖼️</div><div>Imazh</div></button>'+
-        '<button class="krT '+(zgjedhur==='video'?'sel':'')+'" onclick="krZgjidh(\'video\')">'+
-          '<div class="krIco">🎬</div><div>Video</div></button>'+
-        '<button class="krT '+(zgjedhur==='html5'?'sel':'')+'" onclick="krZgjidh(\'html5\')">'+
-          '<div class="krIco">💻</div><div>HTML5</div></button>'+
+      '<label>Çfarë do të krijosh?</label>'+
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;max-width:820px;margin:12px 0 6px;">'+
+        KR_TIPE.map(function(t){
+          const sel = zgjedhur===t.id;
+          return '<button onclick="krZgjidh(\''+t.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:32px 16px;border-radius:16px;border:1px solid '+(sel?'var(--acc)':'var(--line)')+';background:'+(sel?'rgba(59,110,240,.08)':'var(--card)')+';cursor:pointer;color:'+(sel?'#fff':'var(--mut2)')+';">'+
+            '<div style="width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:'+(sel?'rgba(59,110,240,.15)':'rgba(255,255,255,.05)')+';">'+
+              '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="'+(sel?'#3b6ef0':'#64748b')+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+t.icon+'</svg>'+
+            '</div>'+
+            '<span style="font-size:15px;font-weight:600;font-family:var(--f-body);">'+t.l+'</span>'+
+            '<span style="font-size:11px;color:var(--mut2);text-align:center;line-height:1.5;">'+t.d+'</span>'+
+          '</button>';
+        }).join('')+
       '</div>'+
-      (zgjedhur ? formaKreative(zgjedhur) : '<p class="small mut" style="margin-top:16px;">Zgjidh nje lloj për të vazhduar.</p>')
+      (zgjedhur ? formaKreative(zgjedhur) : '<p class="small" style="color:var(--acc);margin-top:16px;">Zgjidh një lloj për të vazhduar.</p>')
     ) : (
       '<div id="krGatiWrap" style="margin-top:18px;">'+
         '<div id="krGatiLista" style="display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;padding:8px 4px;"></div>'+
