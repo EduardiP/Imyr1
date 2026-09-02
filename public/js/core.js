@@ -138,24 +138,43 @@ function urlToState(pathname){
 
 // ---------- HEADER (i loguar) ----------
 function setHeaderLoggedIn(){
-  $('hdrLeft').innerHTML='<button class="btn ghost" onclick="goHome()">Home</button>';
+  // Logo i ri (rrjet pikash) — injektohet mbi div-in ekzistues .logo, s'prek index.html
+  const logoEl = document.querySelector('.logo');
+  if(logoEl && !logoEl.dataset.uiUpdated){
+    logoEl.dataset.uiUpdated='1';
+    logoEl.style.cssText='display:flex;align-items:center;gap:9px;';
+    logoEl.innerHTML =
+      '<svg width="26" height="26" viewBox="0 0 32 32" fill="none">'+
+        '<rect width="32" height="32" rx="8" fill="#3b6ef0" fill-opacity="0.15"/>'+
+        '<circle cx="16" cy="7" r="3" fill="#22d3ee"/><circle cx="7" cy="25" r="3" fill="#3b6ef0"/><circle cx="25" cy="25" r="3" fill="#3b6ef0"/>'+
+        '<line x1="16" y1="7" x2="7" y2="25" stroke="#3b6ef0" stroke-width="1.5" stroke-opacity="0.55"/>'+
+        '<line x1="16" y1="7" x2="25" y2="25" stroke="#3b6ef0" stroke-width="1.5" stroke-opacity="0.55"/>'+
+        '<line x1="7" y1="25" x2="25" y2="25" stroke="#22d3ee" stroke-width="1.5" stroke-opacity="0.45"/>'+
+        '<circle cx="16" cy="16" r="2" fill="#3b6ef0" fill-opacity="0.5"/>'+
+      '</svg>'+
+      '<span style="font-family:var(--f-head);font-weight:800;letter-spacing:.06em;font-size:15px;color:#fff;">PHRONEXUS <span style="color:var(--acc2);">AI</span></span>';
+  }
+  $('hdrLeft').innerHTML='';
   $('hdrRight').innerHTML=
-    '<div id="kerkWrap">'+
-      '<svg class="kerkSvgIco" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>'+
-      '<input id="kerkInput" placeholder="Kërko…" autocomplete="off" oninput="kerkoRun(this.value)">'+
+    '<div id="kerkWrap" style="display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--card2);width:200px;">'+
+      '<svg class="kerkSvgIco" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--mut2);flex:0 0 auto;"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>'+
+      '<input id="kerkInput" placeholder="Kërko…" autocomplete="off" oninput="kerkoRun(this.value)" style="border:none;background:none;padding:0;height:auto;font-size:12px;">'+
       '<div id="kerkRez" class="hide"></div>'+
     '</div>'+
-    '<button class="pxa-topbar-btn" title="Choose language" style="margin-right:6px;">'+
-      '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/></svg>'+
+    '<button class="hdrIco" title="Choose language" style="display:flex;align-items:center;gap:5px;height:32px;padding:0 10px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--mut2);font-family:var(--f-mono);font-size:11px;font-weight:600;cursor:pointer;">'+
+      '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/></svg>'+
       '<span>EN</span>'+
     '</button>'+
-    '<button class="pxa-topbar-btn" title="Theme" onclick="document.body.classList.toggle(\'pxa-light\')" style="margin-right:10px;">'+
-      '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'+
+    '<button class="hdrIco" title="Theme" onclick="document.body.classList.toggle(\'pxa-light\')" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--mut2);cursor:pointer;">'+
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'+
     '</button>'+
-    '<div class="zile-wrap"><button class="zile" onclick="toggleNjoftimet(event)" aria-label="Njoftimet">'+
-      '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>'+
+    '<div class="zile-wrap"><button class="zile hdrIco" onclick="toggleNjoftimet(event)" aria-label="Njoftimet" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--mut2);cursor:pointer;position:relative;">'+
+      '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>'+
       '<span id="zileBadge" class="zile-badge hide">0</span>'+
-    '</button><div id="njBox" class="njBox hide"></div></div>';
+    '</button><div id="njBox" class="njBox hide"></div></div>'+
+    '<button class="hdrIco" onclick="goHome()" title="Kthehu te faqja" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--mut2);cursor:pointer;margin-left:2px;">'+
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>'+
+    '</button>';
   ngarkoNjoftimet();
   dashFooterVendos();
 }
