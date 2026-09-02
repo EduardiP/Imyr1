@@ -41,7 +41,7 @@ const NAV2 = [
   { k:'kufizimetKat', l:'Kufizimet e Kategorive' },
   { k:'analytics', l:'Analytics', subs:[
     {l:'Trafiku', nav:'anaTrafiku'},
-    {l:'Automatiku', nav:'anaAutomatik'},
+    {l:'Përzgjedhjet e Pishinave', nav:'anaAutomatik'},
     {l:'Deficiti', nav:'anaDeficiti'}
   ]},
   { k:'insights', l:'Vështrime' },
