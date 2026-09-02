@@ -820,18 +820,8 @@ async function ngarkoAnaAutomatik(){
   }
   const gjitha=d.rows||[];
   const rows = gjitha.filter(r => _anaAutomatikTab==='automatik' ? r.automatik : !r.automatik);
-  const kaTeDhena = rows.some(r => (r.ankand+r.balance) > 0);
   const wrap=$('anaAutomatikChartWrap'); if(!wrap) return;
-
-  if(!kaTeDhena){
-    const emriMenyre = _anaAutomatikTab==='automatik' ? 'Automatik' : 'Manual';
-    wrap.innerHTML = '<div style="text-align:center;padding:36px 20px;">'+
-      '<p class="small" style="margin:0 0 14px;">Ende s\'ke të dhëna për mënyrën "'+emriMenyre+'" — ka gjasë s\'e ke aktivizuar ende këtë mënyrë.</p>'+
-      '<button class="btn cta" onclick="hapCilesimet()">Aktivizo te Cilësimet →</button>'+
-    '</div>';
-    return;
-  }
-  if(!$('anaAutomatikCanvas')) wrap.innerHTML='<canvas id="anaAutomatikCanvas" height="90"></canvas>';
+  if(!$('anaAutomatikCanvas')) wrap.innerHTML='<canvas id="anaAutomatikCanvas" height="110"></canvas>';
 
   const labels=rows.map(r=>r.data);
   const canvas=$('anaAutomatikCanvas'); if(!canvas||typeof Chart==='undefined') return;
