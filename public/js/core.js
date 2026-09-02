@@ -171,10 +171,7 @@ function setHeaderLoggedIn(){
     '<div class="zile-wrap"><button class="zile hdrIco" onclick="toggleNjoftimet(event)" aria-label="Njoftimet" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--mut2);cursor:pointer;position:relative;">'+
       '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>'+
       '<span id="zileBadge" class="zile-badge hide">0</span>'+
-    '</button><div id="njBox" class="njBox hide"></div></div>'+
-    '<button class="hdrIco" onclick="goHome()" title="Kthehu te faqja" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--mut2);cursor:pointer;margin-left:2px;">'+
-      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>'+
-    '</button>';
+    '</button><div id="njBox" class="njBox hide"></div></div>';
   ngarkoNjoftimet();
   dashFooterVendos();
 }
