@@ -12,6 +12,16 @@
   window.addEventListener('load', vendosLartesineTopbar);
 })();
 
+const NAV_ICONS = {
+  dashboard:   '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+  snippetet:   '<path d="M3 11l18-5-5 18-4-8-9-5z"/>',
+  kreative:    '<path d="M18.37 2.63L14 7l-1.5-1.5L17 1l1.37 1.63z"/><path d="M9 8L4 16l4 4 8-5"/><circle cx="7.5" cy="16.5" r="1.5"/>',
+  reklamat:    '<rect x="3" y="3" width="15" height="15" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/>',
+  konvertimet: '<path d="M9 9l3 3-3 3"/><rect x="3" y="4" width="18" height="16" rx="2"/>',
+  kufizimetKat:'<path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z"/>',
+  analytics:   '<line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/>',
+  insights:    '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>'
+};
 const NAV2 = [
   { k:'dashboard', l:'Dashboard' },
   { k:'snippetet', l:'Hapësira e reklamave', subs:[
@@ -42,29 +52,41 @@ function renderNav2(){
   let wrap=$('snav2');
   if(!wrap){
     wrap=document.createElement('nav'); wrap.id='snav2'; wrap.className='snav';
-    wrap.style.cssText='margin-top:6px;';
     const s1=$('snav'); if(s1 && s1.parentNode) s1.parentNode.insertBefore(wrap, s1.nextSibling);
   }
   wrap.innerHTML='';
   NAV2.forEach(function(n){
+    const hasSubs = n.subs && n.subs.length;
+    const isParentActive = (curNav===n.k) || (hasSubs && n.subs.some(function(s){ return s.nav===curNav; }));
     const b=document.createElement('button');
     b.type='button';
-    b.style.cssText='display:flex;align-items:center;justify-content:space-between;width:100%;';
-    const lbl=document.createElement('span'); lbl.textContent=n.l; b.appendChild(lbl);
-    if(n.subs && n.subs.length){
-      const arrow=document.createElement('span');
-      arrow.textContent = (_nav2OpenKey===n.k) ? '▾' : '▸';
-      arrow.style.cssText='margin-left:8px;font-size:11px;color:var(--mut);';
-      b.appendChild(arrow);
-      b.onclick=function(e){
-        e.stopPropagation();
-        if(_nav2OpenKey===n.k){ mbyllNav2Dropdown(); }
-        else { hapNav2Dropdown(n, b); }
-      };
+    b.className = 'snItem'+(isParentActive?' active':'');
+    b.innerHTML =
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(NAV_ICONS[n.k]||'')+'</svg>'+
+      '<span class="snLbl" style="flex:1;">'+esc(n.l)+'</span>'+
+      (hasSubs ? '<svg class="snChev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:0 0 auto;transition:transform .15s;transform:rotate('+(_nav2OpenKey===n.k?'90':'0')+'deg);"><polyline points="9 18 15 12 9 6"/></svg>' : '');
+    if(hasSubs){
+      b.onclick=function(e){ e.stopPropagation(); _nav2OpenKey = (_nav2OpenKey===n.k) ? null : n.k; renderNav2(); };
     } else {
-      b.onclick=function(){ mbyllNav2Dropdown(); nav({v:'profile', nav:n.k}); };
+      b.onclick=function(){ nav({v:'profile', nav:n.k}); };
     }
     wrap.appendChild(b);
+    if(hasSubs){
+      const subWrap=document.createElement('div');
+      subWrap.className='snSubs'+(_nav2OpenKey===n.k?' open':'');
+      n.subs.forEach(function(s){
+        const sb=document.createElement('button');
+        sb.type='button';
+        sb.className = (s.nav===curNav) ? 'active' : '';
+        sb.textContent=s.l;
+        sb.onclick=function(){
+          if(s.akcion && typeof window[s.akcion]==='function'){ window[s.akcion](); return; }
+          nav({v:'profile', nav:s.nav||n.k, tab:s.tab, sub:s.sub});
+        };
+        subWrap.appendChild(sb);
+      });
+      wrap.appendChild(subWrap);
+    }
   });
 }
 
@@ -506,11 +528,12 @@ function renderUserMenu(){
     ? '<div style="width:32px;height:32px;border-radius:50%;overflow:hidden;flex:0 0 auto;"><img src="'+esc(une.logo_url)+'" style="width:100%;height:100%;object-fit:cover;"></div>'
     : '<div style="width:32px;height:32px;border-radius:50%;background:var(--acc);color:#06121f;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex:0 0 auto;">'+esc(inic)+'</div>';
   foot.innerHTML =
-    '<button type="button" id="userMenuBtn" style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;padding:8px 4px;cursor:pointer;color:var(--txt);font-family:inherit;font-size:14px;text-align:left;">'+
+    '<button type="button" id="userMenuBtn" style="display:flex;align-items:center;gap:8px;height:34px;padding:0 8px 0 3px;border-radius:10px;background:none;border:none;cursor:pointer;color:var(--txt);font-family:var(--f-body);font-size:13px;text-align:left;" onmouseover="this.style.background=\'rgba(255,255,255,.05)\'" onmouseout="this.style.background=\'none\'">'+
       avatarHTML+
-      '<span style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc((une&&une.emri)||'')+'</span>'+
+      '<span style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;" class="hide-mobile">'+esc((une&&une.emri)||'')+'</span>'+
+      '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--mut2);flex:0 0 auto;"><polyline points="6 9 12 15 18 9"/></svg>'+
     '</button>'+
-    '<div id="userMenuDropdown" class="hide" style="position:fixed;width:190px;background:var(--card);border:1px solid var(--line);border-radius:0;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:9999;"></div>';
+    '<div id="userMenuDropdown" class="hide" style="position:fixed;width:200px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px;box-shadow:0 20px 40px -8px rgba(0,0,0,.6);z-index:9999;"></div>';
 
   const items = [
     { l:'Profili',           fn:function(){ nav({v:'profile', nav:'profili'}); } },
@@ -524,7 +547,8 @@ function renderUserMenu(){
   ];
   const dd=$('userMenuDropdown');
   dd.innerHTML = items.map(function(it,i){
-    return '<button type="button" data-umi="'+i+'" style="display:block;width:100%;background:none;border:none;padding:9px 10px;cursor:pointer;font-family:inherit;font-size:13px;border-radius:6px;text-align:left;'+(it.err?'color:var(--err);':'color:var(--txt);')+'">'+it.l+'</button>';
+    const divider = it.err ? '<div style="height:1px;background:var(--line);margin:6px 4px;"></div>' : '';
+    return divider+'<button type="button" data-umi="'+i+'" style="display:block;width:100%;background:none;border:none;padding:9px 12px;cursor:pointer;font-family:var(--f-body);font-size:13px;border-radius:9px;text-align:left;'+(it.err?'color:var(--err);':'color:var(--txt);')+'" onmouseover="this.style.background=\''+(it.err?'rgba(248,81,73,.1)':'rgba(255,255,255,.05)')+'\'" onmouseout="this.style.background=\'none\'">'+it.l+'</button>';
   }).join('');
   Array.prototype.forEach.call(dd.querySelectorAll('button'), function(btn,i){
     btn.addEventListener('click', function(e){ e.stopPropagation(); dd.classList.add('hide'); _userMenuOpen=false; items[i].fn(); });
