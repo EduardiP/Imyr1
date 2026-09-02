@@ -1337,7 +1337,7 @@ async function ngarkoKreativetGati(){
       const eshteImazh = (k.lloji==='imazh' && url);
       const eshteHtml5 = (k.lloji==='html5' && url);
       return '<div style="position:relative;flex:0 0 auto;width:84px;">'+
-        '<div style="width:84px;height:84px;border-radius:10px;overflow:hidden;background:#0e1116;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;">'+
+        '<div style="width:84px;height:84px;border-radius:12px;overflow:hidden;background:var(--card2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;">'+
           (eshteImazh
             ? '<img src="'+esc(url)+'" style="width:100%;height:100%;object-fit:cover;">'
             : (k.lloji==='video' ? '<span style="font-size:22px;color:var(--mut);">▶</span>' : '<span style="font-size:16px;color:var(--mut);">&lt;/&gt;</span>'))+
@@ -2202,9 +2202,16 @@ function mainReklamat(m, s){
   if(s.sub==='detail'){ return hapReklame(s.id, m); }
   if(s.sub==='create'){ return krijoReklame(m, s); }
   m.innerHTML=
-    '<h2 class="h">My Ads</h2>'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;">'+
+      '<div style="display:flex;align-items:center;gap:12px;">'+
+        '<div style="width:38px;height:38px;border-radius:12px;background:rgba(59,110,240,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b6ef0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>'+
+        '</div>'+
+        '<h2 class="h" style="margin:0;">My Ads</h2>'+
+      '</div>'+
+      '<button class="btn cta" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">+ Create</button>'+
+    '</div>'+
     '<div id="rekShiritSnippet"></div>'+
-    '<div style="margin:12px 0 14px;"><button class="btn cta" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">+ Create</button></div>'+
     '<div id="reklamaList"><p class="small">Po ngarkoj…</p></div>';
   loadReklamat();
   rekKontrolloSnippet();
@@ -2215,13 +2222,13 @@ async function rekKontrolloSnippet(){
     const pr=await(await fetch('/api/progres')).json();
     const neGraceperiod = !!(pr.biznesiAuto && pr.ditet < 7);
     if(!pr.lidhja && !neGraceperiod){
-      el.innerHTML='<div onclick="nav({v:\'profile\',nav:\'lidhjaSnippet\'})" style="cursor:pointer;background:#3a1212;border:1px solid var(--err);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;">'+
-        '<div style="flex:1;"><div style="color:var(--err);font-weight:600;">Reklamat e tua nuk po shfaqen</div>'+
+      el.innerHTML='<div onclick="nav({v:\'profile\',nav:\'lidhjaSnippet\'})" style="cursor:pointer;background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.3);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:16px;">'+
+        '<div style="flex:1;"><div style="color:var(--err);font-weight:600;font-size:13px;">Reklamat e tua nuk po shfaqen</div>'+
         '<div class="small" style="margin-top:2px;">S\'ke asnjë hapësirë reklame aktive. Meqë s\'po shfaq reklamat e të tjerëve, as reklamat e tua s\'po marrin shfaqje. Kliko për të mësuar si →</div></div>'+
         '<button class="btn cta" style="white-space:nowrap;" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'lidhjaSnippet\'})">Shiko</button></div>';
     } else if(!pr.lidhja && neGraceperiod){
-      el.innerHTML='<div style="background:#0e2a1a;border:1px solid var(--good);border-radius:10px;padding:12px 14px;">'+
-        '<div class="small" style="color:#7ee2a8;">Reklama jote tashmë është aktive te rrjeti, edhe pa lidhur hapësirë ende — lidhe brenda 7 ditëve të para që të vazhdojë të shfaqet.</div></div>';
+      el.innerHTML='<div style="background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.3);border-radius:12px;padding:14px 16px;margin-bottom:16px;">'+
+        '<div class="small" style="color:var(--good);">Reklama jote tashmë është aktive te rrjeti, edhe pa lidhur hapësirë ende — lidhe brenda 7 ditëve të para që të vazhdojë të shfaqet.</div></div>';
     } else { el.innerHTML=''; }
   }catch(e){}
 }
@@ -2230,7 +2237,7 @@ async function loadReklamat(){
   try{
     const rows=await(await fetch('/api/reklamat?logjika='+(window.__llogariaModaliteti||'ankand'))).json();
     window.__reklamat = rows;
-    if(!rows.length){ el.innerHTML='<p class="small">Ende s\'ke krijuar reklama. Kliko “+ Create”.</p>'; return; }
+    if(!rows.length){ el.innerHTML='<div class="card" style="text-align:center;padding:40px 20px;"><p class="small">Ende s\'ke krijuar reklama. Kliko "+ Create".</p></div>'; return; }
     let h='<div class="rektbl"><div class="rekhead"><span>Reklama</span><span>Shikime</span><span>Klikime</span><span>Konvertime</span><span></span><span></span></div>';
     rows.forEach(r=>{
       const thumb = r.imazh_url ? '<span class="rekthumb"><img src="'+esc(r.imazh_url)+'"></span>' : '<span class="rekthumb">▦</span>';
@@ -2253,7 +2260,7 @@ function reklamaKonfirmoFshi(id, emri){
     '<p class="small mut">Je i sigurt që do të fshish "<b>'+esc(emri||'këtë reklamë')+'</b>"? Kjo reklamë nuk do të shfaqet më dhe nuk mund të kthehet.</p>'+
     '<div style="display:flex;gap:10px;margin-top:16px;">'+
       '<button class="btn" style="flex:1;" onclick="mbyllReklamaModal()">Anulo</button>'+
-      '<button class="btn" style="flex:1;background:#dc2626;color:#fff;border-color:#dc2626;" onclick="reklamaFshi('+id+')">Fshi</button>'+
+      '<button class="btn" style="flex:1;background:var(--err);color:#fff;border-color:var(--err);" onclick="reklamaFshi('+id+')">Fshi</button>'+
     '</div></div>';
   bd.classList.remove('hide');
 }
