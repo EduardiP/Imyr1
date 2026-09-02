@@ -1985,9 +1985,15 @@ var _madSnipZgjedhur = new Set(); // ID-te e snippet-eve te zgjedhur per te apli
 async function mainMadhesiaShumefishte(m){
   window.__pamjeVecante=true;
   _madSnipZgjedhur = new Set();
-  m.innerHTML='<h2 class="h">Cakto madhësinë</h2>'+
-    '<p class="small" style="margin-bottom:18px;">Zgjidh pajisjen, pastaj zgjidh cilat hapësira do të marrin këtë madhësi.</p>'+
-    '<div id="madhWrap"><p class="small">Po ngarkoj…</p></div>';
+  m.innerHTML=
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">'+
+      '<div style="width:38px;height:38px;border-radius:12px;background:rgba(59,110,240,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b6ef0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18"/></svg>'+
+      '</div>'+
+      '<h2 class="h" style="margin:0;">Cakto madhësinë</h2>'+
+    '</div>'+
+    '<p class="small" style="margin:6px 0 20px;">Zgjidh pajisjen, pastaj zgjidh cilat hapësira do të marrin këtë madhësi.</p>'+
+    '<div class="card" id="madhWrap" style="max-width:900px;"><p class="small">Po ngarkoj…</p></div>';
   const w=$('madhWrap');
   await ndertoMadhesine(w);
 }
@@ -1998,13 +2004,15 @@ async function madhListoSnippetet(cont){
     const r=await(await fetch('/api/snippetet')).json();
     const lista=r.snippetet||[];
     if(!lista.length){ cont.innerHTML='<p class="small mut">Ende s\'ke asnjë hapësirë të krijuar.</p>'; return; }
-    cont.innerHTML=lista.map(sn=>
-      '<label style="display:flex;align-items:center;gap:8px;padding:7px 0;cursor:pointer;">'+
-        '<input type="checkbox" onchange="madhToggleSnip('+sn.id+',this.checked)"> '+
-        '<span>'+esc(sn.emri||'(Pa emër)')+'</span>'+
-        '<span class="small mut">('+esc(sn.madhesia_desktop||'—')+')</span>'+
-      '</label>'
-    ).join('');
+    cont.innerHTML='<div style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;">'+
+      lista.map(sn=>
+        '<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card2);cursor:pointer;">'+
+          '<input type="checkbox" onchange="madhToggleSnip('+sn.id+',this.checked)" style="width:15px;height:15px;accent-color:var(--acc);flex:0 0 auto;">'+
+          '<span style="font-size:13px;color:var(--txt);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(sn.emri||'(Pa emër)')+'</span>'+
+          '<span class="small mut" style="flex:0 0 auto;font-family:var(--f-mono);font-size:11px;">'+esc(sn.madhesia_desktop||'—')+'</span>'+
+        '</label>'
+      ).join('')+
+    '</div>';
   }catch(e){ cont.innerHTML='<p class="small err">Gabim në ngarkim.</p>'; }
 }
 function madhToggleSnip(id, checked){
@@ -2027,18 +2035,18 @@ async function ndertoMadhesine(cont, ruajVetem, snipCeles, snipData){
     _mad.pozicioni=poz;
   }catch(e){}
   cont.innerHTML=
-    '<div style="display:flex;gap:10px;margin-bottom:14px;">'+
+    '<div style="display:flex;gap:6px;padding:4px;background:var(--card2);border-radius:12px;width:fit-content;margin-bottom:20px;">'+
       '<button class="madhPaj active" data-p="desktop" onclick="madhPajisja(\'desktop\')">Desktop</button>'+
       '<button class="madhPaj" data-p="mobile" onclick="madhPajisja(\'mobile\')">Mobile</button>'+
     '</div>'+
     '<div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start;">'+
       '<div id="madhDesktop" style="flex:1 1 320px;"></div>'+
       '<div style="flex:1 1 260px;">'+
-        '<div class="small" style="margin-bottom:10px;font-weight:600;">Aplikoje te këto hapësira:</div>'+
+        '<div class="small" style="margin-bottom:10px;font-weight:600;color:var(--txt);">Aplikoje te këto hapësira</div>'+
         '<div id="madhSnipLista"></div>'+
       '</div>'+
     '</div>'+
-    '<button class="primary" id="madhRuaj" onclick="ruajMadhesine()" style="margin-top:20px;">Ruaj</button>'+
+    '<button class="primary" id="madhRuaj" onclick="ruajMadhesine()" style="max-width:200px;">Ruaj</button>'+
     '<div class="msg" id="madhMsg"></div>';
   const dd=cont.querySelector('#madhDesktop');
   if(dd) ndertoKanavasin(dd, 'desktop');
@@ -2067,20 +2075,20 @@ function ndertoKanavasin(cont, pajisje){
   cont.innerHTML=
     '<p class="small" style="margin-bottom:10px;">Hapësira që snippet-i do të zërë në faqen tënde ('+etiketa+'). Tërhiq cepin ose ndrysho numrat. Reklamat përshtaten brenda kësaj mase.</p>'+
     '<div id="madhKanavas" style="position:relative;width:'+MAXW+'px;max-width:100%;height:'+MAXH+'px;'+
-      'border:1px dashed #2a313c;border-radius:6px;background:#0e1116;overflow:hidden;">'+
+      'border:1px dashed var(--line);border-radius:12px;background:var(--card2);overflow:hidden;">'+
       '<div id="madhKuti" style="position:absolute;top:0;left:0;width:'+W+'px;height:'+H+'px;'+
-        'background:#4a9eff22;border:2px solid #4a9eff;box-sizing:border-box;">'+
+        'background:rgba(59,110,240,.13);border:2px solid var(--acc);box-sizing:border-box;border-radius:4px;">'+
         '<div id="madhDore" style="position:absolute;right:-6px;bottom:-6px;width:14px;height:14px;'+
-          'background:#4a9eff;border-radius:3px;cursor:nwse-resize;"></div>'+
+          'background:var(--acc);border-radius:4px;cursor:nwse-resize;"></div>'+
       '</div>'+
     '</div>'+
-    '<div style="display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap;">'+
+    '<div style="display:flex;align-items:center;gap:14px;margin-top:14px;flex-wrap:wrap;">'+
       '<label class="small">Gjerësi <input id="madhW" type="number" value="'+W+'" min="'+MINW+'" max="'+MAXW+'" style="width:70px;"></label>'+
       '<label class="small">Lartësi <input id="madhH" type="number" value="'+H+'" min="'+MINH+'" max="'+MAXH+'" style="width:70px;"></label>'+
-      '<span class="small" id="madhLive" style="font-weight:600;color:#4a9eff;">'+W+' × '+H+' px</span>'+
+      '<span class="small" id="madhLive" style="font-weight:600;color:var(--acc);font-family:var(--f-mono);">'+W+' × '+H+' px</span>'+
     '</div>'+
-    '<div style="margin-top:16px;">'+
-      '<div class="small" style="margin-bottom:6px;">Pozicioni në hapësirë</div>'+
+    '<div style="margin-top:18px;">'+
+      '<div class="small" style="margin-bottom:8px;">Pozicioni në hapësirë</div>'+
       '<div style="display:flex;gap:6px;">'+
         '<button class="madhPoz'+(_mad.pozicioni==='majtas'?' active':'')+'" data-poz="majtas" onclick="madhPozicioni(\'majtas\')">Majtas</button>'+
         '<button class="madhPoz'+(_mad.pozicioni==='qender'?' active':'')+'" data-poz="qender" onclick="madhPozicioni(\'qender\')">Qendër</button>'+
