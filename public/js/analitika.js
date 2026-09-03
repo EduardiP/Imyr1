@@ -105,7 +105,7 @@ function mainAnalytics(m){
     '<div class="card" style="margin-top:16px;">'+
       '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Deficiti — Marrë − Dhënë</h3>'+
       '<p class="small mut" style="margin:0 0 12px;">Diferenca mes sa ke marrë (si reklamues) dhe sa ke dhënë (si host), për dhogarinë aktuale. Pozitiv = ke marrë më shumë; negativ = ke dhënë më shumë.</p>'+
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
+      '<div class="presetRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
         '<button class="btn" onclick="anaPresetDeficit(7)">7 ditët e fundit</button>'+
         '<button class="btn" onclick="anaPresetDeficit(30)">30 ditët e fundit</button>'+
         '<button class="btn" onclick="anaPresetDeficit(90)">90 ditët e fundit</button>'+
@@ -206,7 +206,7 @@ function mainAnaTrafiku(m){
       '<p class="small mut" style="margin:0 0 12px;">Data vlen për të gjitha filtrat poshtë. Kliko një kategori filtri për ta hapur.</p>'+
       '<div id="anaDetPerspektivRow" style="display:flex;gap:8px;margin-bottom:14px;"></div>'+
       '<div id="anaDetKryesoriRow" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
+      '<div class="presetRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
         '<button class="btn" onclick="anaDetPreset(7)">7 ditët e fundit</button>'+
         '<button class="btn" onclick="anaDetPreset(30)">30 ditët e fundit</button>'+
         '<button class="btn" onclick="anaDetPreset(90)">90 ditët e fundit</button>'+
@@ -766,7 +766,7 @@ function mainAnaAutomatik(m){
         '<div class="tab active" id="anaAutTabA" onclick="anaAutomatikSetTab(\'automatik\')">Automatik</div>'+
         '<div class="tab" id="anaAutTabM" onclick="anaAutomatikSetTab(\'manual\')">Manual</div>'+
       '</div>'+
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
+      '<div class="presetRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
         '<button class="btn" onclick="anaPresetAutomatik(7)">7 ditët e fundit</button>'+
         '<button class="btn" onclick="anaPresetAutomatik(30)">30 ditët e fundit</button>'+
         '<button class="btn" onclick="anaPresetAutomatik(90)">90 ditët e fundit</button>'+
@@ -945,7 +945,7 @@ function mainAnaDeficiti(m){
     '<div class="card">'+
       '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Deficiti — Marrë − Dhënë</h3>'+
       '<p class="small mut" style="margin:0 0 12px;">Diferenca mes sa ke marrë (si reklamues) dhe sa ke dhënë (si host), për dhogarinë aktuale. Pozitiv = ke marrë më shumë; negativ = ke dhënë më shumë.</p>'+
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
+      '<div class="presetRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
         '<button class="btn" onclick="anaPresetDeficit(7)">7 ditët e fundit</button>'+
         '<button class="btn" onclick="anaPresetDeficit(30)">30 ditët e fundit</button>'+
         '<button class="btn" onclick="anaPresetDeficit(90)">90 ditët e fundit</button>'+
@@ -2036,7 +2036,7 @@ function mainSnippetStatistikat(m){
   m.innerHTML='<h2 class="h">Statistikat — Hapësira e reklamave</h2>'+
     '<p class="small" style="margin:2px 0 16px;">Shfaqje, shikime, klikime dhe konvertime që u ke dhënë bizneseve të tjera nëpërmjet hapësirave tua, sipas kategorisë së tyre.</p>'+
     '<div class="card">'+
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
+      '<div class="presetRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
         '<button class="btn" onclick="snStatPreset(7)">7 ditët e fundit</button>'+
         '<button class="btn" onclick="snStatPreset(30)">30 ditët e fundit</button>'+
         '<button class="btn" onclick="snStatPreset(90)">90 ditët e fundit</button>'+
