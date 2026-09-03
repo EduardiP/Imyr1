@@ -117,9 +117,10 @@ h2.h { font-size:20px; margin:0 0 4px; }
 }
 #mobMenuBtn{ display:none; }
 @media (max-width:700px){
-.topbar{ padding:10px 12px; gap:8px; }
-.topbar .side{ flex:0 0 auto; gap:6px; }
-.topbar .side.right{ flex:1; }
+body{ overflow-x:hidden; }
+.topbar{ padding:10px 12px; gap:8px; overflow:hidden; }
+.topbar .side{ flex:0 0 auto; gap:6px; min-width:0; }
+.topbar .side.right{ flex:1; min-width:0; justify-content:flex-end; flex-wrap:nowrap; }
 .logo span{ display:none; } /* fshih tekstin "PHRONEXUS AI", mbaje vetem simbolin, per hapesire */
 #mobMenuBtn{ display:flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:10px; border:1px solid var(--line); background:none; color:var(--mut2); cursor:pointer; flex:0 0 auto; }
 #mobKerkBtn{ display:flex !important; }
