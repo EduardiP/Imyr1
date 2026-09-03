@@ -522,7 +522,14 @@ display:flex; align-items:center; justify-content:center; background:var(--card2
 .kerkS { font-size:12px; color:var(--mut); }
 #kerkInput { flex:1; min-width:0; }
 @media (max-width:700px){
-#kerkWrap { width:150px !important; }
+.presetRow, #anaDetPerspektivRow, #anaDetKryesoriRow {
+  flex-wrap:nowrap !important;
+  overflow-x:auto !important;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:4px;
+}
+.presetRow > *, #anaDetPerspektivRow > *, #anaDetKryesoriRow > * { flex:0 0 auto; }
+.presetRow > span[style*="flex:1"] { display:none; } /* mbush-hapesiren e vjeter, s'ka kuptim ne rrjesht rreshqites */
 }
 
 /* ===== Menyja publike e header-it (para hyrjes) ===== */
