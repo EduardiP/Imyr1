@@ -111,17 +111,29 @@ h2.h { font-size:20px; margin:0 0 4px; }
 .rekthumb { width:44px; height:32px; border-radius:6px; background:var(--card2); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; color:var(--mut); overflow:hidden; flex:0 0 auto; }
 .rekthumb img { width:100%; height:100%; object-fit:cover; }
 @media (max-width:700px){
-.appwrap{ flex-direction:column; }
-.sidebar{ width:auto !important; border-right:none; border-bottom:1px solid var(--line); overflow-y:visible; padding:8px; }
-.snav{ display:flex; flex-direction:row; overflow-x:auto; gap:6px; -webkit-overflow-scrolling:touch; }
-.snItem .snLbl{ opacity:1; } /* prekshme s'ka hover — trego etiketat gjithmone */
-.snItem{ width:auto; white-space:nowrap; flex:0 0 auto; }
-.snSubs{ display:none !important; } /* nen-menute mobile: thjesht kliko kategorine kryesore per te shkuar direkt */
-#snavFoot{ margin-top:8px !important; display:flex; gap:8px; border-top:none !important; padding-top:0 !important; }
-#snavFoot button{ width:auto; white-space:nowrap; }
+.sidebar{ display:none !important; } /* fshihet krejt — zevendesohet nga #mobDrawer */
 .rektbl{ overflow-x:auto; }
 .rekhead, .rekrow{ min-width:520px; }
 }
+#mobMenuBtn{ display:none; }
+@media (max-width:700px){
+#mobMenuBtn{ display:flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:10px; border:1px solid var(--line); background:none; color:var(--mut2); cursor:pointer; }
+}
+#mobDrawerBackdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200; opacity:0; pointer-events:none; transition:opacity .2s; }
+#mobDrawerBackdrop.open{ opacity:1; pointer-events:auto; }
+#mobDrawer{ position:fixed; top:0; left:0; bottom:0; width:78vw; max-width:300px; background:var(--sidebar); z-index:201;
+transform:translateX(-100%); transition:transform .22s ease; display:flex; flex-direction:column; box-shadow:8px 0 24px rgba(0,0,0,.4); }
+#mobDrawer.open{ transform:translateX(0); }
+.mobDrawerHead{ display:flex; align-items:center; gap:10px; padding:16px 14px; border-bottom:1px solid var(--line); flex:0 0 auto; }
+.mobDrawerHead button{ background:none; border:none; color:var(--txt); cursor:pointer; display:flex; align-items:center; padding:4px; }
+.mobDrawerHead .t{ font-family:var(--f-head); font-weight:700; font-size:16px; flex:1; }
+.mobDrawerList{ flex:1; overflow-y:auto; padding:8px; }
+.mobDrawerItem{ display:flex; align-items:center; gap:12px; width:100%; padding:13px 12px; border-radius:10px; border:none; background:none; color:var(--txt); font-size:14px; font-family:var(--f-body); text-align:left; cursor:pointer; }
+.mobDrawerItem:active{ background:rgba(255,255,255,.06); }
+.mobDrawerItem.active{ color:var(--acc2); background:rgba(59,110,240,.1); }
+.mobDrawerItem svg.chev{ margin-left:auto; flex:0 0 auto; color:var(--mut2); }
+.mobDrawerItem svg.ico{ flex:0 0 auto; color:var(--mut2); }
+.mobDrawerItem.active svg.ico{ color:var(--acc2); }
 /* ZGJEDHESI I FORMATIT */
 .fmtgrid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin:6px 0 16px; }
 .fmt { border:1px solid var(--line); border-radius:10px; padding:12px 10px; cursor:pointer; text-align:center; background:#0e1116; }
@@ -431,7 +443,7 @@ position:absolute; inset:0; background:#3a3f4b; border-radius:26px; transition:.
 content:''; position:absolute; height:20px; width:20px; left:3px; top:3px;
 background:#fff; border-radius:50%; transition:.25s;
 }
-.tgl input:checked + .slider { background:#3b82f6; }
+.tgl input:checked + .slider { background:var(--acc); }
 .tgl input:checked + .slider:before { transform:translateX(18px); }
 .njAdmin { border-left:3px solid #3b82f6; background:#0e1420; }
 .njBtn { margin-top:8px; padding:6px 12px; background:#3b82f6; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; }
