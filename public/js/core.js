@@ -196,7 +196,14 @@ function dashFooterVendos(){
 }
 function toggleMenu(e){ e.stopPropagation(); const m=$('menuBox'); if(m) m.classList.toggle('hide'); const n=$('njBox'); if(n) n.classList.add('hide'); }
 function toggleNjoftimet(e){ e.stopPropagation(); const n=$('njBox'); if(n) n.classList.toggle('hide'); const m=$('menuBox'); if(m) m.classList.add('hide'); }
-document.addEventListener('click', ()=>{ const m=$('menuBox'); if(m) m.classList.add('hide'); const n=$('njBox'); if(n) n.classList.add('hide'); });
+document.addEventListener('click', (e)=>{
+  const m=$('menuBox'); if(m) m.classList.add('hide');
+  const n=$('njBox'); if(n) n.classList.add('hide');
+  const kw=$('kerkWrap');
+  if(kw && kw.classList.contains('mobOpen') && !e.target.closest('#kerkWrap') && !e.target.closest('#mobKerkBtn')){
+    kw.classList.remove('mobOpen');
+  }
+});
 
 async function ngarkoNjoftimet(){
   try{
