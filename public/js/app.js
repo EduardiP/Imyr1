@@ -529,8 +529,15 @@ function renderUserMenu(){
       avatarHTML+
       '<span style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;" class="hide-mobile">'+esc((une&&une.emri)||'')+'</span>'+
       '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--mut2);flex:0 0 auto;"><polyline points="6 9 12 15 18 9"/></svg>'+
-    '</button>'+
-    '<div id="userMenuDropdown" class="hide" style="position:fixed;width:200px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px;box-shadow:0 20px 40px -8px rgba(0,0,0,.6);z-index:9999;"></div>';
+    '</button>';
+  // Dropdown-i vetë — te document.body direkt, jo brenda header-it, qe te shpetoje nga
+  // cdo kontekst stivosjeje i mundshem qe .topbar (position:sticky) mund te krijoje ne disa shfletues.
+  if(!$('userMenuDropdown')){
+    const ddEl=document.createElement('div');
+    ddEl.id='userMenuDropdown'; ddEl.className='hide';
+    ddEl.style.cssText='position:fixed;width:200px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px;box-shadow:0 20px 40px -8px rgba(0,0,0,.6);z-index:99999;';
+    document.body.appendChild(ddEl);
+  }
 
   const items = [
     { l:'Profili',           fn:function(){ nav({v:'profile', nav:'profili'}); } },
