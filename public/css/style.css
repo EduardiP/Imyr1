@@ -1,5 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
 :root { --bg:#070c18; --card:#0c1427; --card2:#080f1e; --sidebar:#040a14; --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.05); --txt:#e2e8f0; --mut:#8b949e; --mut2:#64748b; --acc:#3b6ef0; --acc2:#22d3ee; --good:#3fb950; --err:#f85149; --grad:linear-gradient(135deg,#3b6ef0,#22d3ee); --f-head:'Barlow Condensed',sans-serif; --f-body:'Inter',sans-serif; --f-mono:'JetBrains Mono',monospace; }
+/* TEMA E DRITES — mbivendos TE NJEJTAT variabla, gjithcka qe perdor var(--bg) etj ndryshon automatikisht */
+body.pxa-light { --bg:#ffffff; --card:#f8fafc; --card2:#f1f5f9; --sidebar:#f8fafc; --line:rgba(15,23,42,.09); --line2:rgba(15,23,42,.05); --txt:#0f172a; --mut:#64748b; --mut2:#94a3b8; }
+body.pxa-light .hero h1 { color:var(--acc); }
+body.pxa-light input, body.pxa-light textarea, body.pxa-light select { color:var(--txt); }
+body.pxa-light .h, body.pxa-light h1, body.pxa-light h2, body.pxa-light h3, body.pxa-light h4 { color:#000; }
 * { box-sizing:border-box; }
 body { margin:0; background:var(--bg); color:var(--txt); font:15px/1.6 var(--f-body); }
 .topbar { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid var(--line); position:sticky; top:0; background:rgba(14,17,22,.9); backdrop-filter:blur(6px); z-index:20; }
