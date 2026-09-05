@@ -2498,12 +2498,50 @@ function mainEkipi(m){
 
 
 function mainPlani(m){
-  m.innerHTML='<h2 class="h">Plani</h2>'+
-    '<div style="border:1px solid var(--line);border-radius:12px;padding:20px;margin-top:14px;">'+
-      '<div style="font-size:18px;font-weight:600;">Plani Falas</div>'+
-      '<p class="small" style="margin:8px 0 0;">Aktualisht je në planin falas. Ke qasje te rrjeti i cross-promocionit, gjurmimi i konvertimeve dhe analitika bazë.</p>'+
+  const VECORITE_FALAS = [
+    'Qasje e plotë te rrjeti i cross-promocionit',
+    'Kombinim me AI mes bizneseve plotësuese',
+    'Krijim reklamash me AI (imazh, video, HTML5)',
+    'Gjurmimi i konvertimeve',
+    'Analitikë bazë'
+  ];
+  const VECORITE_PREMIUM = [
+    'Krijim i pakufizuar i formateve të reklamave me AI',
+    'Përdorim i pakufizuar i asistencës AI (chat krijimi + suporti)',
+    'Përparësi në renditje brenda Ankandit',
+    'Analitikë e avancuar, pa limit periudhe',
+    'Suport i përparësishëm'
+  ];
+  function ikonaKontrolli(ngjyra){
+    return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="'+ngjyra+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;margin-top:2px;"><polyline points="20 6 9 17 4 12"/></svg>';
+  }
+  m.innerHTML=
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">'+
+      '<div style="width:38px;height:38px;border-radius:12px;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>'+
+      '</div>'+
+      '<h2 class="h" style="margin:0;">Faturimi & Plani</h2>'+
     '</div>'+
-    '<p class="small" style="margin-top:16px;color:var(--mut);">Planet me pagesë do të vijnë së shpejti — me përparësi në renditje dhe veçori shtesë.</p>';
+    '<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:stretch;">'+
+      '<div class="card" style="flex:1 1 300px;">'+
+        '<div style="font-family:var(--f-mono);font-size:11px;color:var(--good);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Plani aktual</div>'+
+        '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:#fff;">Falas</div>'+
+        '<p class="small" style="margin:6px 0 18px;">Të gjitha shërbimet, falas për <b style="color:var(--txt);">3 muajt e parë</b>.</p>'+
+        '<div style="display:flex;flex-direction:column;gap:10px;">'+
+          VECORITE_FALAS.map(v=>'<div style="display:flex;gap:9px;align-items:flex-start;">'+ikonaKontrolli('#3fb950')+'<span class="small" style="color:var(--txt);">'+esc(v)+'</span></div>').join('')+
+        '</div>'+
+      '</div>'+
+      '<div class="card" style="flex:1 1 300px;position:relative;border-color:rgba(245,158,11,.4);background:linear-gradient(135deg,rgba(245,158,11,.06),transparent);">'+
+        '<div class="pill" style="position:absolute;top:-11px;left:20px;background:#f59e0b;color:#1a1200;font-weight:700;">Premium</div>'+
+        '<div style="font-family:var(--f-mono);font-size:11px;color:#f59e0b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Për ekipe që kërkojnë më shumë</div>'+
+        '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:#fff;">Premium <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
+        '<p class="small" style="margin:6px 0 18px;">Gjithçka nga Falas, plus:</p>'+
+        '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">'+
+          VECORITE_PREMIUM.map(v=>'<div style="display:flex;gap:9px;align-items:flex-start;">'+ikonaKontrolli('#f59e0b')+'<span class="small" style="color:var(--txt);">'+esc(v)+'</span></div>').join('')+
+        '</div>'+
+        '<button class="btn" style="width:100%;background:#f59e0b;color:#1a1200;border:none;font-weight:600;" onclick="alert(\'Do të jetë e disponueshme së shpejti — jemi duke e përgatitur checkout-in.\')">Kalo te Premium</button>'+
+      '</div>'+
+    '</div>';
 }
 function mainSuport(m){
   m.innerHTML='<h2 class="h">Ndihmë & Suport</h2>'+
