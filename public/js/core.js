@@ -343,7 +343,11 @@ function mobDrawerToggle(){
   else mobDrawerOpen();
 }
 function mobDrawerOpen(){
-  mobDrawerRenderNiveli(typeof NAV2!=='undefined'?NAV2:[], null);
+  const neSetings = (typeof curNav!=='undefined' && curNav==='cilesimet');
+  const listaFillestare = neSetings
+    ? (typeof CIL_STRUKTURA!=='undefined' ? CIL_STRUKTURA : [])
+    : (typeof NAV2!=='undefined' ? NAV2 : []);
+  mobDrawerRenderNiveli(listaFillestare, neSetings ? 'Cilësimet' : null);
   const bd=$('mobDrawerBackdrop'), dr=$('mobDrawer');
   if(bd) bd.classList.add('open');
   if(dr) dr.classList.add('open');
@@ -357,7 +361,10 @@ function mobDrawerClose(){
 // mbrapa: funksion per t'u kthyer nje nivel me lart (null nese jemi ne krye).
 function mobDrawerRenderNiveli(items, titulli, mbrapa){
   const dr=$('mobDrawer'); if(!dr) return;
-  const ikonat = (typeof NAV_ICONS!=='undefined') ? NAV_ICONS : {};
+  const neSetings = (typeof curNav!=='undefined' && curNav==='cilesimet');
+  const ikonat = neSetings
+    ? (typeof CIL_ICONS!=='undefined' ? CIL_ICONS : {})
+    : (typeof NAV_ICONS!=='undefined' ? NAV_ICONS : {});
   dr.innerHTML =
     '<div class="mobDrawerHead">'+
       (mbrapa ? '<button onclick="window.__mobDrawerMbrapa()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>' : '')+
@@ -379,6 +386,8 @@ function mobDrawerRenderNiveli(items, titulli, mbrapa){
       b.onclick=function(){ mobDrawerRenderNiveli(n.subs, n.l, function(){ mobDrawerRenderNiveli(items, titulli, mbrapa); }); };
     } else if(n.akcion && typeof window[n.akcion]==='function'){
       b.onclick=function(){ mobDrawerClose(); window[n.akcion](); };
+    } else if(neSetings && typeof cilShkoTek==='function' && (n.k==='account'||n.k==='hosting'||n.k==='advertising')){
+      b.onclick=function(){ mobDrawerClose(); cilShkoTek(n.k); };
     } else {
       b.onclick=function(){ mobDrawerClose(); nav({v:'profile', nav:n.nav||n.k, tab:n.tab, sub:n.sub}); };
     }
