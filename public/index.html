@@ -11,8 +11,15 @@
 <link rel="shortcut icon" href="/favicon-32.png">
 <link rel="stylesheet" href="/css/style.css?v=83">
 <link rel="stylesheet" href="/css/design-new.css?v=4">
+<script>
+function pxaThemeToggle(){
+  const eshteDrite = document.body.classList.toggle('pxa-light');
+  try{ localStorage.setItem('pxa_theme', eshteDrite?'light':'dark'); }catch(e){}
+}
+</script>
 </head>
 <body>
+<script>try{ if(localStorage.getItem('pxa_theme')==='light') document.body.classList.add('pxa-light'); }catch(e){}</script>
 
 <header class="topbar">
   <div class="side left" id="hdrLeft"></div>
@@ -37,7 +44,7 @@
         <span>EN</span>
       </button>
       <span class="pxa-topbar-sep"></span>
-      <button class="pxa-topbar-btn" title="Theme" onclick="document.querySelector('.pxa-root').classList.toggle('pxa-light')">
+      <button class="pxa-topbar-btn" title="Theme" onclick="pxaThemeToggle()">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </button>
     </div>
