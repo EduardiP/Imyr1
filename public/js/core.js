@@ -171,7 +171,7 @@ function setHeaderLoggedIn(){
       '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/></svg>'+
       '<span>EN</span>'+
     '</button>'+
-    '<button class="hdrIco" title="Theme" onclick="document.body.classList.toggle(\'pxa-light\')" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--mut2);cursor:pointer;">'+
+    '<button class="hdrIco" title="Theme" onclick="pxaThemeToggle()" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--mut2);cursor:pointer;">'+
       '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'+
     '</button>'+
     '<div class="zile-wrap"><button class="zile hdrIco" onclick="toggleNjoftimet(event)" aria-label="Njoftimet" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--mut2);cursor:pointer;position:relative;">'+
