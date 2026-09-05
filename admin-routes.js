@@ -145,6 +145,19 @@ module.exports = function (app, pool, iAdmin, kombinimi) {
   });
 
   // --- Lista e pritjes per "Teams & Roles" (regjistrimet e interesit) ---
+  app.get('/api/admin/suport-kerkesat', iAdmin, async (req, res) => {
+    const r = await pool.query(`
+      SELECT sk.id, sk.subjekti, sk.mesazhi, sk.statusi, sk.created_at,
+        b.emri AS biznes_emri, b.email AS biznes_email
+      FROM suport_kerkesat sk JOIN bizneset b ON b.id = sk.biznes_id
+      ORDER BY sk.created_at DESC LIMIT 200`);
+    res.json({ kerkesat: r.rows });
+  });
+  app.post('/api/admin/suport-kerkesat/:id/lexuar', iAdmin, async (req, res) => {
+    await pool.query("UPDATE suport_kerkesat SET statusi='lexuar' WHERE id=$1", [req.params.id]);
+    res.json({ ok:true });
+  });
+
   app.get('/api/admin/lista-pritjes', iAdmin, async (req, res) => {
     try {
       const r = await pool.query(
