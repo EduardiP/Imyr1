@@ -2497,6 +2497,7 @@ function mainEkipi(m){
 
 
 
+var _planiSelektuar = 'falas'; // 'falas' ose 'premium' — lokal per tani, derisa te lidhet pagesa reale
 function mainPlani(m){
   const VECORITE_FALAS = [
     'Qasje e plotë te rrjeti i cross-promocionit',
@@ -2515,6 +2516,12 @@ function mainPlani(m){
   function ikonaKontrolli(ngjyra){
     return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="'+ngjyra+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;margin-top:2px;"><polyline points="20 6 9 17 4 12"/></svg>';
   }
+  function shenjaAktual(ngjyra){
+    return '<div class="pill" style="position:absolute;top:-11px;right:20px;background:'+ngjyra+';color:#04240f;font-weight:700;display:flex;align-items:center;gap:5px;">'+
+      '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#04240f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Plani yt aktual</div>';
+  }
+  const falasAktual = _planiSelektuar==='falas';
+  const premiumAktual = _planiSelektuar==='premium';
   m.innerHTML=
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">'+
       '<div style="width:38px;height:38px;border-radius:12px;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
@@ -2523,32 +2530,68 @@ function mainPlani(m){
       '<h2 class="h" style="margin:0;">Faturimi & Plani</h2>'+
     '</div>'+
     '<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:stretch;">'+
-      '<div class="card" style="flex:1 1 300px;">'+
-        '<div style="font-family:var(--f-mono);font-size:11px;color:var(--good);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Plani aktual</div>'+
+      '<div class="card" style="flex:1 1 300px;position:relative;'+(falasAktual?'border-color:var(--good);':'')+'">'+
+        (falasAktual ? shenjaAktual('var(--good)') : '')+
+        '<div style="font-family:var(--f-mono);font-size:11px;color:var(--good);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Plani bazë</div>'+
         '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:#fff;">Falas</div>'+
         '<p class="small" style="margin:6px 0 18px;">Të gjitha shërbimet, falas për <b style="color:var(--txt);">3 muajt e parë</b>.</p>'+
         '<div style="display:flex;flex-direction:column;gap:10px;">'+
           VECORITE_FALAS.map(v=>'<div style="display:flex;gap:9px;align-items:flex-start;">'+ikonaKontrolli('#3fb950')+'<span class="small" style="color:var(--txt);">'+esc(v)+'</span></div>').join('')+
         '</div>'+
       '</div>'+
-      '<div class="card" style="flex:1 1 300px;position:relative;border-color:rgba(245,158,11,.4);background:linear-gradient(135deg,rgba(245,158,11,.06),transparent);">'+
-        '<div class="pill" style="position:absolute;top:-11px;left:20px;background:#f59e0b;color:#1a1200;font-weight:700;">Premium</div>'+
+      '<div class="card" style="flex:1 1 300px;position:relative;border-color:'+(premiumAktual?'var(--good)':'rgba(245,158,11,.4)')+';background:linear-gradient(135deg,rgba(245,158,11,.06),transparent);">'+
+        (premiumAktual ? shenjaAktual('var(--good)') : '<div class="pill" style="position:absolute;top:-11px;left:20px;background:#f59e0b;color:#1a1200;font-weight:700;">Premium</div>')+
         '<div style="font-family:var(--f-mono);font-size:11px;color:#f59e0b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Për ekipe që kërkojnë më shumë</div>'+
         '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:#fff;">Premium <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
         '<p class="small" style="margin:6px 0 18px;">Gjithçka nga Falas, plus:</p>'+
         '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">'+
           VECORITE_PREMIUM.map(v=>'<div style="display:flex;gap:9px;align-items:flex-start;">'+ikonaKontrolli('#f59e0b')+'<span class="small" style="color:var(--txt);">'+esc(v)+'</span></div>').join('')+
         '</div>'+
-        '<button class="btn" style="width:100%;background:#f59e0b;color:#1a1200;border:none;font-weight:600;" onclick="alert(\'Do të jetë e disponueshme së shpejti — jemi duke e përgatitur checkout-in.\')">Kalo te Premium</button>'+
+        (premiumAktual
+          ? '<div class="small" style="text-align:center;color:var(--good);font-weight:600;">✓ Ky është plani yt aktual</div>'
+          : '<button class="btn" style="width:100%;background:#f59e0b;color:#1a1200;border:none;font-weight:600;" onclick="planiZgjidh(\'premium\')">Kalo te Premium</button>')+
       '</div>'+
     '</div>';
 }
+function planiZgjidh(plani){
+  _planiSelektuar = plani;
+  renderMain({nav:'plani'});
+  if(plani==='premium'){
+    setTimeout(function(){ alert('Do të jetë e disponueshme së shpejti — jemi duke e përgatitur checkout-in.'); }, 150);
+  }
+}
 function mainSuport(m){
-  m.innerHTML='<h2 class="h">Ndihmë & Suport</h2>'+
-    '<p class="small" style="margin:10px 0 16px;">Ke një pyetje ose problem? Na shkruaj dhe të ndihmojmë.</p>'+
-    '<div style="border:1px solid var(--line);border-radius:12px;padding:20px;">'+
-      '<p class="small" style="margin:0;">Email: <b>suport@phronexusai.com</b></p>'+
+  m.innerHTML=
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">'+
+      '<div style="width:38px;height:38px;border-radius:12px;background:rgba(59,110,240,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b6ef0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>'+
+      '</div>'+
+      '<h2 class="h" style="margin:0;">Ndihmë & Suport</h2>'+
+    '</div>'+
+    '<div class="card" style="max-width:520px;">'+
+      '<p class="small" style="margin:0 0 16px;">Na shkruaj — mesazhi shkon direkt te ekipi ynë, dhe përgjigjemi sa më shpejt.</p>'+
+      '<label>Subjekti</label><input id="sup_subj" placeholder="Për çfarë bëhet fjalë?">'+
+      '<label style="margin-top:12px;">Mesazhi *</label>'+
+      '<textarea id="sup_msg" placeholder="Përshkruaj pyetjen ose problemin tënd…" style="min-height:120px;"></textarea>'+
+      '<button class="primary" id="sup_btn" onclick="suportDergo()">Dërgo →</button>'+
+      '<div class="msg" id="sup_feedback"></div>'+
+      '<p class="small mut" style="margin-top:16px;">Ose na shkruaj direkt: <b style="color:var(--txt);">suport@phronexusai.com</b></p>'+
     '</div>';
+}
+async function suportDergo(){
+  const subj=($('sup_subj').value||'').trim();
+  const msg=($('sup_msg').value||'').trim();
+  const fb=$('sup_feedback');
+  if(!msg){ fb.className='msg err'; fb.textContent='Shkruaj një mesazh para se të dërgosh.'; return; }
+  $('sup_btn').disabled=true;
+  try{
+    const r=await(await fetch('/api/suport/kerkese',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({subjekti:subj, mesazhi:msg})})).json();
+    if(r.error){ fb.className='msg err'; fb.textContent=r.error; $('sup_btn').disabled=false; return; }
+    fb.className='msg ok'; fb.textContent='✓ U dërgua. Do të përgjigjemi sa më shpejt.';
+    $('sup_subj').value=''; $('sup_msg').value='';
+    $('sup_btn').disabled=false;
+  }catch(e){ fb.className='msg err'; fb.textContent='Gabim: '+e.message; $('sup_btn').disabled=false; }
 }
 function renderVStep(){
   const nx=nextIncomplete(), el=$('vstep'); el.innerHTML='';
