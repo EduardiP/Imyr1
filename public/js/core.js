@@ -343,7 +343,7 @@ function mobDrawerToggle(){
   else mobDrawerOpen();
 }
 function mobDrawerOpen(){
-  const neSetings = (typeof curNav!=='undefined' && curNav==='cilesimet');
+  const neSetings = (typeof curNav!=='undefined' && (curNav==='cilesimet' || curNav==='kufizimetKat'));
   const listaFillestare = neSetings
     ? (typeof CIL_STRUKTURA!=='undefined' ? CIL_STRUKTURA : [])
     : (typeof NAV2!=='undefined' ? NAV2 : []);
@@ -361,7 +361,7 @@ function mobDrawerClose(){
 // mbrapa: funksion per t'u kthyer nje nivel me lart (null nese jemi ne krye).
 function mobDrawerRenderNiveli(items, titulli, mbrapa){
   const dr=$('mobDrawer'); if(!dr) return;
-  const neSetings = (typeof curNav!=='undefined' && curNav==='cilesimet');
+  const neSetings = (typeof curNav!=='undefined' && (curNav==='cilesimet' || curNav==='kufizimetKat'));
   const ikonat = neSetings
     ? (typeof CIL_ICONS!=='undefined' ? CIL_ICONS : {})
     : (typeof NAV_ICONS!=='undefined' ? NAV_ICONS : {});
