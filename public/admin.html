@@ -142,7 +142,7 @@ const $ = id => document.getElementById(id);
 const SECTIONS = [
 { k:'bizneset', l:'Bizneset' },
 { k:'b1', l:'Kombinimet AI' }, { k:'b2', l:'Njoftime' },
-{ k:'b3', l:'Buton 3' }, { k:'b4', l:'Përzgjedhjet' }
+{ k:'b3', l:'Suport' }, { k:'b4', l:'Përzgjedhjet' }
 ];
 const BIZ_SUB = [
 { k:'bizneset', l:'Llogaritë' },
@@ -186,12 +186,42 @@ if(curSec==='bizneset'){ renderBizneset(c); return; }
 if(curSec==='b1'){ renderKombinimet(c); return; }
 if(curSec==='b2'){ renderNjoftime(c); return; }
 if(curSec==='b4'){ renderPerzgjedhjet(c); return; }
+if(curSec==='b3'){ renderSuportKerkesat(c); return; }
 const lbl=(SECTIONS.find(s=>s.k===curSec)||{}).l||'';
 c.innerHTML='<div class="wrap"><h2 class="h">'+lbl+'</h2><p class="small" style="margin-top:8px;">Së shpejti.</p></div>';
 }
 
 // ================= NJOFTIME (manuale nga admin) =================
 var njBizneset = [];
+// ================= SUPORT (kerkesa nga faqja "Ndihme & Suport") =================
+async function renderSuportKerkesat(c){
+  c.innerHTML='<div class="wrap" style="max-width:760px;">'+
+    '<h2 class="h">Kërkesat e Suportit</h2>'+
+    '<p class="small" style="margin:2px 0 16px;">Mesazhe që klientët kanë dërguar nga "Ndihmë & Suport".</p>'+
+    '<div id="suportLista"><p class="small">Po ngarkoj…</p></div>'+
+  '</div>';
+  let r;
+  try{ r=await(await fetch('/api/admin/suport-kerkesat')).json(); }catch(e){ $('suportLista').innerHTML='<p class="small">Gabim.</p>'; return; }
+  const rows=r.kerkesat||[];
+  const el=$('suportLista');
+  if(!rows.length){ el.innerHTML='<p class="small mut">S\'ka kërkesa ende.</p>'; return; }
+  el.innerHTML=rows.map(function(x){
+    const eRe = x.statusi==='e_re';
+    return '<div style="border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:10px;'+(eRe?'border-left:3px solid #3b82f6;':'opacity:.7;')+'">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">'+
+        '<div><b>'+esc(x.subjekti||'(pa subjekt)')+'</b>'+
+        '<div class="small mut">'+esc(x.biznes_emri||'')+' · '+esc(x.biznes_email||'')+' · '+new Date(x.created_at).toLocaleString('sq-AL')+'</div></div>'+
+        (eRe ? '<button class="njBtn" onclick="suportShenoLexuar('+x.id+')">Shëno si të lexuar</button>' : '<span class="small mut">✓ Lexuar</span>')+
+      '</div>'+
+      '<p class="small" style="margin-top:10px;white-space:pre-wrap;">'+esc(x.mesazhi)+'</p>'+
+    '</div>';
+  }).join('');
+}
+async function suportShenoLexuar(id){
+  try{ await fetch('/api/admin/suport-kerkesat/'+id+'/lexuar',{method:'POST'}); }catch(e){}
+  renderSuportKerkesat($('content'));
+}
+
 async function renderNjoftime(c){
 c.innerHTML=
 '<div class="wrap" style="max-width:760px;">'+
@@ -249,11 +279,26 @@ ngarkoKerkesat();
 ngarkoListenPritjes();
 }
 
+var _pritjeRows = [], _pritjePagina = 0;
+const PRITJE_PER_FAQE = 5;
+
 async function ngarkoListenPritjes(){
 const el=$('pritjeLista'); if(!el) return;
 try{
-const rows=await(await fetch('/api/admin/lista-pritjes')).json();
-if(!rows.length){ el.innerHTML='<p class="small mut">S\'ka regjistrime ende.</p>'; return; }
+_pritjeRows=await(await fetch('/api/admin/lista-pritjes')).json();
+_pritjePagina = 0;
+pritjeRenderFaqen();
+}catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; }
+}
+
+function pritjeRenderFaqen(){
+const el=$('pritjeLista'); if(!el) return;
+if(!_pritjeRows.length){ el.innerHTML='<p class="small mut">S\'ka regjistrime ende.</p>'; return; }
+
+const fillimi = _pritjePagina * PRITJE_PER_FAQE;
+const rows = _pritjeRows.slice(fillimi, fillimi + PRITJE_PER_FAQE);
+const totalFaqe = Math.ceil(_pritjeRows.length / PRITJE_PER_FAQE);
+
 el.innerHTML='<div class="kerkesaTbl">'+rows.map(r=>{
 const ini=((r.biznesi||'?').trim().charAt(0)||'?').toUpperCase();
 const logo=r.logo_url?'<img src="'+esc(r.logo_url)+'" class="njBizLogo">':'<span class="njBizLogo njBizLogoTxt">'+esc(ini)+'</span>';
@@ -262,8 +307,19 @@ return '<div class="kerkesaTr">'+
 '<div class="kerkesaIdent">'+logo+'<div><div class="njBizNm">'+esc(r.biznesi||'—')+'</div><div class="njBizEm">'+esc(r.email||'—')+'</div></div></div>'+
 '<span class="small mut">'+data+'</span>'+
 '</div>';
-}).join('')+'</div>';
-}catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; }
+}).join('')+'</div>'+
+(totalFaqe>1 ?
+'<div style="display:flex;justify-content:center;align-items:center;gap:14px;margin-top:12px;">'+
+'<button class="btn ghost" onclick="pritjeFaqja(-1)" '+(_pritjePagina===0?'disabled':'')+'>← Mbrapa</button>'+
+'<span class="small mut">'+(_pritjePagina+1)+' / '+totalFaqe+'</span>'+
+'<button class="btn ghost" onclick="pritjeFaqja(1)" '+(_pritjePagina>=totalFaqe-1?'disabled':'')+'>Para →</button>'+
+'</div>' : '');
+}
+
+function pritjeFaqja(drejtimi){
+const totalFaqe = Math.ceil(_pritjeRows.length / PRITJE_PER_FAQE);
+_pritjePagina = Math.max(0, Math.min(totalFaqe-1, _pritjePagina + drejtimi));
+pritjeRenderFaqen();
 }
 
 var _njKerkim='', _njTip='';
