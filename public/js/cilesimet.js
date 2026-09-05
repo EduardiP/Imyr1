@@ -7,15 +7,12 @@ var _cilOpenKey=null;   // 'delivery' kur "Ad Delivery" eshte hapur si dropdown
 
 var CIL_ICONS = {
   account:  '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>',
-  delivery: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
+  hosting:  '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
   kufizimetKat: '<path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z"/>'
 };
 var CIL_STRUKTURA=[
   { k:'account', l:'Account' },
-  { k:'delivery', l:'Ad Delivery', subs:[
-    { k:'hosting', l:'Hosting' },
-    { k:'advertising', l:'Advertising' }
-  ]},
+  { k:'hosting', l:'Ad Delivery' },
   { k:'kufizimetKat', l:'Kufizimet e Kategorive' }
 ];
 
@@ -24,7 +21,7 @@ function renderCilesimetNav(){
   el.innerHTML='';
   CIL_STRUKTURA.forEach(function(n){
     const hasSubs = n.subs && n.subs.length;
-    const eshteAktiv=(n.k==='account' && _cilTab==='account')||(n.k==='delivery' && (_cilTab==='hosting'||_cilTab==='advertising'))||(n.k==='kufizimetKat' && curNav==='kufizimetKat');
+    const eshteAktiv=(n.k==='account' && _cilTab==='account')||(n.k==='hosting' && _cilTab==='hosting')||(n.k==='kufizimetKat' && curNav==='kufizimetKat');
     const b=document.createElement('button');
     b.type='button';
     b.className='snItem'+(eshteAktiv?' active':'');
