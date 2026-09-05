@@ -38,7 +38,6 @@ const NAV2 = [
     {l:'Performanca', nav:'rekPerformanca'}
   ]},
   { k:'konvertimet', l:'Konvertimet' },
-  { k:'kufizimetKat', l:'Kufizimet e Kategorive' },
   { k:'analytics', l:'Analytics', subs:[
     {l:'Trafiku', nav:'anaTrafiku'},
     {l:'Përzgjedhjet e Pishinave', nav:'anaAutomatik'},
