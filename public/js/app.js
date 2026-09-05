@@ -505,7 +505,7 @@ function renderProfile(s){
   if(oldCard) oldCard.style.display='none';
   const snavEl=$('snav'); if(snavEl) snavEl.innerHTML='';
   renderUserMenu();
-  if(curNav==='cilesimet') renderCilesimetNav(); else renderNav2();
+  if(curNav==='cilesimet' || curNav==='kufizimetKat') renderCilesimetNav(); else renderNav2();
   renderMain(s);
 }
 var _userMenuOpen=false;
