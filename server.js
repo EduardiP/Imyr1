@@ -402,6 +402,18 @@ app.post('/api/dil', async (req, res) => {
 });
 
 // --- INFO IME (kush jam) ---
+app.post('/api/suport/kerkese', iLoguar, async (req, res) => {
+  const { subjekti, mesazhi } = req.body;
+  if(!mesazhi || !mesazhi.trim()) return res.json({error:'Shkruaj një mesazh.'});
+  await pool.query(`CREATE TABLE IF NOT EXISTS suport_kerkesat (
+    id SERIAL PRIMARY KEY, biznes_id INTEGER NOT NULL REFERENCES bizneset(id),
+    subjekti TEXT, mesazhi TEXT NOT NULL, statusi TEXT NOT NULL DEFAULT 'e_re',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
+  await pool.query('INSERT INTO suport_kerkesat (biznes_id, subjekti, mesazhi) VALUES ($1,$2,$3)',
+    [req.biznesId, (subjekti||'').trim().slice(0,200), mesazhi.trim()]);
+  res.json({ ok:true });
+});
+
 app.get('/api/une', iLoguar, async (req, res) => {
   try {
     const r = await pool.query(
