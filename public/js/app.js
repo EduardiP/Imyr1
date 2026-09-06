@@ -2539,9 +2539,7 @@ async function mainPlani(m){
   ];
   const VECORITE_PREMIUM_SPEC = [
     'Gjenerim formatesh reklamash me AI — i PAKUFIZUAR (imazh, video, HTML5)',
-    'Përdorim i PAKUFIZUAR i asistencës AI (chat krijimi + suporti)',
-    'Përparësi në renditje brenda Ankandit',
-    'Suport i përparësishëm'
+    'Përdorim i PAKUFIZUAR i asistencës AI (chat krijimi + suporti)'
   ];
   function ikonaKontrolli(){
     return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3fb950" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;margin-top:2px;"><polyline points="20 6 9 17 4 12"/></svg>';
