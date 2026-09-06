@@ -2546,9 +2546,10 @@ async function mainPlani(m){
   function ikonaKontrolli(){
     return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3fb950" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;margin-top:2px;"><polyline points="20 6 9 17 4 12"/></svg>';
   }
-  function listaVeqorish(specifike){
+  function listaVeqorish(specifike, specifikePara){
+    const rradha = specifikePara ? specifike.concat(VECORITE_BAZE) : VECORITE_BAZE.concat(specifike);
     return '<div style="display:flex;flex-direction:column;gap:10px;margin:16px 0;">'+
-      VECORITE_BAZE.concat(specifike).map(v=>'<div style="display:flex;gap:9px;align-items:flex-start;">'+ikonaKontrolli()+'<span class="small" style="color:var(--txt);">'+esc(v)+'</span></div>').join('')+
+      rradha.map(v=>'<div style="display:flex;gap:9px;align-items:flex-start;">'+ikonaKontrolli()+'<span class="small" style="color:var(--txt);">'+esc(v)+'</span></div>').join('')+
     '</div>';
   }
   const header=
@@ -2574,7 +2575,7 @@ async function mainPlani(m){
           '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#04240f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Aktiv</div>'+
         '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
         '<p class="small" style="margin:6px 0 0;">Faturimi vazhdon automatikisht çdo muaj.</p>'+
-        listaVeqorish(VECORITE_PREMIUM_SPEC)+
+        listaVeqorish(VECORITE_PREMIUM_SPEC, true)+
         '<button class="btn" style="width:100%;" onclick="planiZgjidh(\'falas\')">Anulo (kthehu te periudha falas, nëse ende ke ditë të mbetura)</button>'+
       '</div>';
   } else if(eSkaduar){
@@ -2584,7 +2585,7 @@ async function mainPlani(m){
         '<p class="small" style="color:var(--err);font-weight:600;margin:6px 0 10px;">Periudha jote falas (3 muajt e parë) ka përfunduar — reklamat e tua janë ndaluar.</p>'+
         '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
         '<p class="small" style="margin:6px 0 0;">Aktivizo për t\'i rikthyer shërbimit menjëherë.</p>'+
-        listaVeqorish(VECORITE_PREMIUM_SPEC)+
+        listaVeqorish(VECORITE_PREMIUM_SPEC, true)+
         '<button class="btn cta" style="width:100%;" onclick="planiZgjidh(\'premium\')">Aktivizo tani →</button>'+
       '</div>';
   } else {
@@ -2601,8 +2602,8 @@ async function mainPlani(m){
         '<div class="card" style="flex:1 1 300px;position:relative;">'+
           '<div class="pill" style="position:absolute;top:-11px;left:20px;background:#f59e0b;color:#1a1200;font-weight:700;">Premium</div>'+
           '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
-          '<p class="small" style="margin:6px 0 0;">Njësoj si Falas — thjesht vazhdon edhe pas 3 muajve.</p>'+
-          listaVeqorish(VECORITE_PREMIUM_SPEC)+
+          '<p class="small" style="margin:6px 0 0;">Krijim dhe asistencë AI <b style="color:var(--txt);">pa asnjë kufi</b> — çdo gjë tjetër njësoj si Falas.</p>'+
+          listaVeqorish(VECORITE_PREMIUM_SPEC, true)+
           '<button class="btn" style="width:100%;" onclick="planiZgjidh(\'premium\')">Aktivizo tani (opsionale)</button>'+
         '</div>'+
       '</div>';
