@@ -967,11 +967,11 @@ async function ngarkoDashAnalitika(){
         '</div>'+
         '<div style="display:flex;gap:10px;flex-wrap:wrap;">'+
           '<div style="flex:1;min-width:100px;background:#0e1116;border:1px solid var(--line);border-radius:9px;padding:8px 12px;opacity:.75;">'+
-            '<div style="font-size:15px;font-weight:600;">'+(mm.shfaqje||0)+'</div>'+
-            '<div class="small mut" style="font-size:11px;">shfaqje</div></div>'+
+            '<div style="font-size:15px;font-weight:600;color:#e6edf3;">'+(mm.shfaqje||0)+'</div>'+
+            '<div class="small" style="font-size:11px;color:#8b949e;">shfaqje</div></div>'+
           '<div style="flex:1;min-width:100px;background:#0e1116;border:1px solid var(--line);border-radius:9px;padding:8px 12px;opacity:.75;">'+
-            '<div style="font-size:15px;font-weight:600;">'+(mm.klikime||0)+'</div>'+
-            '<div class="small mut" style="font-size:11px;">klikime</div></div>'+
+            '<div style="font-size:15px;font-weight:600;color:#e6edf3;">'+(mm.klikime||0)+'</div>'+
+            '<div class="small" style="font-size:11px;color:#8b949e;">klikime</div></div>'+
         '</div>'+
       '</div>';
   }catch(e){ card.innerHTML='<p class="small">Gabim.</p>'; }
@@ -1149,7 +1149,7 @@ function claudeHap(id){
       '<button onclick="vizatoClaudeSuport('+(isNaN(id)?"'"+id+"'":id)+')" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;">✕</button>'+
     '</div>'+
     '<div id="claudeChat'+id+'" style="padding:14px;max-height:340px;overflow-y:auto;min-height:80px;font-size:13px;line-height:1.5;">'+
-      '<div style="margin:8px 0;"><span style="background:var(--bg2,#1a1f28);padding:8px 12px;border-radius:10px;display:inline-block;max-width:90%;">'+esc(pyetja)+'</span></div>'+
+      '<div style="margin:8px 0;"><span style="background:#1a1f28;color:#e6edf3;padding:8px 12px;border-radius:10px;display:inline-block;max-width:90%;">'+esc(pyetja)+'</span></div>'+
     '</div>'+
     '<div style="padding:10px 14px;border-top:1px solid var(--line);display:flex;gap:8px;">'+
       '<input id="claudeInput'+id+'" placeholder="Shkruaj pyetjen tënde..." style="flex:1;" onkeydown="if(event.key===\'Enter\')claudeDergo('+(isNaN(id)?"'"+id+"'":id)+')">'+
@@ -1179,7 +1179,7 @@ async function claudeDergo(id){
       _claudeHist[id].push({role:'assistant',content:r.pergjigje});
       // Pastro Markdown bazE (**bold**, ##) qe te mos dale i madh; ruaj rreshtat
       let txt=r.pergjigje.replace(/\*\*(.+?)\*\*/g,'$1').replace(/^#+\s*/gm,'').replace(/`([^`]+)`/g,'$1');
-      chat.innerHTML+='<div style="margin:8px 0;"><span style="background:var(--bg2,#1a1f28);padding:8px 12px;border-radius:10px;display:inline-block;max-width:90%;white-space:pre-wrap;font-size:13px;line-height:1.5;">'+esc(txt)+'</span></div>';
+      chat.innerHTML+='<div style="margin:8px 0;"><span style="background:#1a1f28;color:#e6edf3;padding:8px 12px;border-radius:10px;display:inline-block;max-width:90%;white-space:pre-wrap;font-size:13px;line-height:1.5;">'+esc(txt)+'</span></div>';
     } else {
       chat.innerHTML+='<div style="margin:8px 0;color:var(--err);font-size:13px;">'+esc(r.error||'Gabim në përgjigje.')+'</div>';
     }
@@ -1318,12 +1318,12 @@ function mainKreative_NEW(m, s){
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;max-width:820px;margin:12px 0 6px;">'+
         KR_TIPE.map(function(t){
           const sel = zgjedhur===t.id;
-          return '<button onclick="krZgjidh(\''+t.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:32px 16px;border-radius:16px;border:1px solid '+(sel?'var(--acc)':'var(--line)')+';background:'+(sel?'rgba(59,110,240,.08)':'var(--card)')+';cursor:pointer;color:'+(sel?'#fff':'var(--mut2)')+';">'+
+          return '<button onclick="krZgjidh(\''+t.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:32px 16px;border-radius:16px;border:1px solid '+(sel?'var(--acc)':'var(--line)')+';background:'+(sel?'rgba(59,110,240,.08)':'var(--card)')+';cursor:pointer;color:var(--txt);">'+
             '<div style="width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:'+(sel?'rgba(59,110,240,.15)':'rgba(255,255,255,.05)')+';">'+
               '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="'+(sel?'#3b6ef0':'#64748b')+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+t.icon+'</svg>'+
             '</div>'+
             '<span style="font-size:15px;font-weight:600;font-family:var(--f-body);">'+t.l+'</span>'+
-            '<span style="font-size:11px;color:var(--mut2);text-align:center;line-height:1.5;">'+t.d+'</span>'+
+            '<span style="font-size:11px;color:var(--mut);text-align:center;line-height:1.5;">'+t.d+'</span>'+
           '</button>';
         }).join('')+
       '</div>'+
