@@ -142,8 +142,16 @@ const $ = id => document.getElementById(id);
 const SECTIONS = [
 { k:'bizneset', l:'Bizneset' },
 { k:'b1', l:'Kombinimet AI' }, { k:'b2', l:'Njoftime' },
-{ k:'b3', l:'Suport' }, { k:'b4', l:'Përzgjedhjet' }
+{ k:'b4', l:'Përzgjedhjet' }
 ];
+const NJOFT_SUB = [
+{ k:'kerkesa', l:'Kërkesat nga asistenti virtual' },
+{ k:'pritje', l:'Lista e pritjes — Teams & Roles' },
+{ k:'dergo', l:'Dërgo njoftim' },
+{ k:'ndryshime', l:'Çfarë të re (publik)' },
+{ k:'suport', l:'Suport' }
+];
+let curNjoftSub = 'kerkesa';
 const BIZ_SUB = [
 { k:'bizneset', l:'Llogaritë' },
 { k:'balancat', l:'Balancat' },
@@ -186,7 +194,6 @@ if(curSec==='bizneset'){ renderBizneset(c); return; }
 if(curSec==='b1'){ renderKombinimet(c); return; }
 if(curSec==='b2'){ renderNjoftime(c); return; }
 if(curSec==='b4'){ renderPerzgjedhjet(c); return; }
-if(curSec==='b3'){ renderSuportKerkesat(c); return; }
 const lbl=(SECTIONS.find(s=>s.k===curSec)||{}).l||'';
 c.innerHTML='<div class="wrap"><h2 class="h">'+lbl+'</h2><p class="small" style="margin-top:8px;">Së shpejti.</p></div>';
 }
@@ -222,15 +229,47 @@ async function suportShenoLexuar(id){
   renderSuportKerkesat($('content'));
 }
 
-async function renderNjoftime(c){
+function renderNjoftime(c){
 c.innerHTML=
-'<div class="wrap" style="max-width:760px;">'+
+'<div class="appwrap">'+
+'<aside class="sidebar"><div id="njoftNav"></div></aside>'+
+'<main class="main" id="njoftMain"></main>'+
+'</div>';
+renderNjoftNav(); renderNjoftMain();
+}
+function renderNjoftNav(){
+const n=$('njoftNav'); n.innerHTML='';
+NJOFT_SUB.forEach(s=>{
+const b=document.createElement('button');
+b.className='subnav'+(s.k===curNjoftSub?' active':'');
+b.textContent=s.l; b.onclick=()=>{ curNjoftSub=s.k; renderNjoftNav(); renderNjoftMain(); };
+n.appendChild(b);
+});
+}
+function renderNjoftMain(){
+const m=$('njoftMain');
+if(curNjoftSub==='kerkesa'){ renderNjoftKerkesa(m); return; }
+if(curNjoftSub==='pritje'){ renderNjoftPritje(m); return; }
+if(curNjoftSub==='dergo'){ renderNjoftDergo(m); return; }
+if(curNjoftSub==='ndryshime'){ renderNjoftNdryshime(m); return; }
+if(curNjoftSub==='suport'){ renderSuportKerkesat(m); return; }
+}
+function renderNjoftKerkesa(m){
+m.innerHTML=
 '<h2 class="h">Kërkesat nga asistenti virtual</h2>'+
 '<p class="small" style="margin:2px 0 12px;">Klientët që kërkuan të kontaktojnë ekipin përmes chat-it.</p>'+
-'<div id="kerkesatLista" style="margin-bottom:28px;"><p class="small">Po ngarkoj…</p></div>'+
+'<div id="kerkesatLista"><p class="small">Po ngarkoj…</p></div>';
+ngarkoKerkesat();
+}
+function renderNjoftPritje(m){
+m.innerHTML=
 '<h2 class="h">Lista e pritjes — Teams & Roles</h2>'+
 '<p class="small" style="margin:2px 0 12px;">Klientët që u regjistruan interesin për veçorinë "Teams & Roles".</p>'+
-'<div id="pritjeLista" style="margin-bottom:28px;"><p class="small">Po ngarkoj…</p></div>'+
+'<div id="pritjeLista"><p class="small">Po ngarkoj…</p></div>';
+ngarkoListenPritjes();
+}
+async function renderNjoftDergo(m){
+m.innerHTML=
 '<h2 class="h">Dërgo njoftim</h2>'+
 '<p class="small" style="margin:2px 0 18px;">Zgjidh një ose disa biznese dhe dërgo një njoftim te ikona e ziles së tyre.</p>'+
 '<label>Titulli *</label><input id="njTit" placeholder="Titulli i njoftimit">'+
@@ -262,22 +301,21 @@ c.innerHTML=
 '<div id="njLista"><p class="small" style="padding:14px;">Po ngarkoj…</p></div>'+
 '</div></div>'+
 '<button class="primary" style="margin-top:16px;" onclick="njDergo(this)">Dërgo njoftimin</button>'+
-'<span class="small" id="njStat" style="margin-left:10px;"></span>'+
-
-'<h2 class="h" style="margin-top:36px;padding-top:24px;border-top:1px solid var(--line);">Çfarë të re (publik)</h2>'+
-'<p class="small" style="margin:2px 0 18px;">I ndryshëm nga njoftimi më lart — ky shfaqet te widget-i global (ikona e re, jo zilja), i dukshëm për çdo klient, pa zgjedhje biznesesh. Për ndryshime të vogla të platformës, jo veçori të reja të mëdha.</p>'+
-'<label>Titulli *</label><input id="ndrTit" placeholder="p.sh. Insights u shtua">'+
-'<label style="margin-top:12px;">Teksti</label><textarea id="ndrTek" placeholder="Përshkrim i shkurtër" style="min-height:70px;"></textarea>'+
-'<button class="primary" style="margin-top:16px;" onclick="ndrAdminDergo(this)">Dërgo te widget</button>'+
-'<span class="small" id="ndrStat" style="margin-left:10px;"></span>'+
-'<div id="ndrLista" style="margin-top:16px;"></div>'+
-'</div>';
+'<span class="small" id="njStat" style="margin-left:10px;"></span>';
 try{
 njBizneset = await(await fetch('/api/admin/njoftime/bizneset')).json();
 njRenderLista();
 }catch(e){ $('njLista').innerHTML='<p class="small" style="padding:14px;">Gabim.</p>'; }
-ngarkoKerkesat();
-ngarkoListenPritjes();
+}
+function renderNjoftNdryshime(m){
+m.innerHTML=
+'<h2 class="h">Çfarë të re (publik)</h2>'+
+'<p class="small" style="margin:2px 0 18px;">I ndryshëm nga njoftimi individual — ky shfaqet te widget-i global (ikona e re, jo zilja), i dukshëm për çdo klient, pa zgjedhje biznesesh. Për ndryshime të vogla të platformës, jo veçori të reja të mëdha.</p>'+
+'<label>Titulli *</label><input id="ndrTit" placeholder="p.sh. Insights u shtua">'+
+'<label style="margin-top:12px;">Teksti</label><textarea id="ndrTek" placeholder="Përshkrim i shkurtër" style="min-height:70px;"></textarea>'+
+'<button class="primary" style="margin-top:16px;" onclick="ndrAdminDergo(this)">Dërgo te widget</button>'+
+'<span class="small" id="ndrStat" style="margin-left:10px;"></span>'+
+'<div id="ndrLista" style="margin-top:16px;"></div>';
 ndrNgarkoListen();
 }
 
