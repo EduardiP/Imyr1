@@ -64,7 +64,9 @@ function mainCilesimet(m){
   cilShkoTek(_cilTab);
 }
 function cilShkoTek(tab){
-  _cilTab=tab; renderCilesimetNav();
+  _cilTab=tab;
+  if(curNav!=='cilesimet'){ nav({v:'profile', nav:'cilesimet'}); return; }
+  renderCilesimetNav();
   const body=$('cilBody'); if(!body) return;
   if(tab==='account') return cilAccount(body);
   if(tab==='hosting') return adDelHosting(body);
