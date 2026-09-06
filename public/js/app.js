@@ -144,7 +144,6 @@ function proUpsellHTML(pershkrimi){
   '</div>';
 }
 async function mainInsights(m){
-  const ePremium = !!(une && une.plani==='premium');
   m.innerHTML='<h2 class="h">Vështrime</h2>'+
     '<p class="small" style="margin:8px 0 18px;">Si krahasohesh me mesataren e rrjetit.</p>'+
     '<div id="vshtWrap"><p class="small mut">Po ngarkoj…</p></div>';
@@ -176,7 +175,7 @@ async function mainInsights(m){
       '</div>';
   }
 
-  const pjesaMarreDheneRaportet = ePremium ?
+  const pjesaMarreDheneRaportet =
     '<div>'+
       '<h4 class="small mut" style="text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;">Marrë (si reklamues)</h4>'+
       '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
@@ -202,8 +201,7 @@ async function mainInsights(m){
         kutia('CVR (Konvertime ÷ Klikime)', null, '%', d.cvr.yti, d.cvr.mesatarja, 180)+
         kutia('Konvertim-për-shikim', null, '%', d.konvertimi.yti, d.konvertimi.mesatarja, 180)+
       '</div>'+
-    '</div>'
-    : proUpsellHTML('Krahasimi i detajuar (shfaqje, klikime, konvertime të marra/dhëna, CTR, CVR) është pjesë e planit Premium.');
+    '</div>';
 
   wrap.innerHTML=
     '<div style="display:flex;flex-direction:column;gap:20px;">'+
@@ -2525,6 +2523,8 @@ function mainPlani(m){
     'Ndihmë me AI për krijimin e përshkrimit (për gjenerim formatesh)',
     'Gjenerim formatesh reklamash me AI (imazh, video, HTML5) — deri 30 krijime/muaj, gjithsej',
     'Lidhja e konvertimeve + gjurmimi',
+    'Analitikë e plotë (Trafiku, Përzgjedhjet e Pishinave)',
+    'Vështrime — krahasim me mesataren e rrjetit',
     'Chat suporti',
     'Njoftime për ndihmë teknike dhe udhëzime'
   ];
@@ -2533,8 +2533,6 @@ function mainPlani(m){
     'Krijim i pakufizuar i formateve të reklamave me AI',
     'Përdorim i pakufizuar i asistencës AI (chat krijimi + suporti)',
     'Përparësi në renditje brenda Ankandit',
-    'Analitikë e avancuar (Analytics)',
-    'Vështrime shtesë',
     'Suport i përparësishëm'
   ];
   function ikonaKontrolli(ngjyra){
@@ -2557,7 +2555,7 @@ function mainPlani(m){
       '<div class="card" style="flex:1 1 300px;position:relative;'+(falasAktual?'border-color:var(--good);':'')+'">'+
         (falasAktual ? shenjaAktual('var(--good)') : '')+
         '<div style="font-family:var(--f-mono);font-size:11px;color:var(--good);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Plani bazë</div>'+
-        '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:#fff;">Falas</div>'+
+        '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">Falas</div>'+
         '<p class="small" style="margin:6px 0 18px;">Të gjitha shërbimet, falas për <b style="color:var(--txt);">3 muajt e parë</b>.</p>'+
         '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">'+
           VECORITE_FALAS.map(v=>'<div style="display:flex;gap:9px;align-items:flex-start;">'+ikonaKontrolli('#3fb950')+'<span class="small" style="color:var(--txt);">'+esc(v)+'</span></div>').join('')+
@@ -2569,7 +2567,7 @@ function mainPlani(m){
       '<div class="card" style="flex:1 1 300px;position:relative;border-color:'+(premiumAktual?'var(--good)':'rgba(245,158,11,.4)')+';background:linear-gradient(135deg,rgba(245,158,11,.06),transparent);">'+
         (premiumAktual ? shenjaAktual('var(--good)') : '<div class="pill" style="position:absolute;top:-11px;left:20px;background:#f59e0b;color:#1a1200;font-weight:700;">Premium</div>')+
         '<div style="font-family:var(--f-mono);font-size:11px;color:#f59e0b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Për ekipe që kërkojnë më shumë</div>'+
-        '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:#fff;">Premium <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
+        '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">Premium <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
         '<p class="small" style="margin:6px 0 18px;">Gjithçka nga Falas, plus:</p>'+
         '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">'+
           VECORITE_PREMIUM.map(v=>'<div style="display:flex;gap:9px;align-items:flex-start;">'+ikonaKontrolli('#f59e0b')+'<span class="small" style="color:var(--txt);">'+esc(v)+'</span></div>').join('')+
@@ -2903,7 +2901,7 @@ async function kontrolloSnippetFresket(){
       nj.innerHTML='<div style="background:#3d1418;border:1px solid var(--err);color:#ffb3b3;'+
         'padding:10px 12px;border-radius:8px;font-size:13px;">⚠ Snippet-i i gjurmimit nuk u gjet te faqja jote. '+
         'Vendose përsëri kodin lart te çdo faqe, pastaj kliko butonin poshtë.'+
-        '<div style="margin-top:10px;"><button class="btn" onclick="riverifikoSnippet()">Kam vendosur kodin — kontrollo sërish</button></div></div>';
+        '<div style="margin-top:10px;"><button class="btn" style="color:#ffb3b3;border-color:#ffb3b3;" onclick="riverifikoSnippet()">Kam vendosur kodin — kontrollo sërish</button></div></div>';
       // snippet-i i palidhur → URL-t u shkeputen te serveri; rifresko listen, progresin, njoftimet
       try{ await ngarkoKonvertimet(); }catch(e){}
       const kst=$('k_stat'); if(kst) kst.innerHTML='';  // pastro mesazhin "u lidhen"
