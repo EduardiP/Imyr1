@@ -14,6 +14,8 @@
 <script>
 function pxaThemeToggle(){
   const eshteDrite = document.body.classList.toggle('pxa-light');
+  const rrenja = document.querySelector('.pxa-root');
+  if(rrenja) rrenja.classList.toggle('pxa-light', eshteDrite);
   try{ localStorage.setItem('pxa_theme', eshteDrite?'light':'dark'); }catch(e){}
 }
 </script>
@@ -30,6 +32,7 @@ function pxaThemeToggle(){
 <!-- PARA LOGIN: faqja publike (hapet gjithçka NË VEND) -->
 <div class="view on" id="v-hero">
 <div class="pxa-root">
+<script>try{ if(localStorage.getItem('pxa_theme')==='light') document.currentScript.parentElement.classList.add('pxa-light'); }catch(e){}</script>
 
 <!-- TOP UTILITY BAR -->
 <div class="pxa-topbar">
@@ -849,7 +852,7 @@ window.addEventListener('pageshow', function(event){
 <script src="/js/core.js?v=83"></script>
 <script src="/js/connect.js?v=81"></script>
 <script src="/js/auth.js?v=81"></script>
-<script src="/js/app.js?v=85"></script>
+<script src="/js/app.js?v=87"></script>
 <script src="/js/cilesimet.js?v=1"></script>
 <script src="/js/balance.js?v=1"></script>
 <div id="v-analitika-full" class="view"></div>
