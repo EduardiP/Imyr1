@@ -145,12 +145,6 @@ function proUpsellHTML(pershkrimi){
 }
 async function mainInsights(m){
   const ePremium = !!(une && une.plani==='premium');
-  if(!ePremium){
-    m.innerHTML='<h2 class="h">Vështrime</h2>'+
-      '<p class="small" style="margin:8px 0 18px;">Si krahasohesh me mesataren e rrjetit.</p>'+
-      proUpsellHTML('Krahasimi i detajuar me mesataren e rrjetit (shfaqje, klikime, konvertime, CTR, CVR, dhe pikët AI) është pjesë e planit Premium.');
-    return;
-  }
   m.innerHTML='<h2 class="h">Vështrime</h2>'+
     '<p class="small" style="margin:8px 0 18px;">Si krahasohesh me mesataren e rrjetit.</p>'+
     '<div id="vshtWrap"><p class="small mut">Po ngarkoj…</p></div>';
@@ -182,6 +176,35 @@ async function mainInsights(m){
       '</div>';
   }
 
+  const pjesaMarreDheneRaportet = ePremium ?
+    '<div>'+
+      '<h4 class="small mut" style="text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;">Marrë (si reklamues)</h4>'+
+      '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
+        kutia('Shfaqje të marra', null, '', d.shfaqjeMarre.yti, d.shfaqjeMarre.mesatarja, 180)+
+        kutia('Shikime të marra', null, '', d.shikimeMarre.yti, d.shikimeMarre.mesatarja, 180)+
+        kutia('Klikime të marra', null, '', d.klikimeMarre.yti, d.klikimeMarre.mesatarja, 180)+
+        kutia('Konvertime të marra', null, '', d.konvertimeMarre.yti, d.konvertimeMarre.mesatarja, 180)+
+      '</div>'+
+    '</div>'+
+    '<div>'+
+      '<h4 class="small mut" style="text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;">Dhënë (si host)</h4>'+
+      '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
+        kutia('Shfaqje të dhëna', null, '', d.shfaqjeDhene.yti, d.shfaqjeDhene.mesatarja, 180)+
+        kutia('Shikime të dhëna', null, '', d.shikimeDhene.yti, d.shikimeDhene.mesatarja, 180)+
+        kutia('Klikime të dhëna', null, '', d.klikimeDhene.yti, d.klikimeDhene.mesatarja, 180)+
+        kutia('Konvertime të dhëna', null, '', d.konvertimeDhene.yti, d.konvertimeDhene.mesatarja, 180)+
+      '</div>'+
+    '</div>'+
+    '<div>'+
+      '<h4 class="small mut" style="text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;">Raportet</h4>'+
+      '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
+        kutia('CTR (Klikime ÷ Shikime)', null, '%', d.ctr.yti, d.ctr.mesatarja, 180)+
+        kutia('CVR (Konvertime ÷ Klikime)', null, '%', d.cvr.yti, d.cvr.mesatarja, 180)+
+        kutia('Konvertim-për-shikim', null, '%', d.konvertimi.yti, d.konvertimi.mesatarja, 180)+
+      '</div>'+
+    '</div>'
+    : proUpsellHTML('Krahasimi i detajuar (shfaqje, klikime, konvertime të marra/dhëna, CTR, CVR) është pjesë e planit Premium.');
+
   wrap.innerHTML=
     '<div style="display:flex;flex-direction:column;gap:20px;">'+
       '<div>'+
@@ -191,32 +214,7 @@ async function mainInsights(m){
           kutia('Pikë AI — Si host', 'Sa relevante janë, mesatarisht, reklamat e të tjerëve për audiencën tënde.', '', d.pikeAIHost.yti, d.pikeAIHost.mesatarja)+
         '</div>'+
       '</div>'+
-      '<div>'+
-        '<h4 class="small mut" style="text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;">Marrë (si reklamues)</h4>'+
-        '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
-          kutia('Shfaqje të marra', null, '', d.shfaqjeMarre.yti, d.shfaqjeMarre.mesatarja, 180)+
-          kutia('Shikime të marra', null, '', d.shikimeMarre.yti, d.shikimeMarre.mesatarja, 180)+
-          kutia('Klikime të marra', null, '', d.klikimeMarre.yti, d.klikimeMarre.mesatarja, 180)+
-          kutia('Konvertime të marra', null, '', d.konvertimeMarre.yti, d.konvertimeMarre.mesatarja, 180)+
-        '</div>'+
-      '</div>'+
-      '<div>'+
-        '<h4 class="small mut" style="text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;">Dhënë (si host)</h4>'+
-        '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
-          kutia('Shfaqje të dhëna', null, '', d.shfaqjeDhene.yti, d.shfaqjeDhene.mesatarja, 180)+
-          kutia('Shikime të dhëna', null, '', d.shikimeDhene.yti, d.shikimeDhene.mesatarja, 180)+
-          kutia('Klikime të dhëna', null, '', d.klikimeDhene.yti, d.klikimeDhene.mesatarja, 180)+
-          kutia('Konvertime të dhëna', null, '', d.konvertimeDhene.yti, d.konvertimeDhene.mesatarja, 180)+
-        '</div>'+
-      '</div>'+
-      '<div>'+
-        '<h4 class="small mut" style="text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;">Raportet</h4>'+
-        '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
-          kutia('CTR (Klikime ÷ Shikime)', null, '%', d.ctr.yti, d.ctr.mesatarja, 180)+
-          kutia('CVR (Konvertime ÷ Klikime)', null, '%', d.cvr.yti, d.cvr.mesatarja, 180)+
-          kutia('Konvertim-për-shikim', null, '%', d.konvertimi.yti, d.konvertimi.mesatarja, 180)+
-        '</div>'+
-      '</div>'+
+      pjesaMarreDheneRaportet+
     '</div>';
 }
 
