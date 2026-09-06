@@ -2823,7 +2823,8 @@ app.get('/api/admin/biznes/:id', iAdmin, async (req, res) => {
   try {
     const b = await pool.query(
       `SELECT id, emri, email, website, kategoria_kryesore, nenkategorite, permbledhje, pershkrimi,
-              plani, celes, created_at, snippet_active, origjina, kandidat_url, first_seen_at, last_seen_at
+              plani, celes, created_at, snippet_active, origjina, kandidat_url, first_seen_at, last_seen_at,
+              tipi, biznesi_auto
        FROM bizneset WHERE id=$1`, [id]);
     if(!b.rows.length) return res.status(404).json({ error: 'Nuk u gjet.' });
     const statistika = await analytics.statistikaBiznesi(pool, id);
