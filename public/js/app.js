@@ -2538,7 +2538,8 @@ async function mainPlani(m){
     'Chat suporti'
   ];
   const VECORITE_PREMIUM_SPEC = [
-    'Gjenerim formatesh reklamash me AI — i PAKUFIZUAR (imazh, video, HTML5)',
+    'Krijim Creative i PAKUFIZUAR (imazh, video, HTML5, me AI)',
+    'Krijim Reklamash i PAKUFIZUAR',
     'Përdorim i PAKUFIZUAR i asistencës AI (chat krijimi + suporti)'
   ];
   function ikonaKontrolli(){
