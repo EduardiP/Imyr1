@@ -2517,6 +2517,7 @@ function mainEkipi(m){
 
 function mainPlani(m){
   const VECORITE_FALAS = [
+    'Java e parë: merr shfaqje menjëherë, pa pasur ende snippet të lidhur',
     'Qasje e plotë te rrjeti i cross-promocionit',
     'Kombinim me AI mes bizneseve plotësuese',
     'Ndihmë me AI për lidhjen e snippet-it',
@@ -2567,7 +2568,7 @@ function mainPlani(m){
       '<div class="card" style="flex:1 1 300px;position:relative;border-color:'+(premiumAktual?'var(--good)':'rgba(245,158,11,.4)')+';background:linear-gradient(135deg,rgba(245,158,11,.06),transparent);">'+
         (premiumAktual ? shenjaAktual('var(--good)') : '<div class="pill" style="position:absolute;top:-11px;left:20px;background:#f59e0b;color:#1a1200;font-weight:700;">Premium</div>')+
         '<div style="font-family:var(--f-mono);font-size:11px;color:#f59e0b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Për ekipe që kërkojnë më shumë</div>'+
-        '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">Premium <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
+        '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$17 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
         '<p class="small" style="margin:6px 0 18px;">Gjithçka nga Falas, plus:</p>'+
         '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">'+
           VECORITE_PREMIUM.map(v=>'<div style="display:flex;gap:9px;align-items:flex-start;">'+ikonaKontrolli('#f59e0b')+'<span class="small" style="color:var(--txt);">'+esc(v)+'</span></div>').join('')+
