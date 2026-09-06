@@ -2244,6 +2244,13 @@ async function rekKontrolloSnippet(){
   const el=$('rekShiritSnippet'); if(!el) return;
   try{
     const pr=await(await fetch('/api/progres')).json();
+    if(pr.planiSkaduar){
+      el.innerHTML='<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.35);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:16px;">'+
+        '<div style="flex:1;"><div style="color:#f59e0b;font-weight:600;font-size:13px;">Reklamat e tua janë ndaluar</div>'+
+        '<div class="small" style="margin-top:2px;">Periudha falas (3 muajt e parë) ka përfunduar. Kalo te Premium që reklamat të vazhdojnë të shfaqen te rrjeti.</div></div>'+
+        '<button class="btn" style="white-space:nowrap;background:#f59e0b;color:#1a1200;border:none;font-weight:600;" onclick="nav({v:\'profile\',nav:\'plani\'})">Kalo te Premium</button></div>';
+      return;
+    }
     const neGraceperiod = !!(pr.biznesiAuto && pr.ditet < 7);
     if(!pr.lidhja && !neGraceperiod){
       el.innerHTML='<div onclick="nav({v:\'profile\',nav:\'lidhjaSnippet\'})" style="cursor:pointer;background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.3);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:16px;">'+
