@@ -270,6 +270,7 @@ c.innerHTML=
 '<label style="margin-top:12px;">Teksti</label><textarea id="ndrTek" placeholder="Përshkrim i shkurtër" style="min-height:70px;"></textarea>'+
 '<button class="primary" style="margin-top:16px;" onclick="ndrAdminDergo(this)">Dërgo te widget</button>'+
 '<span class="small" id="ndrStat" style="margin-left:10px;"></span>'+
+'<div id="ndrLista" style="margin-top:16px;"></div>'+
 '</div>';
 try{
 njBizneset = await(await fetch('/api/admin/njoftime/bizneset')).json();
@@ -277,6 +278,7 @@ njRenderLista();
 }catch(e){ $('njLista').innerHTML='<p class="small" style="padding:14px;">Gabim.</p>'; }
 ngarkoKerkesat();
 ngarkoListenPritjes();
+ndrNgarkoListen();
 }
 
 var _pritjeRows = [], _pritjePagina = 0;
@@ -385,8 +387,29 @@ body:JSON.stringify({titull, teksti})})).json();
 if(r.error){ if(stat)stat.textContent=r.error; btn.disabled=false; return; }
 if(stat)stat.textContent='✓ U dërgua te widget-i.';
 $('ndrTit').value=''; $('ndrTek').value='';
+ndrNgarkoListen();
 }catch(e){ if(stat)stat.textContent='Gabim: '+e.message; }
 btn.disabled=false;
+}
+async function ndrNgarkoListen(){
+const el=$('ndrLista'); if(!el) return;
+el.innerHTML='<p class="small mut">Po ngarkoj…</p>';
+let r;
+try{ r=await(await fetch('/api/admin/ndryshime/lista')).json(); }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; return; }
+const rows=r.ndryshimet||[];
+if(!rows.length){ el.innerHTML='<p class="small mut">Ende s\'ke dërguar asnjë.</p>'; return; }
+el.innerHTML=rows.map(function(x){
+  return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);'+(x.aktiv?'':'opacity:.5;')+'">'+
+    '<div style="flex:1;"><b>'+esc(x.titull)+'</b>'+(x.aktiv?'':' <span class="small mut">(skaduar)</span>')+
+    '<div class="small mut">'+esc(x.teksti||'')+' · '+new Date(x.krijuar_at).toLocaleDateString('sq-AL')+'</div></div>'+
+    '<button class="btn" style="padding:5px 10px;" onclick="ndrFshi('+x.id+')">Fshi</button>'+
+  '</div>';
+}).join('');
+}
+async function ndrFshi(id){
+if(!confirm('Fshi këtë njoftim "Çfarë të re"?')) return;
+try{ await fetch('/api/admin/ndryshime/'+id,{method:'DELETE'}); }catch(e){}
+ndrNgarkoListen();
 }
 
 async function ngarkoKerkesat(){
