@@ -2502,15 +2502,20 @@ function mainPlani(m){
   const VECORITE_FALAS = [
     'Qasje e plotë te rrjeti i cross-promocionit',
     'Kombinim me AI mes bizneseve plotësuese',
-    'Krijim reklamash me AI (imazh, video, HTML5)',
-    'Gjurmimi i konvertimeve',
-    'Analitikë bazë'
+    'Ndihmë me AI për lidhjen e snippet-it',
+    'Ndihmë me AI për krijimin e përshkrimit (për gjenerim formatesh)',
+    'Gjenerim formatesh reklamash me AI (imazh, video, HTML5)',
+    'Lidhja e konvertimeve + gjurmimi',
+    'Chat suporti',
+    'Njoftime për ndihmë teknike dhe udhëzime'
   ];
   const VECORITE_PREMIUM = [
+    'Gjithçka nga plani Falas',
     'Krijim i pakufizuar i formateve të reklamave me AI',
     'Përdorim i pakufizuar i asistencës AI (chat krijimi + suporti)',
     'Përparësi në renditje brenda Ankandit',
-    'Analitikë e avancuar, pa limit periudhe',
+    'Analitikë e avancuar (Analytics)',
+    'Vështrime shtesë',
     'Suport i përparësishëm'
   ];
   function ikonaKontrolli(ngjyra){
