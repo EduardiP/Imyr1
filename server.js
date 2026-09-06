@@ -436,7 +436,7 @@ app.get('/api/progres', iLoguar, async (req, res) => {
     await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS biznesi_auto BOOLEAN NOT NULL DEFAULT false`);
     await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pershkrimi_auto BOOLEAN NOT NULL DEFAULT false`);
     const b = await pool.query(
-      'SELECT permbledhje, pershkrimi, snippet_active, track_active, url_konvertimi, website, tipi, biznesi_auto, pershkrimi_auto, created_at FROM bizneset WHERE id=$1', [req.biznesId]);
+      'SELECT permbledhje, pershkrimi, snippet_active, track_active, url_konvertimi, website, tipi, biznesi_auto, pershkrimi_auto, created_at, plani FROM bizneset WHERE id=$1', [req.biznesId]);
     const p = await pool.query('SELECT 1 FROM promovimet WHERE biznes_id=$1 AND aktiv=true LIMIT 1', [req.biznesId]);
     const uLidhur = await pool.query('SELECT 1 FROM konvertimet WHERE biznes_id=$1 AND track_active=true LIMIT 1', [req.biznesId]);
     const zLidhur = await pool.query('SELECT 1 FROM zonat WHERE biznes_id=$1 AND track_active=true AND fshire=false LIMIT 1', [req.biznesId]);
@@ -444,6 +444,8 @@ app.get('/api/progres', iLoguar, async (req, res) => {
     const snLidhur = await pool.query('SELECT 1 FROM snippetet WHERE biznes_id=$1 AND snippet_active=true LIMIT 1', [req.biznesId]);
     const row = b.rows[0] || {};
     const ditet = row.created_at ? Math.floor((Date.now() - new Date(row.created_at).getTime()) / 86400000) : 999;
+    // Plani falas skadon pas ~3 muajsh (90 dite) — nese ende s'eshte 'premium', reklamat ndalojne te shfaqen.
+    const planiSkaduar = (row.plani !== 'premium') && (ditet >= 90);
     // Konvertimi i plote: snippet-i i gjurmimit aktiv DHE (nje URL ose nje zone e lidhur)
     const konvertimIPlote = !!row.track_active && (uLidhur.rows.length > 0 || zLidhur.rows.length > 0);
     res.json({
@@ -454,7 +456,8 @@ app.get('/api/progres', iLoguar, async (req, res) => {
       reklama: p.rows.length > 0,                        // reklama u krijua
       biznesiAuto: !!row.biznesi_auto,
       pershkrimiAuto: !!row.pershkrimi_auto,
-      ditet: ditet
+      ditet: ditet,
+      planiSkaduar: planiSkaduar
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
