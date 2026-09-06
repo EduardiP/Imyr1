@@ -399,7 +399,7 @@ display:flex; flex-direction:column; align-items:center; gap:10px; transition:.1
 .krT.sel { border-color:var(--acc); background:#0a1b2e; color:var(--acc); }
 .krIco { font-size:28px; }
 .krFile {
-border:2px dashed var(--line); border-radius:10px; padding:16px; background:#0e1116;
+border:2px dashed var(--line); border-radius:10px; padding:16px; background:var(--card2);
 }
 .krFile input[type=file] { color:var(--txt); font-size:13px; }
 .krLista { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; }
