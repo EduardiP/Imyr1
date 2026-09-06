@@ -295,7 +295,7 @@ function renderAdTypes(){
   AD_TYPES.forEach(t=>{
     const sel=window.__adType===t.k;
     const b=document.createElement('button');
-    b.style.cssText='flex:1;min-width:120px;padding:16px 12px;border-radius:10px;cursor:pointer;background:#0e1116;color:var(--txt);'+
+    b.style.cssText='flex:1;min-width:120px;padding:16px 12px;border-radius:10px;cursor:pointer;background:var(--card2);color:var(--txt);'+
       'border:1px solid '+(sel?'#3b82f6':'var(--line)')+';'+(sel?'box-shadow:0 0 0 1px #3b82f6;':'');
     b.innerHTML='<div style="font-weight:600;font-size:15px;">'+t.l+'</div><div style="font-size:12px;color:var(--mut);margin-top:4px;">'+t.d+'</div>';
     b.onclick=()=>{ nav({v:'profile', nav:'reklamat', sub:'create', format:t.k}); };
@@ -1701,7 +1701,7 @@ async function krNgarkoKufirin(lloji){
     if(r.premium){
       el.innerHTML='<span style="color:var(--good);">✓ Pakufi (Premium)</span>';
     } else {
-      el.innerHTML='<span>'+r.krijime_perdorura+'/'+r.krijime_gjithsej+' krijime këtë muaj</span> · '+
+      el.innerHTML='<span>'+r.krijime_mbetura+'/'+r.krijime_gjithsej+' krijime të mbetura këtë muaj</span> · '+
         '<a href="#" onclick="event.preventDefault();nav({v:\'profile\',nav:\'plani\'})" style="color:var(--acc2);">Kalo te Pro për pakufi →</a>';
     }
   }catch(e){}
@@ -2431,7 +2431,7 @@ async function rekVizatoEcurine(id, dite, nga, deri){
     window.__rekChart=new Chart(ctx,{type:'line',data:{
       labels:rows.map(x=>x.dita),
       datasets:datasets
-    },options:{responsive:true,scales:{y:{beginAtZero:true}}}});
+    },options:{responsive:true,scales:{y:{beginAtZero:true}},plugins:{legend:{labels:{color:(document.body.classList.contains('pxa-light')?'#0f172a':'#e6edf3')}}}}});
   }catch(e){}
 }
 async function rekRenderAudienca(id){
@@ -2823,7 +2823,7 @@ function ndertoKonvertim(b, ngaWizard){
     '<h2 class="h">Gjurmo konvertimet</h2>'+
     '<p class="small" style="margin:2px 0 16px;">Kur dikush klikon reklamën tënde dhe pastaj kryen një veprim që ka vlerë — regjistrohet, blen, ose lë të dhënat — kjo quhet <b>konvertim</b>. Gjurmimi i konvertimeve rrit pikët e tua të profilit, që rrisin sa shpesh shfaqet reklama jote.</p>'+
     // KODI I SNIPPET-IT — gjithmone i dukshem (vlen per te dyja rruget)
-    '<div style="padding:14px;border:1px solid var(--line);border-radius:10px;background:#0e1116;margin-bottom:16px;">'+
+    '<div style="padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--card2);margin-bottom:16px;">'+
       '<b style="font-size:14px;">Rreshti i gjurmimit</b>'+
       '<p class="small" style="margin:6px 0 10px;">Ky rresht <b>nuk shfaq asgjë</b> — vetëm gjurmon konvertimet (nga adresa ose nga kodi, sipas zgjedhjes poshtë). Vendose para <code>&lt;/body&gt;</code> te <b>skedari kryesor</b> që ngarkohet në çdo faqe të sajtit tënd. Varet nga si është ndërtuar sajti — p.sh. <i>theme.liquid</i> (Shopify), <i>layout.html / base.html</i> (shabllon i përbashkët), <i>index.html</i>, ose <i>_app.js / App.jsx</i> (React/Next). Nëse ke disa shabllone, vendose te secili.</p>'+
       '<div class="kodbox" id="k_kod"></div>'+
