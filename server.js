@@ -414,6 +414,12 @@ app.post('/api/suport/kerkese', iLoguar, async (req, res) => {
   res.json({ ok:true });
 });
 
+app.post('/api/plani', iLoguar, async (req, res) => {
+  const plani = (req.body && req.body.plani) === 'premium' ? 'premium' : 'falas';
+  await pool.query('UPDATE bizneset SET plani=$1 WHERE id=$2', [plani, req.biznesId]);
+  res.json({ ok:true, plani });
+});
+
 app.get('/api/une', iLoguar, async (req, res) => {
   try {
     const r = await pool.query(
