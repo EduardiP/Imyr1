@@ -2522,69 +2522,71 @@ function mainEkipi(m){
 
 
 
-function mainPlani(m){
-  const VECORITE_FALAS = [
-    'Java e parë: merr shfaqje menjëherë, pa pasur ende snippet të lidhur',
+async function mainPlani(m){
+  const VECORITE = [
     'Qasje e plotë te rrjeti i cross-promocionit',
     'Kombinim me AI mes bizneseve plotësuese',
     'Ndihmë me AI për lidhjen e snippet-it',
     'Ndihmë me AI për krijimin e përshkrimit (për gjenerim formatesh)',
-    'Gjenerim formatesh reklamash me AI (imazh, video, HTML5) — deri 30 krijime/muaj, gjithsej',
+    'Gjenerim formatesh reklamash me AI (imazh, video, HTML5) — deri 30 krijime/muaj',
     'Lidhja e konvertimeve + gjurmimi',
     'Analitikë e plotë (Trafiku, Përzgjedhjet e Pishinave)',
     'Vështrime — krahasim me mesataren e rrjetit',
     'Chat suporti',
     'Njoftime për ndihmë teknike dhe udhëzime'
   ];
-  const VECORITE_PREMIUM = [
-    'Gjithçka nga plani Falas',
-    'Krijim i pakufizuar i formateve të reklamave me AI',
-    'Përdorim i pakufizuar i asistencës AI (chat krijimi + suporti)',
-    'Përparësi në renditje brenda Ankandit',
-    'Suport i përparësishëm'
-  ];
-  function ikonaKontrolli(ngjyra){
-    return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="'+ngjyra+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;margin-top:2px;"><polyline points="20 6 9 17 4 12"/></svg>';
+  function ikonaKontrolli(){
+    return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3fb950" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;margin-top:2px;"><polyline points="20 6 9 17 4 12"/></svg>';
   }
-  function shenjaAktual(ngjyra){
-    return '<div class="pill" style="position:absolute;top:-11px;right:20px;background:'+ngjyra+';color:#04240f;font-weight:700;display:flex;align-items:center;gap:5px;">'+
-      '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#04240f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Plani yt aktual</div>';
-  }
-  const premiumAktual = (une && une.plani==='premium');
-  const falasAktual = !premiumAktual;
-  m.innerHTML=
+  const listaVeqorish = '<div style="display:flex;flex-direction:column;gap:10px;margin:16px 0;">'+
+    VECORITE.map(v=>'<div style="display:flex;gap:9px;align-items:flex-start;">'+ikonaKontrolli()+'<span class="small" style="color:var(--txt);">'+esc(v)+'</span></div>').join('')+
+  '</div>';
+  const header=
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">'+
       '<div style="width:38px;height:38px;border-radius:12px;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>'+
       '</div>'+
       '<h2 class="h" style="margin:0;">Faturimi & Plani</h2>'+
-    '</div>'+
-    '<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:stretch;">'+
-      '<div class="card" style="flex:1 1 300px;position:relative;'+(falasAktual?'border-color:var(--good);':'')+'">'+
-        (falasAktual ? shenjaAktual('var(--good)') : '')+
-        '<div style="font-family:var(--f-mono);font-size:11px;color:var(--good);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Plani bazë</div>'+
-        '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">Falas</div>'+
-        '<p class="small" style="margin:6px 0 18px;">Të gjitha shërbimet, falas për <b style="color:var(--txt);">3 muajt e parë</b>.</p>'+
-        '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">'+
-          VECORITE_FALAS.map(v=>'<div style="display:flex;gap:9px;align-items:flex-start;">'+ikonaKontrolli('#3fb950')+'<span class="small" style="color:var(--txt);">'+esc(v)+'</span></div>').join('')+
-        '</div>'+
-        (falasAktual
-          ? ''
-          : '<button class="btn" style="width:100%;" onclick="planiZgjidh(\'falas\')">Kalo te Falas</button>')+
-      '</div>'+
-      '<div class="card" style="flex:1 1 300px;position:relative;border-color:'+(premiumAktual?'var(--good)':'rgba(245,158,11,.4)')+';background:linear-gradient(135deg,rgba(245,158,11,.06),transparent);">'+
-        (premiumAktual ? shenjaAktual('var(--good)') : '<div class="pill" style="position:absolute;top:-11px;left:20px;background:#f59e0b;color:#1a1200;font-weight:700;">Premium</div>')+
-        '<div style="font-family:var(--f-mono);font-size:11px;color:#f59e0b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Për ekipe që kërkojnë më shumë</div>'+
-        '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$17 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
-        '<p class="small" style="margin:6px 0 18px;">Gjithçka nga Falas, plus:</p>'+
-        '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">'+
-          VECORITE_PREMIUM.map(v=>'<div style="display:flex;gap:9px;align-items:flex-start;">'+ikonaKontrolli('#f59e0b')+'<span class="small" style="color:var(--txt);">'+esc(v)+'</span></div>').join('')+
-        '</div>'+
-        (premiumAktual
-          ? '<div class="small" style="text-align:center;color:var(--good);font-weight:600;">✓ Ky është plani yt aktual</div>'
-          : '<button class="btn" style="width:100%;background:#f59e0b;color:#1a1200;border:none;font-weight:600;" onclick="planiZgjidh(\'premium\')">Kalo te Premium</button>')+
-      '</div>'+
     '</div>';
+  m.innerHTML=header+'<div class="card" style="max-width:460px;"><p class="small">Po ngarkoj…</p></div>';
+  let pr={};
+  try{ pr=await(await fetch('/api/progres')).json(); }catch(e){}
+  const ePremium = !!(une && une.plani==='premium');
+  const eSkaduar = !!pr.planiSkaduar && !ePremium;
+  const ditetMbetura = Math.max(0, 90-(pr.ditet||0));
+
+  let permbajtja;
+  if(ePremium){
+    permbajtja =
+      '<div class="card" style="max-width:460px;position:relative;border-color:var(--good);">'+
+        '<div class="pill" style="position:absolute;top:-11px;right:20px;background:var(--good);color:#04240f;font-weight:700;display:flex;align-items:center;gap:5px;">'+
+          '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#04240f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Aktiv</div>'+
+        '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
+        '<p class="small" style="margin:6px 0 0;">Faturimi vazhdon automatikisht çdo muaj.</p>'+
+        listaVeqorish+
+        '<button class="btn" style="width:100%;" onclick="planiZgjidh(\'falas\')">Anulo (kthehu te periudha falas, nëse ende ke ditë të mbetura)</button>'+
+      '</div>';
+  } else if(eSkaduar){
+    permbajtja =
+      '<div class="card" style="max-width:460px;">'+
+        '<p class="small" style="color:var(--err);font-weight:600;margin:0 0 10px;">Periudha jote falas (3 muajt e parë) ka përfunduar — reklamat e tua janë ndaluar.</p>'+
+        '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
+        '<p class="small" style="margin:6px 0 0;">Aktivizo për t\'i rikthyer shërbimit menjëherë.</p>'+
+        listaVeqorish+
+        '<button class="btn cta" style="width:100%;" onclick="planiZgjidh(\'premium\')">Aktivizo tani →</button>'+
+      '</div>';
+  } else {
+    permbajtja =
+      '<div class="card" style="max-width:460px;position:relative;border-color:var(--good);">'+
+        '<div class="pill" style="position:absolute;top:-11px;right:20px;background:var(--good);color:#04240f;font-weight:700;display:flex;align-items:center;gap:5px;">'+
+          '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#04240f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Falas — aktiv</div>'+
+        '<div style="font-family:var(--f-mono);font-size:11px;color:var(--good);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">'+ditetMbetura+' ditë të mbetura nga periudha falas</div>'+
+        '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">Falas <span class="small mut" style="font-family:var(--f-body);font-weight:400;">(3 muajt e parë), pastaj $7/muaj</span></div>'+
+        listaVeqorish+
+        '<button class="btn" style="width:100%;" onclick="planiZgjidh(\'premium\')">Aktivizo tani ($7/muaj) — mos prit skadimin</button>'+
+      '</div>';
+  }
+  m.innerHTML = header + permbajtja;
 }
 async function planiZgjidh(plani){
   try{
