@@ -29,12 +29,12 @@ var _kcPershkrimFinal = null;
 
 function krChatEmbedHTML(){
   return '<label style="margin-top:12px;">Përshkruaj te AI</label>'+
-    '<div id="krChatInline" style="border:1px solid var(--line);border-radius:8px;background:#0e1116;'+
+    '<div id="krChatInline" style="border:1px solid var(--line);border-radius:8px;background:var(--card2);'+
       'display:flex;flex-direction:column;height:230px;overflow:hidden;margin-top:8px;">'+
       '<div id="krChatMesazhet" style="flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;"></div>'+
       '<div style="flex:0 0 auto;padding:8px 10px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:stretch;">'+
         '<input id="krChatInput" placeholder="Shkruaj përgjigjen…" '+
-          'style="flex:1 1 auto;min-width:0;background:#12151b;border:1px solid var(--line);border-radius:6px;color:var(--txt);padding:7px 10px;font-size:13px;" '+
+          'style="flex:1 1 auto;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:6px;color:var(--txt);padding:7px 10px;font-size:13px;" '+
           'onkeydown="if(event.key===\'Enter\')krChatDergo()">'+
         '<button type="button" onclick="krChatDergo()" '+
           'style="flex:0 0 auto;width:38px;background:var(--acc);border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:15px;">➤</button>'+
@@ -63,7 +63,7 @@ function krChatShtoBulle(kush, teksti, ephemer){
   var b = document.createElement('div');
   b.style.cssText = 'max-width:88%;padding:7px 11px;border-radius:10px;font-size:13px;line-height:1.4;white-space:pre-wrap;'+
     (kush==='ai'
-      ? 'align-self:flex-start;background:#1c2230;color:var(--txt);'
+      ? 'align-self:flex-start;background:#1c2230;color:#e6edf3;'
       : 'align-self:flex-end;background:var(--acc);color:#fff;');
   b.textContent = teksti;
   if(ephemer) b.setAttribute('data-ephemer', '1');
