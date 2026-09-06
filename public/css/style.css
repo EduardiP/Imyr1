@@ -67,11 +67,13 @@ h1,h2,h3,h4 { font-family:var(--f-head); font-weight:700; letter-spacing:.01em; 
 .vs.auto .vd { background:var(--acc); border-color:var(--acc); color:#04162f; }
 .vs.auto { cursor:pointer; }
 .vs.auto:hover { background:#0e1116; }
+.vs.auto:hover .vl { color:#e6edf3; }
 .vs.cur .vd { border-color:var(--acc); color:var(--acc); }
 .vs .vl { font-size:14px; }
 .vs.locked { opacity:.45; }
 .vs.click { cursor:pointer; }
 .vs.click:hover { background:#0e1116; }
+.vs.click:hover .vl { color:#e6edf3; }
 .vs.locked .vl { color:var(--mut); }
 .status { margin-top:12px; padding:12px 14px; border-radius:10px; border:1px solid var(--line); background:#0e1116; font-size:14px; color:var(--mut); }
 .status.wait { border-color:#1e3a5f; color:var(--acc); }
@@ -236,7 +238,7 @@ footer.site{background:#080a0e;border-top:1px solid var(--line);padding:54px 0 3
 .legal a{color:var(--acc);}
 /* Zgjedhësi horizontal (B2B/B2C/të dyja) — një zgjedhje */
 .seg{ display:flex; gap:8px; margin-top:4px; }
-.seg button{ flex:1; padding:11px 8px; border-radius:9px; border:1px solid var(--line); background:#0e1116; color:var(--txt); font-size:13px; cursor:pointer; font-family:inherit; }
+.seg button{ flex:1; padding:11px 8px; border-radius:9px; border:1px solid var(--line); background:var(--card2); color:var(--txt); font-size:13px; cursor:pointer; font-family:inherit; }
 .seg button:hover{ border-color:var(--mut); }
 .seg button.sel{ border-color:var(--acc); background:#0a1b2e; color:#fff; font-weight:600; }
 @media(max-width:700px){ .seg{ flex-direction:column; } }
