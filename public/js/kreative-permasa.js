@@ -36,7 +36,7 @@ async function krPermasaHap(){
   overlay.id = 'krPermasaOverlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10005;display:flex;align-items:center;justify-content:center;';
   overlay.innerHTML =
-    '<div style="width:min(400px,92vw);max-height:85vh;overflow-y:auto;background:#12151b;border-radius:12px;border:1px solid var(--line);">'+
+    '<div style="width:min(400px,92vw);max-height:85vh;overflow-y:auto;background:var(--card);border-radius:12px;border:1px solid var(--line);">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);">'+
         '<span style="font-weight:600;">🔧 Ndrysho madhësinë</span>'+
         '<button type="button" onclick="krPermasaMbyll()" style="background:none;border:none;color:var(--mut);cursor:pointer;font-size:16px;">✕</button>'+
@@ -102,7 +102,7 @@ function krPermasaRenderKanavasin(maxW, maxH, minW, minH){
   var wrap = document.getElementById('kpKanavasWrap'); if(!wrap) return;
   wrap.innerHTML =
     '<div id="kpKanavas" style="position:relative;width:'+maxW+'px;max-width:100%;height:'+maxH+'px;'+
-      'border:1px dashed var(--line);border-radius:6px;background:#0e1116;overflow:hidden;">'+
+      'border:1px dashed var(--line);border-radius:6px;background:var(--card2);overflow:hidden;">'+
       '<div id="kpKuti" style="position:absolute;top:0;left:0;background:rgba(59,130,246,.13);'+
         'border:2px solid var(--acc);box-sizing:border-box;">'+
         '<div id="kpDore" style="position:absolute;right:-6px;bottom:-6px;width:14px;height:14px;'+
