@@ -2523,24 +2523,34 @@ function mainEkipi(m){
 
 
 async function mainPlani(m){
-  const VECORITE = [
+  const VECORITE_BAZE = [
     'Qasje e plotë te rrjeti i cross-promocionit',
     'Kombinim me AI mes bizneseve plotësuese',
     'Ndihmë me AI për lidhjen e snippet-it',
     'Ndihmë me AI për krijimin e përshkrimit (për gjenerim formatesh)',
-    'Gjenerim formatesh reklamash me AI (imazh, video, HTML5) — deri 30 krijime/muaj',
     'Lidhja e konvertimeve + gjurmimi',
     'Analitikë e plotë (Trafiku, Përzgjedhjet e Pishinave)',
     'Vështrime — krahasim me mesataren e rrjetit',
-    'Chat suporti',
     'Njoftime për ndihmë teknike dhe udhëzime'
+  ];
+  const VECORITE_FALAS_SPEC = [
+    'Gjenerim formatesh reklamash me AI (imazh, video, HTML5) — deri 30 krijime/muaj',
+    'Chat suporti'
+  ];
+  const VECORITE_PREMIUM_SPEC = [
+    'Gjenerim formatesh reklamash me AI — i PAKUFIZUAR (imazh, video, HTML5)',
+    'Përdorim i PAKUFIZUAR i asistencës AI (chat krijimi + suporti)',
+    'Përparësi në renditje brenda Ankandit',
+    'Suport i përparësishëm'
   ];
   function ikonaKontrolli(){
     return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3fb950" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;margin-top:2px;"><polyline points="20 6 9 17 4 12"/></svg>';
   }
-  const listaVeqorish = '<div style="display:flex;flex-direction:column;gap:10px;margin:16px 0;">'+
-    VECORITE.map(v=>'<div style="display:flex;gap:9px;align-items:flex-start;">'+ikonaKontrolli()+'<span class="small" style="color:var(--txt);">'+esc(v)+'</span></div>').join('')+
-  '</div>';
+  function listaVeqorish(specifike){
+    return '<div style="display:flex;flex-direction:column;gap:10px;margin:16px 0;">'+
+      VECORITE_BAZE.concat(specifike).map(v=>'<div style="display:flex;gap:9px;align-items:flex-start;">'+ikonaKontrolli()+'<span class="small" style="color:var(--txt);">'+esc(v)+'</span></div>').join('')+
+    '</div>';
+  }
   const header=
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">'+
       '<div style="width:38px;height:38px;border-radius:12px;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
@@ -2564,7 +2574,7 @@ async function mainPlani(m){
           '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#04240f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Aktiv</div>'+
         '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
         '<p class="small" style="margin:6px 0 0;">Faturimi vazhdon automatikisht çdo muaj.</p>'+
-        listaVeqorish+
+        listaVeqorish(VECORITE_PREMIUM_SPEC)+
         '<button class="btn" style="width:100%;" onclick="planiZgjidh(\'falas\')">Anulo (kthehu te periudha falas, nëse ende ke ditë të mbetura)</button>'+
       '</div>';
   } else if(eSkaduar){
@@ -2574,7 +2584,7 @@ async function mainPlani(m){
         '<p class="small" style="color:var(--err);font-weight:600;margin:6px 0 10px;">Periudha jote falas (3 muajt e parë) ka përfunduar — reklamat e tua janë ndaluar.</p>'+
         '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
         '<p class="small" style="margin:6px 0 0;">Aktivizo për t\'i rikthyer shërbimit menjëherë.</p>'+
-        listaVeqorish+
+        listaVeqorish(VECORITE_PREMIUM_SPEC)+
         '<button class="btn cta" style="width:100%;" onclick="planiZgjidh(\'premium\')">Aktivizo tani →</button>'+
       '</div>';
   } else {
@@ -2586,13 +2596,13 @@ async function mainPlani(m){
           '<div style="font-family:var(--f-mono);font-size:11px;color:var(--good);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">'+ditetMbetura+' ditë të mbetura</div>'+
           '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">Falas</div>'+
           '<p class="small" style="margin:6px 0 0;">Gjatë 3 muajve të parë, pa pagesë.</p>'+
-          listaVeqorish+
+          listaVeqorish(VECORITE_FALAS_SPEC)+
         '</div>'+
         '<div class="card" style="flex:1 1 300px;position:relative;">'+
           '<div class="pill" style="position:absolute;top:-11px;left:20px;background:#f59e0b;color:#1a1200;font-weight:700;">Premium</div>'+
           '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
           '<p class="small" style="margin:6px 0 0;">Njësoj si Falas — thjesht vazhdon edhe pas 3 muajve.</p>'+
-          listaVeqorish+
+          listaVeqorish(VECORITE_PREMIUM_SPEC)+
           '<button class="btn" style="width:100%;" onclick="planiZgjidh(\'premium\')">Aktivizo tani (opsionale)</button>'+
         '</div>'+
       '</div>';
