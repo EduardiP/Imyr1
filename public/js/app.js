@@ -133,7 +133,24 @@ function renderHome(){
   $('homeHi').textContent = une.emri;
 }
 
+function proUpsellHTML(pershkrimi){
+  return '<div class="card" style="text-align:center;padding:40px 24px;max-width:480px;margin:20px auto;">'+
+    '<div style="width:44px;height:44px;border-radius:14px;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">'+
+      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>'+
+    '</div>'+
+    '<h3 class="h" style="font-size:17px;margin:0 0 8px;">Veçori e planit Premium</h3>'+
+    '<p class="small" style="margin:0 0 20px;">'+esc(pershkrimi)+'</p>'+
+    '<button class="btn" style="background:#f59e0b;color:#1a1200;border:none;font-weight:600;padding:11px 22px;" onclick="nav({v:\'profile\',nav:\'plani\'})">Kalo te Premium →</button>'+
+  '</div>';
+}
 async function mainInsights(m){
+  const ePremium = !!(une && une.plani==='premium');
+  if(!ePremium){
+    m.innerHTML='<h2 class="h">Vështrime</h2>'+
+      '<p class="small" style="margin:8px 0 18px;">Si krahasohesh me mesataren e rrjetit.</p>'+
+      proUpsellHTML('Krahasimi i detajuar me mesataren e rrjetit (shfaqje, klikime, konvertime, CTR, CVR, dhe pikët AI) është pjesë e planit Premium.');
+    return;
+  }
   m.innerHTML='<h2 class="h">Vështrime</h2>'+
     '<p class="small" style="margin:8px 0 18px;">Si krahasohesh me mesataren e rrjetit.</p>'+
     '<div id="vshtWrap"><p class="small mut">Po ngarkoj…</p></div>';
@@ -1683,7 +1700,12 @@ async function krNgarkoKufirin(lloji){
   try{
     const r=await(await fetch('/api/kreative/kufijte?lloji='+lloji)).json();
     if(r.error) return;
-    el.textContent='Të mbetura këtë muaj: '+r.krijime_mbetura+'/'+r.krijime_gjithsej;
+    if(r.premium){
+      el.innerHTML='<span style="color:var(--good);">✓ Pakufi (Premium)</span>';
+    } else {
+      el.innerHTML='<span>'+r.krijime_perdorura+'/'+r.krijime_gjithsej+' krijime këtë muaj</span> · '+
+        '<a href="#" onclick="event.preventDefault();nav({v:\'profile\',nav:\'plani\'})" style="color:var(--acc2);">Kalo te Pro për pakufi →</a>';
+    }
   }catch(e){}
 }
 
@@ -2497,14 +2519,13 @@ function mainEkipi(m){
 
 
 
-var _planiSelektuar = 'falas'; // 'falas' ose 'premium' — lokal per tani, derisa te lidhet pagesa reale
 function mainPlani(m){
   const VECORITE_FALAS = [
     'Qasje e plotë te rrjeti i cross-promocionit',
     'Kombinim me AI mes bizneseve plotësuese',
     'Ndihmë me AI për lidhjen e snippet-it',
     'Ndihmë me AI për krijimin e përshkrimit (për gjenerim formatesh)',
-    'Gjenerim formatesh reklamash me AI (imazh, video, HTML5)',
+    'Gjenerim formatesh reklamash me AI (imazh, video, HTML5) — deri 30 krijime/muaj, gjithsej',
     'Lidhja e konvertimeve + gjurmimi',
     'Chat suporti',
     'Njoftime për ndihmë teknike dhe udhëzime'
@@ -2525,8 +2546,8 @@ function mainPlani(m){
     return '<div class="pill" style="position:absolute;top:-11px;right:20px;background:'+ngjyra+';color:#04240f;font-weight:700;display:flex;align-items:center;gap:5px;">'+
       '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#04240f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Plani yt aktual</div>';
   }
-  const falasAktual = _planiSelektuar==='falas';
-  const premiumAktual = _planiSelektuar==='premium';
+  const premiumAktual = (une && une.plani==='premium');
+  const falasAktual = !premiumAktual;
   m.innerHTML=
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">'+
       '<div style="width:38px;height:38px;border-radius:12px;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
@@ -2558,8 +2579,11 @@ function mainPlani(m){
       '</div>'+
     '</div>';
 }
-function planiZgjidh(plani){
-  _planiSelektuar = plani;
+async function planiZgjidh(plani){
+  try{
+    await fetch('/api/plani',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plani})});
+    if(une) une.plani = plani;
+  }catch(e){}
   renderMain({nav:'plani'});
   if(plani==='premium'){
     setTimeout(function(){ alert('Do të jetë e disponueshme së shpejti — jemi duke e përgatitur checkout-in.'); }, 150);
