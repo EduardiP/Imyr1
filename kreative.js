@@ -21,21 +21,31 @@ async function init(pool) {
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_kreativitetet_biz ON kreativitetet(biznes_id)`);
   // Numri i modifikimeve te perdorura per kete kreativitet specifik (kufi per-krijim)
   await pool.query(`ALTER TABLE kreativitetet ADD COLUMN IF NOT EXISTS modifikime_perdorura INTEGER NOT NULL DEFAULT 0`);
+  await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS plani TEXT NOT NULL DEFAULT 'falas'`);
 }
 
-// Kufijte mujore (krijime te REJA) dhe per-krijim (modifikime), sipas formatit
+// Kufijte per-krijim (modifikime), ende sipas formatit — s'ndryshon me planin.
+// Kufiri MUJOR i krijimeve te REJA tani eshte 1 numer i VETEM, i KOMBINUAR (jo me sipas
+// tipit), meqe Falas=30/muaj gjithsej (cdo tip), Premium=pakufi.
 const KUFIJTE = {
-  imazh: { krijimeMuaj: 20, modifikimeKrijim: 5 },
-  video: { krijimeMuaj: 5,  modifikimeKrijim: 2 },
-  html5: { krijimeMuaj: 7,  modifikimeKrijim: 3 }
+  imazh: { modifikimeKrijim: 5 },
+  video: { modifikimeKrijim: 2 },
+  html5: { modifikimeKrijim: 3 }
 };
+const KRIJIME_FALAS_MUAJ = 30;
 
-// Sa krijime te REJA jane bere kete muaj (30 dite) per kete biznes+format
+// A eshte biznesi ne planin Premium — lexon fushen `plani` (falas|premium, parazgjedhje falas)
+async function eshtePremium(pool, bizId) {
+  const r = await pool.query('SELECT plani FROM bizneset WHERE id=$1', [bizId]);
+  return !!(r.rows.length && r.rows[0].plani === 'premium');
+}
+
+// Sa krijime te REJA jane bere kete muaj (30 dite), te KOMBINUARA neper te 3 tipet
 async function krijimeKeteMuaj(pool, bizId, lloji) {
   const r = await pool.query(
     `SELECT COUNT(*)::int AS n FROM kreativitetet
-     WHERE biznes_id=$1 AND lloji=$2 AND krijuar_at > now() - interval '30 days'`,
-    [bizId, lloji]);
+     WHERE biznes_id=$1 AND krijuar_at > now() - interval '30 days'`,
+    [bizId]);
   return r.rows[0].n;
 }
 
@@ -105,15 +115,19 @@ module.exports = function (app, pool, iLoguar, deps) {
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
-  // Kufijte (mbetur) per nje format — dhe per nje kreativitet specifik (modifikime) nese jepet ?id=
+  // Kufijte (mbetur) — TANI te kombinuara (jo sipas tipit) — dhe per nje kreativitet
+  // specifik (modifikime, ende sipas tipit) nese jepet ?id=
   app.get('/api/kreative/kufijte', iLoguar, async (req, res) => {
     const lloji = req.query.lloji;
     if (!KUFIJTE[lloji]) return res.status(400).json({ error: 'Lloj i pavlefshëm.' });
     try {
+      const premium = await eshtePremium(pool, req.biznesId);
       const perdorura = await krijimeKeteMuaj(pool, req.biznesId, lloji);
       const rez = {
-        krijime_mbetura: Math.max(0, KUFIJTE[lloji].krijimeMuaj - perdorura),
-        krijime_gjithsej: KUFIJTE[lloji].krijimeMuaj
+        premium,
+        krijime_mbetura: premium ? null : Math.max(0, KRIJIME_FALAS_MUAJ - perdorura),
+        krijime_perdorura: perdorura,
+        krijime_gjithsej: premium ? null : KRIJIME_FALAS_MUAJ
       };
       if (req.query.id) {
         const k = await pool.query(
@@ -147,9 +161,12 @@ module.exports = function (app, pool, iLoguar, deps) {
     if (!emri) return res.status(400).json({ error: 'Emri është i detyrueshëm.' });
     if (!s3) return res.status(500).json({ error: "Ruajtja (R2) s'është konfiguruar te serveri." });
     try {
-      const perdorura = await krijimeKeteMuaj(pool, req.biznesId, lloji);
-      if (perdorura >= KUFIJTE[lloji].krijimeMuaj) {
-        return res.status(429).json({ error: 'Ke arritur kufirin mujor (' + KUFIJTE[lloji].krijimeMuaj + ') për ' + lloji + '.' });
+      const premium = await eshtePremium(pool, req.biznesId);
+      if (!premium) {
+        const perdorura = await krijimeKeteMuaj(pool, req.biznesId, lloji);
+        if (perdorura >= KRIJIME_FALAS_MUAJ) {
+          return res.status(429).json({ error: 'Ke arritur kufirin mujor (' + KRIJIME_FALAS_MUAJ + ') të krijimeve. Kalo te Premium për krijim të pakufizuar.' });
+        }
       }
 
       // Ngarko te R2 çdo skedar te ri (nga kompjuteri) qe u dergua brenda listes se etiketuar,
@@ -261,7 +278,12 @@ module.exports = function (app, pool, iLoguar, deps) {
         // (imazhi baze mund te jete ruajtur si skedari_url ose te jete vetem output_url e videos — ne ate rast rikerkojme imazh)
         return res.status(400).json({ error: 'Modifikimi i videos rigjeneron nga e para — shkruaj përshkrim të ri te Krijo.' });
       } else if (kr.lloji === 'html5') {
-        const htmlCode = await falKlient.gjeneroHTML5(pershkrimi, null);
+        // Merr kodin HTML EKZISTUES (nga R2) per ta perdorur si baze modifikimi —
+        // perndryshe Claude s'ka asnje ide cfare ekziston tashme dhe rindertonte nga zero.
+        const htmlPergjigje = await fetch(kr.output_url);
+        if (!htmlPergjigje.ok) throw new Error("S'u mor dot kodi HTML ekzistues.");
+        const htmlEkzistues = await htmlPergjigje.text();
+        const htmlCode = await falKlient.modifikoHTML5(htmlEkzistues, pershkrimi);
         const buf = Buffer.from(htmlCode, 'utf8');
         const key = 'kreative/' + req.biznesId + '_' + Date.now() + '.html';
         await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: 'text/html' }));
