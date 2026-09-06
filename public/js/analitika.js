@@ -250,7 +250,7 @@ function mainAnaTrafiku(m){
       '<div class="card" style="flex:1;min-width:260px;">'+
         '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Ankand — pjesëmarrje vs fitore</h3>'+
         '<p class="small mut" style="margin:0 0 12px;">Zgjidh maksimum 1 kategori biznesi (nga ku ke marrë pjesë), për periudhën e zgjedhur më lart.</p>'+
-        '<div id="anaAnkandRezultati" style="margin-bottom:14px;padding:12px;background:#0e1116;border-radius:8px;border:1px solid var(--line);">'+
+        '<div id="anaAnkandRezultati" style="margin-bottom:14px;padding:12px;background:var(--card2);border-radius:8px;border:1px solid var(--line);">'+
           '<p class="small mut" style="margin:0;">Zgjidh kategori nga lista poshtë.</p>'+
         '</div>'+
         '<div id="anaAnkandKarusel" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;padding-right:4px;"></div>'+
@@ -380,7 +380,7 @@ function anaRenderDetNenPanel(){
       return '<button type="button" onclick="anaDetPeshaSet(\''+mode+'\')" style="'+(_anaDetPeshaMode===mode?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">'+lbl+'</button>';
     };
     el.innerHTML =
-      '<div style="padding:12px;background:#0e1116;border:1px solid var(--line);border-radius:8px;">'+
+      '<div style="padding:12px;background:var(--card2);border:1px solid var(--line);border-radius:8px;">'+
         '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:'+(_anaDetPeshaMode==='te_gjitha'?'0':'10px')+';">'+
           modBtn('te_gjitha','Të gjitha')+modBtn('fiks','Numër fiks')+modBtn('interval','Interval')+
         '</div>'+
@@ -393,7 +393,7 @@ function anaRenderDetNenPanel(){
       '</div>';
   } else if(_anaDetAktiv==='pozicioni'){
     el.innerHTML =
-      '<div style="padding:12px;background:#0e1116;border:1px solid var(--line);border-radius:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;">'+
+      '<div style="padding:12px;background:var(--card2);border:1px solid var(--line);border-radius:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;">'+
         '<button type="button" onclick="anaDetPozicioniSet(\'te_gjitha\')" style="'+(_anaDetPozicioni==='te_gjitha'?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">Të gjitha</button>'+
         [1,2,3,4,5].map(function(p){
           return '<button type="button" onclick="anaDetPozicioniSet('+p+')" style="'+(_anaDetPozicioni==p?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">#'+p+'</button>';
@@ -402,7 +402,7 @@ function anaRenderDetNenPanel(){
       '</div>';
   } else if(_anaDetAktiv==='reklama'){
     el.innerHTML =
-      '<div style="padding:12px;background:#0e1116;border:1px solid var(--line);border-radius:8px;display:flex;flex-wrap:wrap;gap:6px;">'+
+      '<div style="padding:12px;background:var(--card2);border:1px solid var(--line);border-radius:8px;display:flex;flex-wrap:wrap;gap:6px;">'+
         '<button type="button" onclick="anaDetReklamaSet(\'\')" style="'+(!_anaDetReklamaId?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">Të gjitha</button>'+
         (_anaDetReklamat.length ? _anaDetReklamat.map(function(r){
           return '<button type="button" onclick="anaDetReklamaSet('+r.id+')" style="'+(_anaDetReklamaId==r.id?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">'+esc(r.emri||('#'+r.id))+'</button>';
@@ -410,7 +410,7 @@ function anaRenderDetNenPanel(){
       '</div>';
   } else if(_anaDetAktiv==='kategoria'){
     el.innerHTML =
-      '<div style="padding:12px;background:#0e1116;border:1px solid var(--line);border-radius:8px;display:flex;flex-wrap:wrap;gap:6px;">'+
+      '<div style="padding:12px;background:var(--card2);border:1px solid var(--line);border-radius:8px;display:flex;flex-wrap:wrap;gap:6px;">'+
         '<button type="button" onclick="anaDetKategoriaSet(\'\')" style="'+(!_anaDetKategoria?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">Të gjitha</button>'+
         (_anaDetKategorite.length ? _anaDetKategorite.map(function(k){
           return '<button type="button" onclick="anaDetKategoriaSet(\''+esc(k)+'\')" style="'+(_anaDetKategoria===k?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">'+esc(k)+'</button>';
@@ -572,7 +572,7 @@ async function anaDetRezEcuriaDitore(el){
         x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}},
         y:{min:-jastek,max:jastek,ticks:{color:'#8b949e',precision:0},grid:{color:function(ctx){ return ctx.tick.value===0 ? 'rgba(230,237,243,.35)' : '#2a313c'; }}}
       },
-      plugins:{legend:{labels:{color:'#e6edf3'}}}},
+      plugins:{legend:{labels:{color:(document.body.classList.contains('pxa-light')?'#0f172a':'#e6edf3')}}}},
     plugins:[anaMultiColorLinePluginDivergjent]
   });
 }
@@ -688,7 +688,7 @@ async function anaDetNgarkoReklamaChart(){
   _anaDetReklamaChart=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
       scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
-      plugins:{legend:{labels:{color:'#e6edf3'}}}},
+      plugins:{legend:{labels:{color:(document.body.classList.contains('pxa-light')?'#0f172a':'#e6edf3')}}}},
     plugins:[anaMultiColorLinePlugin]
   });
 }
@@ -841,7 +841,7 @@ async function ngarkoAnaAutomatik(){
   ]},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
       scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
-      plugins:{legend:{labels:{color:'#e6edf3'}}}},
+      plugins:{legend:{labels:{color:(document.body.classList.contains('pxa-light')?'#0f172a':'#e6edf3')}}}},
     plugins:[anaMultiColorLinePlugin]
   });
 }
@@ -1223,7 +1223,7 @@ async function ngarkoAnaDeficit(){
         // Rang simetrik (-jastek..+jastek) — zero gjithmone saktesisht ne mes, jo vetem "lejohet negative"
         y:{min:-jastek, max:jastek, ticks:{color:'#8b949e',precision:0}, grid:{color:function(ctx){ return ctx.tick.value===0 ? 'rgba(230,237,243,.35)' : '#2a313c'; }}},
       },
-      plugins:{legend:{labels:{color:'#e6edf3', generateLabels:function(chart){
+      plugins:{legend:{labels:{color:(document.body.classList.contains('pxa-light')?'#0f172a':'#e6edf3'), generateLabels:function(chart){
         const items=Chart.defaults.plugins.legend.labels.generateLabels(chart);
         items.forEach(it=>{ it.lineDash=[]; it.lineWidth=2; });
         return items;
@@ -1306,7 +1306,7 @@ function anaVizatoDhenNga(){
   _anaDhenNgaChart=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
       scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
-      plugins:{legend:{labels:{color:'#e6edf3', generateLabels:function(chart){
+      plugins:{legend:{labels:{color:(document.body.classList.contains('pxa-light')?'#0f172a':'#e6edf3'), generateLabels:function(chart){
         const items=Chart.defaults.plugins.legend.labels.generateLabels(chart);
         items.forEach(it=>{ it.lineDash=[]; it.lineWidth=2; });
         return items;
@@ -1326,7 +1326,7 @@ function anaVizatoMarrja(){
   _anaMarrjaChart=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
       scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
-      plugins:{legend:{labels:{color:'#e6edf3', generateLabels:function(chart){
+      plugins:{legend:{labels:{color:(document.body.classList.contains('pxa-light')?'#0f172a':'#e6edf3'), generateLabels:function(chart){
         const items=Chart.defaults.plugins.legend.labels.generateLabels(chart);
         items.forEach(it=>{ it.lineDash=[]; it.lineWidth=2; });
         return items;
@@ -1467,7 +1467,7 @@ async function ngarkoAnalitika(){
   _anaChart=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
       scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
-      plugins:{legend:{labels:{color:'#e6edf3', generateLabels:function(chart){
+      plugins:{legend:{labels:{color:(document.body.classList.contains('pxa-light')?'#0f172a':'#e6edf3'), generateLabels:function(chart){
         const items=Chart.defaults.plugins.legend.labels.generateLabels(chart);
         items.forEach(it=>{ it.lineDash=[]; it.lineWidth=2; });
         return items;
