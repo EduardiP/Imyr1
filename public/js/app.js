@@ -2546,7 +2546,7 @@ async function mainPlani(m){
     return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3fb950" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;margin-top:2px;"><polyline points="20 6 9 17 4 12"/></svg>';
   }
   function listaVeqorish(specifike, specifikePara){
-    const rradha = specifikePara ? specifike.concat(['Gjithçka nga plani Falas']) : VECORITE_BAZE.concat(specifike);
+    const rradha = specifikePara ? ['Gjithçka nga plani Falas'].concat(specifike) : VECORITE_BAZE.concat(specifike);
     return '<div style="display:flex;flex-direction:column;gap:10px;margin:16px 0;">'+
       rradha.map(v=>'<div style="display:flex;gap:9px;align-items:flex-start;">'+ikonaKontrolli()+'<span class="small" style="color:var(--txt);">'+esc(v)+'</span></div>').join('')+
     '</div>';
