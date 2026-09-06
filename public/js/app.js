@@ -2559,6 +2559,7 @@ async function mainPlani(m){
   if(ePremium){
     permbajtja =
       '<div class="card" style="max-width:460px;position:relative;border-color:var(--good);">'+
+        '<div class="pill" style="position:absolute;top:-11px;left:20px;background:#f59e0b;color:#1a1200;font-weight:700;">Premium</div>'+
         '<div class="pill" style="position:absolute;top:-11px;right:20px;background:var(--good);color:#04240f;font-weight:700;display:flex;align-items:center;gap:5px;">'+
           '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#04240f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Aktiv</div>'+
         '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
@@ -2568,8 +2569,9 @@ async function mainPlani(m){
       '</div>';
   } else if(eSkaduar){
     permbajtja =
-      '<div class="card" style="max-width:460px;">'+
-        '<p class="small" style="color:var(--err);font-weight:600;margin:0 0 10px;">Periudha jote falas (3 muajt e parë) ka përfunduar — reklamat e tua janë ndaluar.</p>'+
+      '<div class="card" style="max-width:460px;position:relative;">'+
+        '<div class="pill" style="position:absolute;top:-11px;left:20px;background:#f59e0b;color:#1a1200;font-weight:700;">Premium</div>'+
+        '<p class="small" style="color:var(--err);font-weight:600;margin:6px 0 10px;">Periudha jote falas (3 muajt e parë) ka përfunduar — reklamat e tua janë ndaluar.</p>'+
         '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
         '<p class="small" style="margin:6px 0 0;">Aktivizo për t\'i rikthyer shërbimit menjëherë.</p>'+
         listaVeqorish+
