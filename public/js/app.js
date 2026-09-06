@@ -2561,9 +2561,12 @@ function mainPlani(m){
         '<div style="font-family:var(--f-mono);font-size:11px;color:var(--good);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Plani bazë</div>'+
         '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:#fff;">Falas</div>'+
         '<p class="small" style="margin:6px 0 18px;">Të gjitha shërbimet, falas për <b style="color:var(--txt);">3 muajt e parë</b>.</p>'+
-        '<div style="display:flex;flex-direction:column;gap:10px;">'+
+        '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">'+
           VECORITE_FALAS.map(v=>'<div style="display:flex;gap:9px;align-items:flex-start;">'+ikonaKontrolli('#3fb950')+'<span class="small" style="color:var(--txt);">'+esc(v)+'</span></div>').join('')+
         '</div>'+
+        (falasAktual
+          ? ''
+          : '<button class="btn" style="width:100%;" onclick="planiZgjidh(\'falas\')">Kalo te Falas</button>')+
       '</div>'+
       '<div class="card" style="flex:1 1 300px;position:relative;border-color:'+(premiumAktual?'var(--good)':'rgba(245,158,11,.4)')+';background:linear-gradient(135deg,rgba(245,158,11,.06),transparent);">'+
         (premiumAktual ? shenjaAktual('var(--good)') : '<div class="pill" style="position:absolute;top:-11px;left:20px;background:#f59e0b;color:#1a1200;font-weight:700;">Premium</div>')+
