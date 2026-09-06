@@ -194,6 +194,7 @@ function mainAnaTrafiku(m){
   _anaSelectedAd=null; _anaDropdownOpen=false;
   _anaDetAktiv='pesha'; // Pesha e zgjedhur si parazgjedhje, jo asnje
   _anaDetPerspektiv='marre'; // Marrë (ti përfitove) parazgjedhje; Dhënë (të tjerët përfituan) opsional
+  const ePremium = !!(une && une.plani==='premium');
   m.innerHTML=
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">'+
       '<div style="width:38px;height:38px;border-radius:12px;background:rgba(59,110,240,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
@@ -230,6 +231,7 @@ function mainAnaTrafiku(m){
         '</div>'+
       '</div>'+
     '</div>'+
+    (ePremium ?
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
       '<div class="card" style="flex:2;min-width:340px;">'+
         '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px;">'+
@@ -253,21 +255,24 @@ function mainAnaTrafiku(m){
         '</div>'+
         '<div id="anaAnkandKarusel" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;padding-right:4px;"></div>'+
       '</div>'+
-    '</div>';
+    '</div>'
+    : '<div style="margin-top:16px;">'+proUpsellHTML('Ndarja orare e trafikut dhe krahasimi pjesëmarrje-vs-fitore në Ankand janë pjesë e planit Premium.')+'</div>');
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
   window.__anaKalendaret = window.__anaKalendaret || {};
 
-  // ─── Ora e ditës + Ankand (rreshti i ri, poshtë grafikut kryesor) ───
-  $('anaNgaOre').value=anaFmt(nga); $('anaDeriOre').value=anaFmt(sot);
-  anaKrijoKalendarRangu({
-    id:'ore', btnId:'anaKalBtn_ore', panelId:'anaKalPanel_ore',
-    getNga:()=>$('anaNgaOre').value, getDeri:()=>$('anaDeriOre').value,
-    setNga:v=>{ $('anaNgaOre').value=v; }, setDeri:v=>{ $('anaDeriOre').value=v; },
-    onRuaj: anaNgarkoOreDheAnkand
-  });
-  anaRenderOreMetrika();
-  ngarkoAnaOre();
-  ngarkoAnaAnkandKategorite();
+  // ─── Ora e ditës + Ankand (rreshti i ri, poshtë grafikut kryesor) — VETEM Premium ───
+  if(ePremium){
+    $('anaNgaOre').value=anaFmt(nga); $('anaDeriOre').value=anaFmt(sot);
+    anaKrijoKalendarRangu({
+      id:'ore', btnId:'anaKalBtn_ore', panelId:'anaKalPanel_ore',
+      getNga:()=>$('anaNgaOre').value, getDeri:()=>$('anaDeriOre').value,
+      setNga:v=>{ $('anaNgaOre').value=v; }, setDeri:v=>{ $('anaDeriOre').value=v; },
+      onRuaj: anaNgarkoOreDheAnkand
+    });
+    anaRenderOreMetrika();
+    ngarkoAnaOre();
+    ngarkoAnaAnkandKategorite();
+  }
 
   // ─── Detajet e Ankandit (seksioni i ri, ne fillim fare te faqes) ───
   $('anaNgaDet').value=anaFmt(nga); $('anaDeriDet').value=anaFmt(sot);
@@ -752,6 +757,7 @@ function anaNgarkoOreDheAnkand(){ ngarkoAnaOre(); ngarkoAnaAnkandKategorite(); }
 // ═══ "Automatiku — Ndarja e hapësirës" — Ankand vs Balance, dite-per-dite ═══
 var _anaAutomatikChart=null;
 function mainAnaAutomatik(m){
+  const ePremium = !!(une && une.plani==='premium');
   m.innerHTML=
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">'+
       '<div style="width:38px;height:38px;border-radius:12px;background:rgba(34,211,238,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
@@ -759,6 +765,7 @@ function mainAnaAutomatik(m){
       '</div>'+
       '<h2 class="h" style="margin:0;">Përzgjedhjet e Pishinave</h2>'+
     '</div>'+
+    (!ePremium ? proUpsellHTML('Ndarja e hollësishme e hapësirës reklamuese mes Ankand dhe Balance (Automatik/Manual) është pjesë e planit Premium.') :
     '<div class="card">'+
       '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Ndarja e hapësirës</h3>'+
       '<p class="small mut" style="margin:0 0 12px;">Si e ke ndarë hapësirën tënde reklamuese mes pishinës Ankand dhe Balance, ditë-për-ditë.</p>'+
@@ -780,7 +787,8 @@ function mainAnaAutomatik(m){
       '</div>'+
       '<p class="small mut" id="anaAutomatikModi" style="margin:0 0 10px;"></p>'+
       '<div id="anaAutomatikChartWrap"><canvas id="anaAutomatikCanvas" height="110"></canvas></div>'+
-    '</div>';
+    '</div>');
+  if(!ePremium) return;
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
   $('anaNgaAutomatik').value=anaFmt(nga); $('anaDeriAutomatik').value=anaFmt(sot);
   window.__anaKalendaret = window.__anaKalendaret || {};
