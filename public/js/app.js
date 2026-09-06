@@ -2579,13 +2579,22 @@ async function mainPlani(m){
       '</div>';
   } else {
     permbajtja =
-      '<div class="card" style="max-width:460px;position:relative;border-color:var(--good);">'+
-        '<div class="pill" style="position:absolute;top:-11px;right:20px;background:var(--good);color:#04240f;font-weight:700;display:flex;align-items:center;gap:5px;">'+
-          '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#04240f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Falas — aktiv</div>'+
-        '<div style="font-family:var(--f-mono);font-size:11px;color:var(--good);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">'+ditetMbetura+' ditë të mbetura nga periudha falas</div>'+
-        '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">Falas <span class="small mut" style="font-family:var(--f-body);font-weight:400;">(3 muajt e parë), pastaj $7/muaj</span></div>'+
-        listaVeqorish+
-        '<button class="btn" style="width:100%;" onclick="planiZgjidh(\'premium\')">Aktivizo tani ($7/muaj) — mos prit skadimin</button>'+
+      '<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:stretch;">'+
+        '<div class="card" style="flex:1 1 300px;position:relative;border-color:var(--good);">'+
+          '<div class="pill" style="position:absolute;top:-11px;right:20px;background:var(--good);color:#04240f;font-weight:700;display:flex;align-items:center;gap:5px;">'+
+            '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#04240f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Aktiv tani</div>'+
+          '<div style="font-family:var(--f-mono);font-size:11px;color:var(--good);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">'+ditetMbetura+' ditë të mbetura</div>'+
+          '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">Falas</div>'+
+          '<p class="small" style="margin:6px 0 0;">Gjatë 3 muajve të parë, pa pagesë.</p>'+
+          listaVeqorish+
+        '</div>'+
+        '<div class="card" style="flex:1 1 300px;position:relative;">'+
+          '<div class="pill" style="position:absolute;top:-11px;left:20px;background:#f59e0b;color:#1a1200;font-weight:700;">Premium</div>'+
+          '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
+          '<p class="small" style="margin:6px 0 0;">Njësoj si Falas — thjesht vazhdon edhe pas 3 muajve.</p>'+
+          listaVeqorish+
+          '<button class="btn" style="width:100%;" onclick="planiZgjidh(\'premium\')">Aktivizo tani (opsionale)</button>'+
+        '</div>'+
       '</div>';
   }
   m.innerHTML = header + permbajtja;
