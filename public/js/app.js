@@ -2065,7 +2065,7 @@ async function ndertoMadhesine(cont, ruajVetem, snipCeles, snipData){
     '</div>'+
     '<div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start;">'+
       '<div id="madhDesktop" style="flex:1 1 320px;"></div>'+
-      '<div style="flex:1 1 260px;">'+
+      '<div id="madhSnipWrap" style="flex:1 1 260px;">'+
         '<div class="small" style="margin-bottom:10px;font-weight:600;color:var(--txt);">Apply to these spaces</div>'+
         '<div id="madhSnipLista"></div>'+
       '</div>'+
@@ -3407,7 +3407,7 @@ async function wizAnalizo(){
     $('d_msg').textContent='Write a description or allow the automatic study of your site.';
     return;
   }
-  $('d_btn').disabled=true; $('d_msg').className='msg'; $('d_msg').innerHTML='<span class="spin"></span> Imyr is studying your business…';
+  $('d_btn').disabled=true; $('d_msg').className='msg'; $('d_msg').innerHTML='<span class="spin"></span> PhronexusAI is studying your business…';
   try{
     const r=await(await fetch('/api/analizo',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({pershkrimi,lejo})})).json();
@@ -3435,7 +3435,7 @@ async function vazhdoPershkrim(){
 // STEP 2 — Lidhja (përdor connect.js). Pas lidhjes → Creatives + Create.
 async function stepLidhja(b){
   b.innerHTML=
-    '<h2 class="h">Connect Imyr to your website</h2>'+
+    '<h2 class="h">Connect PhronexusAI to your website</h2>'+
     '<p class="small">Copy this line and place it anywhere on your site (e.g. the footer).</p>'+
     '<div id="connectWrap"></div>'+
     '<div id="claudeSuportWiz" style="margin:14px 0;"></div>'+
@@ -3449,6 +3449,7 @@ async function stepLidhja(b){
   vizatoClaudeSuport('Wiz');
   _snipAktiv=null;   // te wizard-i, madhesia ruhet per-biznes
   await ndertoMadhesine($('madhBox'), false); // ngarkon te dhenat + ndertim UI ne sfond; kutia mbetet vizualisht e fshehur derisa te klikohet linku
+  const madhSnipWrap=$('madhSnipWrap'); if(madhSnipWrap) madhSnipWrap.style.display='none'; // 1 snippet i vetem ketu — s'ka nevoje per zgjedhje/"Apply to spaces"
   // Zhvendos FIZIKISHT butonin origjinal "Save" (+ mesazhin e tij) jashte madhBox-it,
   // te fundi — 1 buton i vetem, gjithmone i dukshem, i njejti id/dizajn origjinal, POR
   // brenda wizard-it ky buton bashkon: ruajtjen e madhesise + verifikimin e lidhjes,
