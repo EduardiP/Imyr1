@@ -357,7 +357,7 @@ const el=$('emailFormaZero'); if(!el) return;
 const aktiv = emailModaliteti==='zero';
 const kaPermbajtje = !!(window.emailPermbajtjaHTML && window.emailPermbajtjaHTML.trim());
 el.innerHTML =
-'<label class="small">Titulli</label><input id="emailSubjZero" placeholder="Titulli i email-it" onclick="event.stopPropagation();emailZgjidhModalitet(\'zero\')">'+
+'<label class="small">Titulli</label><input id="emailSubjZero" placeholder="Titulli i email-it" onfocus="emailZgjidhModalitet(\'zero\')">'+
 '<label class="small" style="margin-top:8px;">Përmbajtja</label>'+
 '<button type="button" class="btn" style="width:100%;margin-top:4px;" onclick="event.stopPropagation();emailZgjidhModalitet(\'zero\');emailHapRedaktues();">'+
   (kaPermbajtje ? '✓ Redakto përmbajtjen (e krijuar)' : '✏️ Hap redaktuesin')+
@@ -397,7 +397,7 @@ function emailNgarkoGrapes(){
       storageManager: false,
       plugins: ['grapesjs-preset-newsletter'],
       pluginsOpts: { 'grapesjs-preset-newsletter': {} },
-      components: window.emailPermbajtjaHTML || '<div style="padding:20px;font-family:sans-serif;"><h2>Titulli</h2><p>Shkruaj përmbajtjen këtu…</p></div>'
+      components: window.emailPermbajtjaHTML || ''
     });
   }
   if(window.grapesjs && window.__gjsNewsletterLoaded){ fillimi(); return; }
@@ -437,7 +437,7 @@ el.innerHTML = opsionet.map(o=>{
   return '<button onclick="emailZgjidhShabllon(\''+o.k+'\')" style="text-align:left;padding:12px;border-radius:10px;border:1px solid '+(sel?o.ngjyra:'var(--line)')+';background:'+(sel?o.ngjyra+'18':'transparent')+';color:var(--txt);cursor:pointer;font-family:inherit;">'+esc(o.l)+'</button>';
 }).join('');
 }
-function emailZgjidhModalitet(m){ emailModaliteti=m; if(m==='zero') emailShablloniZgjedhur=null; emailRenderFormaZero(); emailRenderShabllonet(); }
+function emailZgjidhModalitet(m){ if(emailModaliteti===m && !emailShablloniZgjedhur) return; emailModaliteti=m; if(m==='zero') emailShablloniZgjedhur=null; emailRenderFormaZero(); emailRenderShabllonet(); }
 function emailZgjidhShabllon(k){ emailModaliteti='shabllon'; emailShablloniZgjedhur=k; emailRenderFormaZero(); emailRenderShabllonet(); }
 function emailToggleBiz(id){
 const el=$('emailBiz'+id); if(!el) return;
