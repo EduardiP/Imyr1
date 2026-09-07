@@ -12,7 +12,7 @@
     var wrap = document.createElement('div');
     wrap.id = 'ndrWrap';
     wrap.innerHTML =
-      '<button id="ndrBtn" aria-label="Çfarë të re" title="Çfarë të re">'+
+      '<button id="ndrBtn" aria-label="What\'s New" title="What\'s New">'+
         '<svg width="26" height="26" viewBox="0 0 24 24">'+
           '<path d="M12 2l1.8 5.6L19 9l-5.2 1.4L12 16l-1.8-5.6L5 9l5.2-1.4L12 2z" fill="#000"/>'+
           '<path d="M19 15l.9 2.6L22 18l-2.1.8L19 21l-.9-2.2L16 18l2.1-.4L19 15z" fill="#000"/>'+
@@ -20,8 +20,8 @@
         '<span id="ndrBadge" class="hide"></span>'+
       '</button>'+
       '<div id="ndrPanel" class="hide">'+
-        '<div id="ndrHead"><span>Çfarë të re</span>'+
-          '<button id="ndrX" title="Mbyll" aria-label="Mbyll">✕</button>'+
+        '<div id="ndrHead"><span>What\'s New</span>'+
+          '<button id="ndrX" title="Close" aria-label="Close">✕</button>'+
         '</div>'+
         '<div id="ndrLista"></div>'+
       '</div>';
@@ -43,11 +43,11 @@
 
   async function ngarko(){
     var box = el('ndrLista'); if(!box) return;
-    box.innerHTML = '<p class="small mut" style="padding:14px;">Po ngarkoj…</p>';
+    box.innerHTML = '<p class="small mut" style="padding:14px;">Loading…</p>';
     try{
       var r = await (await fetch('/api/ndryshimet')).json();
       lista = r.ndryshimet || [];
-      if(!lista.length){ box.innerHTML='<p class="small mut" style="padding:14px;">S\'ka ende përditësime.</p>'; return; }
+      if(!lista.length){ box.innerHTML='<p class="small mut" style="padding:14px;">No updates yet.</p>'; return; }
       box.innerHTML = lista.map(function(x){
         return '<div class="ndrItem"><div class="ndrT">'+esc(x.titull)+'</div>'+
           '<div class="ndrX">'+esc(x.teksti)+'</div>'+
@@ -55,7 +55,7 @@
       }).join('');
       if(lista[0] && lista[0].data){ try{ localStorage.setItem('ndrPare', lista[0].data); }catch(e){} }
       var badge = el('ndrBadge'); if(badge) badge.classList.add('hide');
-    }catch(e){ box.innerHTML = '<p class="small mut" style="padding:14px;">Gabim në ngarkim.</p>'; }
+    }catch(e){ box.innerHTML = '<p class="small mut" style="padding:14px;">Something went wrong.</p>'; }
   }
 
   // Kontrollon nese ka ndryshime me te reja se ato te fundit te para (per pikën e kuqe),
