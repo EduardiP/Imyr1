@@ -2755,8 +2755,8 @@ function renderWizard(i){
 }
 function renderHStep(){
   const total = STEPS.length;
-  if(curStep>=total){ $('wizStepN').textContent='Opsionale'; }
-  else $('wizStepN').textContent='Hapi '+(curStep+1)+' nga '+total;
+  if(curStep>=total){ $('wizStepN').textContent='Optional'; }
+  else $('wizStepN').textContent='Step '+(curStep+1)+' of '+total;
   const el=$('hstep'); el.innerHTML='';
   STEPS.forEach((s,i)=>{
     const done=une&&prog[s.key], cur=(i===curStep);
@@ -3370,18 +3370,18 @@ async function wizKrijo(){
 // STEP 1 — Përshkrimi (klientit i tregohet vetëm përmbledhja; kategoria caktohet nga AI në sfond)
 function stepPershkrimi(b){
   b.innerHTML=
-    '<h2 class="h">Përshkruaj biznesin</h2>'+
-    '<p class="small" style="margin-bottom:14px;">Sa më i qartë dhe specifik të jetë përshkrimi, aq më mirë AI-ja të çiftëzon me biznese plotësuese — çka <b>rrit pikët e tua dhe reklamën ta shfaq më shpesh</b>. AI-ja e pastron pastaj; ti mund ta rregullosh.</p>'+
-    '<label>Çfarë ofron biznesi yt?</label>'+
-    '<textarea id="d_persh" placeholder="p.sh. Mjet email-marketing për dyqane online. Automatizon fushatat dhe rikthen blerësit.">'+(une.pershkrimi||'')+'</textarea>'+
-    '<label class="chk"><input type="checkbox" id="d_lejo" checked><span>Lejo që linku i SaaS-it të studiohet automatikisht për saktësi më të madhe.</span></label>'+
-    '<button class="btn" id="d_btn" onclick="wizAnalizo()">Analizo me AI</button>'+
+    '<h2 class="h">Describe your business</h2>'+
+    '<p class="small" style="margin-bottom:14px;">The clearer and more specific the description, the better the AI matches you with complementary businesses — which <b>raises your points and shows your ad more often</b>. The AI cleans it up afterward; you can still edit it.</p>'+
+    '<label>What does your business offer?</label>'+
+    '<textarea id="d_persh" placeholder="e.g. Email marketing tool for online stores. Automates campaigns and brings back shoppers.">'+(une.pershkrimi||'')+'</textarea>'+
+    '<label class="chk"><input type="checkbox" id="d_lejo" checked><span>Allow your SaaS link to be studied automatically for greater accuracy.</span></label>'+
+    '<button class="btn" id="d_btn" onclick="wizAnalizo()">Analyze with AI</button>'+
     '<span class="small mut" id="d_mbetur" style="margin-left:10px;"></span>'+
     '<div class="msg" id="d_msg"></div>'+
     '<div id="d_res" class="hide" style="margin-top:16px;">'+
-      '<label>Përmbledhja (e editueshme)</label>'+
+      '<label>Summary (editable)</label>'+
       '<textarea id="e_perm"></textarea>'+
-      '<button class="primary" id="e_next" onclick="vazhdoPershkrim()">Ruaj</button>'+
+      '<button class="primary" id="e_next" onclick="vazhdoPershkrim()">Save</button>'+
       '<div class="msg" id="e_msg"></div>'+
     '</div>';
   if(une.permbledhje){ $('d_res').classList.remove('hide'); $('e_perm').value=une.permbledhje; }
@@ -3397,17 +3397,17 @@ async function ngarkoAnalizoMbetur(){
   const el=$('d_mbetur'); if(!el) return;
   try{
     const r=await(await fetch('/api/analizo/mbetur')).json();
-    el.textContent = 'Të mbetura sot: '+r.mbetur+'/2';
+    el.textContent = 'Remaining today: '+r.mbetur+'/2';
   }catch(e){}
 }
 async function wizAnalizo(){
   const pershkrimi=$('d_persh').value.trim(), lejo=$('d_lejo').checked;
   if(!pershkrimi && !lejo){
     $('d_msg').className='msg err';
-    $('d_msg').textContent='Shkruaj një përshkrim ose lejo studimin automatik të faqes.';
+    $('d_msg').textContent='Write a description or allow the automatic study of your site.';
     return;
   }
-  $('d_btn').disabled=true; $('d_msg').className='msg'; $('d_msg').innerHTML='<span class="spin"></span> Imyr po studion biznesin…';
+  $('d_btn').disabled=true; $('d_msg').className='msg'; $('d_msg').innerHTML='<span class="spin"></span> Imyr is studying your business…';
   try{
     const r=await(await fetch('/api/analizo',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({pershkrimi,lejo})})).json();
@@ -3419,7 +3419,7 @@ async function wizAnalizo(){
     const enBtn2=$('e_next');
     if(enBtn2) enBtn2.disabled = ($('e_perm').value.trim() === (window.__permOrig||'').trim());
     ngarkoAnalizoMbetur();
-  }catch(e){ $('d_msg').className='msg err'; $('d_msg').textContent='Gabim: '+e.message; }
+  }catch(e){ $('d_msg').className='msg err'; $('d_msg').textContent='Error: '+e.message; }
   $('d_btn').disabled=false;
 }
 async function vazhdoPershkrim(){
@@ -3429,20 +3429,20 @@ async function vazhdoPershkrim(){
     await fetch('/api/permbledhje',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({permbledhje:perm})});
     une.permbledhje=perm;
     await advance();
-  }catch(e){ $('e_msg').className='msg err'; $('e_msg').textContent='Gabim: '+e.message; $('e_next').disabled=false; }
+  }catch(e){ $('e_msg').className='msg err'; $('e_msg').textContent='Error: '+e.message; $('e_next').disabled=false; }
 }
 
 // STEP 2 — Lidhja (përdor connect.js). Pas lidhjes → Creatives + Create.
 function stepLidhja(b){
   b.innerHTML=
-    '<h2 class="h">Lidh Imyr-in te faqja jote</h2>'+
-    '<p class="small">Kopjo këtë rresht dhe vendose kudo te faqja jote (p.sh. te footer-i).</p>'+
+    '<h2 class="h">Connect Imyr to your website</h2>'+
+    '<p class="small">Copy this line and place it anywhere on your site (e.g. the footer).</p>'+
     '<div id="connectWrap"></div>'+
     '<div id="claudeSuportWiz" style="margin:14px 0;"></div>'+
     '<div style="margin-top:14px;"><a href="#" id="caktoLink" style="color:#4a9eff;text-decoration:none;font-size:14px;" '+
-      'onclick="event.preventDefault();var x=document.getElementById(\'madhBox\');x.classList.toggle(\'hide\');if(!x.dataset.ngarkuar){x.dataset.ngarkuar=1;ndertoMadhesine(x,false);}">Cakto madhësinë e hapësirës</a></div>'+
+      'onclick="event.preventDefault();var x=document.getElementById(\'madhBox\');x.classList.toggle(\'hide\');if(!x.dataset.ngarkuar){x.dataset.ngarkuar=1;ndertoMadhesine(x,false);}">Set the ad space size</a></div>'+
     '<div id="madhBox" class="hide" style="margin-top:12px;"></div>'+
-    '<button class="primary hide" id="lidhNext" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">Krijo reklamën →</button>';
+    '<button class="primary hide" id="lidhNext" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">Create your ad →</button>';
   window.__onLidhur = ()=>{ renderHStep(); $('lidhNext').classList.remove('hide'); };
   connectUI($('connectWrap'));
   vizatoClaudeSuport('Wiz');
