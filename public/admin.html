@@ -391,7 +391,8 @@ btn.disabled=true; stat.textContent='Po dërgoj…';
 try{
   const r = await (await fetch('/api/admin/email/dergo-manual',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(trupi)})).json();
   if(r.error){ stat.textContent=r.error; btn.disabled=false; return; }
-  stat.textContent='✓ U dërguan '+r.dergu+' email-e'+(r.deshtuar?(', '+r.deshtuar+' dështuan'):'')+'.';
+  stat.innerHTML='✓ U dërguan '+r.dergu+' email-e'+(r.deshtuar?(', '+r.deshtuar+' dështuan'):'')+'.'+
+    ((r.gabimet&&r.gabimet.length) ? '<br><span style="color:var(--err);">'+esc(r.gabimet.join(' · '))+'</span>' : '');
 }catch(e){ stat.textContent='Gabim: '+e.message; }
 btn.disabled=false;
 }
