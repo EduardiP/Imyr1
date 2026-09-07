@@ -2584,9 +2584,9 @@ app.post('/api/admin/email/dergo-manual', iAdmin, async (req, res) => {
     let dergu = 0, deshtuar = 0, gabimet = [];
     for (const biz of r.rows) {
       let subjekti, html;
-      if (b.shablloni === '7dite') {
+      if (b.shabllon === '7dite') {
         const sh = emailModul.shablloniSnippet7Dite(biz.emri); subjekti = sh.subjekti; html = sh.html;
-      } else if (b.shablloni === '3muaj') {
+      } else if (b.shabllon === '3muaj') {
         const sh = emailModul.shablloniPagesa3Muaj(biz.emri); subjekti = sh.subjekti; html = sh.html;
       } else {
         subjekti = (b.subjekti || '').trim();
