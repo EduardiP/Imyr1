@@ -3443,7 +3443,7 @@ async function stepLidhja(b){
       'onclick="event.preventDefault();var x=document.getElementById(\'madhBox\');x.classList.toggle(\'hide\');">Set the ad space size</a></div>'+
     '<div id="madhBox" class="hide" style="margin-top:12px;"></div>'+
     '<div id="madhRuajFund" style="margin-top:14px;"></div>'+
-    '<button class="primary hide" id="lidhNext" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">Create your ad →</button>';
+    '<button class="primary hide" id="lidhNext" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">Continue →</button>';
   window.__onLidhur = ()=>{ renderHStep(); $('lidhNext').classList.remove('hide'); };
   connectUI($('connectWrap'));
   vizatoClaudeSuport('Wiz');
@@ -3451,29 +3451,9 @@ async function stepLidhja(b){
   await ndertoMadhesine($('madhBox'), false); // ngarkon te dhenat + ndertim UI ne sfond; kutia mbetet vizualisht e fshehur derisa te klikohet linku
   const madhSnipWrap=$('madhSnipWrap'); if(madhSnipWrap) madhSnipWrap.style.display='none'; // 1 snippet i vetem ketu — s'ka nevoje per zgjedhje/"Apply to spaces"
   // Zhvendos FIZIKISHT butonin origjinal "Save" (+ mesazhin e tij) jashte madhBox-it,
-  // te fundi — 1 buton i vetem, gjithmone i dukshem, i njejti id/dizajn origjinal, POR
-  // brenda wizard-it ky buton bashkon: ruajtjen e madhesise + verifikimin e lidhjes,
-  // duke perdorur website-in e njohur (une.website), pa kerkuar hapa shtese nga klienti.
+  // te fundi — 1 buton i vetem, gjithmone i dukshem, i njejti id/onclick/dizajn origjinal.
   const madhRuajBtn=$('madhRuaj'), madhMsgEl=$('madhMsg'), fundi=$('madhRuajFund');
-  if(madhRuajBtn && fundi){
-    fundi.appendChild(madhRuajBtn);
-    madhRuajBtn.textContent='Save & verify connection';
-    madhRuajBtn.onclick = async function(){
-      madhRuajBtn.disabled=true;
-      if(madhMsgEl){ madhMsgEl.className='msg'; madhMsgEl.textContent='Saving size…'; }
-      try{
-        const trupi = { desktop:_mad.w+'x'+_mad.h, mobile:_mad.mw+'x'+_mad.mh, pozicioni:_mad.pozicioni };
-        await fetch('/api/madhesia',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(trupi)});
-      }catch(e){}
-      let url=(une.website||'').trim();
-      if(!url){ if(madhMsgEl){ madhMsgEl.className='msg err'; madhMsgEl.textContent='Add your website URL in Step 1 first.'; } madhRuajBtn.disabled=false; return; }
-      if(!/^https?:\/\//i.test(url)) url='https://'+url;
-      window.open(url,'_blank');
-      if(madhMsgEl){ madhMsgEl.className='msg'; madhMsgEl.innerHTML='✓ Size saved. ⏳ Waiting for the connection signal…'; }
-      startPolling(window.__onLidhur);
-      madhRuajBtn.disabled=false;
-    };
-  }
+  if(madhRuajBtn && fundi){ fundi.appendChild(madhRuajBtn); }
   if(madhMsgEl && fundi){ fundi.appendChild(madhMsgEl); }
   if(prog.lidhja){ $('lidhNext').classList.remove('hide'); }
 }
