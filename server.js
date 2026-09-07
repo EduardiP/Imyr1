@@ -2565,6 +2565,45 @@ if (process.env.RESEND_API_KEY) {
 }
 require('./ekipi')(app, pool, iLoguar, resendKlient);
 
+// ═══ Njoftime email automatike (7 dite snippet, 3 muaj plani) — permes Gmail/Workspace (email.js) ═══
+const emailModul = require('./email');
+(async () => {
+  try {
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS njoftim_7dite_dergu BOOLEAN NOT NULL DEFAULT false`);
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS njoftim_3muaj_dergu BOOLEAN NOT NULL DEFAULT false`);
+  } catch (e) { console.error('njoftime-email ALTER:', e.message); }
+})();
+
+async function kontrolloDheDergoNjoftimet() {
+  try {
+    // 7 dite (vetem biznesi_auto=true, njesoj si kushti i vertete i graceperiod-it)
+    const r7 = await pool.query(`
+      SELECT id, emri, email FROM bizneset
+      WHERE COALESCE(biznesi_auto,false)=true AND COALESCE(njoftim_7dite_dergu,false)=false
+        AND created_at <= now() - interval '7 days'
+        AND NOT EXISTS (SELECT 1 FROM snippetet s WHERE s.biznes_id=bizneset.id AND s.snippet_active=true)`);
+    for (const b of r7.rows) {
+      const sh = emailModul.shablloniSnippet7Dite(b.emri);
+      const rez = await emailModul.dergo({ te: b.email, subjekti: sh.subjekti, html: sh.html });
+      if (rez.ok) await pool.query('UPDATE bizneset SET njoftim_7dite_dergu=true WHERE id=$1', [b.id]);
+      else console.error('njoftim-7dite deshtoi per', b.id, ':', rez.error);
+    }
+    // 3 muaj (plani ende falas)
+    const r3 = await pool.query(`
+      SELECT id, emri, email FROM bizneset
+      WHERE COALESCE(plani,'falas')!='premium' AND COALESCE(njoftim_3muaj_dergu,false)=false
+        AND created_at <= now() - interval '3 months'`);
+    for (const b of r3.rows) {
+      const sh = emailModul.shablloniPagesa3Muaj(b.emri);
+      const rez = await emailModul.dergo({ te: b.email, subjekti: sh.subjekti, html: sh.html });
+      if (rez.ok) await pool.query('UPDATE bizneset SET njoftim_3muaj_dergu=true WHERE id=$1', [b.id]);
+      else console.error('njoftim-3muaj deshtoi per', b.id, ':', rez.error);
+    }
+  } catch (e) { console.error('kontrolloDheDergoNjoftimet:', e.message); }
+}
+setInterval(kontrolloDheDergoNjoftimet, 60 * 60 * 1000); // çdo orë
+setTimeout(kontrolloDheDergoNjoftimet, 15000); // + 1 kontroll i shpejtë ne nisje (pas 15s)
+
 require('./pike-reklama').rregjistroRoutet(app, pool, iAdmin);
 
 require('./suport-human')(app, pool, iLoguar, iAdmin);
