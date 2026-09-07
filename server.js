@@ -2567,6 +2567,41 @@ require('./ekipi')(app, pool, iLoguar, resendKlient);
 
 // ═══ Njoftime email automatike (7 dite snippet, 3 muaj plani) — permes Gmail/Workspace (email.js) ═══
 const emailModul = require('./email');
+
+// ═══ ADMIN: dergim manual email-esh (nga zero, ose shabllon i gatshem) ═══
+app.get('/api/admin/email/bizneset', iAdmin, async (req, res) => {
+  try {
+    const r = await pool.query(`SELECT id, emri, email, logo_url FROM bizneset WHERE email IS NOT NULL AND email <> '' ORDER BY emri ASC`);
+    res.json({ bizneset: r.rows });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.post('/api/admin/email/dergo-manual', iAdmin, async (req, res) => {
+  const b = req.body || {};
+  const bizIds = Array.isArray(b.biznes_ids) ? b.biznes_ids : [];
+  if (!bizIds.length) return res.status(400).json({ error: 'Zgjidh të paktën një biznes.' });
+  try {
+    const r = await pool.query(`SELECT id, emri, email FROM bizneset WHERE id = ANY($1::int[])`, [bizIds]);
+    let dergu = 0, deshtuar = 0;
+    for (const biz of r.rows) {
+      let subjekti, html;
+      if (b.shablloni === '7dite') {
+        const sh = emailModul.shablloniSnippet7Dite(biz.emri); subjekti = sh.subjekti; html = sh.html;
+      } else if (b.shablloni === '3muaj') {
+        const sh = emailModul.shablloniPagesa3Muaj(biz.emri); subjekti = sh.subjekti; html = sh.html;
+      } else {
+        subjekti = (b.subjekti || '').trim();
+        html = `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:20px;">
+          <h2 style="color:#3b6ef0;">Përshëndetje, ${biz.emri}!</h2>
+          <div>${(b.permbajtja || '').replace(/\n/g, '<br>')}</div>
+          <p style="color:#888;font-size:13px;margin-top:24px;">PhronexusAI</p></div>`;
+      }
+      if (!subjekti) { deshtuar++; continue; }
+      const rez = await emailModul.dergo({ te: biz.email, subjekti, html });
+      if (rez.ok) dergu++; else deshtuar++;
+    }
+    res.json({ ok: true, dergu, deshtuar });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 (async () => {
   try {
     await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS njoftim_7dite_dergu BOOLEAN NOT NULL DEFAULT false`);
