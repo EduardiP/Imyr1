@@ -1132,7 +1132,7 @@ function vizatoClaudeSuport(id){
   const box=$('claudeSuport'+id); if(!box) return;
   const idArg = isNaN(id) ? "'"+id+"'" : id;
   box.innerHTML='<button class="btn" onclick="claudeHap('+idArg+')" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;border:1px dashed var(--acc);color:var(--acc);padding:10px;">'+
-    '<span style="font-size:16px;">✨</span> Nuk di ku ta vendosësh kodin? Pyet asistentin</button>';
+    '<span style="font-size:16px;">✨</span> Not sure where to put the code? Ask the assistant</button>';
 }
 var _claudeHist = {};
 function claudeHap(id){
@@ -1143,15 +1143,15 @@ function claudeHap(id){
   var pyetja = (id==='Konv') ? pyetjaKonv : pyetjaRek;
   box.innerHTML='<div style="border:1px solid var(--acc);border-radius:12px;overflow:hidden;">'+
     '<div style="background:var(--acc);color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">'+
-      '<span style="font-weight:600;">✨ Asistenti i kodit</span>'+
+      '<span style="font-weight:600;">✨ Code assistant</span>'+
       '<button onclick="vizatoClaudeSuport('+(isNaN(id)?"'"+id+"'":id)+')" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;">✕</button>'+
     '</div>'+
     '<div id="claudeChat'+id+'" style="padding:14px;max-height:340px;overflow-y:auto;min-height:80px;font-size:13px;line-height:1.5;">'+
       '<div style="margin:8px 0;"><span style="background:#1a1f28;color:#e6edf3;padding:8px 12px;border-radius:10px;display:inline-block;max-width:90%;">'+esc(pyetja)+'</span></div>'+
     '</div>'+
     '<div style="padding:10px 14px;border-top:1px solid var(--line);display:flex;gap:8px;">'+
-      '<input id="claudeInput'+id+'" placeholder="Shkruaj pyetjen tënde..." style="flex:1;" onkeydown="if(event.key===\'Enter\')claudeDergo('+(isNaN(id)?"'"+id+"'":id)+')">'+
-      '<button class="btn cta" id="claudeBtn'+id+'" onclick="claudeDergo('+(isNaN(id)?"'"+id+"'":id)+')">Dërgo</button>'+
+      '<input id="claudeInput'+id+'" placeholder="Type your question..." style="flex:1;" onkeydown="if(event.key===\'Enter\')claudeDergo('+(isNaN(id)?"'"+id+"'":id)+')">'+
+      '<button class="btn cta" id="claudeBtn'+id+'" onclick="claudeDergo('+(isNaN(id)?"'"+id+"'":id)+')">Send</button>'+
     '</div>'+
   '</div>';
   if(!_claudeHist[id] || !_claudeHist[id].length){
@@ -1185,7 +1185,7 @@ async function claudeDergo(id){
     const p=document.getElementById(pritId); if(p) p.remove();
     chat.innerHTML+='<div style="margin:8px 0;color:var(--err);font-size:13px;">Gabim në lidhje.</div>';
   }
-  if(btn){ btn.disabled=false; btn.textContent='Dërgo'; }
+  if(btn){ btn.disabled=false; btn.textContent='Send'; }
   chat.scrollTop=chat.scrollHeight;
 }
 async function snipEmriRuajFush(id){
@@ -1979,7 +1979,7 @@ function ndertoKanavasinNjeSnip(cont, pajisje){
       '<label class="small">Gjerësi <input id="madhWns" type="number" value="'+W+'" min="'+MINW+'" max="'+MAXW+'" style="width:70px;" onchange="madhNumratNjeSnip()"></label>'+
       '<label class="small">Lartësi <input id="madhHns" type="number" value="'+H+'" min="'+MINH+'" max="'+MAXH+'" style="width:70px;" onchange="madhNumratNjeSnip()"></label>'+
     '</div>'+
-    '<button class="primary" id="madhRuajNs" onclick="ruajMadhesineNjeSnip()" style="margin-top:14px;">Ruaj</button>'+
+    '<button class="primary" id="madhRuajNs" onclick="ruajMadhesineNjeSnip()" style="margin-top:14px;">Save</button>'+
     '<div class="msg" id="madhMsgNs"></div>';
 }
 function madhNumratNjeSnip(){
@@ -2070,7 +2070,7 @@ async function ndertoMadhesine(cont, ruajVetem, snipCeles, snipData){
         '<div id="madhSnipLista"></div>'+
       '</div>'+
     '</div>'+
-    '<button class="primary" id="madhRuaj" onclick="ruajMadhesine()" style="max-width:200px;">Ruaj</button>'+
+    '<button class="primary" id="madhRuaj" onclick="ruajMadhesine()" style="max-width:200px;">Save</button>'+
     '<div class="msg" id="madhMsg"></div>';
   const dd=cont.querySelector('#madhDesktop');
   if(dd) ndertoKanavasin(dd, 'desktop');
@@ -2095,9 +2095,9 @@ function ndertoKanavasin(cont, pajisje){
   const MAXW = eshteMob?_mad.mMAXW:_mad.MAXW, MAXH = eshteMob?_mad.mMAXH:_mad.MAXH;
   const MINW = eshteMob?_mad.mMINW:_mad.MINW, MINH = eshteMob?_mad.mMINH:_mad.MINH;
   const W = eshteMob?_mad.mw:_mad.w, H = eshteMob?_mad.mh:_mad.h;
-  const etiketa = eshteMob ? 'telefon' : 'desktop';
+  const etiketa = eshteMob ? 'mobile' : 'desktop';
   cont.innerHTML=
-    '<p class="small" style="margin-bottom:10px;">Hapësira që snippet-i do të zërë në faqen tënde ('+etiketa+'). Tërhiq cepin ose ndrysho numrat. Reklamat përshtaten brenda kësaj mase.</p>'+
+    '<p class="small" style="margin-bottom:10px;">The space the snippet will take up on your site ('+etiketa+'). Drag the corner or edit the numbers. Ads adapt to fit within this size.</p>'+
     '<div id="madhKanavas" style="position:relative;width:'+MAXW+'px;max-width:100%;height:'+MAXH+'px;'+
       'border:1px dashed var(--line);border-radius:12px;background:var(--card2);overflow:hidden;">'+
       '<div id="madhKuti" style="position:absolute;top:0;left:0;width:'+W+'px;height:'+H+'px;'+
@@ -2107,16 +2107,16 @@ function ndertoKanavasin(cont, pajisje){
       '</div>'+
     '</div>'+
     '<div style="display:flex;align-items:center;gap:14px;margin-top:14px;flex-wrap:wrap;">'+
-      '<label class="small">Gjerësi <input id="madhW" type="number" value="'+W+'" min="'+MINW+'" max="'+MAXW+'" style="width:70px;"></label>'+
-      '<label class="small">Lartësi <input id="madhH" type="number" value="'+H+'" min="'+MINH+'" max="'+MAXH+'" style="width:70px;"></label>'+
+      '<label class="small">Width <input id="madhW" type="number" value="'+W+'" min="'+MINW+'" max="'+MAXW+'" style="width:70px;"></label>'+
+      '<label class="small">Height <input id="madhH" type="number" value="'+H+'" min="'+MINH+'" max="'+MAXH+'" style="width:70px;"></label>'+
       '<span class="small" id="madhLive" style="font-weight:600;color:var(--acc);font-family:var(--f-mono);">'+W+' × '+H+' px</span>'+
     '</div>'+
     '<div style="margin-top:18px;">'+
-      '<div class="small" style="margin-bottom:8px;">Pozicioni në hapësirë</div>'+
+      '<div class="small" style="margin-bottom:8px;">Position within the space</div>'+
       '<div style="display:flex;gap:6px;">'+
-        '<button class="madhPoz'+(_mad.pozicioni==='majtas'?' active':'')+'" data-poz="majtas" onclick="madhPozicioni(\'majtas\')">Majtas</button>'+
-        '<button class="madhPoz'+(_mad.pozicioni==='qender'?' active':'')+'" data-poz="qender" onclick="madhPozicioni(\'qender\')">Qendër</button>'+
-        '<button class="madhPoz'+(_mad.pozicioni==='djathtas'?' active':'')+'" data-poz="djathtas" onclick="madhPozicioni(\'djathtas\')">Djathtas</button>'+
+        '<button class="madhPoz'+(_mad.pozicioni==='majtas'?' active':'')+'" data-poz="majtas" onclick="madhPozicioni(\'majtas\')">Left</button>'+
+        '<button class="madhPoz'+(_mad.pozicioni==='qender'?' active':'')+'" data-poz="qender" onclick="madhPozicioni(\'qender\')">Center</button>'+
+        '<button class="madhPoz'+(_mad.pozicioni==='djathtas'?' active':'')+'" data-poz="djathtas" onclick="madhPozicioni(\'djathtas\')">Right</button>'+
       '</div>'+
     '</div>';
   madhLidhTerheqjen();
@@ -2470,7 +2470,7 @@ async function rekRenderAudienca(id){
       PAJISJET.map(p=>'<label style="display:flex;align-items:center;gap:6px;background:#0e1116;border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;">'+
         '<input type="checkbox" value="'+p.v+'" class="rekAudPaj" onchange="rekAudSyncTeGjitha(\'.rekAudPaj\',\'rekAudPajTeGjitha\')" '+((teGjithaPaj||cur.pajisjet.includes(p.v))?'checked':'')+'> '+p.l+'</label>').join('')+
     '</div>'+
-    '<button class="primary" id="rekAudRuaj" onclick="rekAudRuaj('+id+')">Ruaj</button>'+
+    '<button class="primary" id="rekAudRuaj" onclick="rekAudRuaj('+id+')">Save</button>'+
     '<div class="msg" id="rekAudMsg"></div>';
 }
 function rekAudTeGjitha(selektori, tashmeTeZgjedhura){
@@ -2632,7 +2632,7 @@ function mainSuport(m){
       '<label>Subjekti</label><input id="sup_subj" placeholder="Për çfarë bëhet fjalë?">'+
       '<label style="margin-top:12px;">Mesazhi *</label>'+
       '<textarea id="sup_msg" placeholder="Përshkruaj pyetjen ose problemin tënd…" style="min-height:120px;"></textarea>'+
-      '<button class="primary" id="sup_btn" onclick="suportDergo()">Dërgo →</button>'+
+      '<button class="primary" id="sup_btn" onclick="suportDergo()">Send →</button>'+
       '<div class="msg" id="sup_feedback"></div>'+
       '<p class="small mut" style="margin-top:16px;">Ose na shkruaj direkt: <b style="color:var(--txt);">suport@phronexusai.com</b></p>'+
     '</div>';
@@ -2791,7 +2791,7 @@ async function mainKufizimetKategori(m){
   m.innerHTML='<h2 class="h">Kufizimet e Kategorive</h2>'+
     '<p class="small mut" style="margin:4px 0 14px;">Kategori të <b>shënuara</b> = mund t\'i shfaqin reklamat e tyre te ti (dhe reklamat e tua te ta). Kategori <b>e pashënuar</b> = e bllokuar plotësisht (as marrje, as dhënie ekspozimi). Kategoria jote (konkurrenca e njohur) fillon e pashënuar — shëno nëse do ta lejosh.</p>'+
     '<div id="kufKatLista"><p class="small mut">Po ngarkoj…</p></div>'+
-    '<button class="primary" style="margin-top:16px;" onclick="kufKatRuaj()">Ruaj</button>'+
+    '<button class="primary" style="margin-top:16px;" onclick="kufKatRuaj()">Save</button>'+
     '<span class="small" id="kufKatStat" style="margin-left:10px;"></span>';
   try{
     const r=await(await fetch('/api/kategori-kufizimet')).json();
