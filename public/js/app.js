@@ -2674,8 +2674,8 @@ function renderZgjedhja(){
   const el = $('v-zgjedhja'); if(!el) return;
   el.innerHTML =
     '<div class="wrap" style="max-width:640px;margin:60px auto;">'+
-      '<h2 class="h" style="text-align:center;">Si dëshiron ta fillosh?</h2>'+
-      '<p class="small mut" style="text-align:center;margin:6px 0 28px;">Zgjidh njërën, mund ta ndryshosh më vonë.</p>'+
+      '<h2 class="h" style="text-align:center;">How would you like to start?</h2>'+
+      '<p class="small mut" style="text-align:center;margin:6px 0 28px;">Pick one — you can change it later.</p>'+
       '<style>'+
         '.zgjTabBtn{flex:1;padding:16px;border-radius:12px;border:1.5px solid var(--line);background:#0e1116;color:var(--txt);'+
           'font-size:15px;font-weight:600;cursor:pointer;position:relative;transition:border-color .15s,background .15s;}'+
@@ -2686,7 +2686,7 @@ function renderZgjedhja(){
       '</style>'+
       '<div style="display:flex;gap:14px;margin-bottom:24px;">'+
         '<button class="zgjTabBtn sel" id="zgjBtnAuto" onclick="zgjSetTab(\'automatic\')">'+
-          '<span class="zgjBadge">Rekomandohet</span>Automatic'+
+          '<span class="zgjBadge">Recommended</span>Automatic'+
         '</button>'+
         '<button class="zgjTabBtn" id="zgjBtnManual" onclick="zgjSetTab(\'manual\')">Manual</button>'+
       '</div>'+
@@ -2703,15 +2703,15 @@ function zgjSetTab(t){
   if(t==='manual'){
     c.innerHTML =
       '<div class="card">'+
-        '<p class="small" style="margin:0 0 16px;">Plotëso vetë të dhënat e biznesit, përshkrimin, dhe lidh snippet-in — hap pas hapi, me kontroll të plotë mbi çdo detaj.</p>'+
-        '<button class="primary" style="width:100%;" onclick="nav({v:\'wizard\',step:0})">Vazhdo manualisht →</button>'+
+        '<p class="small" style="margin:0 0 16px;">Fill in your business details and description yourself, and connect the snippet — step by step, with full control over every detail.</p>'+
+        '<button class="primary" style="width:100%;" onclick="nav({v:\'wizard\',step:0})">Continue manually →</button>'+
       '</div>';
   } else {
     c.innerHTML =
       '<div class="card">'+
-        '<p class="small" style="margin:0 0 16px;">Jep vetëm URL-në e biznesit tënd — platforma plotëson vetë emrin, kategorinë, dhe përshkrimin, dhe krijon një reklamë fillestare automatikisht, që të fillosh menjëherë.</p>'+
-        '<label>URL e biznesit</label><input id="zgjAutoUrl" placeholder="https://biznesi-im.com">'+
-        '<button class="primary" style="width:100%;margin-top:14px;" id="zgjAutoBtn" onclick="zgjVazhdoAutomatik()">Vazhdo automatikisht →</button>'+
+        '<p class="small" style="margin:0 0 16px;">Just give us your business URL — we\'ll fill in the name, category, and description ourselves, and create an initial ad automatically, so you can start right away.</p>'+
+        '<label>Business URL</label><input id="zgjAutoUrl" placeholder="https://my-business.com">'+
+        '<button class="primary" style="width:100%;margin-top:14px;" id="zgjAutoBtn" onclick="zgjVazhdoAutomatik()">Continue automatically →</button>'+
         '<div class="msg" id="zgjAutoMsg"></div>'+
       '</div>';
   }
@@ -2719,15 +2719,15 @@ function zgjSetTab(t){
 async function zgjVazhdoAutomatik(){
   const url = ($('zgjAutoUrl').value||'').trim();
   const msg = $('zgjAutoMsg'), btn = $('zgjAutoBtn');
-  if(!url){ msg.textContent='Fut URL-në e biznesit tënd.'; msg.className='msg err'; return; }
-  btn.disabled = true; msg.textContent='Duke analizuar faqen tënde…'; msg.className='msg';
+  if(!url){ msg.textContent='Enter your business URL.'; msg.className='msg err'; return; }
+  btn.disabled = true; msg.textContent='Analyzing your website…'; msg.className='msg';
   try{
     const r = await (await fetch('/api/zgjedhja-automatike',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({url})})).json();
     if(r.error){ msg.textContent=r.error; msg.className='msg err'; btn.disabled=false; return; }
     await refreshProg();
     nav({v:'profile',nav:'dashboard'});
-  }catch(e){ msg.textContent='Gabim: '+e.message; msg.className='msg err'; btn.disabled=false; }
+  }catch(e){ msg.textContent='Error: '+e.message; msg.className='msg err'; btn.disabled=false; }
 }
 function closeWizard(){
   if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
