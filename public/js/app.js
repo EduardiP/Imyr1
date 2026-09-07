@@ -3289,38 +3289,38 @@ function stepLlogaria(b){
     // Nese i mungon website ose tipi (p.sh. hyri me Google), mblidhi ketu
     if(!une.website || !une.tipi){
       b.innerHTML=
-        '<h2 class="h">Të dhënat e biznesit</h2><p class="small" style="margin:2px 0 14px;">Plotëso këto për të vazhduar.</p>'+
-        '<label>Emri i biznesit (SaaS-it)</label><input id="a_emri" placeholder="Biznesi im" value="'+esc(une.emri||'')+'">'+
-        '<label>Logo (opsionale)</label>'+
+        '<h2 class="h">Your business details</h2><p class="small" style="margin:2px 0 14px;">Fill these in to continue.</p>'+
+        '<label>Business name (your SaaS)</label><input id="a_emri" placeholder="My Business" value="'+esc(une.emri||'')+'">'+
+        '<label>Logo (optional)</label>'+
         '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">'+
           '<div id="a_logoPrev" class="avatar" style="width:52px;height:52px;font-size:22px;overflow:hidden;">'+((une.logo_url)?'<img src="'+esc(une.logo_url)+'" style="width:100%;height:100%;object-fit:cover;">':esc((une.emri||'?').charAt(0).toUpperCase()))+'</div>'+
-          '<label class="btn" style="cursor:pointer;margin:0;">Ngarko<input type="file" id="a_logo" accept="image/*" onchange="ngarkoLogo(this)" style="display:none;"></label>'+
+          '<label class="btn" style="cursor:pointer;margin:0;">Upload<input type="file" id="a_logo" accept="image/*" onchange="ngarkoLogo(this)" style="display:none;"></label>'+
         '</div>'+
-        '<label>Faqja (website)</label><input id="a_web" placeholder="https://saasi-im.com" value="'+esc(une.website||'')+'">'+
+        '<label>Website</label><input id="a_web" placeholder="https://my-saas.com" value="'+esc(une.website||'')+'">'+
         segHTML('a_tipi')+
-        '<label style="margin-top:12px;">Modeli i shpërndarjes</label>'+
+        '<label style="margin-top:12px;">Distribution model</label>'+
         '<div class="seg" id="a_logjika">'+
-          '<button type="button" data-v="ankand" onclick="segPick(this)">Ankand (rekomandohet)</button>'+
-          '<button type="button" data-v="barazi" onclick="segPick(this)">Barazi</button>'+
+          '<button type="button" data-v="ankand" onclick="segPick(this)">Auction (recommended)</button>'+
+          '<button type="button" data-v="barazi" onclick="segPick(this)">Balance</button>'+
         '</div>'+
-        '<button class="primary" id="a_btn" onclick="wizPlotesoBizMeModalitet()">Vazhdo →</button><div class="msg" id="a_msg"></div>';
+        '<button class="primary" id="a_btn" onclick="wizPlotesoBizMeModalitet()">Continue →</button><div class="msg" id="a_msg"></div>';
       if(une.tipi){ const btn=document.querySelector('#a_tipi button[data-v="'+une.tipi+'"]'); if(btn) segPick(btn); }
       const modPreferuar = window.__preferuarModaliteti || 'ankand';
       const modBtn=document.querySelector('#a_logjika button[data-v="'+modPreferuar+'"]'); if(modBtn) segPick(modBtn);
       return;
     }
-    b.innerHTML='<h2 class="h">Biznesi ✓</h2><p class="small">Të dhënat u ruajtën për <b>'+esc(une.emri)+'</b>.</p>'+
-      '<button class="primary" onclick="openWizard(1)">Vazhdo →</button>';
+    b.innerHTML='<h2 class="h">Business ✓</h2><p class="small">Your details were saved for <b>'+esc(une.emri)+'</b>.</p>'+
+      '<button class="primary" onclick="openWizard(1)">Continue →</button>';
     return;
   }
   b.innerHTML=
-    '<h2 class="h">Krijo llogarinë</h2><p class="small">Fillo me të dhënat bazë.</p>'+
-    '<label>Emri i biznesit</label><input id="a_emri" placeholder="Biznesi im">'+
-    '<label>Email</label><input id="a_email" type="email" placeholder="email@biznesi.com">'+
-    '<label>Fjalëkalimi (min 6)</label><input id="a_pass" type="password" placeholder="••••••">'+
-    '<label>Faqja / linku i SaaS-it</label><input id="a_web" placeholder="https://saasi-im.com">'+
+    '<h2 class="h">Create your account</h2><p class="small">Start with the basics.</p>'+
+    '<label>Business name</label><input id="a_emri" placeholder="My Business">'+
+    '<label>Email</label><input id="a_email" type="email" placeholder="email@business.com">'+
+    '<label>Password (min 6)</label><input id="a_pass" type="password" placeholder="••••••">'+
+    '<label>Website / SaaS link</label><input id="a_web" placeholder="https://my-saas.com">'+
     segHTML('a_tipi')+
-    '<button class="primary" id="a_btn" onclick="wizKrijo()">Vazhdo →</button><div class="msg" id="a_msg"></div>';
+    '<button class="primary" id="a_btn" onclick="wizKrijo()">Continue →</button><div class="msg" id="a_msg"></div>';
 }
 async function ngarkoLogo(inp){
   const f=inp.files&&inp.files[0]; if(!f) return;
