@@ -397,7 +397,7 @@ function emailNgarkoGrapes(){
       storageManager: false,
       plugins: ['grapesjs-preset-newsletter'],
       pluginsOpts: { 'grapesjs-preset-newsletter': {} },
-      components: window.emailPermbajtjaHTML || ''
+      components: window.emailPermbajtjaHTML || '<div style="padding:20px;font-family:sans-serif;"><h2>Titulli</h2><p>Shkruaj përmbajtjen këtu…</p></div>'
     });
   }
   if(window.grapesjs && window.__gjsNewsletterLoaded){ fillimi(); return; }
