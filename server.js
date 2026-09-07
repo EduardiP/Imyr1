@@ -2581,7 +2581,7 @@ app.post('/api/admin/email/dergo-manual', iAdmin, async (req, res) => {
   if (!bizIds.length) return res.status(400).json({ error: 'Zgjidh të paktën një biznes.' });
   try {
     const r = await pool.query(`SELECT id, emri, email FROM bizneset WHERE id = ANY($1::int[])`, [bizIds]);
-    let dergu = 0, deshtuar = 0;
+    let dergu = 0, deshtuar = 0, gabimet = [];
     for (const biz of r.rows) {
       let subjekti, html;
       if (b.shablloni === '7dite') {
@@ -2597,9 +2597,9 @@ app.post('/api/admin/email/dergo-manual', iAdmin, async (req, res) => {
       }
       if (!subjekti) { deshtuar++; continue; }
       const rez = await emailModul.dergo({ te: biz.email, subjekti, html });
-      if (rez.ok) dergu++; else deshtuar++;
+      if (rez.ok) dergu++; else { deshtuar++; gabimet.push(biz.emri + ': ' + rez.error); }
     }
-    res.json({ ok: true, dergu, deshtuar });
+    res.json({ ok: true, dergu, deshtuar, gabimet });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 (async () => {
