@@ -153,6 +153,7 @@ const NJOFT_SUB = [
 { k:'pritje', l:'Lista e pritjes — Teams & Roles' },
 { k:'dergo', l:'Dërgo njoftim' },
 { k:'ndryshime', l:'Çfarë të re (publik)' },
+{ k:'email', l:'Dërgo Email' },
 { k:'suport', l:'Suport' }
 ];
 let curNjoftSub = 'kerkesa';
@@ -256,6 +257,7 @@ if(curNjoftSub==='kerkesa'){ renderNjoftKerkesa(m); return; }
 if(curNjoftSub==='pritje'){ renderNjoftPritje(m); return; }
 if(curNjoftSub==='dergo'){ renderNjoftDergo(m); return; }
 if(curNjoftSub==='ndryshime'){ renderNjoftNdryshime(m); return; }
+if(curNjoftSub==='email'){ renderNjoftEmail(m); return; }
 if(curNjoftSub==='suport'){ renderSuportKerkesat(m); return; }
 }
 function renderNjoftKerkesa(m){
@@ -310,6 +312,88 @@ try{
 njBizneset = await(await fetch('/api/admin/njoftime/bizneset')).json();
 njRenderLista();
 }catch(e){ $('njLista').innerHTML='<p class="small" style="padding:14px;">Gabim.</p>'; }
+}
+let emailZgjedhurit = new Set();
+let emailModaliteti = 'zero'; // 'zero' ose 'shabllon'
+let emailShablloniZgjedhur = null; // '7dite' ose '3muaj'
+async function renderNjoftEmail(m){
+m.innerHTML=
+'<h2 class="h">Dërgo Email</h2>'+
+'<p class="small" style="margin:2px 0 18px;">Dërgo email real (Gmail/Workspace) te një ose disa biznese — nga zero, ose me shabllon të gatshëm.</p>'+
+'<div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px;">'+
+  '<div class="card" style="flex:1;min-width:280px;cursor:pointer;" id="emailKutiaZero" onclick="emailZgjidhModalitet(\'zero\')">'+
+    '<h3 class="h" style="font-size:15px;margin:0 0 10px;">✏️ Nga zero</h3>'+
+    '<div id="emailFormaZero"></div>'+
+  '</div>'+
+  '<div class="card" style="flex:1;min-width:280px;">'+
+    '<h3 class="h" style="font-size:15px;margin:0 0 10px;">📄 Shabllone të gatshëm</h3>'+
+    '<div style="display:flex;flex-direction:column;gap:10px;" id="emailShabllonet"></div>'+
+  '</div>'+
+'</div>'+
+'<h3 class="h" style="font-size:15px;margin:0 0 10px;">Zgjidh marrësit</h3>'+
+'<div id="emailBiznesetCarousel" style="display:flex;gap:10px;overflow-x:auto;padding:6px 2px 14px;"><p class="small">Po ngarkoj…</p></div>'+
+'<button class="primary" style="max-width:260px;" onclick="emailDergoManual(this)">Dërgo email-in</button>'+
+'<span class="small" id="emailStat" style="margin-left:10px;"></span>';
+emailZgjedhurit = new Set(); emailModaliteti='zero'; emailShablloniZgjedhur=null;
+emailRenderFormaZero();
+emailRenderShabllonet();
+try{
+  const r = await (await fetch('/api/admin/email/bizneset')).json();
+  const el = $('emailBiznesetCarousel');
+  const rows = r.bizneset||[];
+  if(!rows.length){ el.innerHTML='<p class="small mut">Ende s\'ka biznese me email.</p>'; return; }
+  el.innerHTML = rows.map(b=>
+    '<div id="emailBiz'+b.id+'" onclick="emailToggleBiz('+b.id+')" style="flex:0 0 auto;width:110px;padding:10px;border-radius:10px;border:1px solid var(--line);cursor:pointer;text-align:center;">'+
+      '<div style="width:36px;height:36px;border-radius:50%;background:var(--acc);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;margin:0 auto 6px;overflow:hidden;">'+
+        (b.logo_url ? '<img src="'+esc(b.logo_url)+'" style="width:100%;height:100%;object-fit:cover;">' : esc((b.emri||'?').charAt(0).toUpperCase()))+
+      '</div>'+
+      '<div class="small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(b.emri||'')+'</div>'+
+    '</div>'
+  ).join('');
+}catch(e){ $('emailBiznesetCarousel').innerHTML='<p class="small">Gabim.</p>'; }
+}
+function emailRenderFormaZero(){
+const el=$('emailFormaZero'); if(!el) return;
+const aktiv = emailModaliteti==='zero';
+el.innerHTML =
+'<label class="small">Titulli</label><input id="emailSubjZero" placeholder="Titulli i email-it" onclick="event.stopPropagation();emailZgjidhModalitet(\'zero\')">'+
+'<label class="small" style="margin-top:8px;">Përmbajtja</label><textarea id="emailPermZero" placeholder="Teksti i email-it" style="min-height:100px;" onclick="event.stopPropagation();emailZgjidhModalitet(\'zero\')"></textarea>';
+$('emailKutiaZero').style.borderColor = aktiv ? 'var(--acc)' : 'var(--line)';
+}
+function emailRenderShabllonet(){
+const el=$('emailShabllonet'); if(!el) return;
+const opsionet=[{k:'7dite',l:'7 ditë — Lidh snippet-in',ngjyra:'#3b6ef0'},{k:'3muaj',l:'3 muaj — Aktivizo planin',ngjyra:'#f59e0b'}];
+el.innerHTML = opsionet.map(o=>{
+  const sel = emailModaliteti==='shabllon' && emailShablloniZgjedhur===o.k;
+  return '<button onclick="emailZgjidhShabllon(\''+o.k+'\')" style="text-align:left;padding:12px;border-radius:10px;border:1px solid '+(sel?o.ngjyra:'var(--line)')+';background:'+(sel?o.ngjyra+'18':'transparent')+';color:var(--txt);cursor:pointer;font-family:inherit;">'+esc(o.l)+'</button>';
+}).join('');
+}
+function emailZgjidhModalitet(m){ emailModaliteti=m; if(m==='zero') emailShablloniZgjedhur=null; emailRenderFormaZero(); emailRenderShabllonet(); }
+function emailZgjidhShabllon(k){ emailModaliteti='shabllon'; emailShablloniZgjedhur=k; emailRenderFormaZero(); emailRenderShabllonet(); }
+function emailToggleBiz(id){
+const el=$('emailBiz'+id); if(!el) return;
+if(emailZgjedhurit.has(id)){ emailZgjedhurit.delete(id); el.style.borderColor='var(--line)'; el.style.background='transparent'; }
+else{ emailZgjedhurit.add(id); el.style.borderColor='var(--acc)'; el.style.background='rgba(59,110,240,.1)'; }
+}
+async function emailDergoManual(btn){
+const stat=$('emailStat');
+if(!emailZgjedhurit.size){ stat.textContent='Zgjidh të paktën 1 biznes.'; return; }
+const trupi = { biznes_ids: Array.from(emailZgjedhurit) };
+if(emailModaliteti==='shabllon'){
+  if(!emailShablloniZgjedhur){ stat.textContent='Zgjidh një shabllon.'; return; }
+  trupi.shabllon = emailShablloniZgjedhur;
+} else {
+  trupi.subjekti = ($('emailSubjZero')||{}).value||'';
+  trupi.permbajtja = ($('emailPermZero')||{}).value||'';
+  if(!trupi.subjekti.trim()){ stat.textContent='Shkruaj titullin.'; return; }
+}
+btn.disabled=true; stat.textContent='Po dërgoj…';
+try{
+  const r = await (await fetch('/api/admin/email/dergo-manual',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(trupi)})).json();
+  if(r.error){ stat.textContent=r.error; btn.disabled=false; return; }
+  stat.textContent='✓ U dërguan '+r.dergu+' email-e'+(r.deshtuar?(', '+r.deshtuar+' dështuan'):'')+'.';
+}catch(e){ stat.textContent='Gabim: '+e.message; }
+btn.disabled=false;
 }
 function renderNjoftNdryshime(m){
 m.innerHTML=
