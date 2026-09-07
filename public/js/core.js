@@ -48,11 +48,11 @@ function pasHyrjes(){
 function stateToUrl(s){
   if(!s) return '/';
   if(s.v==='hero') return '/';
-  if(s.v==='wizard') return '/fillo' + (s.step ? '/'+s.step : '');
-  if(s.v==='home') return '/fillim';
+  if(s.v==='wizard') return '/start' + (s.step ? '/'+s.step : '');
+  if(s.v==='home') return '/welcome';
   if(s.v==='analitika-full') return '/analytics';
   if(s.v==='ekipi') return '/ekipi';
-  if(s.v==='zgjedhja') return '/fillo/zgjedh';
+  if(s.v==='zgjedhja') return '/start/choose';
   if(s.v!=='profile') return '/';
 
   const n = s.nav || 'dashboard';
@@ -95,9 +95,9 @@ function urlToState(pathname){
   if(p==='/'||p==='') return null;
   if(p==='/analytics') return {v:'analitika-full'};
   if(p==='/ekipi') return {v:'ekipi'};
-  if(p==='/fillim') return {v:'home'};
-  if(p==='/fillo/zgjedh') return {v:'zgjedhja'};
-  if(p.indexOf('/fillo')===0){
+  if(p==='/welcome') return {v:'home'};
+  if(p==='/start/choose') return {v:'zgjedhja'};
+  if(p.indexOf('/start')===0){
     const parts=p.split('/'); const step=parseInt(parts[2],10);
     return {v:'wizard', step:isNaN(step)?0:step};
   }
