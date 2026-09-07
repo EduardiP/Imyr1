@@ -133,6 +133,7 @@ app.post('/api/regjistrohu', async (req, res) => {
   const tipi = ['b2b','b2c','b2b2c'].includes(req.body.tipi) ? req.body.tipi : null;
   const logjika = ['ankand','barazi'].includes(req.body.logjika_shperndarjes) ? req.body.logjika_shperndarjes : 'ankand';
   const oferta = !!req.body.oferta;
+  const lejonPromovim = !!req.body.lejonPromovim;
   if (!emri || !email || !fjalekalimi) {
     return res.status(400).json({ error: 'Emri, email dhe fjalekalimi jane te detyrueshem.' });
   }
@@ -143,12 +144,13 @@ app.post('/api/regjistrohu', async (req, res) => {
     return res.status(400).json({ error: 'Fjalekalimi duhet te kete te pakten 6 shkronja.' });
   }
   try {
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pranoi_promovim_platforme BOOLEAN NOT NULL DEFAULT false`);
     const hash = await bcrypt.hash(fjalekalimi, 10);
     const celes = beCeles();
     const r = await pool.query(
-      `INSERT INTO bizneset (emri, email, fjalekalimi, kategoria, website, celes, tipi, logjika_shperndarjes, pranoi_kushtet, pranoi_oferta, pranoi_kushtet_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,true,$9,now()) RETURNING id`,
-      [emri, email.toLowerCase().trim(), hash, kategoria || null, website || null, celes, tipi, logjika, oferta]
+      `INSERT INTO bizneset (emri, email, fjalekalimi, kategoria, website, celes, tipi, logjika_shperndarjes, pranoi_kushtet, pranoi_oferta, pranoi_promovim_platforme, pranoi_kushtet_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,true,$9,$10,now()) RETURNING id`,
+      [emri, email.toLowerCase().trim(), hash, kategoria || null, website || null, celes, tipi, logjika, oferta, lejonPromovim]
     );
     // krijo seance (login automatik pas regjistrimit)
     const token = crypto.randomBytes(24).toString('hex');
@@ -296,7 +298,9 @@ app.post('/api/google-prano', async (req, res) => {
   if (!req.body.kushtet) return res.status(400).json({ error: 'Duhet të pranosh Kushtet dhe Privatësinë.' });
   const { email, emri } = googlePending[p];
   const oferta = !!req.body.oferta;
+  const lejonPromovim = !!req.body.lejonPromovim;
   try {
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pranoi_promovim_platforme BOOLEAN NOT NULL DEFAULT false`);
     // Nese u krijua ndermjet kohes, thjesht hyr
     let biz = await pool.query('SELECT id FROM bizneset WHERE email=$1', [email]);
     let bizId;
@@ -305,9 +309,9 @@ app.post('/api/google-prano', async (req, res) => {
     } else {
       const celes = beCeles();
       const ins = await pool.query(
-        `INSERT INTO bizneset (emri, email, fjalekalimi, celes, pranoi_kushtet, pranoi_oferta, pranoi_kushtet_at)
-         VALUES ($1,$2,$3,$4,true,$5,now()) RETURNING id`,
-        [emri, email, null, celes, oferta]);
+        `INSERT INTO bizneset (emri, email, fjalekalimi, celes, pranoi_kushtet, pranoi_oferta, pranoi_promovim_platforme, pranoi_kushtet_at)
+         VALUES ($1,$2,$3,$4,true,$5,$6,now()) RETURNING id`,
+        [emri, email, null, celes, oferta, lejonPromovim]);
       bizId = ins.rows[0].id;
     }
     delete googlePending[p];
