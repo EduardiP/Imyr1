@@ -3439,13 +3439,15 @@ function stepLidhja(b){
     '<p class="small">Copy this line and place it anywhere on your site (e.g. the footer).</p>'+
     '<div id="connectWrap"></div>'+
     '<div id="claudeSuportWiz" style="margin:14px 0;"></div>'+
-    '<div style="margin-top:14px;"><a href="#" id="caktoLink" style="color:#4a9eff;text-decoration:none;font-size:14px;" '+
-      'onclick="event.preventDefault();var x=document.getElementById(\'madhBox\');x.classList.toggle(\'hide\');if(!x.dataset.ngarkuar){x.dataset.ngarkuar=1;ndertoMadhesine(x,false);}">Set the ad space size</a></div>'+
-    '<div id="madhBox" class="hide" style="margin-top:12px;"></div>'+
+    '<div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--line);">'+
+      '<div class="small" style="font-weight:600;margin-bottom:4px;">Ad space size <span class="mut" style="font-weight:400;">(optional — leave as-is to use the standard size)</span></div>'+
+      '<div id="madhBox" style="margin-top:12px;"></div>'+
+    '</div>'+
     '<button class="primary hide" id="lidhNext" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">Create your ad →</button>';
   window.__onLidhur = ()=>{ renderHStep(); $('lidhNext').classList.remove('hide'); };
   connectUI($('connectWrap'));
   vizatoClaudeSuport('Wiz');
   _snipAktiv=null;   // te wizard-i, madhesia ruhet per-biznes
+  ndertoMadhesine($('madhBox'), false);
   if(prog.lidhja){ $('lidhNext').classList.remove('hide'); }
 }
