@@ -3450,9 +3450,29 @@ async function stepLidhja(b){
   _snipAktiv=null;   // te wizard-i, madhesia ruhet per-biznes
   await ndertoMadhesine($('madhBox'), false); // ngarkon te dhenat + ndertim UI ne sfond; kutia mbetet vizualisht e fshehur derisa te klikohet linku
   // Zhvendos FIZIKISHT butonin origjinal "Save" (+ mesazhin e tij) jashte madhBox-it,
-  // te fundi — 1 buton i vetem, gjithmone i dukshem, i njejti id/onclick/dizajn origjinal.
+  // te fundi — 1 buton i vetem, gjithmone i dukshem, i njejti id/dizajn origjinal, POR
+  // brenda wizard-it ky buton bashkon: ruajtjen e madhesise + verifikimin e lidhjes,
+  // duke perdorur website-in e njohur (une.website), pa kerkuar hapa shtese nga klienti.
   const madhRuajBtn=$('madhRuaj'), madhMsgEl=$('madhMsg'), fundi=$('madhRuajFund');
-  if(madhRuajBtn && fundi){ fundi.appendChild(madhRuajBtn); }
+  if(madhRuajBtn && fundi){
+    fundi.appendChild(madhRuajBtn);
+    madhRuajBtn.textContent='Save & verify connection';
+    madhRuajBtn.onclick = async function(){
+      madhRuajBtn.disabled=true;
+      if(madhMsgEl){ madhMsgEl.className='msg'; madhMsgEl.textContent='Saving size…'; }
+      try{
+        const trupi = { desktop:_mad.w+'x'+_mad.h, mobile:_mad.mw+'x'+_mad.mh, pozicioni:_mad.pozicioni };
+        await fetch('/api/madhesia',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(trupi)});
+      }catch(e){}
+      let url=(une.website||'').trim();
+      if(!url){ if(madhMsgEl){ madhMsgEl.className='msg err'; madhMsgEl.textContent='Add your website URL in Step 1 first.'; } madhRuajBtn.disabled=false; return; }
+      if(!/^https?:\/\//i.test(url)) url='https://'+url;
+      window.open(url,'_blank');
+      if(madhMsgEl){ madhMsgEl.className='msg'; madhMsgEl.innerHTML='✓ Size saved. ⏳ Waiting for the connection signal…'; }
+      startPolling(window.__onLidhur);
+      madhRuajBtn.disabled=false;
+    };
+  }
   if(madhMsgEl && fundi){ fundi.appendChild(madhMsgEl); }
   if(prog.lidhja){ $('lidhNext').classList.remove('hide'); }
 }
