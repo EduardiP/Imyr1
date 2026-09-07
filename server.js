@@ -2595,7 +2595,7 @@ app.post('/api/admin/email/dergo-manual', iAdmin, async (req, res) => {
           <div>${(b.permbajtja || '').replace(/\n/g, '<br>')}</div>
           <p style="color:#888;font-size:13px;margin-top:24px;">PhronexusAI</p></div>`;
       }
-      if (!subjekti) { deshtuar++; continue; }
+      if (!subjekti) { deshtuar++; gabimet.push(biz.emri + ': subjekti/shablloni erdhi bosh (shabllon="' + b.shabllon + '")'); continue; }
       const rez = await emailModul.dergo({ te: biz.email, subjekti, html });
       if (rez.ok) dergu++; else { deshtuar++; gabimet.push(biz.emri + ': ' + rez.error); }
     }
