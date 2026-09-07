@@ -3444,7 +3444,7 @@ async function vazhdoPershkrim(){
 }
 
 // STEP 2 — Lidhja (përdor connect.js). Pas lidhjes → Creatives + Create.
-function stepLidhja(b){
+async function stepLidhja(b){
   b.innerHTML=
     '<h2 class="h">Connect Imyr to your website</h2>'+
     '<p class="small">Copy this line and place it anywhere on your site (e.g. the footer).</p>'+
@@ -3462,6 +3462,7 @@ function stepLidhja(b){
   connectUI($('connectWrap'));
   vizatoClaudeSuport('Wiz');
   _snipAktiv=null;   // te wizard-i, madhesia ruhet per-biznes
-  ndertoMadhesine($('madhBox'), false); // ngarkon te dhenat + ndertim UI ne sfond; kutia mbetet vizualisht e fshehur derisa te klikohet linku
+  await ndertoMadhesine($('madhBox'), false); // ngarkon te dhenat + ndertim UI ne sfond; kutia mbetet vizualisht e fshehur derisa te klikohet linku
+  const madhRuajBrenda=$('madhRuaj'); if(madhRuajBrenda) madhRuajBrenda.style.display='none'; // 1 SAVE i vetem — jashte, jo ky i brendshem
   if(prog.lidhja){ $('lidhNext').classList.remove('hide'); }
 }
