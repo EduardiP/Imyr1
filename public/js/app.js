@@ -2066,7 +2066,7 @@ async function ndertoMadhesine(cont, ruajVetem, snipCeles, snipData){
     '<div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start;">'+
       '<div id="madhDesktop" style="flex:1 1 320px;"></div>'+
       '<div style="flex:1 1 260px;">'+
-        '<div class="small" style="margin-bottom:10px;font-weight:600;color:var(--txt);">Aplikoje te këto hapësira</div>'+
+        '<div class="small" style="margin-bottom:10px;font-weight:600;color:var(--txt);">Apply to these spaces</div>'+
         '<div id="madhSnipLista"></div>'+
       '</div>'+
     '</div>'+
@@ -2166,6 +2166,17 @@ function madhLidhTerheqjen(){
   document.addEventListener('touchmove', levize, {passive:false});
   document.addEventListener('mouseup', ndal);
   document.addEventListener('touchend', ndal);
+}
+async function ruajMadhesineWiz(btn){
+  if(btn) btn.disabled=true;
+  const elMsg=$('madhMsgJashte'); if(elMsg) elMsg.textContent='Saving…';
+  const trupi = { desktop:_mad.w+'x'+_mad.h, mobile:_mad.mw+'x'+_mad.mh, pozicioni:_mad.pozicioni };
+  try{
+    const r=await(await fetch('/api/madhesia',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(trupi)})).json();
+    if(elMsg) elMsg.textContent = r.error ? r.error : '✓ Saved';
+  }catch(e){ if(elMsg) elMsg.textContent='Error: '+e.message; }
+  if(btn) btn.disabled=false;
 }
 async function ruajMadhesine(){
   const btn=$('madhRuaj'); if(btn) btn.disabled=true;
@@ -3439,15 +3450,18 @@ function stepLidhja(b){
     '<p class="small">Copy this line and place it anywhere on your site (e.g. the footer).</p>'+
     '<div id="connectWrap"></div>'+
     '<div id="claudeSuportWiz" style="margin:14px 0;"></div>'+
-    '<div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--line);">'+
-      '<div class="small" style="font-weight:600;margin-bottom:4px;">Ad space size <span class="mut" style="font-weight:400;">(optional — leave as-is to use the standard size)</span></div>'+
-      '<div id="madhBox" style="margin-top:12px;"></div>'+
+    '<div style="margin-top:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">'+
+      '<a href="#" id="caktoLink" style="color:#4a9eff;text-decoration:none;font-size:14px;" '+
+        'onclick="event.preventDefault();var x=document.getElementById(\'madhBox\');x.classList.toggle(\'hide\');">Set the ad space size</a>'+
+      '<button class="btn" id="madhRuajJashte" onclick="ruajMadhesineWiz(this)" style="padding:6px 16px;font-size:13px;">Save size</button>'+
+      '<span class="small mut" id="madhMsgJashte"></span>'+
     '</div>'+
+    '<div id="madhBox" class="hide" style="margin-top:12px;"></div>'+
     '<button class="primary hide" id="lidhNext" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">Create your ad →</button>';
   window.__onLidhur = ()=>{ renderHStep(); $('lidhNext').classList.remove('hide'); };
   connectUI($('connectWrap'));
   vizatoClaudeSuport('Wiz');
   _snipAktiv=null;   // te wizard-i, madhesia ruhet per-biznes
-  ndertoMadhesine($('madhBox'), false);
+  ndertoMadhesine($('madhBox'), false); // ngarkon te dhenat + ndertim UI ne sfond; kutia mbetet vizualisht e fshehur derisa te klikohet linku
   if(prog.lidhja){ $('lidhNext').classList.remove('hide'); }
 }
