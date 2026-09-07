@@ -355,10 +355,79 @@ try{
 function emailRenderFormaZero(){
 const el=$('emailFormaZero'); if(!el) return;
 const aktiv = emailModaliteti==='zero';
+const kaPermbajtje = !!(window.emailPermbajtjaHTML && window.emailPermbajtjaHTML.trim());
 el.innerHTML =
 '<label class="small">Titulli</label><input id="emailSubjZero" placeholder="Titulli i email-it" onclick="event.stopPropagation();emailZgjidhModalitet(\'zero\')">'+
-'<label class="small" style="margin-top:8px;">Përmbajtja</label><textarea id="emailPermZero" placeholder="Teksti i email-it" style="min-height:100px;" onclick="event.stopPropagation();emailZgjidhModalitet(\'zero\')"></textarea>';
+'<label class="small" style="margin-top:8px;">Përmbajtja</label>'+
+'<button type="button" class="btn" style="width:100%;margin-top:4px;" onclick="event.stopPropagation();emailZgjidhModalitet(\'zero\');emailHapRedaktues();">'+
+  (kaPermbajtje ? '✓ Redakto përmbajtjen (e krijuar)' : '✏️ Hap redaktuesin')+
+'</button>';
 $('emailKutiaZero').style.borderColor = aktiv ? 'var(--acc)' : 'var(--line)';
+}
+var emailGjsEditor = null;
+function emailHapRedaktues(){
+  var overlay = document.createElement('div');
+  overlay.id = 'emailGjsOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10000;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML =
+    '<div style="width:min(1100px,96vw);height:min(720px,92vh);background:#12151b;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);">'+
+        '<span style="font-weight:600;">Redakto email-in</span>'+
+        '<div>'+
+          '<button class="primary" style="margin-right:8px;" onclick="emailRuajRedaktimin()">💾 Ruaj</button>'+
+          '<button class="btn" onclick="emailMbyllRedaktues()">✕ Mbyll</button>'+
+        '</div>'+
+      '</div>'+
+      '<div id="emailGjsMount" style="flex:1;min-height:0;"></div>'+
+    '</div>';
+  document.body.appendChild(overlay);
+  emailNgarkoGrapes();
+}
+function emailMbyllRedaktues(){
+  if(emailGjsEditor){ try{ emailGjsEditor.destroy(); }catch(e){} emailGjsEditor=null; }
+  var ov=$('emailGjsOverlay'); if(ov) ov.remove();
+}
+function emailNgarkoGrapes(){
+  function fillimi(){
+    var mount=$('emailGjsMount'); if(!mount) return;
+    emailGjsEditor = grapesjs.init({
+      container: mount,
+      height: '100%',
+      fromElement: false,
+      storageManager: false,
+      plugins: ['grapesjs-preset-newsletter'],
+      pluginsOpts: { 'grapesjs-preset-newsletter': {} },
+      components: window.emailPermbajtjaHTML || '<div style="padding:20px;font-family:sans-serif;"><h2>Titulli</h2><p>Shkruaj përmbajtjen këtu…</p></div>'
+    });
+  }
+  if(window.grapesjs && window.__gjsNewsletterLoaded){ fillimi(); return; }
+  var link=document.createElement('link');
+  link.rel='stylesheet';
+  link.href='https://unpkg.com/grapesjs/dist/css/grapes.min.css';
+  document.head.appendChild(link);
+  var link2=document.createElement('link');
+  link2.rel='stylesheet';
+  link2.href='https://unpkg.com/grapesjs-preset-newsletter/dist/grapesjs-preset-newsletter.min.css';
+  document.head.appendChild(link2);
+  var script=document.createElement('script');
+  script.src='https://unpkg.com/grapesjs';
+  script.onload=function(){
+    var script2=document.createElement('script');
+    script2.src='https://unpkg.com/grapesjs-preset-newsletter';
+    script2.onload=function(){ window.__gjsNewsletterLoaded=true; fillimi(); };
+    script2.onerror=function(){ var m=$('emailGjsMount'); if(m) m.innerHTML='<p class="small" style="padding:20px;">Gabim: s\'u ngarkua shtojca "newsletter".</p>'; };
+    document.head.appendChild(script2);
+  };
+  script.onerror=function(){ var m=$('emailGjsMount'); if(m) m.innerHTML='<p class="small" style="padding:20px;">Gabim: s\'u ngarkua redaktuesi.</p>'; };
+  document.head.appendChild(script);
+}
+function emailRuajRedaktimin(){
+  if(!emailGjsEditor) return;
+  var html = emailGjsEditor.getHtml();
+  var css = emailGjsEditor.getCss();
+  window.emailPermbajtjaHTML = '<style>'+css+'</style>'+html;
+  emailMbyllRedaktues();
+  emailRenderFormaZero();
 }
 function emailRenderShabllonet(){
 const el=$('emailShabllonet'); if(!el) return;
@@ -384,8 +453,9 @@ if(emailModaliteti==='shabllon'){
   trupi.shabllon = emailShablloniZgjedhur;
 } else {
   trupi.subjekti = ($('emailSubjZero')||{}).value||'';
-  trupi.permbajtja = ($('emailPermZero')||{}).value||'';
+  trupi.permbajtja_html = window.emailPermbajtjaHTML || '';
   if(!trupi.subjekti.trim()){ stat.textContent='Shkruaj titullin.'; return; }
+  if(!trupi.permbajtja_html.trim()){ stat.textContent='Hap redaktuesin dhe shto përmbajtje.'; return; }
 }
 btn.disabled=true; stat.textContent='Po dërgoj…';
 try{
