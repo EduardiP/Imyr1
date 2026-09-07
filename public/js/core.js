@@ -21,11 +21,11 @@ const NAV = [
 function esc(t){ const d=document.createElement('div'); d.textContent=(t==null?'':t); return d.innerHTML; }
 function segPick(btn){ const box=btn.parentNode; box.querySelectorAll('button').forEach(b=>b.classList.remove('sel')); btn.classList.add('sel'); }
 function segVal(id){ const s=document.querySelector('#'+id+' button.sel'); return s ? s.getAttribute('data-v') : null; }
-function segHTML(id){ return '<label>Kujt nga vizitorët e faqes tënde u shërben platforma?</label>'+
+function segHTML(id){ return '<label>Who among your website\'s visitors does the platform serve?</label>'+
   '<div class="seg" id="'+id+'">'+
-    '<button type="button" data-v="b2b" onclick="segPick(this)">Bizneseve</button>'+
-    '<button type="button" data-v="b2c" onclick="segPick(this)">Individëve</button>'+
-    '<button type="button" data-v="b2b2c" onclick="segPick(this)">Të dyjave</button>'+
+    '<button type="button" data-v="b2b" onclick="segPick(this)">Businesses</button>'+
+    '<button type="button" data-v="b2c" onclick="segPick(this)">Individuals</button>'+
+    '<button type="button" data-v="b2b2c" onclick="segPick(this)">Both</button>'+
   '</div>'; }
 function showView(v){ ['hero','home','wizard','profile','analitika-full','ekipi','zgjedhja'].forEach(x=>{ const el=$('v-'+x); if(el) el.classList.toggle('on', x===v); }); }
 
