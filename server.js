@@ -2590,10 +2590,7 @@ app.post('/api/admin/email/dergo-manual', iAdmin, async (req, res) => {
         const sh = emailModul.shablloniPagesa3Muaj(biz.emri); subjekti = sh.subjekti; html = sh.html;
       } else {
         subjekti = (b.subjekti || '').trim();
-        html = `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:20px;">
-          <h2 style="color:#3b6ef0;">Përshëndetje, ${biz.emri}!</h2>
-          <div>${(b.permbajtja || '').replace(/\n/g, '<br>')}</div>
-          <p style="color:#888;font-size:13px;margin-top:24px;">PhronexusAI</p></div>`;
+        html = b.permbajtja_html || '';
       }
       if (!subjekti) { deshtuar++; gabimet.push(biz.emri + ': subjekti/shablloni erdhi bosh (shabllon="' + b.shabllon + '")'); continue; }
       const rez = await emailModul.dergo({ te: biz.email, subjekti, html });
