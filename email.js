@@ -15,8 +15,8 @@ function merrTransporter() {
   }
   transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
+    port: 587,
+    secure: false, // port 587 perdor STARTTLS, jo TLS direkte si 465
     auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD },
     connectionTimeout: 10000, // 10s per te lidhur me serverin
     greetingTimeout: 10000,
