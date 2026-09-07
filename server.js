@@ -2424,7 +2424,8 @@ app.post('/api/analizo', iLoguar, async (req, res) => {
       '{"kategoria_kryesore": string (SAKTESISHT nje nga lista), ' +
       '"nenkategorite": string[] (2-4 nenkategori specifike), ' +
       '"permbledhje": string (2-4 fjali te qarta qe shpjegojne cfare ofron biznesi dhe kujt i sherben, ' +
-      'me gjuhe te thjeshte, te shkruara ashtu qe nje algoritem te gjeje me cilat sherbime plotesuese mund te cohet)}';
+      'me gjuhe te thjeshte, te shkruara ashtu qe nje algoritem te gjeje me cilat sherbime plotesuese mund te cohet. ' +
+      'SHKRUAJE fushen "permbledhje" GJITHMONE NE ANGLISHT, PAVARESISHT nga gjuha e pershkrimit/tekstit te dhene si input.)}';
 
     let parsed = {};
     try {
