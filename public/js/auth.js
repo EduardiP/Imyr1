@@ -31,7 +31,7 @@ async function regjistrohu(){
   try{
     if(!$('r_kushte').checked){ msg('Pranoni Kushtet dhe Privatësinë për të vazhduar.'); $('btnReg').disabled=false; return; }
     const body={emri:$('r_emri').value.trim(),email:$('r_email').value.trim(),fjalekalimi:$('r_pass').value,
-      kushtet:true, oferta:$('r_oferta').checked};
+      kushtet:true, oferta:$('r_oferta').checked, lejonPromovim:$('r_promovim').checked};
     if(!body.emri||!body.email||!body.fjalekalimi){ msg('Plotëso emrin, email-in dhe fjalëkalimin.'); $('btnReg').disabled=false; return; }
     const r=await(await fetch('/api/regjistrohu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
     if(r.error){ msg(r.error); $('btnReg').disabled=false; return; }
@@ -54,7 +54,7 @@ async function pranoGoogle(){
   $('gk_btn').disabled=true;
   try{
     const r=await(await fetch('/api/google-prano',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({kushtet:true, oferta:$('gk_oferta').checked})})).json();
+      body:JSON.stringify({kushtet:true, oferta:$('gk_oferta').checked, lejonPromovim:$('gk_promovim').checked})})).json();
     if(r.error){ const m=$('gk_msg'); m.className='msg err'; m.textContent=r.error; $('gk_btn').disabled=false; return; }
     $('modalKushte').classList.add('hide');
     await loadMe(); nav(pasHyrjes());
