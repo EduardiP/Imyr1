@@ -3,9 +3,9 @@ const $ = id => document.getElementById(id);
 let pollTimer = null, prog = null, une = null, curStep = 0, curNav = 'dashboard';
 
 const STEPS = [
-  { key:'llogaria',   label:'Biznesi' },
-  { key:'pershkrimi', label:'Përshkrimi' },
-  { key:'lidhja',     label:'Lidhja' }
+  { key:'llogaria',   label:'Business' },
+  { key:'pershkrimi', label:'Description' },
+  { key:'lidhja',     label:'Connection' }
 ];
 const NAV = [
 { k:'dashboard', l:'Dashboard' },
