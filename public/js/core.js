@@ -9,13 +9,13 @@ const STEPS = [
 ];
 const NAV = [
 { k:'dashboard', l:'Dashboard' },
-{ k:'snippetet', l:'Hapësira e reklamave' },
+{ k:'snippetet', l:'Ad Space' },
 { k:'kreative', l:'Creative' },
 { k:'reklamat', l:'My Ads' },
-{ k:'konvertimet', l:'Konvertimet' },
+{ k:'konvertimet', l:'Conversions' },
 { k:'analytics', l:'Analytics' },
-{ k:'plani', l:'Plani', ndaresi:true },
-{ k:'suport', l:'Ndihmë & Suport' }
+{ k:'plani', l:'Plan', ndaresi:true },
+{ k:'suport', l:'Help & Support' }
 ];
 
 function esc(t){ const d=document.createElement('div'); d.textContent=(t==null?'':t); return d.innerHTML; }
