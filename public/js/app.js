@@ -733,55 +733,55 @@ async function mainNjoftimet(m){
   }catch(e){ $('njLista').innerHTML='<p class="small">Gabim.</p>'; }
 }
 const DASH_QUICK_ACTIONS = [
-  { label:'Krijo reklamë', desc:'Shto reklamë të re', accent:'#3b6ef0',
+  { label:'Create an ad', desc:'Add a new ad', accent:'#3b6ef0',
     icon:'<path d="M3 11l18-5-5 18-4-8-9-5z"/>',
     onclick:"nav({v:'profile',nav:'reklamat',sub:'create'})" },
-  { label:'Lidh & gjurmo konvertimet', desc:'Konfiguro gjurmimin', accent:'#22d3ee',
+  { label:'Connect & track conversions', desc:'Set up tracking', accent:'#22d3ee',
     icon:'<path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L11.5 4.5"/><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l1.36-1.36"/>',
     onclick:"nav({v:'profile',nav:'konvertimet'})" },
-  { label:'Analytics', desc:'Trafiku & performanca', accent:'#a78bfa',
+  { label:'Analytics', desc:'Traffic & performance', accent:'#a78bfa',
     icon:'<line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/>',
     onclick:"nav({v:'profile',nav:'anaTrafiku'})" },
-  { label:'Upgrado planin', desc:'Shfaq të gjitha avantazhet →', accent:'#f59e0b',
+  { label:'Upgrade plan', desc:'See all the benefits →', accent:'#f59e0b',
     icon:'<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
     onclick:"nav({v:'profile',nav:'plani'})" }
 ];
 function mainDashboard(m){
   if(window.__llogariaModaliteti==='barazi') return mainDashboardBalance(m);
-  m.innerHTML='<h2 class="h">Statusi i llogarisë</h2>'+
-    '<p class="small" style="margin:2px 0 18px;">Këto tregojnë çfarë është gati dhe çfarë jo. Kliko një rresht për ta plotësuar.</p>'+
+  m.innerHTML='<h2 class="h">Account status</h2>'+
+    '<p class="small" style="margin:2px 0 18px;">These show what\'s ready and what isn\'t. Click a row to complete it.</p>'+
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;">'+
       '<div class="card" style="flex:0 0 auto;">'+
         '<div class="vstep" id="vstep" style="display:flex;flex-direction:column;"></div>'+
       '</div>'+
       '<div class="card" id="dashAnalitika" style="flex:1;min-width:280px;cursor:pointer;">'+
-        '<p class="small">Po ngarkoj…</p>'+
+        '<p class="small">Loading…</p>'+
       '</div>'+
     '</div>'+
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
       '<div class="card" id="dashReklamat" style="flex:1.6;min-width:300px;cursor:pointer;">'+
-        '<h3 class="h" style="font-size:15px;margin:0 0 10px;">Reklamat</h3>'+
-        '<div id="dashReklamatList"><p class="small">Po ngarkoj…</p></div>'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 10px;">Ads</h3>'+
+        '<div id="dashReklamatList"><p class="small">Loading…</p></div>'+
       '</div>'+
       '<div class="card" id="dashKategori" style="flex:1;min-width:220px;">'+
-        '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Kategoritë e bizneseve</h3>'+
-        '<p class="small mut" style="margin:0 0 10px;">Ku janë ngarkuar reklamat tuaja.</p>'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Business categories</h3>'+
+        '<p class="small mut" style="margin:0 0 10px;">Where your ads have been uploaded.</p>'+
         '<div style="position:relative;margin-bottom:12px;">'+
-          '<button type="button" id="dashKatRekBtn" class="btn" style="width:100%;">Reklamat <span id="dashKatRekBtnCount"></span> ▾</button>'+
+          '<button type="button" id="dashKatRekBtn" class="btn" style="width:100%;">Ads <span id="dashKatRekBtnCount"></span> ▾</button>'+
           '<div id="dashKatRekDropdown" class="hide" style="position:absolute;top:110%;left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;max-height:220px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
         '</div>'+
-        '<div id="dashKategoriLista" style="max-height:140px;overflow-y:auto;padding-right:4px;"><p class="small">Po ngarkoj…</p></div>'+
-        '<button class="btn" style="width:100%;margin-top:12px;" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'analytics\'})">Shiko më shumë →</button>'+
+        '<div id="dashKategoriLista" style="max-height:140px;overflow-y:auto;padding-right:4px;"><p class="small">Loading…</p></div>'+
+        '<button class="btn" style="width:100%;margin-top:12px;" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'analytics\'})">See more →</button>'+
       '</div>'+
     '</div>'+
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
       '<div class="card" id="dashSnippetet2" style="flex:1;min-width:220px;cursor:pointer;">'+
-        '<h3 class="h" style="font-size:15px;margin:0 0 10px;">Snippet-et e reklamave</h3>'+
-        '<div id="dashSnippetet2List"><p class="small">Po ngarkoj…</p></div>'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 10px;">Ad snippets</h3>'+
+        '<div id="dashSnippetet2List"><p class="small">Loading…</p></div>'+
       '</div>'+
       '<div class="card" id="dashKonvertimet" style="flex:1.6;min-width:300px;cursor:pointer;">'+
-        '<h3 class="h" style="font-size:15px;margin:0 0 10px;">Gjurmimi i konvertimeve</h3>'+
-        '<div id="dashKonvertimetList"><p class="small">Po ngarkoj…</p></div>'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 10px;">Conversion tracking</h3>'+
+        '<div id="dashKonvertimetList"><p class="small">Loading…</p></div>'+
       '</div>'+
     '</div>'+
     '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:16px;">'+
@@ -810,23 +810,23 @@ async function ngarkoDashReklamat(){
   if(!el) return;
   try{
     const rows=await(await fetch('/api/reklamat?logjika='+(window.__llogariaModaliteti||'ankand'))).json();
-    if(!rows.length){ el.innerHTML='<button class="btn cta" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">Krijo një reklamë →</button>'; return; }
+    if(!rows.length){ el.innerHTML='<button class="btn cta" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">Create an ad →</button>'; return; }
     el.innerHTML = rows.map(r=>{
       const thumb = r.imazh_url
         ? '<img src="'+esc(r.imazh_url)+'" style="width:34px;height:34px;border-radius:8px;object-fit:cover;flex:0 0 auto;">'
         : '<div style="width:34px;height:34px;border-radius:8px;background:#0e1116;border:1px solid var(--line);flex:0 0 auto;"></div>';
       const kaContent = !!(r.imazh_url || r.video_url || r.html5_url || r.teksti);
       let statusTxt, statusCol;
-      if(r.pauzuar){ statusTxt='Pezulluar'; statusCol='var(--mut)'; }
-      else if(kaContent){ statusTxt='Aktive'; statusCol='var(--good)'; }
-      else { statusTxt='Pa lidhur'; statusCol='var(--mut)'; }
+      if(r.pauzuar){ statusTxt='Paused'; statusCol='var(--mut)'; }
+      else if(kaContent){ statusTxt='Active'; statusCol='var(--good)'; }
+      else { statusTxt='Not connected'; statusCol='var(--mut)'; }
       return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #20262f;">'+
         thumb+
         '<span style="flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(r.emri)+'</span>'+
         '<span style="font-size:12px;color:'+statusCol+';flex:0 0 auto;">'+statusTxt+'</span>'+
       '</div>';
     }).join('');
-  }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; }
+  }catch(e){ el.innerHTML='<p class="small">Error.</p>'; }
 }
 async function ngarkoDashSnippetet(){
   const c2=$('dashSnippetet2');
@@ -837,17 +837,17 @@ async function ngarkoDashSnippetet(){
     renderDashSnippetList('dashSnippetet2List', rows);
   }catch(e){
     const b=$('dashSnippetet2List');
-    if(b) b.innerHTML='<p class="small">Gabim.</p>';
+    if(b) b.innerHTML='<p class="small">Error.</p>';
   }
 }
 function renderDashSnippetList(elId, rows){
   const el=$(elId); if(!el) return;
-  if(!rows.length){ el.innerHTML='<button class="btn cta" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'lidhjaSnippet\'})">Shto një snippet →</button>'; return; }
+  if(!rows.length){ el.innerHTML='<button class="btn cta" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'lidhjaSnippet\'})">Add a snippet →</button>'; return; }
   el.innerHTML = rows.map(s=>{
     let statusTxt, statusCol;
-    if(s.pauzuar){ statusTxt='Pezulluar'; statusCol='var(--mut)'; }
-    else if(s.snippet_active){ statusTxt='Aktive'; statusCol='var(--good)'; }
-    else { statusTxt='Palidhur'; statusCol='var(--mut)'; }
+    if(s.pauzuar){ statusTxt='Paused'; statusCol='var(--mut)'; }
+    else if(s.snippet_active){ statusTxt='Active'; statusCol='var(--good)'; }
+    else { statusTxt='Not connected'; statusCol='var(--mut)'; }
     return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #20262f;">'+
       '<span style="flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(s.emri||('Hapësira '+s.id))+'</span>'+
       '<span style="font-size:12px;color:'+statusCol+';flex:0 0 auto;">'+statusTxt+'</span>'+
@@ -864,21 +864,21 @@ async function ngarkoDashKonvertimet(){
     const urlRows=(ku.konvertimet||[]).map(x=>({emri:x.url, lloji:'url', track_active:x.track_active, pauzuar:x.pauzuar}));
     const zonaRows=(kz.zonat||[]).map(x=>({emri:x.emri, lloji:'kod', track_active:x.track_active, pauzuar:x.pauzuar}));
     const rows=urlRows.concat(zonaRows);
-    if(!rows.length){ el.innerHTML='<button class="btn cta" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'konvertimi\'})">Lidh konvertimet →</button>'; return; }
+    if(!rows.length){ el.innerHTML='<button class="btn cta" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'konvertimi\'})">Connect conversions →</button>'; return; }
     el.innerHTML = rows.map(x=>{
       let statusTxt, statusCol;
-      if(x.pauzuar){ statusTxt='Pezulluar'; statusCol='var(--mut)'; }
-      else if(x.track_active){ statusTxt='Aktive'; statusCol='var(--good)'; }
-      else { statusTxt='Palidhur'; statusCol='var(--mut)'; }
+      if(x.pauzuar){ statusTxt='Paused'; statusCol='var(--mut)'; }
+      else if(x.track_active){ statusTxt='Active'; statusCol='var(--good)'; }
+      else { statusTxt='Not connected'; statusCol='var(--mut)'; }
       return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #20262f;">'+
         '<span style="flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(x.emri||'—')+'</span>'+
-        '<span style="font-size:11px;color:var(--mut);text-transform:uppercase;flex:0 0 auto;">'+(x.lloji==='url'?'URL':'Kod')+'</span>'+
+        '<span style="font-size:11px;color:var(--mut);text-transform:uppercase;flex:0 0 auto;">'+(x.lloji==='url'?'URL':'Code')+'</span>'+
         '<span style="font-size:12px;color:'+statusCol+';flex:0 0 auto;">'+statusTxt+'</span>'+
       '</div>';
     }).join('');
-  }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; }
+  }catch(e){ el.innerHTML='<p class="small">Error.</p>'; }
 }
-// ================= DASHBOARD: Kategoritë e bizneseve (njësoj si tek Analytics, pa filtër date — 30 ditët e fundit) =================
+// ================= DASHBOARD: Business categories (same as Analytics, no date filter — last 30 days) =================
 var _dashKatSelectedAd=null, _dashKatRekAll=[], _dashKatDropdownOpen=false;
 async function ngarkoDashKategori(){
   const btn=$('dashKatRekBtn'); if(!btn) return;
@@ -899,8 +899,8 @@ document.addEventListener('click', function(){
 function dashKatRenderDropdown(){
   const dd=$('dashKatRekDropdown'); if(!dd) return;
   dd.innerHTML='';
-  dd.appendChild(anaRekRresht('Të gjitha', !_dashKatSelectedAd, true, dashKatZgjidhTeGjitha));
-  if(!_dashKatRekAll.length){ const p=document.createElement('p'); p.className='small mut'; p.style.padding='6px'; p.textContent="S'ke ende reklama."; dd.appendChild(p); dashKatUpdateBtnLabel(); return; }
+  dd.appendChild(anaRekRresht('All', !_dashKatSelectedAd, true, dashKatZgjidhTeGjitha));
+  if(!_dashKatRekAll.length){ const p=document.createElement('p'); p.className='small mut'; p.style.padding='6px'; p.textContent="You don't have any ads yet."; dd.appendChild(p); dashKatUpdateBtnLabel(); return; }
   const hr=document.createElement('div'); hr.style.cssText='height:1px;background:var(--line);margin:4px 2px;'; dd.appendChild(hr);
   _dashKatRekAll.forEach(r=>{
     const thumb=anaRekThumbHTML(r);
@@ -922,19 +922,19 @@ async function dashKatNgarkoListen(){
   let url='/api/analytics/kategorite?nga='+fmt(nga)+'&deri='+fmt(sot);
   if(_dashKatSelectedAd) url+='&reklama_ids='+_dashKatSelectedAd;
   let d;
-  try{ d=await(await fetch(url)).json(); }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; return; }
+  try{ d=await(await fetch(url)).json(); }catch(e){ el.innerHTML='<p class="small">Error.</p>'; return; }
   const kategorite=d.kategorite||[];
-  if(!kategorite.length){ el.innerHTML='<p class="small mut">Asnjë kategori me të dhëna.</p>'; return; }
+  if(!kategorite.length){ el.innerHTML='<p class="small mut">No category data yet.</p>'; return; }
   el.innerHTML = kategorite.map(k=>{
     const tot={shfaqje:0,shikime:0,klikime:0,konvertime:0};
     k.pikat.forEach(p=>{ tot.shfaqje+=p.shfaqje; tot.shikime+=p.shikime; tot.klikime+=p.klikime; tot.konvertime+=p.konvertime; });
     return '<div style="padding:8px 0;border-bottom:1px solid #20262f;">'+
       '<div style="font-weight:600;font-size:12px;margin-bottom:4px;">'+esc(k.emri)+'</div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--mut);">'+
-        '<span>Shfaqje: <b style="color:var(--txt);">'+tot.shfaqje+'</b></span>'+
-        '<span>Shikime: <b style="color:var(--txt);">'+tot.shikime+'</b></span>'+
-        '<span>Klikime: <b style="color:var(--txt);">'+tot.klikime+'</b></span>'+
-        '<span>Konvertime: <b style="color:var(--txt);">'+tot.konvertime+'</b></span>'+
+        '<span>Impressions: <b style="color:var(--txt);">'+tot.shfaqje+'</b></span>'+
+        '<span>Views: <b style="color:var(--txt);">'+tot.shikime+'</b></span>'+
+        '<span>Clicks: <b style="color:var(--txt);">'+tot.klikime+'</b></span>'+
+        '<span>Conversions: <b style="color:var(--txt);">'+tot.konvertime+'</b></span>'+
       '</div>'+
     '</div>';
   }).join('');
@@ -958,24 +958,24 @@ async function ngarkoDashAnalitika(){
         '<div style="display:flex;gap:10px;flex-wrap:wrap;">'+
           '<div style="flex:1;min-width:130px;background:rgba(74,158,255,.12);border:1px solid var(--acc);border-radius:10px;padding:14px 16px;">'+
             '<div style="font-size:28px;font-weight:800;color:var(--acc);line-height:1;">'+(d.pike_profili||0)+'</div>'+
-            '<div class="small" style="margin-top:4px;">pikë profili</div></div>'+
+            '<div class="small" style="margin-top:4px;">profile points</div></div>'+
           '<div style="flex:1;min-width:130px;background:rgba(74,158,255,.12);border:1px solid var(--acc);border-radius:10px;padding:14px 16px;">'+
             '<div style="font-size:28px;font-weight:800;color:var(--acc);line-height:1;">'+(mm.konvertime||0)+'</div>'+
-            '<div class="small" style="margin-top:4px;">konvertime</div></div>'+
+            '<div class="small" style="margin-top:4px;">conversions</div></div>'+
         '</div>'+
         '<div style="display:flex;gap:10px;flex-wrap:wrap;">'+
           '<div style="flex:1;min-width:100px;background:#0e1116;border:1px solid var(--line);border-radius:9px;padding:8px 12px;opacity:.75;">'+
             '<div style="font-size:15px;font-weight:600;color:#e6edf3;">'+(mm.shfaqje||0)+'</div>'+
-            '<div class="small" style="font-size:11px;color:#8b949e;">shfaqje</div></div>'+
+            '<div class="small" style="font-size:11px;color:#8b949e;">impressions</div></div>'+
           '<div style="flex:1;min-width:100px;background:#0e1116;border:1px solid var(--line);border-radius:9px;padding:8px 12px;opacity:.75;">'+
             '<div style="font-size:15px;font-weight:600;color:#e6edf3;">'+(mm.klikime||0)+'</div>'+
-            '<div class="small" style="font-size:11px;color:#8b949e;">klikime</div></div>'+
+            '<div class="small" style="font-size:11px;color:#8b949e;">clicks</div></div>'+
         '</div>'+
       '</div>';
-  }catch(e){ card.innerHTML='<p class="small">Gabim.</p>'; }
+  }catch(e){ card.innerHTML='<p class="small">Error.</p>'; }
 }
 async function renderDashStatus(){
-  const el=$('vstep'); if(!el) return; el.innerHTML='<p class="small mut">Po kontrolloj…</p>';
+  const el=$('vstep'); if(!el) return; el.innerHTML='<p class="small mut">Checking…</p>';
   let gjendjaKrijimi = 'asnje';
   try{
     const r = await (await fetch('/api/kreative/statusi-krijimit')).json();
@@ -983,17 +983,17 @@ async function renderDashStatus(){
   }catch(e){}
   el.innerHTML='';
   const rreshtat=[
-    { done: !!prog.llogaria,   auto: !!prog.llogaria && !!prog.biznesiAuto, label:'Biznesi',             veprim:()=>nav({v:'profile',nav:'biznesi'}) },
-    { done: !!prog.pershkrimi, auto: !!prog.pershkrimi && !!prog.pershkrimiAuto, label:'Përshkrimi',          veprim:()=>nav({v:'profile',nav:'pershkrimi'}) },
-    { done: !!prog.lidhja,     label:'Lidhja e snippet-it', veprim:()=> prog.lidhja ? nav({v:'profile',nav:'snippetet'}) : nav({v:'profile',nav:'lidhjaSnippet'}) },
-    { done: gjendjaKrijimi==='manual', auto: gjendjaKrijimi==='auto', label:'Krijo produkt', veprim:()=>nav({v:'profile',nav:'reklamat',sub:'create'}) },
-    { done: !!prog.konvertimi, label:'Lidh konvertimin',    veprim:()=>nav({v:'profile',nav:'konvertimi'}) }
+    { done: !!prog.llogaria,   auto: !!prog.llogaria && !!prog.biznesiAuto, label:'Business',             veprim:()=>nav({v:'profile',nav:'biznesi'}) },
+    { done: !!prog.pershkrimi, auto: !!prog.pershkrimi && !!prog.pershkrimiAuto, label:'Description',          veprim:()=>nav({v:'profile',nav:'pershkrimi'}) },
+    { done: !!prog.lidhja,     label:'Snippet connection', veprim:()=> prog.lidhja ? nav({v:'profile',nav:'snippetet'}) : nav({v:'profile',nav:'lidhjaSnippet'}) },
+    { done: gjendjaKrijimi==='manual', auto: gjendjaKrijimi==='auto', label:'Create a product', veprim:()=>nav({v:'profile',nav:'reklamat',sub:'create'}) },
+    { done: !!prog.konvertimi, label:'Connect conversions',    veprim:()=>nav({v:'profile',nav:'konvertimi'}) }
   ];
   rreshtat.forEach(r=>{
     const d=document.createElement('div');
     d.className='vs'+(r.auto?' auto':(r.done?' done':' click'));
     const shenja = r.auto ? '★' : (r.done ? '✓' : '+');
-    const etiketa = r.auto ? ' — krijuar automatikisht, kliko për ta rregulluar' : (r.done ? '' : ' — plotëso');
+    const etiketa = r.auto ? ' — created automatically, click to adjust' : (r.done ? '' : ' — complete this');
     d.innerHTML='<span class="vd">'+shenja+'</span>'+
       '<span class="vl">'+r.label+etiketa+'</span>';
     if(!r.done || r.auto) d.onclick=r.veprim;
