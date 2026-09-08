@@ -1031,10 +1031,10 @@ async function mainSnippetet(m, s){
   if(s.sub==='detail' && s.id){ return snipDetaje(m, s.id); }
   // Lista
   m.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'+
-    '<h2 class="h">Hapësira e reklamave</h2>'+
-    '<button class="btn cta" onclick="snipKrijo()">Krijo +</button></div>'+
-    '<p class="small" style="margin-bottom:14px;">Çdo hapësirë është një vend te faqja jote ku shfaqen reklamat. Krijo disa nëse vendos reklama në më shumë se një vend.</p>'+
-    '<div id="snipLista"><p class="small">Po ngarkoj…</p></div>';
+    '<h2 class="h">Ad Space</h2>'+
+    '<button class="btn cta" onclick="snipKrijo()">Create +</button></div>'+
+    '<p class="small" style="margin-bottom:14px;">Each space is one spot on your site where ads appear. Create a few if you place ads in more than one spot.</p>'+
+    '<div id="snipLista"><p class="small">Loading…</p></div>';
   ngarkoSnippetet();
 }
 async function ngarkoSnippetet(){
@@ -1042,24 +1042,24 @@ async function ngarkoSnippetet(){
   try{
     const r=await(await fetch('/api/snippetet')).json();
     const lista=r.snippetet||[];
-    if(!lista.length){ c.innerHTML='<p class="small">Ende s\'ka snippet.</p>'; return; }
+    if(!lista.length){ c.innerHTML='<p class="small">No snippets yet.</p>'; return; }
     let h='<div class="rektbl">'+
-      '<div class="rekhead" style="grid-template-columns:2fr 1fr 1fr auto auto auto;"><span>Emri</span><span>Statusi</span><span>Madhësia</span><span></span><span></span><span></span></div>';
+      '<div class="rekhead" style="grid-template-columns:2fr 1fr 1fr auto auto auto;"><span>Name</span><span>Status</span><span>Size</span><span></span><span></span><span></span></div>';
     lista.forEach(sn=>{
-      const status = sn.snippet_active ? '<span style="color:var(--good);">● I lidhur</span>' : '<span style="color:var(--mut);">○ Pa lidhur</span>';
-      const tgl = '<label class="tgl" title="'+(sn.pauzuar?'I pauzuar':'Aktiv')+'"><input type="checkbox" '+(sn.pauzuar?'':'checked')+' onchange="snipPauza('+sn.id+',this.checked)"><span class="slider"></span></label>';
+      const status = sn.snippet_active ? '<span style="color:var(--good);">● Connected</span>' : '<span style="color:var(--mut);">○ Not connected</span>';
+      const tgl = '<label class="tgl" title="'+(sn.pauzuar?'Paused':'Active')+'"><input type="checkbox" '+(sn.pauzuar?'':'checked')+' onchange="snipPauza('+sn.id+',this.checked)"><span class="slider"></span></label>';
       h+='<div class="rekrow" style="grid-template-columns:2fr 1fr 1fr auto auto auto;align-items:center;" id="snipRow'+sn.id+'">'+
-         '<span class="nm" id="snipEmri'+sn.id+'" onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})" style="cursor:pointer;">'+esc(sn.emri||'(Pa emër)')+'</span>'+
+         '<span class="nm" id="snipEmri'+sn.id+'" onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})" style="cursor:pointer;">'+esc(sn.emri||'(No name)')+'</span>'+
          '<span onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})" style="cursor:pointer;">'+status+'</span>'+
          '<span class="small" onclick="nav({v:\'profile\',nav:\'snippetet\',sub:\'detail\',id:'+sn.id+'})" style="cursor:pointer;">'+esc(sn.madhesia_desktop||'—')+'</span>'+
          tgl+
-         '<button class="btn" style="padding:5px 9px;" title="Ndrysho emrin" onclick="snipEmriEdito('+sn.id+',\''+esc((sn.emri||'').replace(/\x27/g,""))+'\')">✎</button>'+
-         '<button class="btn" style="padding:5px 9px;" title="Fshi" onclick="snipKonfirmoFshi('+sn.id+',\''+esc((sn.emri||'').replace(/\x27/g,""))+'\','+(sn.snippet_active?1:0)+')">✕</button>'+
+         '<button class="btn" style="padding:5px 9px;" title="Rename" onclick="snipEmriEdito('+sn.id+',\''+esc((sn.emri||'').replace(/\x27/g,""))+'\')">✎</button>'+
+         '<button class="btn" style="padding:5px 9px;" title="Delete" onclick="snipKonfirmoFshi('+sn.id+',\''+esc((sn.emri||'').replace(/\x27/g,""))+'\','+(sn.snippet_active?1:0)+')">✕</button>'+
          '</div>';
     });
     h+='</div>';
     c.innerHTML=h;
-  }catch(e){ c.innerHTML='<p class="small err">Gabim në ngarkim.</p>'; }
+  }catch(e){ c.innerHTML='<p class="small err">Loading error.</p>'; }
 }
 
 async function snipPauza(id, aktiv){
@@ -1195,40 +1195,40 @@ async function snipEmriRuajFush(id){
 }
 async function snipDetaje(m, id){
   _snipAktiv=id;
-  m.innerHTML='<div id="pvBody"><p class="small">Po ngarkoj…</p></div>';
+  m.innerHTML='<div id="pvBody"><p class="small">Loading…</p></div>';
   const b=$('pvBody');
   try{
     const sn=await(await fetch('/api/snippetet/'+id)).json();
     if(sn.error){ b.innerHTML='<p class="small err">'+esc(sn.error)+'</p>'; return; }
-    const krye='<div style="margin-bottom:10px;"><a href="#" style="color:#4a9eff;text-decoration:none;font-size:13px;" onclick="event.preventDefault();nav({v:\'profile\',nav:\'snippetet\'})">← Të gjitha snippet-et</a></div>'+
-      '<h2 class="h">'+esc(sn.emri||'(Pa emër — vendos një poshtë)')+'</h2>';
+    const krye='<div style="margin-bottom:10px;"><a href="#" style="color:#4a9eff;text-decoration:none;font-size:13px;" onclick="event.preventDefault();nav({v:\'profile\',nav:\'snippetet\'})">← All ad spaces</a></div>'+
+      '<h2 class="h">'+esc(sn.emri||'(No name — set one below)')+'</h2>';
     if(sn.snippet_active){
-      // I LIDHUR → konfirmim + madhesia PER KETE snippet specifik
+      // CONNECTED → confirmation + size for THIS specific snippet
       b.innerHTML=krye+
-        '<div class="miniStat" style="margin:10px 0 18px;"><span class="vd">✓</span> I lidhur</div>'+
+        '<div class="miniStat" style="margin:10px 0 18px;"><span class="vd">✓</span> Connected</div>'+
         '<div id="madhWrapNjeSnip"></div>';
       const w=b.querySelector('#madhWrapNjeSnip');
       if(w) ndertoMadhesineNjeSnip(w, id, sn);
     } else {
-      // PA LIDHUR → kodi + kopjo + URL + verifiko (madhesia s'perzihet me ketu)
+      // NOT CONNECTED → code + copy + URL + verify (size isn't relevant here yet)
       b.innerHTML=krye+
         '<div style="margin:6px 0 14px;">'+
-          '<label>Emri i kësaj hapësire</label>'+
-          '<input id="snipEmriFush" value="'+esc(sn.emri||'')+'" placeholder="p.sh. Fund faqe, Anash blogu" onblur="snipEmriRuajFush('+id+')">'+
+          '<label>Name for this space</label>'+
+          '<input id="snipEmriFush" value="'+esc(sn.emri||'')+'" placeholder="e.g. Footer, Sidebar" onblur="snipEmriRuajFush('+id+')">'+
         '</div>'+
-        '<p class="small" style="margin:6px 0 10px;">Vendose këtë rresht aty ku do të shfaqet reklama te faqja jote.</p>'+
+        '<p class="small" style="margin:6px 0 10px;">Place this line where you want the ad to appear on your site.</p>'+
         '<textarea class="kod" id="snipKod" readonly>'+esc(snipKodi(sn.celes))+'</textarea>'+
-        '<div class="rowbtn"><button class="btn cta" id="snipCbtn" onclick="snipKopjo()">Kopjo</button></div>'+
+        '<div class="rowbtn"><button class="btn cta" id="snipCbtn" onclick="snipKopjo()">Copy</button></div>'+
         '<div id="claudeSuport'+id+'" style="margin:14px 0;"></div>'+
         '<div style="margin-top:14px;">'+
-          '<label>URL-ja e faqes ku e vendose</label>'+
-          '<input id="snipUrl" value="'+esc((une&&une.website)||'')+'" placeholder="https://faqja-ime.com">'+
-          '<button class="primary" id="snipVbtn" onclick="snipVerifiko('+id+')">Hap faqen dhe konfirmo →</button>'+
+          '<label>URL of the page where you placed it</label>'+
+          '<input id="snipUrl" value="'+esc((une&&une.website)||'')+'" placeholder="https://my-website.com">'+
+          '<button class="primary" id="snipVbtn" onclick="snipVerifiko('+id+')">Open the page and confirm →</button>'+
           '<div class="status wait hide" id="snipStatus"></div>'+
         '</div>';
       vizatoClaudeSuport(id);
     }
-  }catch(e){ b.innerHTML='<p class="small err">Gabim.</p>'; }
+  }catch(e){ b.innerHTML='<p class="small err">Error.</p>'; }
 }
 function snipKodi(celes){
   return '<script src="'+location.origin+'/imyr.js" data-key="'+celes+'"></scr'+'ipt>';
@@ -1238,13 +1238,13 @@ function snipKopjo(){
   t.select && t.select(); t.setSelectionRange && t.setSelectionRange(0,99999);
   try{ document.execCommand('copy'); }catch(e){}
   if(navigator.clipboard){ navigator.clipboard.writeText(t.value||t.textContent||''); }
-  const b=$('snipCbtn'); if(b){ b.textContent='U kopjua ✓'; setTimeout(()=>b.textContent='Kopjo',1500); }
+  const b=$('snipCbtn'); if(b){ b.textContent='Copied ✓'; setTimeout(()=>b.textContent='Copy',1500); }
 }
 function snipVerifiko(id){
   let url=($('snipUrl').value||'').trim(); if(!url){ $('snipUrl').focus(); return; }
   if(!/^https?:\/\//i.test(url)) url='https://'+url;
   window.open(url,'_blank');
-  const st=$('snipStatus'); if(st){ st.classList.remove('hide'); st.className='status wait'; st.innerHTML='⏳ Po pres sinjalin e lidhjes…'; }
+  const st=$('snipStatus'); if(st){ st.classList.remove('hide'); st.className='status wait'; st.innerHTML='⏳ Waiting for the connection signal…'; }
   if(pollTimer) clearInterval(pollTimer);
   const tick=async()=>{
     try{
@@ -1272,23 +1272,23 @@ function mainKreative(m, s){
   s = s || {};
   const zgjedhur = s.lloji || null;
   m.innerHTML = '<h2 class="h">Creative</h2>'+
-    '<p class="small" style="margin:8px 0 20px;">Krijo reklama me AI: imazh, video, ose HTML5.</p>'+
+    '<p class="small" style="margin:8px 0 20px;">Create ads with AI: image, video, or HTML5.</p>'+
     '<div id="krGatiWrap" style="display:none;margin-bottom:20px;">'+
-      '<label>Krijimet e gatshme</label>'+
+      '<label>Ready-made creatives</label>'+
       '<div id="krGatiLista" style="display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;padding:8px 4px;margin-top:8px;"></div>'+
     '</div>'+
     // Zgjedhesi i llojit
-    '<label>Cfare do te krijosh?</label>'+
+    '<label>What do you want to create?</label>'+
     '<div class="krTip">'+
       '<button class="krT '+(zgjedhur==='imazh'?'sel':'')+'" onclick="krZgjidh(\'imazh\')">'+
-        '<div class="krIco">🖼️</div><div>Imazh</div></button>'+
+        '<div class="krIco">🖼️</div><div>Image</div></button>'+
       '<button class="krT '+(zgjedhur==='video'?'sel':'')+'" onclick="krZgjidh(\'video\')">'+
         '<div class="krIco">🎬</div><div>Video</div></button>'+
       '<button class="krT '+(zgjedhur==='html5'?'sel':'')+'" onclick="krZgjidh(\'html5\')">'+
         '<div class="krIco">💻</div><div>HTML5</div></button>'+
     '</div>'+
     // Permbajtja kur zgjedhet nje lloj
-    (zgjedhur ? formaKreative(zgjedhur) : '<p class="small mut" style="margin-top:16px;">Zgjidh nje lloj për të vazhduar.</p>')+
+    (zgjedhur ? formaKreative(zgjedhur) : '<p class="small mut" style="margin-top:16px;">Choose a type to continue.</p>')+
     // Lista e krijimeve te fundit
     '<div id="krLista" style="margin-top:30px;"></div>';
   ngarkoKreativetGati();
