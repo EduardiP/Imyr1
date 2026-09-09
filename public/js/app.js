@@ -3474,7 +3474,22 @@ async function stepLidhja(b){
   if(confirmBtn){
     confirmBtn.removeAttribute('onclick');
     confirmBtn.onclick = async function(){
-      if(_madSnipZgjedhur.size){ try{ await ruajMadhesine(); }catch(e){} }
+      // Sigurohu qe kemi ID-ne e snippet-it — merre freskët ne çast (mos u bazo te gjendja e mehershme).
+      let snipIds = Array.from(_madSnipZgjedhur);
+      if(!snipIds.length){
+        try{
+          const rr=await(await fetch('/api/snippetet')).json();
+          snipIds=(rr.snippetet||[]).map(sn=>sn.id);
+        }catch(e){}
+      }
+      // Ruaj TE DYJA permasat (desktop + mobile) + pozicionin, per çdo snippet —
+      // qe ndryshimi te mos humbe varesisht nga cila skede (desktop/mobile) ishte aktive.
+      if(snipIds.length){
+        const trupi = { desktop:_mad.w+'x'+_mad.h, mobile:_mad.mw+'x'+_mad.mh, pozicioni:_mad.pozicioni };
+        for(const id of snipIds){
+          try{ await fetch('/api/snippetet/'+id+'/madhesia',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(trupi)}); }catch(e){}
+        }
+      }
       if(typeof hapDheVerifiko==='function') hapDheVerifiko();
     };
   }
