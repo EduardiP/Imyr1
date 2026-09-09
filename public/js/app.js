@@ -2861,9 +2861,9 @@ function renderStepBody(i){
 // Pamja e VETME e lidhjes se konvertimit (brenda profilit, si Creatives)
 var _kufKatZgjedhur = null; // Set() me kategorite AKTUALISHT te perjashtuara
 async function mainKufizimetKategori(m){
-  m.innerHTML='<h2 class="h">Kufizimet e Kategorive</h2>'+
-    '<p class="small mut" style="margin:4px 0 14px;">Kategori të <b>shënuara</b> = mund t\'i shfaqin reklamat e tyre te ti (dhe reklamat e tua te ta). Kategori <b>e pashënuar</b> = e bllokuar plotësisht (as marrje, as dhënie ekspozimi). Kategoria jote (konkurrenca e njohur) fillon e pashënuar — shëno nëse do ta lejosh.</p>'+
-    '<div id="kufKatLista"><p class="small mut">Po ngarkoj…</p></div>'+
+  m.innerHTML='<h2 class="h">Category Limits</h2>'+
+    '<p class="small mut" style="margin:4px 0 14px;">A <b>checked</b> category = can show their ads on yours (and yours on theirs). An <b>unchecked</b> category = fully blocked (no exposure either way). Your own category (known competitors) starts unchecked — check it if you want to allow it.</p>'+
+    '<div id="kufKatLista"><p class="small mut">Loading…</p></div>'+
     '<button class="primary" style="margin-top:16px;" onclick="kufKatRuaj()">Save</button>'+
     '<span class="small" id="kufKatStat" style="margin-left:10px;"></span>';
   try{
@@ -2875,8 +2875,8 @@ async function mainKufizimetKategori(m){
     _kufKatZgjedhur = new Set(r.perjashtuar||[]);
     if(r.vetjaKatVjeteruar){
       m.innerHTML = '<div style="padding:12px 16px;background:#3a2f14;border:1px solid #a38333;border-radius:8px;margin-bottom:16px;color:#ffcf80;">'+
-        '⚠️ Kategoria jote aktuale ("'+esc(r.vetjaKat)+'") është nga sistemi i vjetër dhe s\'përputhet me listën e re — prandaj s\'është trajtuar automatikisht si konkurrencë. '+
-        '<a href="#" onclick="event.preventDefault();nav({v:\'profile\',nav:\'pershkrimi\'});" style="color:var(--acc);">Ri-analizo përshkrimin</a> për ta përditësuar.'+
+        '⚠️ Your current category ("'+esc(r.vetjaKat)+'") is from the old system and doesn\'t match the new list — so it wasn\'t automatically treated as competition. '+
+        '<a href="#" onclick="event.preventDefault();nav({v:\'profile\',nav:\'pershkrimi\'});" style="color:var(--acc);">Re-analyze the description</a> to update it.'+
         '</div>' + m.innerHTML;
     }
     const el=$('kufKatLista');
@@ -2888,10 +2888,10 @@ async function mainKufizimetKategori(m){
         '<input type="checkbox" '+(eshteLejuar?'checked':'')+
           ' style="width:15px;height:15px;min-width:15px;flex:0 0 15px;margin:0;cursor:pointer;" '+
           'onchange="kufKatToggloi(\''+k.replace(/'/g,"\\'")+'\',this.checked)">'+
-        '<span style="font-size:13px;flex:1;">'+esc(k)+(eshteVetja?' <span class="small mut">(kategoria jote)</span>':'')+'</span>'+
+        '<span style="font-size:13px;flex:1;">'+esc(k)+(eshteVetja?' <span class="small mut">(your category)</span>':'')+'</span>'+
         '</div>';
     }).join('');
-  }catch(e){ m.innerHTML+='<p class="small">Gabim gjatë ngarkimit.</p>'; }
+  }catch(e){ m.innerHTML+='<p class="small">Loading error.</p>'; }
 }
 function kufKatToggloi(kategoria, eSHENUAR){
   if(!_kufKatZgjedhur) return;
@@ -2906,8 +2906,8 @@ async function kufKatRuaj(){
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ perjashtuar: Array.from(_kufKatZgjedhur||[]) })
     });
-    if(stat){ stat.textContent='✓ U ruajt.'; setTimeout(()=>{ stat.textContent=''; },2000); }
-  }catch(e){ if(stat) stat.textContent='Gabim: '+e.message; }
+    if(stat){ stat.textContent='✓ Saved.'; setTimeout(()=>{ stat.textContent=''; },2000); }
+  }catch(e){ if(stat) stat.textContent='Error: '+e.message; }
 }
 
 function mainKonvertimi(m){
@@ -2922,44 +2922,44 @@ function ndertoKonvertim(b, ngaWizard){
     ? 'nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})'
     : 'nav({v:\'profile\',nav:\'dashboard\'})';
   b.innerHTML=
-    '<h2 class="h">Gjurmo konvertimet</h2>'+
-    '<p class="small" style="margin:2px 0 16px;">Kur dikush klikon reklamën tënde dhe pastaj kryen një veprim që ka vlerë — regjistrohet, blen, ose lë të dhënat — kjo quhet <b>konvertim</b>. Gjurmimi i konvertimeve rrit pikët e tua të profilit, që rrisin sa shpesh shfaqet reklama jote.</p>'+
+    '<h2 class="h">Track conversions</h2>'+
+    '<p class="small" style="margin:2px 0 16px;">When someone clicks your ad and then takes an action that has value — signs up, buys, or leaves their info — that\'s called a <b>conversion</b>. Tracking conversions raises your profile points, which increase how often your ad gets shown.</p>'+
     // KODI I SNIPPET-IT — gjithmone i dukshem (vlen per te dyja rruget)
     '<div style="padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--card2);margin-bottom:16px;">'+
-      '<b style="font-size:14px;">Rreshti i gjurmimit</b>'+
-      '<p class="small" style="margin:6px 0 10px;">Ky rresht <b>nuk shfaq asgjë</b> — vetëm gjurmon konvertimet (nga adresa ose nga kodi, sipas zgjedhjes poshtë). Vendose para <code>&lt;/body&gt;</code> te <b>skedari kryesor</b> që ngarkohet në çdo faqe të sajtit tënd. Varet nga si është ndërtuar sajti — p.sh. <i>theme.liquid</i> (Shopify), <i>layout.html / base.html</i> (shabllon i përbashkët), <i>index.html</i>, ose <i>_app.js / App.jsx</i> (React/Next). Nëse ke disa shabllone, vendose te secili.</p>'+
+      '<b style="font-size:14px;">Tracking line</b>'+
+      '<p class="small" style="margin:6px 0 10px;">This line <b>displays nothing</b> — it only tracks conversions (by URL or by code, depending on your choice below). Place it before <code>&lt;/body&gt;</code> in the <b>main file</b> that loads on every page of your site. It depends on how your site is built — e.g. <i>theme.liquid</i> (Shopify), <i>layout.html / base.html</i> (shared template), <i>index.html</i>, or <i>_app.js / App.jsx</i> (React/Next). If you have several templates, add it to each.</p>'+
       '<div class="kodbox" id="k_kod"></div>'+
       '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">'+
-        '<button class="btn" onclick="kopjoTrack()">Kopjo</button>'+
-        '<button class="btn" id="k_ver" onclick="riverifikoSnippet()">Verifiko lidhjen</button>'+
+        '<button class="btn" onclick="kopjoTrack()">Copy</button>'+
+        '<button class="btn" id="k_ver" onclick="riverifikoSnippet()">Verify connection</button>'+
       '</div>'+
       '<div id="k_snipStat" style="margin-top:10px;"></div>'+
       '<div id="claudeSuportKonv" style="margin-top:12px;"></div>'+
     '</div>'+
     // ZGJEDHJA: me URL ose me kod
-    '<label>Si e shënon konvertimin?</label>'+
-    '<p class="small" style="margin:2px 0 8px;">Dy mënyra: <b>Me adresë</b> — nëse pas konvertimit hapet një faqe e veçantë (p.sh. një faqe "faleminderit" ose "mirë se erdhe"), na jep atë adresë. <b>Me kod</b> — nëse konvertimi ndodh pa ndryshuar faqe (p.sh. klikimi i një butoni, dërgimi i një forme), vendos një rresht te ai veprim.</p>'+
+    '<label>How do you mark the conversion?</label>'+
+    '<p class="small" style="margin:2px 0 8px;">Two ways: <b>By URL</b> — if a specific page opens after the conversion (e.g. a "thank you" or "welcome" page), give us that address. <b>By code</b> — if the conversion happens without changing pages (e.g. clicking a button, submitting a form), place a line at that action.</p>'+
     '<div class="seg" id="k_ka">'+
-      '<button type="button" data-v="po" onclick="segPick(this);kSwitch()">Me adresë</button>'+
-      '<button type="button" data-v="jo" onclick="segPick(this);kSwitch()">Me kod</button>'+
+      '<button type="button" data-v="po" onclick="segPick(this);kSwitch()">By URL</button>'+
+      '<button type="button" data-v="jo" onclick="segPick(this);kSwitch()">By code</button>'+
     '</div>'+
     '<div id="k_po" class="hide" style="margin-top:14px;">'+
       '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'+
         '<span style="color:var(--acc);font-weight:700;">*</span>'+
-        '<label style="margin:0;">Adresat e faqeve te konvertimit</label>'+
+        '<label style="margin:0;">Conversion page URLs</label>'+
       '</div>'+
-      '<p class="small" style="margin:0 0 10px;">Fut adresën e plotë të faqes që hapet pas konvertimit, p.sh. <b>https://faqja-ime.com/welcome</b>. Pasi të vendosësh kodin lart, kliko <b>Verifiko</b> te secila adresë. Kliko <b>+</b> për të shtuar një tjetër.</p>'+
+      '<p class="small" style="margin:0 0 10px;">Enter the full URL of the page that opens after the conversion, e.g. <b>https://my-website.com/welcome</b>. After placing the code above, click <b>Verify</b> on each URL. Click <b>+</b> to add another.</p>'+
       '<div id="k_lista"></div>'+
-      '<button class="btn" style="margin-top:8px;" onclick="konvShto()">+ Shto adrese</button>'+
+      '<button class="btn" style="margin-top:8px;" onclick="konvShto()">+ Add URL</button>'+
       '<div id="k_stat" class="small" style="margin-top:12px;"></div>'+
-      '<button class="primary" id="k_btn" onclick="mbyllKonvertim(\''+pasRuajtjes.replace(/'/g,"\\'")+'\')">Dil →</button>'+
+      '<button class="primary" id="k_btn" onclick="mbyllKonvertim(\''+pasRuajtjes.replace(/'/g,"\\'")+'\')">Exit →</button>'+
     '</div>'+
     '<div id="k_jo" class="hide" style="margin-top:14px;">'+
-      '<p class="small" style="margin:0 0 12px;">Thirre kodin poshtë pikërisht aty ku ndodh <b>konvertimi i vërtetë</b> — te veprimi që ka vlerë për ty (regjistrim i përfunduar, blerje e kryer, formë e dërguar me sukses). Konvertimi gjurmohet vetëm kur ky veprim ndodh vërtet nga një vizitor real. Kërkon që rreshti i gjurmimit lart të jetë vendosur — ai krijon funksionin <code>imyr.konvertim()</code>.</p>'+
-      '<p class="small" style="margin:0 0 6px;">Nëse ke <b>disa lloje konvertimi</b> (p.sh. regjistrim dhe blerje), jepi secilit një emër që t\'i dallosh më vonë. Për secilin merr kodin e vet:</p>'+
+      '<p class="small" style="margin:0 0 12px;">Call the code below exactly where the <b>real conversion</b> happens — the action that has value for you (signup completed, purchase made, form submitted successfully). The conversion is only tracked when this action genuinely happens from a real visitor. Requires the tracking line above to be in place — it creates the <code>imyr.konvertim()</code> function.</p>'+
+      '<p class="small" style="margin:0 0 6px;">If you have <b>several conversion types</b> (e.g. signup and purchase), give each a name to tell them apart later. Each gets its own code:</p>'+
       '<div id="k_zonaLista"></div>'+
-      '<button class="btn" style="margin-top:8px;" onclick="zonaShto()">+ Shto lloj</button>'+
-      '<button class="primary" onclick="mbyllKonvertim(\''+pasRuajtjes.replace(/'/g,"\\'")+'\')" style="margin-top:18px;display:block;">'+(ngaWizard?'Vazhdo →':'Dil →')+'</button>'+
+      '<button class="btn" style="margin-top:8px;" onclick="zonaShto()">+ Add type</button>'+
+      '<button class="primary" onclick="mbyllKonvertim(\''+pasRuajtjes.replace(/'/g,"\\'")+'\')" style="margin-top:18px;display:block;">'+(ngaWizard?'Continue →':'Exit →')+'</button>'+
     '</div>'+
     '<div class="msg" id="k_msg"></div>';
   if(une && une.url_konvertimi){
@@ -2978,17 +2978,17 @@ async function riverifikoSnippet(){
   let faqja=(une && une.website) || '';
   if(faqja && !/^https?:\/\//i.test(faqja)) faqja='https://'+faqja;
   if(faqja){ try{ window.open(faqja,'_blank','noopener'); }catch(e){} }
-  const nj=$('k_snipStat'); if(nj) nj.innerHTML='<span class="spin"></span> Po kontrolloj sërish…';
+  const nj=$('k_snipStat'); if(nj) nj.innerHTML='<span class="spin"></span> Checking again…';
   setTimeout(()=>{ kontrolloSnippetFresket(); }, 2500);
 }
 async function kontrolloSnippetFresket(){
-  const nj=$('k_snipStat'); if(nj) nj.innerHTML='<span class="spin"></span> Po kontrolloj nëse snippet-i është ende te faqja…';
+  const nj=$('k_snipStat'); if(nj) nj.innerHTML='<span class="spin"></span> Checking whether the snippet is still on your site…';
   try{
     const r=await(await fetch('/api/track-fresket')).json();
     if(!nj) return;
     if(r.aktiv){
-      nj.innerHTML='<div style="background:#123a1e;border:1px solid var(--good);color:#b6f5c8;padding:10px 12px;border-radius:8px;font-size:13px;">✓ Snippet-i u lidh me sukses.</div>';
-      setTimeout(()=>{ const x=$('k_snipStat'); if(x && x.innerHTML.indexOf('u lidh me sukses')>-1) x.innerHTML=''; }, 5000);
+      nj.innerHTML='<div style="background:#123a1e;border:1px solid var(--good);color:#b6f5c8;padding:10px 12px;border-radius:8px;font-size:13px;">✓ Snippet connected successfully.</div>';
+      setTimeout(()=>{ const x=$('k_snipStat'); if(x && x.innerHTML.indexOf('connected successfully')>-1) x.innerHTML=''; }, 5000);
       // Nese pati bisedE me asistentin te konvertimet, ruaj implementimin e rrenjes
       try{
         if(_claudeHist && _claudeHist['Konv'] && _claudeHist['Konv'].length){
@@ -3003,9 +3003,9 @@ async function kontrolloSnippetFresket(){
     }
     else{
       nj.innerHTML='<div style="background:#3d1418;border:1px solid var(--err);color:#ffb3b3;'+
-        'padding:10px 12px;border-radius:8px;font-size:13px;">⚠ Snippet-i i gjurmimit nuk u gjet te faqja jote. '+
-        'Vendose përsëri kodin lart te çdo faqe, pastaj kliko butonin poshtë.'+
-        '<div style="margin-top:10px;"><button class="btn" style="color:#ffb3b3;border-color:#ffb3b3;" onclick="riverifikoSnippet()">Kam vendosur kodin — kontrollo sërish</button></div></div>';
+        'padding:10px 12px;border-radius:8px;font-size:13px;">⚠ The tracking snippet wasn\'t found on your site. '+
+        'Place the code above on every page again, then click the button below.'+
+        '<div style="margin-top:10px;"><button class="btn" style="color:#ffb3b3;border-color:#ffb3b3;" onclick="riverifikoSnippet()">I\'ve placed the code — check again</button></div></div>';
       // snippet-i i palidhur → URL-t u shkeputen te serveri; rifresko listen, progresin, njoftimet
       try{ await ngarkoKonvertimet(); }catch(e){}
       const kst=$('k_stat'); if(kst) kst.innerHTML='';  // pastro mesazhin "u lidhen"
@@ -3030,7 +3030,7 @@ function vizatoKonvertimet(){
   _konvUrls.forEach((u,i)=>{
     const status = u.id ? (u.track_active
         ? '<span style="color:var(--good);font-size:12px;white-space:nowrap;">✓ E lidhur</span>'
-        : '<span style="color:var(--mut);font-size:12px;white-space:nowrap;">○ Pa lidhur</span>')
+        : '<span style="color:var(--mut);font-size:12px;white-space:nowrap;">○ Not connected</span>')
       : '<span style="color:var(--mut);font-size:12px;white-space:nowrap;">Pa ruajtur</span>';
     h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">'+
        '<input value="'+esc(u.url)+'" placeholder="https://faqja-ime.com/welcome" oninput="konvNdrysho('+i+',this.value)" style="flex:1;min-width:140px;">'+
@@ -3053,7 +3053,7 @@ function fshiDialog(mesazhi, onFshi){
   d.innerHTML='<div style="background:var(--bg2,#161a22);border:1px solid var(--line);border-radius:12px;padding:22px;max-width:420px;margin:16px;">'+
     '<div style="font-weight:600;font-size:16px;margin-bottom:10px;">A je i sigurt?</div>'+
     '<p class="small" style="margin:0 0 8px;">'+mesazhi+'</p>'+
-    '<p class="small" style="margin:0 0 18px;color:var(--mut);">Mos harro të heqësh edhe kodin/adresën përkatëse nga skedari i faqes tënde — përndryshe do të vazhdojë të dërgojë sinjale që s\'do të numërohen.</p>'+
+    '<p class="small" style="margin:0 0 18px;color:var(--mut);">Remember to also remove the matching code/URL from your site\'s file - otherwise it will keep sending signals that won\'t be counted.</p>'+
     '<div style="display:flex;gap:10px;justify-content:flex-end;">'+
       '<button class="btn" onclick="fshiMbyll()">Anulo</button>'+
       '<button class="primary" id="fshiPo" style="background:var(--err);border-color:var(--err);">Po, hiqe</button>'+
@@ -3065,15 +3065,15 @@ function konvKonfirmoFshi(i){
   const u=_konvUrls[i];
   // Nese s'eshte i lidhur (bosh ose i pa-verifikuar) → fshi menjehere, pa konfirmim
   if(!u || !u.id || !u.track_active){ konvFshi(i); return; }
-  const emri=u.url||'këtë adresë';
-  fshiDialog('Do të heqësh <b>'+esc(emri)+'</b>. Lidhja për gjurmim do të shkëputet dhe konvertimet e saj s\'do të numërohen më.', ()=>konvFshi(i));
+  const emri=u.url||'this URL';
+  fshiDialog('You are about to remove <b>'+esc(emri)+'</b>. The tracking connection will end and its conversions will no longer be counted.', ()=>konvFshi(i));
 }
 function zonaKonfirmoFshi(i){
   const z=_konvZona[i];
   // Nese s'eshte i lidhur (i sapokrijuar ose i pa-verifikuar) → fshi menjehere, pa konfirmim
   if(!z || !z.id || !z.track_active){ zonaFshi(i); return; }
-  const emri=z.emri?('"'+z.emri+'"'):'këtë kod';
-  fshiDialog('Do të heqësh kodin <b>'+esc(emri)+'</b>. Lidhja për gjurmim do të shkëputet dhe konvertimet e tij s\'do të numërohen më.', ()=>zonaFshi(i));
+  const emri=z.emri?('"'+z.emri+'"'):'this code';
+  fshiDialog('You are about to remove the code <b>'+esc(emri)+'</b>. The tracking connection will end and its conversions will no longer be counted.', ()=>zonaFshi(i));
 }
 async function konvFshi(i){
   const u=_konvUrls[i];
@@ -3153,7 +3153,7 @@ function vizatoZonat(){
   _konvZona.forEach((z,i)=>{
     const status = z.id ? (z.track_active
         ? '<span style="color:var(--good);font-size:12px;">✓ E lidhur</span>'
-        : '<span style="color:var(--mut);font-size:12px;">○ Pa lidhur</span>')
+        : '<span style="color:var(--mut);font-size:12px;">○ Not connected</span>')
       : '<span style="color:var(--mut);font-size:12px;">Pa ruajtur</span>';
     h+='<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;">'+
        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'+
@@ -3350,12 +3350,12 @@ async function mbyllKonvertim(pasRuajtjes){
 // STEP 0 — Llogaria
 function logjikaHTML(id, valDefault){
   const v = valDefault || 'ankand';
-  return '<label>Si duhet të shpërndahen shfaqjet e reklamave të tua?</label>'+
+  return '<label>How should your ad impressions be distributed?</label>'+
     '<div class="seg" id="'+id+'">'+
-      '<button type="button" data-v="ankand" class="'+(v==='ankand'?'sel':'')+'" onclick="segPick(this)">Ankand <span class="small mut">(Rekomanduar)</span></button>'+
-      '<button type="button" data-v="barazi" class="'+(v==='barazi'?'sel':'')+'" onclick="segPick(this)">Barazi</button>'+
+      '<button type="button" data-v="ankand" class="'+(v==='ankand'?'sel':'')+'" onclick="segPick(this)">Auction <span class="small mut">(Recommended)</span></button>'+
+      '<button type="button" data-v="barazi" class="'+(v==='barazi'?'sel':'')+'" onclick="segPick(this)">Balance</button>'+
     '</div>'+
-    '<p class="small mut" style="margin-top:4px;">Ankandi shpërndan sipas performancës — reklamat më të mira marrin më shumë shfaqje. Barazia synon që të marrësh aq shfaqje sa jep, pavarësisht performancës.</p>';
+    '<p class="small mut" style="margin-top:4px;">Auction distributes based on performance — better-performing ads get more impressions. Balance aims to give you as many impressions as you give, regardless of performance.</p>';
 }
 function stepLlogaria(b){
   if(une){
