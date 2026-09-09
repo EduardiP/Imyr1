@@ -2679,10 +2679,10 @@ function renderZgjedhja(){
       '<h2 class="h" style="text-align:center;">How would you like to start?</h2>'+
       '<p class="small mut" style="text-align:center;margin:6px 0 28px;">Pick one — you can change it later.</p>'+
       '<style>'+
-        '.zgjTabBtn{flex:1;padding:16px;border-radius:12px;border:1.5px solid var(--line);background:#0e1116;color:var(--txt);'+
+        '.zgjTabBtn{flex:1;padding:16px;border-radius:12px;border:1.5px solid var(--line);background:var(--card2);color:var(--txt);'+
           'font-size:15px;font-weight:600;cursor:pointer;position:relative;transition:border-color .15s,background .15s;}'+
         '.zgjTabBtn:active{transform:none;}'+
-        '.zgjTabBtn.sel{border-color:var(--acc);background:rgba(59,110,240,.08);}'+
+        '.zgjTabBtn.sel{border-color:var(--acc);background:rgba(59,110,240,.12);color:var(--acc);}'+
         '.zgjBadge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--acc);color:#fff;'+
           'font-size:10px;font-weight:700;letter-spacing:.03em;padding:3px 10px;border-radius:20px;text-transform:uppercase;}'+
       '</style>'+
