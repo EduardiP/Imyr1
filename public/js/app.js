@@ -305,17 +305,17 @@ function renderAdTypes(){
 function ngarkoVideoUI(){
   const m=$('mainPanel');
   m.innerHTML=
-    '<h2 class="h">Shto video</h2>'+
-    '<p class="small" style="margin:2px 0 14px;">Video duhet të jetë në YouTube. Vendos linkun — reklama shfaqet si video, dhe klikimi çon te destinacioni.</p>'+
-    '<label>Titulli (opsional)</label><input id="up_title" placeholder="Emri i reklamës">'+
-    '<label style="margin-top:12px;">Linku i destinacionit *</label>'+
-    '<input id="up_link" placeholder="https://faqja-ime.com/oferta" inputmode="url">'+
-    '<div class="small mut" style="margin-top:3px;">Ku çohet vizitori kur klikon reklamën (dhe ku matet konvertimi).</div>'+
-    '<label style="margin-top:12px;">Linku i videos (YouTube) *</label>'+
+    '<h2 class="h">Add video</h2>'+
+    '<p class="small" style="margin:2px 0 14px;">The video must be on YouTube. Paste the link — the ad shows as a video, and clicking leads to the destination.</p>'+
+    '<label>Title (optional)</label><input id="up_title" placeholder="Ad name">'+
+    '<label style="margin-top:12px;">Destination link *</label>'+
+    '<input id="up_link" placeholder="https://my-website.com/offer" inputmode="url">'+
+    '<div class="small mut" style="margin-top:3px;">Where the visitor goes when they click the ad (and where the conversion is measured).</div>'+
+    '<label style="margin-top:12px;">Video link (YouTube) *</label>'+
     '<input id="up_video" placeholder="https://www.youtube.com/watch?v=..." inputmode="url">'+
-    '<div class="small mut" style="margin-top:3px;">Kopjo linkun e videos nga YouTube.</div>'+
+    '<div class="small mut" style="margin-top:3px;">Copy the video link from YouTube.</div>'+
     '<div id="up_prev" style="margin-top:12px;"></div>'+
-    '<button class="primary" id="up_btn" onclick="ngarkoVideo()" style="margin-top:14px;">Shto →</button>'+
+    '<button class="primary" id="up_btn" onclick="ngarkoVideo()" style="margin-top:14px;">Add →</button>'+
     '<div class="msg" id="up_msg"></div>';
   $('up_video').addEventListener('blur', function(){
     const id=nxjerrYtId(this.value);
@@ -333,57 +333,57 @@ async function ngarkoVideo(){
   const link=($('up_link')||{}).value||'';
   const video=($('up_video')||{}).value||'';
   const msg=$('up_msg');
-  if(!link.trim()){ if(msg){msg.className='msg err';msg.textContent='Vendos linkun e destinacionit.';} return; }
+  if(!link.trim()){ if(msg){msg.className='msg err';msg.textContent='Enter the destination link.';} return; }
   const ytId=nxjerrYtId(video);
-  if(!ytId){ if(msg){msg.className='msg err';msg.textContent='Linku i YouTube s\'është i vlefshëm.';} return; }
+  if(!ytId){ if(msg){msg.className='msg err';msg.textContent='The YouTube link is not valid.';} return; }
   $('up_btn').disabled=true;
   try{
     const r=await (await fetch('/api/reklama/video',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({titull, link, youtube_id:ytId, logjika_shperndarjes:(window.__llogariaModaliteti||'ankand')})})).json();
     if(r.error){ if(msg){msg.className='msg err';msg.textContent=r.error;} $('up_btn').disabled=false; return; }
-    if(msg){msg.className='msg ok';msg.textContent='✓ Video u shtua.';}
+    if(msg){msg.className='msg ok';msg.textContent='✓ Video added.';}
     setTimeout(()=>nav({v:'profile',nav:'reklamat'}),800);
-  }catch(e){ if(msg){msg.className='msg err';msg.textContent='Gabim: '+e.message;} $('up_btn').disabled=false; }
+  }catch(e){ if(msg){msg.className='msg err';msg.textContent='Error: '+e.message;} $('up_btn').disabled=false; }
 }
 
 //funksioni per HTML5
 function ngarkoHtml5UI(){
   const m=$('mainPanel');
   m.innerHTML=
-    '<h2 class="h">Ngarko HTML5</h2>'+
-    '<p class="small" style="margin:2px 0 14px;">Ngarko një skedar .htm ose .zip (max 200 KB), ose merr nga Creative-t e mia.</p>'+
-    '<label>Titulli (opsional)</label><input id="up_title" placeholder="Emri i reklamës">'+
-    '<label style="margin-top:12px;">Linku i destinacionit *</label>'+
-    '<input id="up_link" placeholder="https://faqja-ime.com/oferta" inputmode="url">'+
-    '<div class="small mut" style="margin-top:3px;">Ku çohet vizitori kur klikon reklamën (dhe ku matet konvertimi).</div>'+
-    '<label style="margin-top:12px;">Përmbajtja</label>'+
-    '<div class="small mut" style="margin-top:3px;">Ku çohet vizitori kur klikon reklamën (dhe ku matet konvertimi).</div>'+
+    '<h2 class="h">Upload HTML5</h2>'+
+    '<p class="small" style="margin:2px 0 14px;">Upload an .htm or .zip file (max 200 KB), or pick from My Creatives.</p>'+
+    '<label>Title (optional)</label><input id="up_title" placeholder="Ad name">'+
+    '<label style="margin-top:12px;">Destination link *</label>'+
+    '<input id="up_link" placeholder="https://my-website.com/offer" inputmode="url">'+
+    '<div class="small mut" style="margin-top:3px;">Where the visitor goes when they click the ad (and where the conversion is measured).</div>'+
+    '<label style="margin-top:12px;">Content</label>'+
+    '<div class="small mut" style="margin-top:3px;">Where the visitor goes when they click the ad (and where the conversion is measured).</div>'+
     // PARALAJMERIMI I RI:
     '<div class="html5Paralajmerim">'+
-      '<b>⚠️ Përpara se të ngarkosh:</b>'+
+      '<b>⚠️ Before you upload:</b>'+
       '<ul style="margin:8px 0 0;padding-left:18px;line-height:1.7;">'+
-        '<li>Madhësia e skedarit: <b>max 200 KB</b>.</li>'+
-        '<li>Përmasat: brenda <b>260×290px</b> (desktop) dhe <b>320×400px</b> (mobile).</li>'+
-        '<li>Bëje <b>fleksibël (responsiv)</b> — të përshtatet me hapësira të ndryshme pa u prishur. Përdor përqindje dhe clamp(), jo px fikse.</li>'+
-        '<li>Sa më i vogël dhe fleksibël, aq më shumë vende fiton.</li>'+
+        '<li>File size: <b>max 200 KB</b>.</li>'+
+        '<li>Dimensions: within <b>260×290px</b> (desktop) and <b>320×400px</b> (mobile).</li>'+
+        '<li>Make it <b>flexible (responsive)</b> — so it adapts to different spaces without breaking. Use percentages and clamp(), not fixed px.</li>'+
+        '<li>The smaller and more flexible, the more placements it gets.</li>'+
       '</ul>'+
     '</div>'+
-    '<label style="margin-top:12px;">Përmbajtja</label>'+
+    '<label style="margin-top:12px;">Content</label>'+
     '<div class="upDy">'+
       '<label class="upBtn upBtnFile">📁 Choose file'+
         '<input type="file" id="up_file" accept=".htm,.html,.zip" style="display:none;">'+
       '</label>'+
-      '<button type="button" class="upBtn upBtnCreative" onclick="hapCreativeBallon()">✨ Nga Creative-t e mia</button>'+
+      '<button type="button" class="upBtn upBtnCreative" onclick="hapCreativeBallon()">✨ From my Creatives</button>'+
     '</div>'+
     '<div id="up_prev" style="margin-top:12px;"></div>'+
     '<input type="hidden" id="up_creative_id">'+
-    '<button class="primary" id="up_btn" onclick="ngarkoHtml5()" style="margin-top:14px;">Ngarko →</button>'+
+    '<button class="primary" id="up_btn" onclick="ngarkoHtml5()" style="margin-top:14px;">Upload →</button>'+
     '<div class="msg" id="up_msg"></div>';
   $('up_file').addEventListener('change', function(){
     const f=this.files[0]; if(!f) return;
     if(f.size > 200*1024){
       $('up_msg').className='msg err';
-      $('up_msg').textContent='Skedari është '+Math.round(f.size/1024)+' KB. Maksimumi është 200 KB.';
+      $('up_msg').textContent='The file is '+Math.round(f.size/1024)+' KB. The maximum is 200 KB.';
       this.value=''; return;
     }
     $('up_msg').textContent='';
@@ -395,11 +395,11 @@ function ngarkoHtml5UI(){
 async function ngarkoHtml5(){
   const link=($('up_link')||{}).value||'';
   const msg=$('up_msg');
-  if(!link.trim()){ if(msg){msg.className='msg err';msg.textContent='Vendos linkun e destinacionit.';} return; }
+  if(!link.trim()){ if(msg){msg.className='msg err';msg.textContent='Enter the destination link.';} return; }
   const f=($('up_file')||{}).files ? $('up_file').files[0] : null;
   const crId=($('up_creative_id')||{}).value||'';
-  if(!f && !crId){ if(msg){msg.className='msg err';msg.textContent='Ngarko një skedar ose zgjidh nga Creative-t.';} return; }
-  if(msg){msg.className='msg ok';msg.textContent='✓ Gati për ngarkim (backend-i i html5 vjen së shpejti).';}
+  if(!f && !crId){ if(msg){msg.className='msg err';msg.textContent='Upload a file or choose from Creatives.';} return; }
+  if(msg){msg.className='msg ok';msg.textContent='✓ Ready to upload (HTML5 backend coming soon).';}
   // TODO: dërgo skedarin te serveri (multipart) ose crId te /api/reklama/html5
 }
 
@@ -410,9 +410,9 @@ async function hapCreativetPerReklame(){
     const bd = $('backdrop') || document.body;
     if(!r.kreative || !r.kreative.length){
       bd.innerHTML = '<div class="modal card"><button class="x" onclick="mbyllCrModal()">×</button>'+
-        '<h3 style="margin:0 0 10px;">S\'ke Creative të krijuara</h3>'+
-        '<p class="small mut">Krijo një reklamë me AI, dhe pastaj mund ta përdorësh këtu.</p>'+
-        '<button class="btn cta" style="margin-top:12px;" onclick="mbyllCrModal();nav({v:\'profile\',nav:\'kreative\'})">Krijo tani</button></div>';
+        '<h3 style="margin:0 0 10px;">You have no Creatives yet</h3>'+
+        '<p class="small mut">Create an ad with AI, and then you can use it here.</p>'+
+        '<button class="btn cta" style="margin-top:12px;" onclick="mbyllCrModal();nav({v:\'profile\',nav:\'kreative\'})">Create now</button></div>';
       if(bd.classList) bd.classList.remove('hide');
       return;
     }
@@ -422,33 +422,33 @@ async function hapCreativetPerReklame(){
         '<div style="padding:8px;"><b>'+krEsc(k.emri)+'</b><div class="small mut">'+krEsc(k.lloji)+'</div></div>'+
       '</div>').join('');
     bd.innerHTML = '<div class="modal card" style="max-width:640px;"><button class="x" onclick="mbyllCrModal()">×</button>'+
-      '<h3 style="margin:0 0 14px;">Zgjidh nga Creative-t e mia</h3>'+
+      '<h3 style="margin:0 0 14px;">Choose from my Creatives</h3>'+
       '<div class="krPickGrid">'+grid+'</div></div>';
     if(bd.classList) bd.classList.remove('hide');
   }catch(e){}
 }
-function zgjidhCreativePerReklame(id){ console.log('U zgjodh #'+id); mbyllCrModal(); }
+function zgjidhCreativePerReklame(id){ console.log('Selected #'+id); mbyllCrModal(); }
 function mbyllCrModal(){ const b=$('backdrop'); if(b){ b.classList.add('hide'); b.innerHTML=''; } }
 
 function ngarkoImazhUI(){
   const m=$('mainPanel');
   m.innerHTML=
-    '<h2 class="h">Ngarko imazhin</h2>'+
-    '<p class="small" style="margin:2px 0 14px;">Zgjidh një imazh nga laptopi ose nga Creative-t e krijuara me AI.</p>'+
-    '<label>Titulli (opsional)</label><input id="up_title" placeholder="Emri i reklamës">'+
-    '<label style="margin-top:12px;">Linku i destinacionit *</label>'+
-    '<input id="up_link" placeholder="https://faqja-ime.com/oferta" inputmode="url">'+
-    '<div class="small mut" style="margin-top:3px;">Ku çohet vizitori kur klikon reklamën (dhe ku matet konvertimi).</div>'+
-    '<label style="margin-top:12px;">Përmbajtja</label>'+
+    '<h2 class="h">Upload image</h2>'+
+    '<p class="small" style="margin:2px 0 14px;">Choose an image from your device or from Creatives made with AI.</p>'+
+    '<label>Title (optional)</label><input id="up_title" placeholder="Ad name">'+
+    '<label style="margin-top:12px;">Destination link *</label>'+
+    '<input id="up_link" placeholder="https://my-website.com/offer" inputmode="url">'+
+    '<div class="small mut" style="margin-top:3px;">Where the visitor goes when they click the ad (and where the conversion is measured).</div>'+
+    '<label style="margin-top:12px;">Content</label>'+
     '<div class="upDy">'+
       '<label class="upBtn upBtnFile">📁 Choose file'+
         '<input type="file" id="up_file" accept="image/*" style="display:none;">'+
       '</label>'+
-      '<button type="button" class="upBtn upBtnCreative" onclick="hapCreativeBallon()">✨ Nga Creative-t e mia</button>'+
+      '<button type="button" class="upBtn upBtnCreative" onclick="hapCreativeBallon()">✨ From my Creatives</button>'+
     '</div>'+
     '<div id="up_prev" style="margin-top:12px;"></div>'+
     '<input type="hidden" id="up_creative_id">'+
-    '<button class="primary" id="up_btn" onclick="ngarkoImazh()" style="margin-top:14px;">Ngarko →</button>'+
+    '<button class="primary" id="up_btn" onclick="ngarkoImazh()" style="margin-top:14px;">Upload →</button>'+
     '<div class="msg" id="up_msg"></div>';
   $('up_file').addEventListener('change', function(){
     const f=this.files[0]; if(!f) return;
@@ -463,9 +463,9 @@ async function hapCreativeBallon(){
     const r=await (await fetch('/api/kreative/gati')).json();
     if(!r.kreative || !r.kreative.length){
       bd.innerHTML='<div class="modal card"><button class="x" onclick="mbyllCreativeBallon()">×</button>'+
-        '<h3 style="margin:0 0 10px;">S\'ke Creative të krijuara</h3>'+
-        '<p class="small mut">Krijo një reklamë me AI, pastaj mund ta përdorësh këtu.</p>'+
-        '<button class="btn cta" style="margin-top:12px;" onclick="mbyllCreativeBallon();nav({v:\'profile\',nav:\'kreative\'})">Krijo tani</button></div>';
+        '<h3 style="margin:0 0 10px;">You have no Creatives yet</h3>'+
+        '<p class="small mut">Create an ad with AI, then you can use it here.</p>'+
+        '<button class="btn cta" style="margin-top:12px;" onclick="mbyllCreativeBallon();nav({v:\'profile\',nav:\'kreative\'})">Create now</button></div>';
       bd.classList.remove('hide'); return;
     }
     const grid=r.kreative.map(k=>
@@ -474,7 +474,7 @@ async function hapCreativeBallon(){
         '<div style="padding:8px;"><b>'+krEsc(k.emri)+'</b><div class="small mut">'+krEsc(k.lloji)+'</div></div>'+
       '</div>').join('');
     bd.innerHTML='<div class="modal card" style="max-width:560px;"><button class="x" onclick="mbyllCreativeBallon()">×</button>'+
-      '<h3 style="margin:0 0 14px;">Nga Creative-t e mia</h3>'+
+      '<h3 style="margin:0 0 14px;">From my Creatives</h3>'+
       '<div class="krPickGrid">'+grid+'</div></div>';
     bd.classList.remove('hide');
   }catch(e){}
@@ -721,8 +721,8 @@ async function mainNjoftimet(m){
     nj.forEach(x=>{
       if(x.nga_admin){
         const btn = x.veprim
-          ? '<button class="njBtn" onclick="event.stopPropagation();njAdminButon('+x.id+',\''+x.veprim+'\')">'+esc(x.veprim_label||'Hap')+'</button>'
-          : '<div class="njGo" onclick="event.stopPropagation();njAdminMbyll('+x.id+')" style="cursor:pointer;">Shëno si të lexuar ✓</div>';
+          ? '<button class="njBtn" onclick="event.stopPropagation();njAdminButon('+x.id+',\''+x.veprim+'\')">'+esc(x.veprim_label||'Open')+'</button>'
+          : '<div class="njGo" onclick="event.stopPropagation();njAdminMbyll('+x.id+')" style="cursor:pointer;">Mark as read ✓</div>';
         h+='<div class="njCard njAdmin">'+
            '<div class="njT">📢 '+esc(x.titull)+'</div>'+
            '<div class="njX">'+esc(x.teksti)+'</div>'+btn+'</div>';
@@ -730,11 +730,11 @@ async function mainNjoftimet(m){
         h+='<div class="njCard" onclick="njVeprim(\''+x.veprim+'\')">'+
            '<div class="njT">'+esc(x.titull)+'</div>'+
            '<div class="njX">'+esc(x.teksti)+'</div>'+
-           '<div class="njGo">Rregulloje →</div></div>';
+           '<div class="njGo">Fix it →</div></div>';
       }
     });
     el.innerHTML=h;
-  }catch(e){ $('njLista').innerHTML='<p class="small">Gabim.</p>'; }
+  }catch(e){ $('njLista').innerHTML='<p class="small">Error.</p>'; }
 }
 const DASH_QUICK_ACTIONS = [
   { label:'Create an ad', desc:'Add a new ad', accent:'#3b6ef0',
@@ -1896,7 +1896,7 @@ function krHapModifiko(id, lloji){
   el.innerHTML=
     '<label style="margin-top:14px;">What should be changed?</label>'+
     '<textarea id="krModPer" placeholder="e.g. make the background blue, add a coffee cup" style="min-height:80px;"></textarea>'+
-    '<button class="primary" id="krModBtn" onclick="krModifiko('+id+',\''+lloji+'\')" style="margin-top:12px;">✨ Gjenero me AI</button>'+
+    '<button class="primary" id="krModBtn" onclick="krModifiko('+id+',\''+lloji+'\')" style="margin-top:12px;">✨ Generate with AI</button>'+
     '<p id="krModMsg" class="msg"></p>';
 }
 async function krModifiko(id, lloji){
