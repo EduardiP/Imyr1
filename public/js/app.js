@@ -1219,7 +1219,7 @@ async function snipDetaje(m, id){
         '<p class="small" style="margin:6px 0 10px;">Place this line where you want the ad to appear on your site.</p>'+
         '<div style="position:relative;">'+
           '<textarea class="kod" id="snipKod" readonly>'+esc(snipKodi(sn.celes))+'</textarea>'+
-          '<button class="btn" id="snipCbtn" onclick="snipKopjo()" style="position:absolute;top:8px;right:8px;padding:4px 10px;font-size:12px;line-height:1;">Copy</button>'+
+          '<button class="btn" id="snipCbtn" onclick="snipKopjo()" style="position:absolute;top:8px;right:8px;padding:5px 12px;font-size:12px;line-height:1;background:var(--acc);color:#fff;border:none;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.3);">Copy</button>'+
         '</div>'+
         '<div id="claudeSuport'+id+'" style="margin:14px 0;"></div>'+
         '<div style="margin-top:14px;">'+
@@ -3458,36 +3458,20 @@ async function stepLidhja(b){
     const r=await(await fetch('/api/snippetet')).json();
     (r.snippetet||[]).forEach(sn=>_madSnipZgjedhur.add(sn.id));
   }catch(e){}
-  // Zhvendos FIZIKISHT butonin origjinal "Save" (+ mesazhin e tij) jashte madhBox-it, te fundi —
-  // 1 buton i vetem, gjithmone i dukshem. Brenda wizard-it, ky buton ben GJITHÇKA ne 1 klikim:
-  // ruan madhesine (nese ka snippet te zgjedhur — tashme automatik), pastaj verifikon lidhjen
-  // (hap website-in e njohur + pret sinjalin), dhe VETEM nese lidhja konfirmohet e suksesshme,
-  // vazhdon vetvetiu tek hapi tjeter. Nese s'eshte lidhur, jep sinjal qarte qe s'eshte lidhur ende.
-  const madhRuajBtn=$('madhRuaj'), madhMsgEl=$('madhMsg'), fundi=$('madhRuajFund');
-  if(madhRuajBtn && fundi){
-    fundi.appendChild(madhRuajBtn);
-    madhRuajBtn.textContent='Verify and continue →';
-    madhRuajBtn.onclick = async function(){
-      madhRuajBtn.disabled=true;
-      if(madhMsgEl){ madhMsgEl.className='msg'; madhMsgEl.textContent='Saving…'; }
-      if(_madSnipZgjedhur.size){ await ruajMadhesine(); }
-      let url=(une.website||'').trim();
-      if(!/^https?:\/\//i.test(url)) url='https://'+url;
-      if(madhMsgEl){ madhMsgEl.className='msg'; madhMsgEl.innerHTML='⏳ Checking your connection…'; }
-      try{
-        const st=await(await fetch('/api/kontrollo')).json();
-        if(st.active){
-          await refreshProg();
-          window.__onLidhur();
-          return;
-        }
-      }catch(e){}
-      // S'eshte ende i lidhur: hap faqen (nese s'eshte hapur ende) dhe fillo pritjen e sinjalit.
-      window.open(url,'_blank');
-      if(madhMsgEl){ madhMsgEl.className='msg err'; madhMsgEl.innerHTML='Not connected yet. Opened your site — waiting for the signal…'; }
-      startPolling(window.__onLidhur);
-      madhRuajBtn.disabled=false;
+  // Fshij butonin e brendshem "Save" te madhesise — ketu s'perdoret.
+  const madhRuajBtn=$('madhRuaj'); if(madhRuajBtn) madhRuajBtn.style.display='none';
+  const madhMsgEl=$('madhMsg'); if(madhMsgEl) madhMsgEl.style.display='none';
+  // Te wizard-i, shfaq gjithmone bllokun afterCopy (URL + butoni i konfirmimit), pa pritur kopjimin.
+  const afterCopy=$('afterCopy'); if(afterCopy) afterCopy.classList.remove('hide');
+  // Zhvendos FIZIKISHT butonin e connect.js ("Open the page and confirm") te fundi i çdo permbajtjeje.
+  const confirmBtn=$('hbtn'), fundi=$('madhRuajFund');
+  if(confirmBtn && fundi){ fundi.appendChild(confirmBtn); }
+  // Kur klikohet, para verifikimit, ruaj madhesine e snippet-it (te caktuar ose standarti).
+  if(confirmBtn){
+    confirmBtn.removeAttribute('onclick');
+    confirmBtn.onclick = async function(){
+      if(_madSnipZgjedhur.size){ try{ await ruajMadhesine(); }catch(e){} }
+      if(typeof hapDheVerifiko==='function') hapDheVerifiko();
     };
   }
-  if(madhMsgEl && fundi){ fundi.appendChild(madhMsgEl); }
 }
