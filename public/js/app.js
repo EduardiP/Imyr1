@@ -849,7 +849,7 @@ function renderDashSnippetList(elId, rows){
     else if(s.snippet_active){ statusTxt='Active'; statusCol='var(--good)'; }
     else { statusTxt='Not connected'; statusCol='var(--mut)'; }
     return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #20262f;">'+
-      '<span style="flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(s.emri||('Hapësira '+s.id))+'</span>'+
+      '<span style="flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(s.emri||('Space '+s.id))+'</span>'+
       '<span style="font-size:12px;color:'+statusCol+';flex:0 0 auto;">'+statusTxt+'</span>'+
     '</div>';
   }).join('');
@@ -2195,22 +2195,22 @@ function mainLidhjaSnippet(m){
   const neGraceperiod = !!(prog && prog.biznesiAuto && prog.ditet < 7);
   const paralajmerimi = neGraceperiod
     ? '<div style="background:#0e2a1a;border:1px solid var(--good);border-radius:10px;padding:16px;margin:12px 0 18px;">'+
-        '<p style="margin:0;color:#7ee2a8;">Reklama jote tashmë është aktive dhe mund të shfaqet te rrjeti gjatë 7 ditëve të para, edhe pa lidhur hapësirë ende. Lidhe kur të jesh gati, brenda kësaj periudhe, që të vazhdojë të shfaqet edhe më tej.</p>'+
+        '<p style="margin:0;color:#7ee2a8;">Your ad is already active and can show across the network during the first 7 days, even without connected space yet. Connect it when you\'re ready, within this period, so it keeps showing afterward.</p>'+
       '</div>'
     : '<div style="background:#3a1212;border:1px solid var(--err);border-radius:10px;padding:16px;margin:12px 0 18px;">'+
-        '<p style="margin:0 0 10px;color:#f5b6b6;">S\'ke asnjë hapësirë reklame aktive te faqja jote.</p>'+
-        '<p class="small" style="margin:0;">Rrjeti ynë punon me shkëmbim: ti shfaq reklamat e bizneseve të tjera te faqja jote, dhe ata shfaqin tuajat te faqet e tyre. Meqë tani s\'po shfaq asnjë reklamë (s\'ke hapësirë aktive), <b>as reklamat e tua s\'po marrin shfaqje</b> te rrjeti.</p>'+
+        '<p style="margin:0 0 10px;color:#f5b6b6;">You don\'t have any active ad space on your site.</p>'+
+        '<p class="small" style="margin:0;">Our network runs on exchange: you show other businesses\' ads on your site, and they show yours on theirs. Since you\'re not showing any ad right now (no active space), <b>your own ads aren\'t getting shown either</b> across the network.</p>'+
       '</div>';
   m.innerHTML=
-    '<h2 class="h">'+(neGraceperiod ? 'Lidhja e hapësirës së reklamave' : 'Reklamat e tua nuk po shfaqen')+'</h2>'+
+    '<h2 class="h">'+(neGraceperiod ? 'Connect your ad space' : 'Your ads aren\'t showing')+'</h2>'+
     paralajmerimi+
     '<div class="small" style="margin-bottom:18px;">'+
-      '<p><b>Si ta rregullosh:</b></p>'+
-      '<p>1. Krijo një hapësirë reklame (i vë një emër, p.sh. "Fund faqe").</p>'+
-      '<p>2. Vendos kodin e saj te faqja jote, aty ku do të shfaqet reklama.</p>'+
-      '<p>3. Verifiko lidhjen. Sapo një hapësirë bëhet aktive, reklamat e tua kthehen në rrjet menjëherë.</p>'+
+      '<p><b>How to fix it:</b></p>'+
+      '<p>1. Create an ad space (give it a name, e.g. "Footer").</p>'+
+      '<p>2. Place its code on your site, where you want the ad to appear.</p>'+
+      '<p>3. Verify the connection. As soon as a space becomes active, your ads return to the network right away.</p>'+
     '</div>'+
-    '<button class="btn cta" onclick="lidhHapesiren()">Lidh hapësirën e reklamave →</button>';
+    '<button class="btn cta" onclick="lidhHapesiren()">Connect ad space →</button>';
 }
 async function lidhHapesiren(){
   // Nese ka snippet-e ekzistuese → te lista; nese s'ka → krijo te re direkt
@@ -2236,7 +2236,7 @@ function mainReklamat(m, s){
       '<button class="btn cta" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'create\'})">+ Create</button>'+
     '</div>'+
     '<div id="rekShiritSnippet"></div>'+
-    '<div id="reklamaList"><p class="small">Po ngarkoj…</p></div>';
+    '<div id="reklamaList"><p class="small">Loading…</p></div>';
   loadReklamat();
   rekKontrolloSnippet();
 }
@@ -2246,20 +2246,20 @@ async function rekKontrolloSnippet(){
     const pr=await(await fetch('/api/progres')).json();
     if(pr.planiSkaduar){
       el.innerHTML='<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.35);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:16px;">'+
-        '<div style="flex:1;"><div style="color:#f59e0b;font-weight:600;font-size:13px;">Reklamat e tua janë ndaluar</div>'+
-        '<div class="small" style="margin-top:2px;">Periudha falas (3 muajt e parë) ka përfunduar. Kalo te Premium që reklamat të vazhdojnë të shfaqen te rrjeti.</div></div>'+
-        '<button class="btn" style="white-space:nowrap;background:#f59e0b;color:#1a1200;border:none;font-weight:600;" onclick="nav({v:\'profile\',nav:\'plani\'})">Kalo te Premium</button></div>';
+        '<div style="flex:1;"><div style="color:#f59e0b;font-weight:600;font-size:13px;">Your ads have been stopped</div>'+
+        '<div class="small" style="margin-top:2px;">Your free period (first 3 months) has ended. Upgrade to Premium so your ads keep showing across the network.</div></div>'+
+        '<button class="btn" style="white-space:nowrap;background:#f59e0b;color:#1a1200;border:none;font-weight:600;" onclick="nav({v:\'profile\',nav:\'plani\'})">Upgrade to Premium</button></div>';
       return;
     }
     const neGraceperiod = !!(pr.biznesiAuto && pr.ditet < 7);
     if(!pr.lidhja && !neGraceperiod){
       el.innerHTML='<div onclick="nav({v:\'profile\',nav:\'lidhjaSnippet\'})" style="cursor:pointer;background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.3);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:16px;">'+
-        '<div style="flex:1;"><div style="color:var(--err);font-weight:600;font-size:13px;">Reklamat e tua nuk po shfaqen</div>'+
-        '<div class="small" style="margin-top:2px;">S\'ke asnjë hapësirë reklame aktive. Meqë s\'po shfaq reklamat e të tjerëve, as reklamat e tua s\'po marrin shfaqje. Kliko për të mësuar si →</div></div>'+
-        '<button class="btn cta" style="white-space:nowrap;" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'lidhjaSnippet\'})">Shiko</button></div>';
+        '<div style="flex:1;"><div style="color:var(--err);font-weight:600;font-size:13px;">Your ads aren\'t showing</div>'+
+        '<div class="small" style="margin-top:2px;">You don\'t have any active ad space. Since you\'re not showing others\' ads, your own ads aren\'t getting shown either. Click to learn how →</div></div>'+
+        '<button class="btn cta" style="white-space:nowrap;" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'lidhjaSnippet\'})">View</button></div>';
     } else if(!pr.lidhja && neGraceperiod){
       el.innerHTML='<div style="background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.3);border-radius:12px;padding:14px 16px;margin-bottom:16px;">'+
-        '<div class="small" style="color:var(--good);">Reklama jote tashmë është aktive te rrjeti, edhe pa lidhur hapësirë ende — lidhe brenda 7 ditëve të para që të vazhdojë të shfaqet.</div></div>';
+        '<div class="small" style="color:var(--good);">Your ad is already active across the network, even without connected space yet — connect it within the first 7 days so it keeps showing.</div></div>';
     } else { el.innerHTML=''; }
   }catch(e){}
 }
@@ -2268,12 +2268,12 @@ async function loadReklamat(){
   try{
     const rows=await(await fetch('/api/reklamat?logjika='+(window.__llogariaModaliteti||'ankand'))).json();
     window.__reklamat = rows;
-    if(!rows.length){ el.innerHTML='<div class="card" style="text-align:center;padding:40px 20px;"><p class="small">Ende s\'ke krijuar reklama. Kliko "+ Create".</p></div>'; return; }
-    let h='<div class="rektbl"><div class="rekhead"><span>Reklama</span><span>Shikime</span><span>Klikime</span><span>Konvertime</span><span></span><span></span></div>';
+    if(!rows.length){ el.innerHTML='<div class="card" style="text-align:center;padding:40px 20px;"><p class="small">You haven\'t created any ads yet. Click "+ Create".</p></div>'; return; }
+    let h='<div class="rektbl"><div class="rekhead"><span>Ad</span><span>Views</span><span>Clicks</span><span>Conversions</span><span></span><span></span></div>';
     rows.forEach(r=>{
       const thumb = r.imazh_url ? '<span class="rekthumb"><img src="'+esc(r.imazh_url)+'"></span>' : '<span class="rekthumb">▦</span>';
-      const tgl = '<label class="tgl" title="'+(r.pauzuar?'E pauzuar':'Aktive')+'" onclick="event.stopPropagation()"><input type="checkbox" '+(r.pauzuar?'':'checked')+' onchange="reklamaPauza('+r.id+',this.checked)"><span class="slider"></span></label>';
-      const xbtn = '<button class="btn" style="padding:4px 9px;" title="Fshi" onclick="event.stopPropagation();reklamaKonfirmoFshi('+r.id+',\''+esc((r.emri||'').replace(/\x27/g,""))+'\')">✕</button>';
+      const tgl = '<label class="tgl" title="'+(r.pauzuar?'Paused':'Active')+'" onclick="event.stopPropagation()"><input type="checkbox" '+(r.pauzuar?'':'checked')+' onchange="reklamaPauza('+r.id+',this.checked)"><span class="slider"></span></label>';
+      const xbtn = '<button class="btn" style="padding:4px 9px;" title="Delete" onclick="event.stopPropagation();reklamaKonfirmoFshi('+r.id+',\''+esc((r.emri||'').replace(/\x27/g,""))+'\')">✕</button>';
       h+='<div class="rekrow" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'detail\',id:'+r.id+'})">'+
          '<span class="rekname">'+thumb+'<span class="nm">'+esc(r.emri)+'</span></span>'+
          '<span>'+r.shikime+'</span><span>'+r.klikime+'</span><span>'+r.konvertime+'</span>'+
@@ -2281,17 +2281,17 @@ async function loadReklamat(){
     });
     h+='</div>';
     el.innerHTML=h;
-  }catch(e){ el.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
+  }catch(e){ el.innerHTML='<p class="small">Loading error.</p>'; }
 }
 
 function reklamaKonfirmoFshi(id, emri){
   const bd=$('backdrop'); if(!bd) return;
   bd.innerHTML='<div class="modal card"><button class="x" onclick="mbyllReklamaModal()">×</button>'+
-    '<h3 style="margin:0 0 10px;">Fshi reklamën?</h3>'+
-    '<p class="small mut">Je i sigurt që do të fshish "<b>'+esc(emri||'këtë reklamë')+'</b>"? Kjo reklamë nuk do të shfaqet më dhe nuk mund të kthehet.</p>'+
+    '<h3 style="margin:0 0 10px;">Delete ad?</h3>'+
+    '<p class="small mut">Are you sure you want to delete "<b>'+esc(emri||'this ad')+'</b>"? This ad will no longer show and can\'t be restored.</p>'+
     '<div style="display:flex;gap:10px;margin-top:16px;">'+
-      '<button class="btn" style="flex:1;" onclick="mbyllReklamaModal()">Anulo</button>'+
-      '<button class="btn" style="flex:1;background:var(--err);color:#fff;border-color:var(--err);" onclick="reklamaFshi('+id+')">Fshi</button>'+
+      '<button class="btn" style="flex:1;" onclick="mbyllReklamaModal()">Cancel</button>'+
+      '<button class="btn" style="flex:1;background:var(--err);color:#fff;border-color:var(--err);" onclick="reklamaFshi('+id+')">Delete</button>'+
     '</div></div>';
   bd.classList.remove('hide');
 }
@@ -2319,12 +2319,12 @@ async function reklamaPauza(id, aktiv){
 
 var _rekTab = 'reklama';
 async function hapReklame(id, m){
-  m.innerHTML='<p class="small">Po ngarkoj…</p>';
+  m.innerHTML='<p class="small">Loading…</p>';
   let rows=window.__reklamat;
   if(!rows){ try{ rows=await(await fetch('/api/reklamat')).json(); window.__reklamat=rows; }catch(e){ rows=[]; } }
   const r=(rows||[]).find(x=>x.id===id)||{};
   m.innerHTML=
-    '<h2 class="h">'+esc(r.emri||'Reklama')+'</h2>'+
+    '<h2 class="h">'+esc(r.emri||'Ad')+'</h2>'+
     '<div id="rekTabPermbajtja"></div>';
   rekRenderReklama(r, id);
 }
