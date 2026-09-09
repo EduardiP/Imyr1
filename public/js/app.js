@@ -556,14 +556,14 @@ function renderUserMenu(){
   }
 
   const items = [
-    { l:'Profili',           fn:function(){ nav({v:'profile', nav:'profili'}); } },
+    { l:'Profile',           fn:function(){ nav({v:'profile', nav:'profili'}); } },
     { l: (window.__llogariaModaliteti==='barazi' ? 'Switch to Auction Account' : 'Switch to Balance Account'),
       fn:function(){ switchLlogaria(); } },
-    { l:'Ekipi & Rolet',     fn:function(){ hapEkipin(); } },
-    { l:'Faturimi & Plani',  fn:function(){ nav({v:'profile', nav:'plani'}); } },
-    { l:'Cilësimet',         fn:function(){ hapCilesimet(); } },
-    { l:'Ndihmë & Suport',   fn:function(){ nav({v:'profile', nav:'suport'}); } },
-    { l:'Dil',               fn:function(){ dil(); }, err:true }
+    { l:'Team & Roles',     fn:function(){ hapEkipin(); } },
+    { l:'Billing & Plan',  fn:function(){ nav({v:'profile', nav:'plani'}); } },
+    { l:'Settings',         fn:function(){ hapCilesimet(); } },
+    { l:'Help & Support',   fn:function(){ nav({v:'profile', nav:'suport'}); } },
+    { l:'Log out',               fn:function(){ dil(); }, err:true }
   ];
   const dd=$('userMenuDropdown');
   dd.innerHTML = items.map(function(it,i){
@@ -625,9 +625,9 @@ function renderMain(s){
   if(curNav==='insights')    return mainInsights(m);
 }
 async function mainProfili(m){
-  m.innerHTML='<p class="small">Po ngarkoj…</p>';
+  m.innerHTML='<p class="small">Loading…</p>';
   let d={};
-  try{ d=await(await fetch('/api/profili')).json(); }catch(e){ m.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; return; }
+  try{ d=await(await fetch('/api/profili')).json(); }catch(e){ m.innerHTML='<p class="small">Loading error.</p>'; return; }
   window.__profiliCache = d;
   profiliRenderPamje(m, d);
 }
@@ -636,29 +636,29 @@ function profiliRenderPamje(m, d){
   const avatarHTML = d.logo_url
     ? '<div class="avatar" style="overflow:hidden;"><img src="'+esc(d.logo_url)+'" style="width:100%;height:100%;object-fit:cover;"></div>'
     : '<div class="avatar">'+esc(inic)+'</div>';
-  const tipiTekst = d.tipi==='b2b'?'Bizneseve (B2B)':(d.tipi==='b2c'?'Individëve (B2C)':'Të dyjave');
+  const tipiTekst = d.tipi==='b2b'?'Businesses (B2B)':(d.tipi==='b2c'?'Individuals (B2C)':'Both');
   const konvMini =
-    '<div class="miniStat"><div class="mv">'+(d.pike?d.pike.konvertime:0)+'</div><div class="small">konvertime → '+(d.pike?d.pike.pike_nga_konvertimet:0)+' pikë</div><div class="small mut">(1 konvertim = 1 pikë)</div></div>';
+    '<div class="miniStat"><div class="mv">'+(d.pike?d.pike.konvertime:0)+'</div><div class="small">conversions → '+(d.pike?d.pike.pike_nga_konvertimet:0)+' points</div><div class="small mut">(1 conversion = 1 point)</div></div>';
   m.innerHTML=
     '<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:6px;flex-wrap:wrap;">'+
       '<div style="display:flex;align-items:center;gap:16px;">'+
         avatarHTML+
         '<div><div style="font-size:20px;font-weight:700;">'+esc(d.emri||'')+'</div>'+
           '<div class="small">'+esc(d.email||'')+'</div>'+
-          '<div class="small">Audienca: '+tipiTekst+'</div></div>'+
+          '<div class="small">Audience: '+tipiTekst+'</div></div>'+
       '</div>'+
       '<button class="btn" onclick="profiliHapEdit()">Edit Profile</button>'+
     '</div>'+
     '<div class="pikeCard">'+
       '<div class="pikeNr">'+(d.pike_profili||0)+'</div>'+
-      '<div class="small">pikë profili</div>'+
+      '<div class="small">profile points</div>'+
     '</div>'+
-    '<h3 class="h" style="font-size:16px;margin:22px 0 4px;">Nga faqja jote (kontributi)</h3>'+
+    '<h3 class="h" style="font-size:16px;margin:22px 0 4px;">From your site (contribution)</h3>'+
     '<div style="display:flex;gap:10px;margin:8px 0 4px;flex-wrap:wrap;">'+
-      '<div class="miniStat"><div class="mv">'+(d.pike?d.pike.shfaqje:0)+'</div><div class="small">shfaqje → '+(d.pike?d.pike.pike_nga_shfaqjet:0)+' pikë</div><div class="small mut">('+(d.pike?d.pike.rate:0)+' shfaqje = 1 pikë)</div></div>'+
+      '<div class="miniStat"><div class="mv">'+(d.pike?d.pike.shfaqje:0)+'</div><div class="small">impressions → '+(d.pike?d.pike.pike_nga_shfaqjet:0)+' points</div><div class="small mut">('+(d.pike?d.pike.rate:0)+' impressions = 1 point)</div></div>'+
       konvMini+
     '</div>'+
-    '<p class="small mut" style="margin:6px 0 18px;">Pikët e profilit rrisin sa shpesh shfaqet reklama jote te rrjeti. Mblidhen nga shfaqjet dhe konvertimet që sjell faqja jote.</p>';
+    '<p class="small mut" style="margin:6px 0 18px;">Profile points increase how often your ad shows across the network. They\'re earned from the impressions and conversions your site brings.</p>';
 }
 function profiliHapEdit(){
   nav({v:'profile', nav:'profili', edit:true});
@@ -667,16 +667,16 @@ async function profiliRenderEdit(m){
   let d=window.__profiliCache;
   if(!d){ try{ d=await(await fetch('/api/profili')).json(); window.__profiliCache=d; }catch(e){ d={}; } }
   m.innerHTML=
-    '<h2 class="h">Të dhënat e biznesit tënd</h2>'+
-    '<label>Emri i biznesit (SaaS-it)</label><input id="pe_emri" placeholder="Biznesi im" value="'+esc(d.emri||'')+'">'+
-    '<label>Logo (opsionale)</label>'+
+    '<h2 class="h">Your business details</h2>'+
+    '<label>Business name (your SaaS)</label><input id="pe_emri" placeholder="My Business" value="'+esc(d.emri||'')+'">'+
+    '<label>Logo (optional)</label>'+
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">'+
       '<div id="pe_logoPrev" class="avatar" style="width:52px;height:52px;font-size:22px;overflow:hidden;">'+(d.logo_url?'<img src="'+esc(d.logo_url)+'" style="width:100%;height:100%;object-fit:cover;">':esc((d.emri||'?').charAt(0).toUpperCase()))+'</div>'+
-      '<label class="btn" style="cursor:pointer;margin:0;">Ngarko<input type="file" id="pe_logo" accept="image/*" onchange="profiliNgarkoLogo(this)" style="display:none;"></label>'+
+      '<label class="btn" style="cursor:pointer;margin:0;">Upload<input type="file" id="pe_logo" accept="image/*" onchange="profiliNgarkoLogo(this)" style="display:none;"></label>'+
     '</div>'+
-    '<label>Faqja (website)</label><input id="pe_web" placeholder="https://saasi-im.com" value="'+esc(d.website||'')+'">'+
+    '<label>Website</label><input id="pe_web" placeholder="https://my-saas.com" value="'+esc(d.website||'')+'">'+
     segHTML('pe_tipi')+
-    '<button class="primary" id="pe_btn" onclick="profiliRuaj()" style="margin-top:14px;">Ruaj →</button>'+
+    '<button class="primary" id="pe_btn" onclick="profiliRuaj()" style="margin-top:14px;">Save →</button>'+
     '<div class="msg" id="pe_msg"></div>';
   if(d.tipi){ const btn=document.querySelector('#pe_tipi button[data-v="'+d.tipi+'"]'); if(btn) segPick(btn); }
 }
@@ -708,15 +708,15 @@ async function profiliRuaj(){
     if(une){ une.emri=emri; une.website=web; une.tipi=tipi; }
     window.__profiliCache=null;   // detyro rifreskim te dhenash kur kthehet
     history.back();
-  }catch(e){ msg.className='msg err'; msg.textContent='Gabim: '+e.message; $('pe_btn').disabled=false; }
+  }catch(e){ msg.className='msg err'; msg.textContent='Error: '+e.message; $('pe_btn').disabled=false; }
 }
 async function mainNjoftimet(m){
-  m.innerHTML='<h2 class="h">Njoftime</h2><div id="njLista" style="margin-top:12px;"><p class="small">Po ngarkoj…</p></div>';
+  m.innerHTML='<h2 class="h">Notifications</h2><div id="njLista" style="margin-top:12px;"><p class="small">Loading…</p></div>';
   try{
     const r=await(await fetch('/api/njoftimet')).json();
     const nj=r.njoftimet||[];
     const el=$('njLista');
-    if(!nj.length){ el.innerHTML='<p class="small">S\'ke njoftime të reja.</p>'; return; }
+    if(!nj.length){ el.innerHTML='<p class="small">You have no new notifications.</p>'; return; }
     let h='';
     nj.forEach(x=>{
       if(x.nga_admin){
