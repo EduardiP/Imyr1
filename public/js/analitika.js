@@ -433,7 +433,7 @@ function anaDetRenderRekDropdown(){
   const dd=$('anaDetRekDropdown'); if(!dd) return;
   dd.innerHTML='';
   dd.appendChild(anaRekRresht('All', !_anaDetReklamaId, true, function(){ anaDetReklamaSet(''); anaDetMbyllRekDropdown(); }));
-  if(!_anaDetAds.length){ const p=document.createElement('p'); p.className='small mut'; p.style.padding='6px'; p.textContent="S'ke ende reklama fituese në këtë periudhë."; dd.appendChild(p); anaDetUpdateRekBtnLabel(); return; }
+  if(!_anaDetAds.length){ const p=document.createElement('p'); p.className='small mut'; p.style.padding='6px'; p.textContent="You don\'t have any winning ads in this period yet."; dd.appendChild(p); anaDetUpdateRekBtnLabel(); return; }
   const hr=document.createElement('div'); hr.style.cssText='height:1px;background:var(--line);margin:4px 2px;'; dd.appendChild(hr);
   _anaDetAds.forEach(function(r){
     dd.appendChild(anaRekRresht(esc(r.emri||('#'+r.id)), _anaDetReklamaId==r.id, false, function(){ anaDetReklamaSet(r.id); anaDetMbyllRekDropdown(); }));
@@ -1355,9 +1355,9 @@ var ANA_METRIKA=[
   {k:'shikime',    l:'Views',    c:'#4a9eff'},
   {k:'klikime',    l:'Clicks',    c:'#3fb950'},
   {k:'konvertime', l:'Conversions', c:'#f85149'},
-  {k:'ctr',           l:'CTR % (Klikim/Shikim)',    c:'#e05fa0', derived: r => (r.shikime>0) ? Math.round((r.klikime/r.shikime)*1000)/10 : 0, percentazh:true},
-  {k:'konvPerShikim', l:'Konvertim/Shikim %',        c:'#a371f7', derived: r => (r.shikime>0) ? Math.round((r.konvertime/r.shikime)*1000)/10 : 0, percentazh:true},
-  {k:'cvr',            l:'CVR % (Konvertim/Klikim)', c:'#56d4dd', derived: r => (r.klikime>0) ? Math.round((r.konvertime/r.klikime)*1000)/10 : 0, percentazh:true}
+  {k:'ctr',           l:'CTR % (Clicks/Impressions)',    c:'#e05fa0', derived: r => (r.shikime>0) ? Math.round((r.klikime/r.shikime)*1000)/10 : 0, percentazh:true},
+  {k:'konvPerShikim', l:'Conversion/Impression %',        c:'#a371f7', derived: r => (r.shikime>0) ? Math.round((r.konvertime/r.shikime)*1000)/10 : 0, percentazh:true},
+  {k:'cvr',            l:'CVR % (Conversions/Clicks)', c:'#56d4dd', derived: r => (r.klikime>0) ? Math.round((r.konvertime/r.klikime)*1000)/10 : 0, percentazh:true}
 ];
 var ANA_METRIKA_BAZE = ANA_METRIKA.slice(0,4); // vetem 4 origjinalet, per grafiket multi-select
 // Merr vleren e nje rreshti per nje metrike — direkte (r.k) per te 4 origjinalet,
@@ -1797,8 +1797,8 @@ function anaKrijoKalendarRangu(cfg){
     }
     h+='</div>'+
     '<div style="display:flex;gap:8px;margin-top:12px;">'+
-      '<button type="button" class="btn" style="flex:1;" onclick="event.stopPropagation();__anaKalMbyll(\''+cfg.id+'\')">Anulo</button>'+
-      '<button type="button" class="btn" style="flex:1;background:var(--acc);color:#06121f;border-color:var(--acc);font-weight:600;" onclick="event.stopPropagation();__anaKalRuaj(\''+cfg.id+'\')">Ruaj</button>'+
+      '<button type="button" class="btn" style="flex:1;" onclick="event.stopPropagation();__anaKalMbyll(\''+cfg.id+'\')">Cancel</button>'+
+      '<button type="button" class="btn" style="flex:1;background:var(--acc);color:#06121f;border-color:var(--acc);font-weight:600;" onclick="event.stopPropagation();__anaKalRuaj(\''+cfg.id+'\')">Save</button>'+
     '</div>';
     panel.innerHTML=h;
   }
