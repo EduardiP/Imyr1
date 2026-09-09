@@ -37,8 +37,15 @@ async function refreshProg(){
 function nextIncomplete(){ for(let i=0;i<STEPS.length;i++){ if(!prog[STEPS[i].key]) return i; } return STEPS.length; }
 // Herën e parë (asnjë hap i plotësuar) → udhëzuesi me 3 pikat; përndryshe → paneli (dashboard)
 function pasHyrjes(){
-  const asgjeEBere = prog && !prog.llogaria && !prog.pershkrimi && !prog.lidhja;
-  if(asgjeEBere) return {v:'zgjedhja'};
+  if(!prog) return {v:'profile', nav:'dashboard'};
+  // Regjistrimi konsiderohet i plote VETEM pas hapit 1 (Biznesi) dhe hapit 2 (Pershkrimi).
+  // Nese asnjeri s'eshte bere → ekrani i zgjedhjes (auto/manual).
+  if(!prog.llogaria && !prog.pershkrimi && !prog.lidhja) return {v:'zgjedhja'};
+  // Biznesi jo i plotesuar → dergo direkt te hapi 1 (Biznesi).
+  if(!prog.llogaria) return {v:'wizard', step:0};
+  // Biznesi po, por Pershkrimi jo → dergo direkt te hapi 2 (Pershkrimi).
+  if(!prog.pershkrimi) return {v:'wizard', step:1};
+  // Te dyja te plotesuara → dhogaria eshte gati; hapat e tjere jane opsionale.
   return {v:'profile', nav:'dashboard'};
 }
 
