@@ -8,8 +8,10 @@ function snippetKod(){
 function connectUI(el){
   el.innerHTML=
     '<p class="small" style="margin:0 0 8px;">Place this line <b>exactly where you want the ad to appear</b> on your site. The ad shows up right at that spot.</p>'+
-    '<textarea class="kod" id="kodBox" readonly>'+snippetKod().replace(/</g,'&lt;')+'</textarea>'+
-    '<div class="rowbtn"><button class="btn cta" id="cbtn" onclick="kopjo()">Copy</button></div>'+
+    '<div style="position:relative;">'+
+      '<textarea class="kod" id="kodBox" readonly>'+snippetKod().replace(/</g,'&lt;')+'</textarea>'+
+      '<button class="btn" id="cbtn" onclick="kopjo()" style="position:absolute;top:8px;right:8px;padding:4px 10px;font-size:12px;line-height:1;">Copy</button>'+
+    '</div>'+
     '<div id="afterCopy" class="hide">'+
       '<div class="small" style="margin-top:12px;">Once you\'ve saved it on your site, enter the URL where you placed it and open it to confirm the connection.</div>'+
       '<label>Page URL</label><input id="hapUrl" value="'+(((une&&une.website)||'')).replace(/"/g,"&quot;")+'" placeholder="https://my-website.com">'+
