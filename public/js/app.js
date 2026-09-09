@@ -1226,6 +1226,9 @@ async function snipDetaje(m, id){
           '<button class="btn" id="snipCbtn" onclick="snipKopjo()" style="position:absolute;top:8px;right:8px;padding:5px 12px;font-size:12px;line-height:1;background:var(--acc);color:#fff;border:none;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.3);">Copy</button>'+
         '</div>'+
         '<div id="claudeSuport'+id+'" style="margin:14px 0;"></div>'+
+        '<div style="margin-top:14px;"><a href="#" style="color:#4a9eff;text-decoration:none;font-size:14px;" '+
+          'onclick="event.preventDefault();var x=document.getElementById(\'snipMadhBox'+id+'\');x.classList.toggle(\'hide\');">Set the ad space size</a></div>'+
+        '<div id="snipMadhBox'+id+'" class="hide" style="margin-top:12px;"></div>'+
         '<div style="margin-top:14px;">'+
           '<label>URL of the page where you placed it</label>'+
           '<input id="snipUrl" value="'+esc((une&&une.website)||'')+'" placeholder="https://my-website.com">'+
@@ -1233,6 +1236,9 @@ async function snipDetaje(m, id){
           '<div class="status wait hide" id="snipStatus"></div>'+
         '</div>';
       vizatoClaudeSuport(id);
+      // Ndërto caktimin e madhesise per KETE snippet specifik (brenda box-it te palosur).
+      const smb=$('snipMadhBox'+id);
+      if(smb) ndertoMadhesineNjeSnip(smb, id, sn);
     }
   }catch(e){ b.innerHTML='<p class="small err">Error.</p>'; }
 }
