@@ -308,7 +308,7 @@ function anaDetEmriFiltri(lloji){
   const eshteBalance = (window.__llogariaModaliteti==='barazi');
   if(lloji==='pesha') return eshteBalance ? 'Balance' : (_anaDetWeightMode==='te_gjitha' ? 'Weight' : (_anaDetWeightMode==='fiks' ? 'Weight: '+_anaDetWeightFiks : 'Weight: '+_anaDetWeightMin+'–'+_anaDetWeightMax));
   if(lloji==='pozicioni') return eshteBalance ? 'Daily performance' : (_anaDetPosition==='te_gjitha' ? 'Position' : 'Position: #'+_anaDetPosition);
-  if(lloji==='reklama') return _anaDetReklamaId ? 'Reklama: '+((_anaDetAds.find(r=>r.id==_anaDetReklamaId)||{}).emri||'') : 'Reklama';
+  if(lloji==='reklama') return _anaDetReklamaId ? 'Ad: '+((_anaDetAds.find(r=>r.id==_anaDetReklamaId)||{}).emri||'') : 'Ad';
   if(lloji==='kategoria') return _anaDetCategory ? 'Category: '+_anaDetCategory : 'Category';
 }
 
@@ -631,7 +631,7 @@ async function anaDetNgarkoPositionDetaje(p){
   const fitoret=d.fitoret||[];
   el.innerHTML = !fitoret.length ? '<p class="small mut">No details.</p>' :
     '<table style="width:100%;font-size:12px;border-collapse:collapse;">'+
-      '<thead><tr style="color:var(--mut);text-align:left;"><th style="padding:4px 6px;">Data</th><th style="padding:4px 6px;">Reklama</th><th style="padding:4px 6px;">Category</th><th style="padding:4px 6px;">Weight</th><th style="padding:4px 6px;">AI</th></tr></thead>'+
+      '<thead><tr style="color:var(--mut);text-align:left;"><th style="padding:4px 6px;">Data</th><th style="padding:4px 6px;">Ad</th><th style="padding:4px 6px;">Category</th><th style="padding:4px 6px;">Weight</th><th style="padding:4px 6px;">AI</th></tr></thead>'+
       '<tbody>'+fitoret.map(function(f){
         return '<tr style="border-top:1px solid #20262f;">'+
           '<td style="padding:4px 6px;">'+esc(f.data)+'</td>'+
