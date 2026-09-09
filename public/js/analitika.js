@@ -1847,7 +1847,7 @@ async function ngarkoAnaSnipDhene(){
     else { statusTxt='Palidhur'; statusCol='var(--mut)'; }
     return '<div style="padding:10px 0;border-bottom:1px solid #20262f;">'+
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'+
-        '<span style="font-weight:600;font-size:13px;">'+esc(s.emri||('Hapësira '+s.id))+'</span>'+
+        '<span style="font-weight:600;font-size:13px;">'+esc(s.emri||('Space '+s.id))+'</span>'+
         '<span style="font-size:11px;color:'+statusCol+';">'+statusTxt+'</span>'+
       '</div>'+
       '<div style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--mut);">'+
