@@ -10,7 +10,7 @@ function connectUI(el){
     '<p class="small" style="margin:0 0 8px;">Place this line <b>exactly where you want the ad to appear</b> on your site. The ad shows up right at that spot.</p>'+
     '<div style="position:relative;">'+
       '<textarea class="kod" id="kodBox" readonly>'+snippetKod().replace(/</g,'&lt;')+'</textarea>'+
-      '<button class="btn" id="cbtn" onclick="kopjo()" style="position:absolute;top:8px;right:8px;padding:4px 10px;font-size:12px;line-height:1;">Copy</button>'+
+      '<button class="btn" id="cbtn" onclick="kopjo()" style="position:absolute;top:8px;right:8px;padding:5px 12px;font-size:12px;line-height:1;background:var(--acc);color:#fff;border:none;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.3);">Copy</button>'+
     '</div>'+
     '<div id="afterCopy" class="hide">'+
       '<div class="small" style="margin-top:12px;">Once you\'ve saved it on your site, enter the URL where you placed it and open it to confirm the connection.</div>'+
