@@ -513,6 +513,10 @@ async function ngarkoImazh(){
 // ---------- PROFILI / DASHBOARD ----------
 function renderProfile(s){
   s = s || {};
+  // GUARD: dhogaria s'eshte gati derisa Biznesi (hapi 1) dhe Pershkrimi (hapi 2) te plotesohen.
+  // Nese mungon njeri, ridrejto te hapi perkates — perfshire qasjen manuale me URL.
+  if(prog && !prog.llogaria){ nav({v:'wizard', step:0}); return; }
+  if(prog && !prog.pershkrimi){ nav({v:'wizard', step:1}); return; }
   curNav = s.nav || 'dashboard';
   const oldCard = document.querySelector('.pcard');
   if(oldCard) oldCard.style.display='none';
