@@ -24,26 +24,26 @@ const NAV_ICONS = {
 };
 const NAV2 = [
   { k:'dashboard', l:'Dashboard' },
-  { k:'snippetet', l:'Hapësira e reklamave', subs:[
-    {l:'Hapësirat e mia', nav:'snippetet'},
-    {l:'Cakto madhësinë', nav:'madhesiaShumefishte'}
+  { k:'snippetet', l:'Ad Space', subs:[
+    {l:'My spaces', nav:'snippetet'},
+    {l:'Set the size', nav:'madhesiaShumefishte'}
   ]},
   { k:'kreative', l:'Creative', subs:[
-    {l:'Krijo', nav:'kreative', tab:'krijo'},
-    {l:'Krijimet e mia', nav:'kreative', tab:'lista'}
+    {l:'Create', nav:'kreative', tab:'krijo'},
+    {l:'My creatives', nav:'kreative', tab:'lista'}
   ]},
   { k:'reklamat', l:'My Ads', subs:[
-    {l:'Krijo', nav:'reklamat', sub:'create'},
-    {l:'Reklamat', nav:'reklamat'},
-    {l:'Performanca', nav:'rekPerformanca'}
+    {l:'Create', nav:'reklamat', sub:'create'},
+    {l:'Ads', nav:'reklamat'},
+    {l:'Performance', nav:'rekPerformanca'}
   ]},
-  { k:'konvertimet', l:'Konvertimet' },
+  { k:'konvertimet', l:'Conversions' },
   { k:'analytics', l:'Analytics', subs:[
-    {l:'Trafiku', nav:'anaTrafiku'},
-    {l:'Përzgjedhjet e Pishinave', nav:'anaAutomatik'},
-    {l:'Deficiti', nav:'anaDeficiti'}
+    {l:'Traffic', nav:'anaTrafiku'},
+    {l:'Pool selections', nav:'anaAutomatik'},
+    {l:'Deficit', nav:'anaDeficiti'}
   ]},
-  { k:'insights', l:'Vështrime' },
+  { k:'insights', l:'Insights' },
 ];
 var _nav2OpenKey = null; // cila kategori NAV2 ka panelin e nenkategorive te hapur (vetem nje njekohesisht)
 
@@ -694,7 +694,7 @@ async function profiliRuaj(){
   const tipi=segVal('pe_tipi');
   const msg=$('pe_msg');
   if(!emri){ msg.className='msg err'; msg.textContent='Shkruaj emrin e biznesit.'; return; }
-  if(!web){ msg.className='msg err'; msg.textContent='Shkruaj adresën e faqes.'; return; }
+  if(!web){ msg.className='msg err'; msg.textContent='Enter your website URL.'; return; }
   if(!tipi){ msg.className='msg err'; msg.textContent='Zgjidh kujt i shërben platforma.'; return; }
   $('pe_btn').disabled=true;
   try{
@@ -2524,23 +2524,23 @@ function mainEkipi(m){
 
 async function mainPlani(m){
   const VECORITE_BAZE = [
-    'Qasje e plotë te rrjeti i cross-promocionit',
-    'Kombinim me AI mes bizneseve plotësuese',
-    'Ndihmë me AI për lidhjen e snippet-it',
-    'Ndihmë me AI për krijimin e përshkrimit (për gjenerim formatesh)',
-    'Lidhja e konvertimeve + gjurmimi',
-    'Analitikë e plotë (Trafiku, Përzgjedhjet e Pishinave)',
-    'Vështrime — krahasim me mesataren e rrjetit',
-    'Njoftime për ndihmë teknike dhe udhëzime'
+    'Full access to the cross-promotion network',
+    'AI matching with complementary businesses',
+    'AI help connecting your snippet',
+    'AI help writing your description (for format generation)',
+    'Conversion linking + tracking',
+    'Full analytics (Traffic, Pool selections)',
+    'Insights — comparison against the network average',
+    'Notifications for technical help and guidance'
   ];
   const VECORITE_FALAS_SPEC = [
-    'Gjenerim formatesh reklamash me AI (imazh, video, HTML5) — deri 30 krijime/muaj',
-    'Chat suporti'
+    'AI ad-format generation (image, video, HTML5) — up to 30 creations/month',
+    'Support chat'
   ];
   const VECORITE_PREMIUM_SPEC = [
-    'Krijim Creative i PAKUFIZUAR (imazh, video, HTML5, me AI)',
-    'Krijim Reklamash i PAKUFIZUAR',
-    'Përdorim i PAKUFIZUAR i asistencës AI (chat krijimi + suporti)'
+    'UNLIMITED Creative generation (image, video, HTML5, with AI)',
+    'UNLIMITED Ad creation',
+    'UNLIMITED AI assistance (creation chat + support)'
   ];
   function ikonaKontrolli(){
     return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3fb950" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;margin-top:2px;"><polyline points="20 6 9 17 4 12"/></svg>';
@@ -3338,7 +3338,7 @@ async function wizPlotesoBiz(){
   const web=($('a_web').value||'').trim();
   const tipi=segVal('a_tipi');
   if(!emri){ $('a_msg').className='msg err'; $('a_msg').textContent='Shkruaj emrin e biznesit.'; return; }
-  if(!web){ $('a_msg').className='msg err'; $('a_msg').textContent='Shkruaj adresën e faqes.'; return; }
+  if(!web){ $('a_msg').className='msg err'; $('a_msg').textContent='Enter your website URL.'; return; }
   if(!tipi){ $('a_msg').className='msg err'; $('a_msg').textContent='Zgjidh kujt i shërben platforma.'; return; }
   $('a_btn').disabled=true;
   try{
@@ -3397,7 +3397,8 @@ async function ngarkoAnalizoMbetur(){
   const el=$('d_mbetur'); if(!el) return;
   try{
     const r=await(await fetch('/api/analizo/mbetur')).json();
-    el.textContent = 'Remaining today: '+r.mbetur+'/2';
+    if(r.pakufizuar || r.mbetur==null){ el.textContent='Unlimited'; }
+    else { el.textContent = 'Remaining today: '+r.mbetur+'/2'; }
   }catch(e){}
 }
 async function wizAnalizo(){
@@ -3463,6 +3464,7 @@ async function stepLidhja(b){
   const madhRuajBtn=$('madhRuaj'), madhMsgEl=$('madhMsg'), fundi=$('madhRuajFund');
   if(madhRuajBtn && fundi){
     fundi.appendChild(madhRuajBtn);
+    madhRuajBtn.textContent='Verify and continue →';
     madhRuajBtn.onclick = async function(){
       madhRuajBtn.disabled=true;
       if(madhMsgEl){ madhMsgEl.className='msg'; madhMsgEl.textContent='Saving…'; }
