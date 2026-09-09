@@ -6,12 +6,12 @@ function mainAnalytics(m){
   _anaKatSelectedAd=null; _anaKatDropdownOpen=false; _anaKatMetrikaAktive='shikime';
   _anaListSelectedAd=null; _anaListDropdownOpen=false;
   m.innerHTML='<h2 class="h">Analytics</h2>'+
-    '<p class="small" style="margin:2px 0 16px;">Ecuria e reklamave të tua me ditë.</p>'+
+    '<p class="small" style="margin:2px 0 16px;">Your ads performance by day.</p>'+
     '<div class="card" style="margin-bottom:16px;">'+
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
-        '<button class="btn" onclick="anaPreset(7)">7 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPreset(30)">30 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPreset(90)">90 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPreset(7)">Last 7 days</button>'+
+        '<button class="btn" onclick="anaPreset(30)">Last 30 days</button>'+
+        '<button class="btn" onclick="anaPreset(90)">Last 90 days</button>'+
         '<span style="flex:1"></span>'+
         '<div style="position:relative;">'+
           '<button type="button" id="anaKalBtn_top" class="btn" style="min-width:170px;"></button>'+
@@ -22,7 +22,7 @@ function mainAnalytics(m){
       '</div>'+
       '<div style="display:flex;justify-content:flex-end;margin-top:10px;">'+
         '<div style="position:relative;">'+
-          '<button type="button" id="anaRekBtn" class="btn" style="min-width:150px;">Reklamat <span id="anaRekBtnCount"></span> ▾</button>'+
+          '<button type="button" id="anaRekBtn" class="btn" style="min-width:150px;">Ads <span id="anaRekBtnCount"></span> ▾</button>'+
           '<div id="anaRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:240px;max-height:280px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
         '</div>'+
       '</div>'+
@@ -31,9 +31,9 @@ function mainAnalytics(m){
     '<div class="card"><canvas id="anaCanvas" height="90"></canvas></div>'+
     '<div class="card" style="margin-top:16px;">'+
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
-        '<button class="btn" onclick="anaPresetKat(7)">7 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPresetKat(30)">30 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPresetKat(90)">90 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetKat(7)">Last 7 days</button>'+
+        '<button class="btn" onclick="anaPresetKat(30)">Last 30 days</button>'+
+        '<button class="btn" onclick="anaPresetKat(90)">Last 90 days</button>'+
         '<span style="flex:1"></span>'+
         '<div style="position:relative;">'+
           '<button type="button" id="anaKalBtn_kat" class="btn" style="min-width:170px;"></button>'+
@@ -46,13 +46,13 @@ function mainAnalytics(m){
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
       '<div class="card" style="flex:2;min-width:340px;">'+
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:14px;">'+
-          '<h3 class="h" style="font-size:15px;margin:0;">Sipas kategorisë së biznesit</h3>'+
+          '<h3 class="h" style="font-size:15px;margin:0;">By business category</h3>'+
           '<div style="flex:0 0 200px;">'+
-            '<div class="small mut" style="font-weight:600;margin-bottom:6px;">Kategoritë e bizneseve ku janë ngarkuar reklamat tuaja.</div>'+
+            '<div class="small mut" style="font-weight:600;margin-bottom:6px;">Business categories where your ads were uploaded.</div>'+
             '<div id="anaKatLegend" style="display:flex;flex-direction:column;gap:6px;max-height:80px;overflow-y:auto;padding-right:4px;"></div>'+
           '</div>'+
           '<div style="position:relative;">'+
-            '<button type="button" id="anaKatRekBtn" class="btn" style="min-width:140px;">Reklamat <span id="anaKatRekBtnCount"></span> ▾</button>'+
+            '<button type="button" id="anaKatRekBtn" class="btn" style="min-width:140px;">Ads <span id="anaKatRekBtnCount"></span> ▾</button>'+
             '<div id="anaKatRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:230px;max-height:260px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
           '</div>'+
         '</div>'+
@@ -60,25 +60,25 @@ function mainAnalytics(m){
         '<canvas id="anaKatCanvas" height="110"></canvas>'+
       '</div>'+
       '<div class="card" style="flex:1;min-width:220px;">'+
-        '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Kategoritë e bizneseve</h3>'+
-        '<p class="small mut" style="margin:0 0 12px;">Ku janë ngarkuar reklamat tuaja.</p>'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Categories e bizneseve</h3>'+
+        '<p class="small mut" style="margin:0 0 12px;">Where your ads were uploaded.</p>'+
         '<div style="position:relative;margin-bottom:14px;">'+
-          '<button type="button" id="anaListRekBtn" class="btn" style="width:100%;">Reklamat <span id="anaListRekBtnCount"></span> ▾</button>'+
+          '<button type="button" id="anaListRekBtn" class="btn" style="width:100%;">Ads <span id="anaListRekBtnCount"></span> ▾</button>'+
           '<div id="anaListRekDropdown" class="hide" style="position:absolute;top:110%;left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;max-height:240px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
         '</div>'+
-        '<div id="anaListaKategori" style="max-height:300px;overflow-y:auto;padding-right:4px;"><p class="small">Po ngarkoj…</p></div>'+
+        '<div id="anaListaKategori" style="max-height:300px;overflow-y:auto;padding-right:4px;"><p class="small">Loading…</p></div>'+
       '</div>'+
     '</div>'+
     '<div class="card" style="margin-top:16px;">'+
       '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">'+
         '<div style="flex:1;min-width:220px;">'+
           '<div style="font-size:40px;font-weight:800;color:var(--acc);" id="anaPikatProfili">–</div>'+
-          '<div class="small mut" style="margin-top:4px;">Sa më shumë u jep bizneseve të tjera, aq më shumë rriten pikët — dhe aq më shpesh shfaqet reklama jote te të tjerët.</div>'+
+          '<div class="small mut" style="margin-top:4px;">The more you give other businesses, the more your points grow — and the more often your ad shows on theirs.</div>'+
         '</div>'+
         '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
-          '<button class="btn" onclick="anaPresetDhene(7)">7 ditët e fundit</button>'+
-          '<button class="btn" onclick="anaPresetDhene(30)">30 ditët e fundit</button>'+
-          '<button class="btn" onclick="anaPresetDhene(90)">90 ditët e fundit</button>'+
+          '<button class="btn" onclick="anaPresetDhene(7)">Last 7 days</button>'+
+          '<button class="btn" onclick="anaPresetDhene(30)">Last 30 days</button>'+
+          '<button class="btn" onclick="anaPresetDhene(90)">Last 90 days</button>'+
           '<div style="position:relative;">'+
             '<button type="button" id="anaKalBtn_dhene" class="btn" style="min-width:170px;"></button>'+
             '<div id="anaKalPanel_dhene" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;width:230px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
@@ -91,24 +91,24 @@ function mainAnalytics(m){
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
       '<div class="card" style="flex:1;min-width:260px;">'+
         '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Snippet-et e reklamave</h3>'+
-        '<p class="small mut" style="margin:0 0 12px;">Çfarë u ke dhënë bizneseve të tjera nëpërmjet snippet-eve tuaja. <span style="color:var(--acc);text-decoration:underline;cursor:pointer;" onclick="snipKrijo()">Shto snippet</span> për t\'u shfaqur edhe ti më shumë tek të tjerët.</p>'+
-        '<div id="anaSnipDheneLista" style="max-height:300px;overflow-y:auto;padding-right:4px;"><p class="small">Po ngarkoj…</p></div>'+
+        '<p class="small mut" style="margin:0 0 12px;">What you\'ve given other businesses through your snippets. <span style="color:var(--acc);text-decoration:underline;cursor:pointer;" onclick="snipKrijo()">Add snippet</span> to get shown more on theirs too.</p>'+
+        '<div id="anaSnipDheneLista" style="max-height:300px;overflow-y:auto;padding-right:4px;"><p class="small">Loading…</p></div>'+
       '</div>'+
       '<div class="card" style="flex:2;min-width:340px;">'+
-        '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Sipas kategorisë së biznesit</h3>'+
-        '<p class="small mut" style="margin:0 0 12px;">Çfarë u ke dhënë secilës kategori.</p>'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 4px;">By business category</h3>'+
+        '<p class="small mut" style="margin:0 0 12px;">What you\'ve given to each category.</p>'+
         '<div id="anaKatDheneMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
         '<div id="anaKatDheneLegend" style="display:flex;flex-direction:column;gap:6px;max-height:80px;overflow-y:auto;padding-right:4px;margin-bottom:10px;"></div>'+
         '<canvas id="anaKatDheneCanvas" height="110"></canvas>'+
       '</div>'+
     '</div>'+
     '<div class="card" style="margin-top:16px;">'+
-      '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Deficiti — Marrë − Dhënë</h3>'+
-      '<p class="small mut" style="margin:0 0 12px;">Diferenca mes sa ke marrë (si reklamues) dhe sa ke dhënë (si host), për dhogarinë aktuale. Pozitiv = ke marrë më shumë; negativ = ke dhënë më shumë.</p>'+
+      '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Deficit — Received − Given</h3>'+
+      '<p class="small mut" style="margin:0 0 12px;">The difference between what you received (as advertiser) and gave (as host), for the current account. Positive = you received more; negative = you gave more.</p>'+
       '<div class="presetRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
-        '<button class="btn" onclick="anaPresetDeficit(7)">7 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPresetDeficit(30)">30 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPresetDeficit(90)">90 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetDeficit(7)">Last 7 days</button>'+
+        '<button class="btn" onclick="anaPresetDeficit(30)">Last 30 days</button>'+
+        '<button class="btn" onclick="anaPresetDeficit(90)">Last 90 days</button>'+
         '<span style="flex:1"></span>'+
         '<div style="position:relative;">'+
           '<button type="button" id="anaKalBtn_deficit" class="btn" style="min-width:170px;"></button>'+
@@ -168,9 +168,9 @@ function mainAnalytics(m){
     dd.classList.toggle('hide', !_anaListDropdownOpen);
   });
   anaRenderMetrika();
-  ngarkoAnaReklamatLista();
+  ngarkoAnaAdsLista();
   anaRenderKategoriMetrika();
-  ngarkoAnaKatReklamatLista();
+  ngarkoAnaKatAdsLista();
   ngarkoAnaListRekamatLista();
   ngarkoAnalitika();
   ngarkoAnaKategorite();
@@ -190,29 +190,29 @@ function mainAnalytics(m){
 // asnje click normal — vetem funksionet e reja poshte perdoren tani.
 // ═══════════════════════════════════════════════════════════════════
 
-function mainAnaTrafiku(m){
+function mainAnaTraffic(m){
   _anaSelectedAd=null; _anaDropdownOpen=false;
-  _anaDetAktiv='pesha'; // Pesha e zgjedhur si parazgjedhje, jo asnje
-  _anaDetPerspektiv='marre'; // Marrë (ti përfitove) parazgjedhje; Dhënë (të tjerët përfituan) opsional
+  _anaDetAktiv='pesha'; // Weight e zgjedhur si parazgjedhje, jo asnje
+  _anaDetPerspektiv='marre'; // Received (ti përfitove) parazgjedhje; Given (të tjerët përfituan) opsional
   m.innerHTML=
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">'+
       '<div style="width:38px;height:38px;border-radius:12px;background:rgba(59,110,240,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b6ef0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>'+
       '</div>'+
-      '<h2 class="h" style="margin:0;">Trafiku</h2>'+
+      '<h2 class="h" style="margin:0;">Traffic</h2>'+
     '</div>'+
     '<div class="card" style="margin-bottom:16px;">'+
-      '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Detajet e pjesëmarrjeve në Ankand</h3>'+
-      '<p class="small mut" style="margin:0 0 12px;">Data vlen për të gjitha filtrat poshtë. Kliko një kategori filtri për ta hapur.</p>'+
+      '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Auction participation details</h3>'+
+      '<p class="small mut" style="margin:0 0 12px;">The date applies to all filters below. Click a filter category to open it.</p>'+
       '<div id="anaDetPerspektivRow" style="display:flex;gap:8px;margin-bottom:14px;"></div>'+
       '<div id="anaDetKryesoriRow" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
       '<div class="presetRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
-        '<button class="btn" onclick="anaDetPreset(7)">7 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaDetPreset(30)">30 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaDetPreset(90)">90 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaDetPreset(7)">Last 7 days</button>'+
+        '<button class="btn" onclick="anaDetPreset(30)">Last 30 days</button>'+
+        '<button class="btn" onclick="anaDetPreset(90)">Last 90 days</button>'+
         '<span style="flex:1"></span>'+
         '<div style="position:relative;">'+
-          '<button type="button" id="anaDetRekBtn" class="btn" style="min-width:150px;">Reklamat <span id="anaDetRekBtnCount"></span> ▾</button>'+
+          '<button type="button" id="anaDetRekBtn" class="btn" style="min-width:150px;">Ads <span id="anaDetRekBtnCount"></span> ▾</button>'+
           '<div id="anaDetRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:240px;max-height:280px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
         '</div>'+
         '<div style="position:relative;">'+
@@ -226,14 +226,14 @@ function mainAnaTrafiku(m){
       '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:4px;">'+
         '<div id="anaDetRezultati" style="flex:2;min-width:280px;"></div>'+
         '<div style="flex:1;min-width:200px;max-width:280px;">'+
-          '<div id="anaDetTabela1" style="max-height:330px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;"><p class="small" style="padding:10px;">Po ngarkoj…</p></div>'+
+          '<div id="anaDetTabela1" style="max-height:330px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;"><p class="small" style="padding:10px;">Loading…</p></div>'+
         '</div>'+
       '</div>'+
     '</div>'+
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
       '<div class="card" style="flex:2;min-width:340px;">'+
         '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px;">'+
-          '<h3 class="h" style="font-size:15px;margin:0;">Sipas orës së ditës</h3>'+
+          '<h3 class="h" style="font-size:15px;margin:0;">By hour of day</h3>'+
           '<div style="position:relative;">'+
             '<button type="button" id="anaKalBtn_ore" class="btn" style="min-width:170px;"></button>'+
             '<div id="anaKalPanel_ore" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;width:230px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
@@ -241,35 +241,35 @@ function mainAnaTrafiku(m){
           '<input type="date" id="anaNgaOre" style="display:none;">'+
           '<input type="date" id="anaDeriOre" style="display:none;">'+
         '</div>'+
-        '<p class="small mut" style="margin:0 0 12px;">Zgjidh 1 ditë (ose interval) — shtyllat tregojnë shumën në secilën orë. Vetëm 1 metrikë njëherë.</p>'+
+        '<p class="small mut" style="margin:0 0 12px;">Pick 1 day (or a range) — the bars show the total for each hour. One metric at a time.</p>'+
         '<div id="anaOreMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
         '<canvas id="anaOreCanvas" height="110"></canvas>'+
       '</div>'+
       '<div class="card" style="flex:1;min-width:260px;">'+
-        '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Ankand — pjesëmarrje vs fitore</h3>'+
-        '<p class="small mut" style="margin:0 0 12px;">Zgjidh maksimum 1 kategori biznesi (nga ku ke marrë pjesë), për periudhën e zgjedhur më lart.</p>'+
-        '<div id="anaAnkandRezultati" style="margin-bottom:14px;padding:12px;background:var(--card2);border-radius:8px;border:1px solid var(--line);">'+
-          '<p class="small mut" style="margin:0;">Zgjidh kategori nga lista poshtë.</p>'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Auction — participation vs wins</h3>'+
+        '<p class="small mut" style="margin:0 0 12px;">Pick at most 1 business category (where you participated), for the period selected above.</p>'+
+        '<div id="anaAuctionRezultati" style="margin-bottom:14px;padding:12px;background:var(--card2);border-radius:8px;border:1px solid var(--line);">'+
+          '<p class="small mut" style="margin:0;">Pick a category from the list below.</p>'+
         '</div>'+
-        '<div id="anaAnkandKarusel" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;padding-right:4px;"></div>'+
+        '<div id="anaAuctionKarusel" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;padding-right:4px;"></div>'+
       '</div>'+
     '</div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
   window.__anaKalendaret = window.__anaKalendaret || {};
 
-  // ─── Ora e ditës + Ankand (rreshti i ri, poshtë grafikut kryesor) ───
+  // ─── Ora e ditës + Auction (rreshti i ri, poshtë grafikut kryesor) ───
   $('anaNgaOre').value=anaFmt(nga); $('anaDeriOre').value=anaFmt(sot);
   anaKrijoKalendarRangu({
     id:'ore', btnId:'anaKalBtn_ore', panelId:'anaKalPanel_ore',
     getNga:()=>$('anaNgaOre').value, getDeri:()=>$('anaDeriOre').value,
     setNga:v=>{ $('anaNgaOre').value=v; }, setDeri:v=>{ $('anaDeriOre').value=v; },
-    onRuaj: anaNgarkoOreDheAnkand
+    onRuaj: anaNgarkoOreDheAuction
   });
   anaRenderOreMetrika();
   ngarkoAnaOre();
-  ngarkoAnaAnkandKategorite();
+  ngarkoAnaAuctionKategorite();
 
-  // ─── Detajet e Ankandit (seksioni i ri, ne fillim fare te faqes) ───
+  // ─── Auction details (seksioni i ri, ne fillim fare te faqes) ───
   $('anaNgaDet').value=anaFmt(nga); $('anaDeriDet').value=anaFmt(sot);
   anaKrijoKalendarRangu({
     id:'det', btnId:'anaKalBtn_det', panelId:'anaKalPanel_det',
@@ -289,13 +289,13 @@ function mainAnaTrafiku(m){
   ngarkoAnaDetaje();
 }
 
-// ═══ Seksioni "Detajet e pjesëmarrjeve në Ankand" — 4 butona kryesorë, secili hap panelin e vet ═══
+// ═══ Seksioni "Auction participation details" — 4 butona kryesorë, secili hap panelin e vet ═══
 var _anaDetAktiv=null; // 'pesha'|'pozicioni'|'reklama'|'kategoria'|null
 var _anaDetPerspektiv='marre'; // 'marre' (ti perfitove, reklamues_id=ti) | 'dhene' (te tjeret perfituan, host_id=ti)
-var _anaDetPeshaMode='te_gjitha', _anaDetPeshaFiks=null, _anaDetPeshaMin=null, _anaDetPeshaMax=null;
+var _anaDetWeightMode='te_gjitha', _anaDetWeightFiks=null, _anaDetWeightMin=null, _anaDetWeightMax=null;
 var _anaDetPozicioni='te_gjitha';
-var _anaDetReklamaId='', _anaDetReklamat=[];
-var _anaDetKategoria='', _anaDetKategorite=[];
+var _anaDetReklamaId='', _anaDetAds=[];
+var _anaDetCategory='', _anaDetKategorite=[];
 
 function anaDetPreset(dite){
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-(dite-1));
@@ -306,10 +306,10 @@ function anaDetPreset(dite){
 
 function anaDetEmriFiltri(lloji){
   const eshteBalance = (window.__llogariaModaliteti==='barazi');
-  if(lloji==='pesha') return eshteBalance ? 'Bilanci' : (_anaDetPeshaMode==='te_gjitha' ? 'Pesha' : (_anaDetPeshaMode==='fiks' ? 'Pesha: '+_anaDetPeshaFiks : 'Pesha: '+_anaDetPeshaMin+'–'+_anaDetPeshaMax));
+  if(lloji==='pesha') return eshteBalance ? 'Bilanci' : (_anaDetWeightMode==='te_gjitha' ? 'Weight' : (_anaDetWeightMode==='fiks' ? 'Weight: '+_anaDetWeightFiks : 'Weight: '+_anaDetWeightMin+'–'+_anaDetWeightMax));
   if(lloji==='pozicioni') return eshteBalance ? 'Ecuria ditore' : (_anaDetPozicioni==='te_gjitha' ? 'Pozicioni' : 'Pozicioni: #'+_anaDetPozicioni);
-  if(lloji==='reklama') return _anaDetReklamaId ? 'Reklama: '+((_anaDetReklamat.find(r=>r.id==_anaDetReklamaId)||{}).emri||'') : 'Reklama';
-  if(lloji==='kategoria') return _anaDetKategoria ? 'Kategoria: '+_anaDetKategoria : 'Kategoria';
+  if(lloji==='reklama') return _anaDetReklamaId ? 'Reklama: '+((_anaDetAds.find(r=>r.id==_anaDetReklamaId)||{}).emri||'') : 'Reklama';
+  if(lloji==='kategoria') return _anaDetCategory ? 'Category: '+_anaDetCategory : 'Category';
 }
 
 function anaRenderDetKryesori(){
@@ -319,10 +319,10 @@ function anaRenderDetKryesori(){
   // koncepte qe vlejne vetem kur UNE konkurroj, jo kur te tjeret konkurrojne te hapesira ime)
   if(eshteDhene && (_anaDetAktiv==='pozicioni' || _anaDetAktiv==='reklama')) _anaDetAktiv='pesha';
   const llojet=[
-    {k:'pesha', aktiv: _anaDetPeshaMode!=='te_gjitha'},
+    {k:'pesha', aktiv: _anaDetWeightMode!=='te_gjitha'},
     {k:'pozicioni', aktiv: _anaDetPozicioni!=='te_gjitha'},
     {k:'reklama', aktiv: !!_anaDetReklamaId},
-    {k:'kategoria', aktiv: !!_anaDetKategoria}
+    {k:'kategoria', aktiv: !!_anaDetCategory}
   ].filter(function(x){ return !(eshteDhene && (x.k==='pozicioni' || x.k==='reklama')); });
   el.innerHTML='';
   llojet.forEach(function(x){
@@ -341,7 +341,7 @@ function anaRenderDetKryesori(){
 
 function anaRenderDetPerspektiv(){
   const el=$('anaDetPerspektivRow'); if(!el) return;
-  const opsionet=[{k:'marre',l:'Marrë'},{k:'dhene',l:'Dhënë'}];
+  const opsionet=[{k:'marre',l:'Received'},{k:'dhene',l:'Given'}];
   el.innerHTML='';
   opsionet.forEach(function(o){
     const btn=document.createElement('button');
@@ -361,7 +361,7 @@ function anaDetPerspektivSet(p){
   anaRenderDetKryesori(); // fshin/shfaq Pozicioni+Reklama sipas perspektives
   anaRenderDetNenPanel();
   ngarkoAnaDetaje();       // rifreskon tabelen + listen e reklamave/kategorive
-  anaRenderDetRezultati(); // rifreskon grafikun aktual (Pesha/Pozicioni/Reklama/Kategoria)
+  anaRenderDetRezultati(); // rifreskon grafikun aktual (Weight/Pozicioni/Reklama/Category)
 }
 
 function anaRenderDetNenPanel(){
@@ -372,70 +372,70 @@ function anaRenderDetNenPanel(){
 
   if(_anaDetAktiv==='pesha'){
     const modBtn=function(mode,lbl){
-      return '<button type="button" onclick="anaDetPeshaSet(\''+mode+'\')" style="'+(_anaDetPeshaMode===mode?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">'+lbl+'</button>';
+      return '<button type="button" onclick="anaDetWeightSet(\''+mode+'\')" style="'+(_anaDetWeightMode===mode?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">'+lbl+'</button>';
     };
     el.innerHTML =
       '<div style="padding:12px;background:var(--card2);border:1px solid var(--line);border-radius:8px;">'+
-        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:'+(_anaDetPeshaMode==='te_gjitha'?'0':'10px')+';">'+
-          modBtn('te_gjitha','Të gjitha')+modBtn('fiks','Numër fiks')+modBtn('interval','Interval')+
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:'+(_anaDetWeightMode==='te_gjitha'?'0':'10px')+';">'+
+          modBtn('te_gjitha','All')+modBtn('fiks','Fixed number')+modBtn('interval','Interval')+
         '</div>'+
-        (_anaDetPeshaMode==='fiks'
-          ? '<div style="display:flex;align-items:center;gap:8px;">Numër fiks: <input type="number" id="anaDetPeshaFiksInp" min="0" max="1500" value="'+(_anaDetPeshaFiks!=null?_anaDetPeshaFiks:'')+'" style="width:90px;" oninput="anaDetPeshaFiksChange(this.value)"><span class="small mut">(0-1500)</span></div>'
+        (_anaDetWeightMode==='fiks'
+          ? '<div style="display:flex;align-items:center;gap:8px;">Fixed number: <input type="number" id="anaDetWeightFiksInp" min="0" max="1500" value="'+(_anaDetWeightFiks!=null?_anaDetWeightFiks:'')+'" style="width:90px;" oninput="anaDetWeightFiksChange(this.value)"><span class="small mut">(0-1500)</span></div>'
           : '')+
-        (_anaDetPeshaMode==='interval'
-          ? '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">Nga <input type="number" id="anaDetPeshaMinInp" min="0" max="1500" value="'+(_anaDetPeshaMin!=null?_anaDetPeshaMin:'')+'" style="width:80px;" oninput="anaDetPeshaIntervalChange()"> deri <input type="number" id="anaDetPeshaMaxInp" min="0" max="1500" value="'+(_anaDetPeshaMax!=null?_anaDetPeshaMax:'')+'" style="width:80px;" oninput="anaDetPeshaIntervalChange()"> <span class="small mut">(maksimumi 1500)</span></div>'
+        (_anaDetWeightMode==='interval'
+          ? '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">Nga <input type="number" id="anaDetWeightMinInp" min="0" max="1500" value="'+(_anaDetWeightMin!=null?_anaDetWeightMin:'')+'" style="width:80px;" oninput="anaDetWeightIntervalChange()"> deri <input type="number" id="anaDetWeightMaxInp" min="0" max="1500" value="'+(_anaDetWeightMax!=null?_anaDetWeightMax:'')+'" style="width:80px;" oninput="anaDetWeightIntervalChange()"> <span class="small mut">(maksimumi 1500)</span></div>'
           : '')+
       '</div>';
   } else if(_anaDetAktiv==='pozicioni'){
     el.innerHTML =
       '<div style="padding:12px;background:var(--card2);border:1px solid var(--line);border-radius:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;">'+
-        '<button type="button" onclick="anaDetPozicioniSet(\'te_gjitha\')" style="'+(_anaDetPozicioni==='te_gjitha'?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">Të gjitha</button>'+
+        '<button type="button" onclick="anaDetPozicioniSet(\'te_gjitha\')" style="'+(_anaDetPozicioni==='te_gjitha'?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">All</button>'+
         [1,2,3,4,5].map(function(p){
           return '<button type="button" onclick="anaDetPozicioniSet('+p+')" style="'+(_anaDetPozicioni==p?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">#'+p+'</button>';
         }).join('')+
-        '<input type="number" id="anaDetPozicioniTjeter" placeholder="tjetër…" min="1" style="width:70px;" onkeydown="if(event.key===\'Enter\')anaDetPozicioniSet(parseInt(this.value,10))">'+
+        '<input type="number" id="anaDetPozicioniTjeter" placeholder="other…" min="1" style="width:70px;" onkeydown="if(event.key===\'Enter\')anaDetPozicioniSet(parseInt(this.value,10))">'+
       '</div>';
   } else if(_anaDetAktiv==='reklama'){
     el.innerHTML =
       '<div style="padding:12px;background:var(--card2);border:1px solid var(--line);border-radius:8px;display:flex;flex-wrap:wrap;gap:6px;">'+
-        '<button type="button" onclick="anaDetReklamaSet(\'\')" style="'+(!_anaDetReklamaId?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">Të gjitha</button>'+
-        (_anaDetReklamat.length ? _anaDetReklamat.map(function(r){
+        '<button type="button" onclick="anaDetReklamaSet(\'\')" style="'+(!_anaDetReklamaId?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">All</button>'+
+        (_anaDetAds.length ? _anaDetAds.map(function(r){
           return '<button type="button" onclick="anaDetReklamaSet('+r.id+')" style="'+(_anaDetReklamaId==r.id?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">'+esc(r.emri||('#'+r.id))+'</button>';
-        }).join('') : '<span class="small mut">Asnjë reklamë ka fituar ende në këtë periudhë.</span>')+
+        }).join('') : '<span class="small mut">No ad has won yet in this period.</span>')+
       '</div>';
   } else if(_anaDetAktiv==='kategoria'){
     el.innerHTML =
       '<div style="padding:12px;background:var(--card2);border:1px solid var(--line);border-radius:8px;display:flex;flex-wrap:wrap;gap:6px;">'+
-        '<button type="button" onclick="anaDetKategoriaSet(\'\')" style="'+(!_anaDetKategoria?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">Të gjitha</button>'+
+        '<button type="button" onclick="anaDetCategorySet(\'\')" style="'+(!_anaDetCategory?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">All</button>'+
         (_anaDetKategorite.length ? _anaDetKategorite.map(function(k){
-          return '<button type="button" onclick="anaDetKategoriaSet(\''+esc(k)+'\')" style="'+(_anaDetKategoria===k?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">'+esc(k)+'</button>';
-        }).join('') : '<span class="small mut">Asnjë kategori në këtë periudhë.</span>')+
+          return '<button type="button" onclick="anaDetCategorySet(\''+esc(k)+'\')" style="'+(_anaDetCategory===k?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">'+esc(k)+'</button>';
+        }).join('') : '<span class="small mut">No category in this period.</span>')+
       '</div>';
   }
 }
 
-function anaDetPeshaSet(mode){ _anaDetPeshaMode=mode; if(mode==='te_gjitha'){ _anaDetPeshaFiks=null; _anaDetPeshaMin=null; _anaDetPeshaMax=null; } anaRenderDetKryesori(); anaRenderDetNenPanel(); ngarkoAnaDetaje(); }
-function anaDetPeshaFiksChange(v){ _anaDetPeshaFiks = v===''?null:Math.max(0,Math.min(1500,parseFloat(v))); anaRenderDetKryesori(); ngarkoAnaDetaje(); }
-function anaDetPeshaIntervalChange(){
-  const mi=$('anaDetPeshaMinInp'), ma=$('anaDetPeshaMaxInp');
-  _anaDetPeshaMin = mi.value===''?null:Math.max(0,Math.min(1500,parseFloat(mi.value)));
-  _anaDetPeshaMax = ma.value===''?null:Math.max(0,Math.min(1500,parseFloat(ma.value)));
+function anaDetWeightSet(mode){ _anaDetWeightMode=mode; if(mode==='te_gjitha'){ _anaDetWeightFiks=null; _anaDetWeightMin=null; _anaDetWeightMax=null; } anaRenderDetKryesori(); anaRenderDetNenPanel(); ngarkoAnaDetaje(); }
+function anaDetWeightFiksChange(v){ _anaDetWeightFiks = v===''?null:Math.max(0,Math.min(1500,parseFloat(v))); anaRenderDetKryesori(); ngarkoAnaDetaje(); }
+function anaDetWeightIntervalChange(){
+  const mi=$('anaDetWeightMinInp'), ma=$('anaDetWeightMaxInp');
+  _anaDetWeightMin = mi.value===''?null:Math.max(0,Math.min(1500,parseFloat(mi.value)));
+  _anaDetWeightMax = ma.value===''?null:Math.max(0,Math.min(1500,parseFloat(ma.value)));
   anaRenderDetKryesori(); ngarkoAnaDetaje();
 }
 function anaDetPozicioniSet(p){ _anaDetPozicioni = (p==='te_gjitha'||isNaN(p)) ? 'te_gjitha' : p; anaRenderDetKryesori(); anaRenderDetNenPanel(); ngarkoAnaDetaje(); }
 function anaDetReklamaSet(id){ _anaDetReklamaId = id; anaRenderDetKryesori(); anaRenderDetNenPanel(); anaDetRenderRekDropdown(); ngarkoAnaDetaje(); }
-function anaDetKategoriaSet(kat){ _anaDetKategoria = kat; anaRenderDetKryesori(); anaRenderDetNenPanel(); ngarkoAnaDetaje(); }
+function anaDetCategorySet(kat){ _anaDetCategory = kat; anaRenderDetKryesori(); anaRenderDetNenPanel(); ngarkoAnaDetaje(); }
 
-// ═══ Dropdown UNIVERSAL i reklamave — punon PAVARESISHT cilën kategori (Pesha/
-// Pozicioni/Reklama/Kategoria) ke aktive, gjithmone i paracaktuar "Të gjitha" ═══
+// ═══ Dropdown UNIVERSAL i reklamave — punon PAVARESISHT cilën kategori (Weight/
+// Pozicioni/Reklama/Category) ke aktive, gjithmone i paracaktuar "All" ═══
 var _anaDetRekDropdownOpen=false;
 function anaDetRenderRekDropdown(){
   const dd=$('anaDetRekDropdown'); if(!dd) return;
   dd.innerHTML='';
-  dd.appendChild(anaRekRresht('Të gjitha', !_anaDetReklamaId, true, function(){ anaDetReklamaSet(''); anaDetMbyllRekDropdown(); }));
-  if(!_anaDetReklamat.length){ const p=document.createElement('p'); p.className='small mut'; p.style.padding='6px'; p.textContent="S'ke ende reklama fituese në këtë periudhë."; dd.appendChild(p); anaDetUpdateRekBtnLabel(); return; }
+  dd.appendChild(anaRekRresht('All', !_anaDetReklamaId, true, function(){ anaDetReklamaSet(''); anaDetMbyllRekDropdown(); }));
+  if(!_anaDetAds.length){ const p=document.createElement('p'); p.className='small mut'; p.style.padding='6px'; p.textContent="S'ke ende reklama fituese në këtë periudhë."; dd.appendChild(p); anaDetUpdateRekBtnLabel(); return; }
   const hr=document.createElement('div'); hr.style.cssText='height:1px;background:var(--line);margin:4px 2px;'; dd.appendChild(hr);
-  _anaDetReklamat.forEach(function(r){
+  _anaDetAds.forEach(function(r){
     dd.appendChild(anaRekRresht(esc(r.emri||('#'+r.id)), _anaDetReklamaId==r.id, false, function(){ anaDetReklamaSet(r.id); anaDetMbyllRekDropdown(); }));
   });
   anaDetUpdateRekBtnLabel();
@@ -449,30 +449,30 @@ function anaDetUpdateRekBtnLabel(){
 async function ngarkoAnaDetaje(){
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
-  let url='/api/analytics/ankand-detaje?nga='+ngaEl.value+'&deri='+deriEl.value+'&perspektiv='+_anaDetPerspektiv+'&pesha_mode='+_anaDetPeshaMode;
-  if(_anaDetPeshaMode==='fiks' && _anaDetPeshaFiks!=null) url+='&pesha_fiks='+_anaDetPeshaFiks;
-  if(_anaDetPeshaMode==='interval' && _anaDetPeshaMin!=null && _anaDetPeshaMax!=null) url+='&pesha_min='+_anaDetPeshaMin+'&pesha_max='+_anaDetPeshaMax;
+  let url='/api/analytics/ankand-detaje?nga='+ngaEl.value+'&deri='+deriEl.value+'&perspektiv='+_anaDetPerspektiv+'&pesha_mode='+_anaDetWeightMode;
+  if(_anaDetWeightMode==='fiks' && _anaDetWeightFiks!=null) url+='&pesha_fiks='+_anaDetWeightFiks;
+  if(_anaDetWeightMode==='interval' && _anaDetWeightMin!=null && _anaDetWeightMax!=null) url+='&pesha_min='+_anaDetWeightMin+'&pesha_max='+_anaDetWeightMax;
   if(_anaDetPozicioni!=='te_gjitha') url+='&pozicioni='+_anaDetPozicioni;
   if(_anaDetReklamaId) url+='&reklama_id='+_anaDetReklamaId;
-  if(_anaDetKategoria) url+='&kategoria='+encodeURIComponent(_anaDetKategoria);
+  if(_anaDetCategory) url+='&kategoria='+encodeURIComponent(_anaDetCategory);
   let d;
   try{ d=await(await fetch(url)).json(); }catch(e){ return; }
 
   _anaDetKategorite = d.kategorite_disponueshme || [];
-  _anaDetReklamat = d.reklamat_disponueshme || [];
+  _anaDetAds = d.reklamat_disponueshme || [];
   if(_anaDetAktiv==='reklama' || _anaDetAktiv==='kategoria') anaRenderDetNenPanel();
   anaDetRenderRekDropdown();
 
   const rreshtat = d.rreshtat || [];
   const t1=$('anaDetTabela1');
   if(t1){
-    t1.innerHTML = !rreshtat.length ? '<p class="small mut" style="padding:10px;">Asnjë pjesëmarrje në këtë filtër.</p>' :
+    t1.innerHTML = !rreshtat.length ? '<p class="small mut" style="padding:10px;">No participation in this filter.</p>' :
       '<table style="width:100%;border-collapse:collapse;font-size:12px;">'+
         '<thead><tr style="position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--line);">'+
           '<th style="text-align:left;padding:7px 8px;font-weight:600;">Data</th>'+
-          '<th style="text-align:left;padding:7px 8px;font-weight:600;">Kategoria</th>'+
+          '<th style="text-align:left;padding:7px 8px;font-weight:600;">Category</th>'+
           '<th style="text-align:center;padding:7px 4px;font-weight:600;">Poz.</th>'+
-          '<th style="text-align:right;padding:7px 8px;font-weight:600;">Pesha</th>'+
+          '<th style="text-align:right;padding:7px 8px;font-weight:600;">Weight</th>'+
           '<th style="text-align:right;padding:7px 8px;font-weight:600;">Rezultati</th>'+
         '</tr></thead><tbody>'+
         rreshtat.map(function(r){
@@ -490,8 +490,8 @@ async function ngarkoAnaDetaje(){
 }
 
 // ═══ Kontejneri i rezultateve — ndryshon sipas filtrit AKTIV (_anaDetAktiv) ═══
-var _anaDetPeshaHistChart=null, _anaDetPozicionetLista=[], _anaDetPozicioniHapur=null;
-var _anaDetReklamaChart=null, _anaDetKategoriaChart=null;
+var _anaDetWeightHistChart=null, _anaDetPozicionetLista=[], _anaDetPozicioniHapur=null;
+var _anaDetReklamaChart=null, _anaDetCategoryChart=null;
 
 function anaRenderDetRezultati(){
   const el=$('anaDetRezultati'); if(!el) return;
@@ -499,19 +499,19 @@ function anaRenderDetRezultati(){
   const eshteBalance = (window.__llogariaModaliteti==='barazi');
   if(eshteBalance && _anaDetAktiv==='pesha') return anaDetRezBilanciKategori(el);
   if(eshteBalance && _anaDetAktiv==='pozicioni') return anaDetRezEcuriaDitore(el);
-  if(_anaDetAktiv==='pesha') return anaDetRezPesha(el);
+  if(_anaDetAktiv==='pesha') return anaDetRezWeight(el);
   if(_anaDetAktiv==='pozicioni') return anaDetRezPozicioni(el);
   if(_anaDetAktiv==='reklama') return anaDetRezReklama(el);
-  if(_anaDetAktiv==='kategoria') return anaDetRezKategoria(el);
+  if(_anaDetAktiv==='kategoria') return anaDetRezCategory(el);
 }
 
-// ── BALANCE — "Bilanci sipas kategorisë": katrorë (si te paneli admin), nje kolone
+// ── BALANCE — "Balance by category": katrorë (si te paneli admin), nje kolone
 // per kategori, siper vijes se mesit nese ke MARRE me shume, poshte nese ke DHENE me
 // shume; kategoria e VET biznesit theksohet me ngjyre tjeter ──
 var _anaBilKatNjesia=20, _anaBilKatBoshllek=3, _anaBilKatMaksVizual=12;
 async function anaDetRezBilanciKategori(el){
-  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 4px;">Bilanci sipas kategorisë</h4>'+
-    '<p class="small mut" style="margin:0 0 12px;">Për secilën kategori: katrorë sipër vijes së mesit nëse ke marrë më shumë shfaqje, poshtë nëse ke dhënë më shumë. Kategoria jote theksohet me ngjyrë tjetër.</p>'+
+  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 4px;">Balance by category</h4>'+
+    '<p class="small mut" style="margin:0 0 12px;">For each category: squares above the midline if you received more impressions, below if you gave more. Your category is highlighted in a different color.</p>'+
     '<div id="anaBilKatGrafiku" style="display:flex;gap:20px;align-items:flex-start;overflow-x:auto;padding:6px 4px 0;"></div>';
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
@@ -519,7 +519,7 @@ async function anaDetRezBilanciKategori(el){
   try{ d=await(await fetch('/api/analytics/balance-kategorite-katror?nga='+ngaEl.value+'&deri='+deriEl.value)).json(); }catch(e){ return; }
   const grafEl=$('anaBilKatGrafiku'); if(!grafEl) return;
   const kategorite=d.kategorite||[];
-  if(!kategorite.length){ grafEl.innerHTML='<p class="small mut">Asnjë pjesëmarrje në Balance në këtë periudhë.</p>'; return; }
+  if(!kategorite.length){ grafEl.innerHTML='<p class="small mut">No Balance participation in this period.</p>'; return; }
   const NJ=_anaBilKatNjesia, BOSH=_anaBilKatBoshllek, MAKS=_anaBilKatMaksVizual;
   // Lartesia E DINAMIKE — bazuar te vlera maksimale REALE e |net| ne kete pergjigje,
   // jo nje supozim fiks — keshtu s'mbetet hapesire boshe kur vlerat jane te vogla.
@@ -546,10 +546,10 @@ async function anaDetRezBilanciKategori(el){
 }
 
 // ── BALANCE — "Ecuria ditore": nje vije e vetme (shfaqje), zero ne mes, +/- sipas
-// ditës — ripërdor endpoint-in ekzistues te Deficitit, vetem 1 metrike ──
+// ditës — ripërdor endpoint-in ekzistues te Deficitt, vetem 1 metrike ──
 var _anaEcuriaDitoreChart=null;
 async function anaDetRezEcuriaDitore(el){
-  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 8px;">Ecuria ditore (Marrë − Dhënë, shfaqje)</h4><canvas id="anaEcuriaDitoreCanvas" height="100"></canvas>';
+  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 8px;">Ecuria ditore (Received − Given, shfaqje)</h4><canvas id="anaEcuriaDitoreCanvas" height="100"></canvas>';
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
@@ -561,7 +561,7 @@ async function anaDetRezEcuriaDitore(el){
   let maksAbs=0; rows.forEach(r=>{ const a=Math.abs(r.shfaqje||0); if(a>maksAbs) maksAbs=a; });
   const jastek = maksAbs>0 ? maksAbs*1.15 : 5;
   const ctx=canvas.getContext('2d');
-  _anaEcuriaDitoreChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Shfaqje (Marrë−Dhënë)', data:rows.map(r=>r.shfaqje), borderColor:'#4a9eff', backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:'#4a9eff'}]},
+  _anaEcuriaDitoreChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Impressions (Received−Given)', data:rows.map(r=>r.shfaqje), borderColor:'#4a9eff', backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:'#4a9eff'}]},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
       scales:{
         x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}},
@@ -572,17 +572,17 @@ async function anaDetRezEcuriaDitore(el){
   });
 }
 
-// ── Rasti "Pesha" — histogram (qirinj): X=intervale peshe 0-1500, Y=sa here fituar ──
-async function anaDetRezPesha(el){
-  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 8px;">Fitoret sipas peshës</h4><canvas id="anaDetPeshaHistCanvas" height="100"></canvas>';
+// ── Rasti "Weight" — histogram (qirinj): X=intervale peshe 0-1500, Y=sa here fituar ──
+async function anaDetRezWeight(el){
+  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 8px;">Fitoret sipas peshës</h4><canvas id="anaDetWeightHistCanvas" height="100"></canvas>';
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
   try{ d=await(await fetch('/api/analytics/ankand-pesha-histogram?nga='+ngaEl.value+'&deri='+deriEl.value+'&perspektiv='+_anaDetPerspektiv)).json(); }catch(e){ return; }
-  const canvas=$('anaDetPeshaHistCanvas'); if(!canvas||typeof Chart==='undefined') return;
-  if(_anaDetPeshaHistChart){ _anaDetPeshaHistChart.destroy(); _anaDetPeshaHistChart=null; }
+  const canvas=$('anaDetWeightHistCanvas'); if(!canvas||typeof Chart==='undefined') return;
+  if(_anaDetWeightHistChart){ _anaDetWeightHistChart.destroy(); _anaDetWeightHistChart=null; }
   const ctx=canvas.getContext('2d');
-  _anaDetPeshaHistChart=new Chart(ctx,{type:'bar',data:{labels:d.etiketa,datasets:[{data:d.koshat,backgroundColor:'#4a9eff',borderRadius:3,maxBarThickness:26}]},
+  _anaDetWeightHistChart=new Chart(ctx,{type:'bar',data:{labels:d.etiketa,datasets:[{data:d.koshat,backgroundColor:'#4a9eff',borderRadius:3,maxBarThickness:26}]},
     options:{responsive:true,
       scales:{x:{ticks:{color:'#8b949e'},grid:{display:false}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
       plugins:{legend:{display:false}}}
@@ -603,7 +603,7 @@ async function anaDetRezPozicioni(el){
 
 function anaDetRenderPozicionetLista(){
   const el=$('anaDetPozicioniLista'); if(!el) return;
-  if(!_anaDetPozicionetLista.length){ el.innerHTML='<p class="small mut">Ende s\'ka nivele fituese në këtë periudhë.</p>'; return; }
+  if(!_anaDetPozicionetLista.length){ el.innerHTML='<p class="small mut">Ende s\'has winning levels in this period.</p>'; return; }
   el.innerHTML = _anaDetPozicionetLista.map(function(p){
     const hapur = _anaDetPozicioniHapur===p.pozicioni;
     return '<div style="border:1px solid var(--line);border-radius:8px;margin-bottom:8px;overflow:hidden;">'+
@@ -624,14 +624,14 @@ async function anaDetToggloPozicionin(p){
 
 async function anaDetNgarkoPozicioniDetaje(p){
   const el=$('anaDetPozicioniDetaje_'+p); if(!el) return;
-  el.innerHTML='<p class="small mut">Po ngarkoj…</p>';
+  el.innerHTML='<p class="small mut">Loading…</p>';
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
   let d;
-  try{ d=await(await fetch('/api/analytics/ankand-pozicion-detaje?nga='+ngaEl.value+'&deri='+deriEl.value+'&perspektiv='+_anaDetPerspektiv+'&pozicioni='+p)).json(); }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; return; }
+  try{ d=await(await fetch('/api/analytics/ankand-pozicion-detaje?nga='+ngaEl.value+'&deri='+deriEl.value+'&perspektiv='+_anaDetPerspektiv+'&pozicioni='+p)).json(); }catch(e){ el.innerHTML='<p class="small">Error.</p>'; return; }
   const fitoret=d.fitoret||[];
-  el.innerHTML = !fitoret.length ? '<p class="small mut">Asnjë detaj.</p>' :
+  el.innerHTML = !fitoret.length ? '<p class="small mut">No details.</p>' :
     '<table style="width:100%;font-size:12px;border-collapse:collapse;">'+
-      '<thead><tr style="color:var(--mut);text-align:left;"><th style="padding:4px 6px;">Data</th><th style="padding:4px 6px;">Reklama</th><th style="padding:4px 6px;">Kategoria</th><th style="padding:4px 6px;">Pesha</th><th style="padding:4px 6px;">AI</th></tr></thead>'+
+      '<thead><tr style="color:var(--mut);text-align:left;"><th style="padding:4px 6px;">Data</th><th style="padding:4px 6px;">Reklama</th><th style="padding:4px 6px;">Category</th><th style="padding:4px 6px;">Weight</th><th style="padding:4px 6px;">AI</th></tr></thead>'+
       '<tbody>'+fitoret.map(function(f){
         return '<tr style="border-top:1px solid #20262f;">'+
           '<td style="padding:4px 6px;">'+esc(f.data)+'</td>'+
@@ -644,7 +644,7 @@ async function anaDetNgarkoPozicioniDetaje(p){
     '</tbody></table>';
 }
 
-// ── Rasti "Reklama" — ripërdor grafikun kryesor (Trafiku), filtruar te reklama e zgjedhur ──
+// ── Rasti "Reklama" — ripërdor grafikun kryesor (Traffic), filtruar te reklama e zgjedhur ──
 async function anaDetRezReklama(el){
   el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 8px;">Ecuria e reklamës</h4>'+
     '<div id="anaDetReklamaMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
@@ -688,18 +688,18 @@ async function anaDetNgarkoReklamaChart(){
   });
 }
 
-// ── Rasti "Kategoria" — ripërdor grafikun "Sipas kategorisë" (nje vije per kategori) ──
-async function anaDetRezKategoria(el){
-  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 8px;">Sipas kategorisë së biznesit</h4>'+
+// ── Rasti "Category" — ripërdor grafikun "By category" (nje vije per kategori) ──
+async function anaDetRezCategory(el){
+  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 8px;">By business category</h4>'+
     '<div id="anaDetKatMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
     '<div style="display:flex;gap:14px;align-items:stretch;">'+
-      '<div style="flex:1;min-width:0;"><canvas id="anaDetKategoriaCanvas" height="100"></canvas></div>'+
+      '<div style="flex:1;min-width:0;"><canvas id="anaDetCategoryCanvas" height="100"></canvas></div>'+
       '<div style="flex:0 0 150px;">'+
         '<div id="anaDetKatLegend" style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;padding-right:2px;"></div>'+
       '</div>'+
     '</div>';
   anaDetRenderKatMetrika();
-  await anaDetNgarkoKategoriaChart();
+  await anaDetNgarkoCategoryChart();
 }
 var _anaDetKatMetrikaAktive='shikime';
 function anaDetRenderKatMetrika(){
@@ -712,12 +712,12 @@ function anaDetRenderKatMetrika(){
     btn.style.cssText = on
       ? 'padding:6px 12px;border-radius:20px;border:1px solid var(--acc);background:var(--acc);color:#06121f;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;'
       : 'padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit;';
-    btn.addEventListener('click', function(){ _anaDetKatMetrikaAktive=x.k; anaDetRenderKatMetrika(); anaDetNgarkoKategoriaChart(); });
+    btn.addEventListener('click', function(){ _anaDetKatMetrikaAktive=x.k; anaDetRenderKatMetrika(); anaDetNgarkoCategoryChart(); });
     el.appendChild(btn);
   });
 }
-var _anaDetKategoriaChartRef=null;
-async function anaDetNgarkoKategoriaChart(){
+var _anaDetCategoryChartRef=null;
+async function anaDetNgarkoCategoryChart(){
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let url='/api/analytics/kategorite?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand');
@@ -726,16 +726,16 @@ async function anaDetNgarkoKategoriaChart(){
   const detKatMetrikaObj = ANA_METRIKA.find(x=>x.k===_anaDetKatMetrikaAktive) || {k:_anaDetKatMetrikaAktive};
   const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>anaVlera(p,detKatMetrikaObj)>0));
   const legEl=$('anaDetKatLegend');
-  if(legEl) legEl.innerHTML = !kategorite.length ? '<p class="small mut" style="margin:0;">Asnjë kategori.</p>' :
+  if(legEl) legEl.innerHTML = !kategorite.length ? '<p class="small mut" style="margin:0;">No category.</p>' :
     kategorite.map((k,i)=>'<div style="display:flex;align-items:center;gap:7px;font-size:12px;"><span style="width:10px;height:10px;border-radius:50%;background:'+anaKatPaleta(i)+';"></span>'+esc(k.emri)+'</div>').join('');
-  const canvas=$('anaDetKategoriaCanvas'); if(!canvas||typeof Chart==='undefined') return;
-  if(_anaDetKategoriaChartRef){ _anaDetKategoriaChartRef.destroy(); _anaDetKategoriaChartRef=null; }
+  const canvas=$('anaDetCategoryCanvas'); if(!canvas||typeof Chart==='undefined') return;
+  if(_anaDetCategoryChartRef){ _anaDetCategoryChartRef.destroy(); _anaDetCategoryChartRef=null; }
   if(!kategorite.length){ const ctx0=canvas.getContext('2d'); ctx0.clearRect(0,0,canvas.width,canvas.height); return; }
   const labels=kategorite[0].pikat.map(p=>p.data);
   const datasets=kategorite.map((k,i)=>({label:k.emri, data:k.pikat.map(p=>anaVlera(p,detKatMetrikaObj)), borderColor:anaKatPaleta(i), backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:anaKatPaleta(i)}));
   const ctx=canvas.getContext('2d');
   const detKatEshtePerqindje = !!detKatMetrikaObj.percentazh;
-  _anaDetKategoriaChartRef=new Chart(ctx,{type:'line',data:{labels,datasets},
+  _anaDetCategoryChartRef=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
       scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}},
         y: detKatEshtePerqindje
@@ -747,9 +747,9 @@ async function anaDetNgarkoKategoriaChart(){
 }
 
 
-function anaNgarkoOreDheAnkand(){ ngarkoAnaOre(); ngarkoAnaAnkandKategorite(); }
+function anaNgarkoOreDheAuction(){ ngarkoAnaOre(); ngarkoAnaAuctionKategorite(); }
 
-// ═══ "Automatiku — Ndarja e hapësirës" — Ankand vs Balance, dite-per-dite ═══
+// ═══ "Automatiku — Ndarja e hapësirës" — Auction vs Balance, dite-per-dite ═══
 var _anaAutomatikChart=null;
 function mainAnaAutomatik(m){
   m.innerHTML=
@@ -757,19 +757,19 @@ function mainAnaAutomatik(m){
       '<div style="width:38px;height:38px;border-radius:12px;background:rgba(34,211,238,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18"/></svg>'+
       '</div>'+
-      '<h2 class="h" style="margin:0;">Përzgjedhjet e Pishinave</h2>'+
+      '<h2 class="h" style="margin:0;">Pool selections</h2>'+
     '</div>'+
     '<div class="card">'+
       '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Ndarja e hapësirës</h3>'+
-      '<p class="small mut" style="margin:0 0 12px;">Si e ke ndarë hapësirën tënde reklamuese mes pishinës Ankand dhe Balance, ditë-për-ditë.</p>'+
+      '<p class="small mut" style="margin:0 0 12px;">Si e ke ndarë hapësirën tënde reklamuese mes pishinës Auction dhe Balance, ditë-për-ditë.</p>'+
       '<div class="tabs" style="max-width:280px;margin-bottom:14px;">'+
         '<div class="tab active" id="anaAutTabA" onclick="anaAutomatikSetTab(\'automatik\')">Automatik</div>'+
         '<div class="tab" id="anaAutTabM" onclick="anaAutomatikSetTab(\'manual\')">Manual</div>'+
       '</div>'+
       '<div class="presetRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
-        '<button class="btn" onclick="anaPresetAutomatik(7)">7 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPresetAutomatik(30)">30 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPresetAutomatik(90)">90 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetAutomatik(7)">Last 7 days</button>'+
+        '<button class="btn" onclick="anaPresetAutomatik(30)">Last 30 days</button>'+
+        '<button class="btn" onclick="anaPresetAutomatik(90)">Last 90 days</button>'+
         '<span style="flex:1"></span>'+
         '<div style="position:relative;">'+
           '<button type="button" id="anaKalBtn_automatik" class="btn" style="min-width:170px;"></button>'+
@@ -815,8 +815,8 @@ async function ngarkoAnaAutomatik(){
   const modiEl=$('anaAutomatikModi');
   if(modiEl){
     modiEl.textContent = d.hostingMode==='automatik'
-      ? '✓ Mënyra jote aktuale: Automatik'
-      : ('Mënyra jote aktuale: Manual' + (d.baraziPerqindje!=null ? ' ('+d.baraziPerqindje+'% te Balance)' : ''));
+      ? '✓ Your current mode: Automatic'
+      : ('Your current mode: Manual' + (d.baraziPerqindje!=null ? ' ('+d.baraziPerqindje+'% te Balance)' : ''));
   }
   const gjitha=d.rows||[];
   const rows = gjitha.filter(r => _anaAutomatikTab==='automatik' ? r.automatik : !r.automatik);
@@ -828,7 +828,7 @@ async function ngarkoAnaAutomatik(){
   if(_anaAutomatikChart){ _anaAutomatikChart.destroy(); _anaAutomatikChart=null; }
   const ctx=canvas.getContext('2d');
   _anaAutomatikChart=new Chart(ctx,{type:'line',data:{labels,datasets:[
-    {label:'Ankand', data:rows.map(r=>r.ankand), borderColor:'#f0883e', backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:'#f0883e'},
+    {label:'Auction', data:rows.map(r=>r.ankand), borderColor:'#f0883e', backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:'#f0883e'},
     {label:'Balance', data:rows.map(r=>r.balance), borderColor:'#4a9eff', backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:'#4a9eff'}
   ]},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
@@ -838,7 +838,7 @@ async function ngarkoAnaAutomatik(){
   });
 }
 
-// ═══ "Sipas orës së ditës" — VETEM 1 metrikë (radio), qirinj (bare), 24 shtylla ═══
+// ═══ "By hour of day" — VETEM 1 metrikë (radio), qirinj (bare), 24 shtylla ═══
 var _anaOreMetrikaAktive='shfaqje', _anaOreChart=null;
 
 function anaRenderOreMetrika(){
@@ -883,49 +883,49 @@ async function ngarkoAnaOre(){
   });
 }
 
-// ═══ "Ankand — pjesëmarrje vs fitore" — karusel vertikal kategorish, max 1 e zgjedhur ═══
-var _anaAnkandKategorite=[], _anaAnkandZgjedhur=null;
+// ═══ "Auction — participation vs wins" — karusel vertikal kategorish, max 1 e zgjedhur ═══
+var _anaAuctionKategorite=[], _anaAuctionZgjedhur=null;
 
-async function ngarkoAnaAnkandKategorite(){
+async function ngarkoAnaAuctionKategorite(){
   const ngaEl=$('anaNgaOre'), deriEl=$('anaDeriOre');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   const url='/api/analytics/ankand-kategorite?nga='+ngaEl.value+'&deri='+deriEl.value;
   let d;
   try{ d=await(await fetch(url)).json(); }catch(e){ return; }
-  _anaAnkandKategorite=d.kategorite||[];
-  if(_anaAnkandZgjedhur && !_anaAnkandKategorite.some(k=>k.kategoria===_anaAnkandZgjedhur)) _anaAnkandZgjedhur=null;
-  anaRenderAnkandKarusel();
-  anaRenderAnkandRezultati();
+  _anaAuctionKategorite=d.kategorite||[];
+  if(_anaAuctionZgjedhur && !_anaAuctionKategorite.some(k=>k.kategoria===_anaAuctionZgjedhur)) _anaAuctionZgjedhur=null;
+  anaRenderAuctionKarusel();
+  anaRenderAuctionRezultati();
 }
 
-function anaRenderAnkandKarusel(){
-  const el=$('anaAnkandKarusel'); if(!el) return;
-  if(!_anaAnkandKategorite.length){ el.innerHTML='<p class="small mut" style="margin:0;">Asnjë pjesëmarrje Ankand në këtë periudhë.</p>'; return; }
-  el.innerHTML = _anaAnkandKategorite.map(function(k, i){
-    const on = _anaAnkandZgjedhur===k.kategoria;
-    return '<button type="button" onclick="anaZgjidhAnkandKategori('+i+')" style="text-align:left;padding:9px 12px;border-radius:8px;border:1px solid '+(on?'var(--acc)':'var(--line)')+';background:'+(on?'rgba(74,158,255,.15)':'transparent')+';color:'+(on?'var(--acc)':'var(--txt)')+';cursor:pointer;font-family:inherit;font-size:13px;">'+
+function anaRenderAuctionKarusel(){
+  const el=$('anaAuctionKarusel'); if(!el) return;
+  if(!_anaAuctionKategorite.length){ el.innerHTML='<p class="small mut" style="margin:0;">No auction participation in this period.</p>'; return; }
+  el.innerHTML = _anaAuctionKategorite.map(function(k, i){
+    const on = _anaAuctionZgjedhur===k.kategoria;
+    return '<button type="button" onclick="anaZgjidhAuctionKategori('+i+')" style="text-align:left;padding:9px 12px;border-radius:8px;border:1px solid '+(on?'var(--acc)':'var(--line)')+';background:'+(on?'rgba(74,158,255,.15)':'transparent')+';color:'+(on?'var(--acc)':'var(--txt)')+';cursor:pointer;font-family:inherit;font-size:13px;">'+
       esc(k.kategoria)+' <span style="opacity:.6;font-size:11px;">('+k.pjesemarrje+')</span>'+
     '</button>';
   }).join('');
 }
 
-function anaZgjidhAnkandKategori(i){
-  const k=_anaAnkandKategorite[i]; if(!k) return;
-  _anaAnkandZgjedhur = (_anaAnkandZgjedhur===k.kategoria) ? null : k.kategoria; // klik i dyte = shfuqizo zgjedhjen
-  anaRenderAnkandKarusel();
-  anaRenderAnkandRezultati();
+function anaZgjidhAuctionKategori(i){
+  const k=_anaAuctionKategorite[i]; if(!k) return;
+  _anaAuctionZgjedhur = (_anaAuctionZgjedhur===k.kategoria) ? null : k.kategoria; // klik i dyte = shfuqizo zgjedhjen
+  anaRenderAuctionKarusel();
+  anaRenderAuctionRezultati();
 }
 
-function anaRenderAnkandRezultati(){
-  const el=$('anaAnkandRezultati'); if(!el) return;
-  if(!_anaAnkandZgjedhur){
+function anaRenderAuctionRezultati(){
+  const el=$('anaAuctionRezultati'); if(!el) return;
+  if(!_anaAuctionZgjedhur){
     // Pa zgjedhje — trego totalin e pergjithshem (te gjitha kategorite bashke)
-    const tot = _anaAnkandKategorite.reduce((acc,k)=>({pjesemarrje:acc.pjesemarrje+k.pjesemarrje, fitore:acc.fitore+k.fitore}), {pjesemarrje:0,fitore:0});
+    const tot = _anaAuctionKategorite.reduce((acc,k)=>({pjesemarrje:acc.pjesemarrje+k.pjesemarrje, fitore:acc.fitore+k.fitore}), {pjesemarrje:0,fitore:0});
     el.innerHTML = '<div class="small mut" style="margin-bottom:4px;">Total (të gjitha kategoritë)</div>'+
       '<div style="font-size:13px;">Pjesëmarrje: <b style="color:var(--txt);">'+tot.pjesemarrje+'</b> &nbsp; Fitore: <b style="color:var(--good);">'+tot.fitore+'</b></div>';
     return;
   }
-  const k = _anaAnkandKategorite.find(x=>x.kategoria===_anaAnkandZgjedhur);
+  const k = _anaAuctionKategorite.find(x=>x.kategoria===_anaAuctionZgjedhur);
   if(!k){ el.innerHTML='<p class="small mut" style="margin:0;">S\'u gjet.</p>'; return; }
   const perc = k.pjesemarrje ? Math.round(k.fitore/k.pjesemarrje*100) : 0;
   el.innerHTML = '<div class="small mut" style="margin-bottom:4px;">'+esc(k.kategoria)+'</div>'+
@@ -934,21 +934,21 @@ function anaRenderAnkandRezultati(){
 
 
 
-function mainAnaDeficiti(m){
+function mainAnaDeficit(m){
   m.innerHTML=
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">'+
       '<div style="width:38px;height:38px;border-radius:12px;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>'+
       '</div>'+
-      '<h2 class="h" style="margin:0;">Deficiti</h2>'+
+      '<h2 class="h" style="margin:0;">Deficit</h2>'+
     '</div>'+
     '<div class="card">'+
-      '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Deficiti — Marrë − Dhënë</h3>'+
-      '<p class="small mut" style="margin:0 0 12px;">Diferenca mes sa ke marrë (si reklamues) dhe sa ke dhënë (si host), për dhogarinë aktuale. Pozitiv = ke marrë më shumë; negativ = ke dhënë më shumë.</p>'+
+      '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Deficit — Received − Given</h3>'+
+      '<p class="small mut" style="margin:0 0 12px;">The difference between what you received (as advertiser) and gave (as host), for the current account. Positive = you received more; negative = you gave more.</p>'+
       '<div class="presetRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
-        '<button class="btn" onclick="anaPresetDeficit(7)">7 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPresetDeficit(30)">30 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPresetDeficit(90)">90 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetDeficit(7)">Last 7 days</button>'+
+        '<button class="btn" onclick="anaPresetDeficit(30)">Last 30 days</button>'+
+        '<button class="btn" onclick="anaPresetDeficit(90)">Last 90 days</button>'+
         '<span style="flex:1"></span>'+
         '<div style="position:relative;">'+
           '<button type="button" id="anaKalBtn_deficit" class="btn" style="min-width:170px;"></button>'+
@@ -962,12 +962,12 @@ function mainAnaDeficiti(m){
     '</div>'+
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
       '<div class="card" style="flex:1;min-width:300px;">'+
-        '<h3 class="h" style="font-size:15px;margin:0 0 12px;">Vetëm Dhënë</h3>'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 12px;">Vetëm Given</h3>'+
         '<div id="anaDhenNgaMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
         '<canvas id="anaDhenNgaCanvas" height="110"></canvas>'+
       '</div>'+
       '<div class="card" style="flex:1;min-width:300px;">'+
-        '<h3 class="h" style="font-size:15px;margin:0 0 12px;">Vetëm Marrë</h3>'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 12px;">Vetëm Received</h3>'+
         '<div id="anaMarrjaMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
         '<canvas id="anaMarrjaCanvas" height="110"></canvas>'+
       '</div>'+
@@ -979,7 +979,7 @@ function mainAnaDeficiti(m){
     id:'deficit', btnId:'anaKalBtn_deficit', panelId:'anaKalPanel_deficit',
     getNga:()=>$('anaNgaDeficit').value, getDeri:()=>$('anaDeriDeficit').value,
     setNga:v=>{ $('anaNgaDeficit').value=v; }, setDeri:v=>{ $('anaDeriDeficit').value=v; },
-    onRuaj: anaNgarkoDeficitinTeGjithe
+    onRuaj: anaNgarkoDeficitnTeGjithe
   });
   anaRenderDeficitMetrika();
   ngarkoAnaDeficit();
@@ -989,16 +989,16 @@ function mainAnaDeficiti(m){
   ngarkoAnaMarrja();
 }
 
-function mainAnaReklamat(m){
+function mainAnaAds(m){
   _anaKatSelectedAd=null; _anaKatDropdownOpen=false; _anaKatMetrikaAktive='shikime';
   _anaListSelectedAd=null; _anaListDropdownOpen=false;
-  m.innerHTML='<h2 class="h">Reklamat — Sipas kategorisë</h2>'+
+  m.innerHTML='<h2 class="h">Ads — By category</h2>'+
     '<p class="small" style="margin:2px 0 16px;">Ku janë shfaqur reklamat tuaja, sipas kategorisë së biznesit.</p>'+
     '<div class="card" style="margin-bottom:16px;">'+
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
-        '<button class="btn" onclick="anaPresetKat(7)">7 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPresetKat(30)">30 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPresetKat(90)">90 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetKat(7)">Last 7 days</button>'+
+        '<button class="btn" onclick="anaPresetKat(30)">Last 30 days</button>'+
+        '<button class="btn" onclick="anaPresetKat(90)">Last 90 days</button>'+
         '<span style="flex:1"></span>'+
         '<div style="position:relative;">'+
           '<button type="button" id="anaKalBtn_kat" class="btn" style="min-width:170px;"></button>'+
@@ -1011,13 +1011,13 @@ function mainAnaReklamat(m){
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;">'+
       '<div class="card" style="flex:2;min-width:340px;">'+
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:14px;">'+
-          '<h3 class="h" style="font-size:15px;margin:0;">Sipas kategorisë së biznesit</h3>'+
+          '<h3 class="h" style="font-size:15px;margin:0;">By business category</h3>'+
           '<div style="flex:0 0 200px;">'+
-            '<div class="small mut" style="font-weight:600;margin-bottom:6px;">Kategoritë e bizneseve ku janë ngarkuar reklamat tuaja.</div>'+
+            '<div class="small mut" style="font-weight:600;margin-bottom:6px;">Business categories where your ads were uploaded.</div>'+
             '<div id="anaKatLegend" style="display:flex;flex-direction:column;gap:6px;max-height:80px;overflow-y:auto;padding-right:4px;"></div>'+
           '</div>'+
           '<div style="position:relative;">'+
-            '<button type="button" id="anaKatRekBtn" class="btn" style="min-width:140px;">Reklamat <span id="anaKatRekBtnCount"></span> ▾</button>'+
+            '<button type="button" id="anaKatRekBtn" class="btn" style="min-width:140px;">Ads <span id="anaKatRekBtnCount"></span> ▾</button>'+
             '<div id="anaKatRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:230px;max-height:260px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
           '</div>'+
         '</div>'+
@@ -1025,13 +1025,13 @@ function mainAnaReklamat(m){
         '<canvas id="anaKatCanvas" height="110"></canvas>'+
       '</div>'+
       '<div class="card" style="flex:1;min-width:220px;">'+
-        '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Kategoritë e bizneseve</h3>'+
-        '<p class="small mut" style="margin:0 0 12px;">Ku janë ngarkuar reklamat tuaja.</p>'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Categories e bizneseve</h3>'+
+        '<p class="small mut" style="margin:0 0 12px;">Where your ads were uploaded.</p>'+
         '<div style="position:relative;margin-bottom:14px;">'+
-          '<button type="button" id="anaListRekBtn" class="btn" style="width:100%;">Reklamat <span id="anaListRekBtnCount"></span> ▾</button>'+
+          '<button type="button" id="anaListRekBtn" class="btn" style="width:100%;">Ads <span id="anaListRekBtnCount"></span> ▾</button>'+
           '<div id="anaListRekDropdown" class="hide" style="position:absolute;top:110%;left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;max-height:240px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
         '</div>'+
-        '<div id="anaListaKategori" style="max-height:300px;overflow-y:auto;padding-right:4px;"><p class="small">Po ngarkoj…</p></div>'+
+        '<div id="anaListaKategori" style="max-height:300px;overflow-y:auto;padding-right:4px;"><p class="small">Loading…</p></div>'+
       '</div>'+
     '</div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
@@ -1056,7 +1056,7 @@ function mainAnaReklamat(m){
     dd.classList.toggle('hide', !_anaListDropdownOpen);
   });
   anaRenderKategoriMetrika();
-  ngarkoAnaKatReklamatLista();
+  ngarkoAnaKatAdsLista();
   ngarkoAnaListRekamatLista();
   ngarkoAnaKategorite();
   ngarkoAnaLista();
@@ -1066,9 +1066,9 @@ function mainAnaSnippetet(m){
   m.innerHTML='<h2 class="h">Snippet-et e reklamave</h2>'+
     '<div class="card" style="margin-bottom:16px;">'+
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
-        '<button class="btn" onclick="anaPresetDhene(7)">7 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPresetDhene(30)">30 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPresetDhene(90)">90 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetDhene(7)">Last 7 days</button>'+
+        '<button class="btn" onclick="anaPresetDhene(30)">Last 30 days</button>'+
+        '<button class="btn" onclick="anaPresetDhene(90)">Last 90 days</button>'+
         '<span style="flex:1"></span>'+
         '<div style="position:relative;">'+
           '<button type="button" id="anaKalBtn_dhene" class="btn" style="min-width:170px;"></button>'+
@@ -1079,8 +1079,8 @@ function mainAnaSnippetet(m){
       '</div>'+
     '</div>'+
     '<div class="card">'+
-      '<p class="small mut" style="margin:0 0 12px;">Çfarë u ke dhënë bizneseve të tjera nëpërmjet snippet-eve tuaja. <span style="color:var(--acc);text-decoration:underline;cursor:pointer;" onclick="snipKrijo()">Shto snippet</span> për t\'u shfaqur edhe ti më shumë tek të tjerët.</p>'+
-      '<div id="anaSnipDheneLista" style="max-height:400px;overflow-y:auto;padding-right:4px;"><p class="small">Po ngarkoj…</p></div>'+
+      '<p class="small mut" style="margin:0 0 12px;">What you\'ve given other businesses through your snippets. <span style="color:var(--acc);text-decoration:underline;cursor:pointer;" onclick="snipKrijo()">Add snippet</span> to get shown more on theirs too.</p>'+
+      '<div id="anaSnipDheneLista" style="max-height:400px;overflow-y:auto;padding-right:4px;"><p class="small">Loading…</p></div>'+
     '</div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
   $('anaNgaDhene').value=anaFmt(nga); $('anaDeriDhene').value=anaFmt(sot);
@@ -1095,17 +1095,17 @@ function mainAnaSnippetet(m){
 }
 
 function mainAnaDhenie(m){
-  m.innerHTML='<h2 class="h">Dhënie</h2>'+
+  m.innerHTML='<h2 class="h">Given</h2>'+
     '<div class="card" style="margin-bottom:16px;">'+
       '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">'+
         '<div style="flex:1;min-width:220px;">'+
           '<div style="font-size:40px;font-weight:800;color:var(--acc);" id="anaPikatProfili">–</div>'+
-          '<div class="small mut" style="margin-top:4px;">Sa më shumë u jep bizneseve të tjera, aq më shumë rriten pikët — dhe aq më shpesh shfaqet reklama jote te të tjerët.</div>'+
+          '<div class="small mut" style="margin-top:4px;">The more you give other businesses, the more your points grow — and the more often your ad shows on theirs.</div>'+
         '</div>'+
         '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
-          '<button class="btn" onclick="anaPresetDhene(7)">7 ditët e fundit</button>'+
-          '<button class="btn" onclick="anaPresetDhene(30)">30 ditët e fundit</button>'+
-          '<button class="btn" onclick="anaPresetDhene(90)">90 ditët e fundit</button>'+
+          '<button class="btn" onclick="anaPresetDhene(7)">Last 7 days</button>'+
+          '<button class="btn" onclick="anaPresetDhene(30)">Last 30 days</button>'+
+          '<button class="btn" onclick="anaPresetDhene(90)">Last 90 days</button>'+
           '<div style="position:relative;">'+
             '<button type="button" id="anaKalBtn_dhene" class="btn" style="min-width:170px;"></button>'+
             '<div id="anaKalPanel_dhene" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;width:230px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
@@ -1116,8 +1116,8 @@ function mainAnaDhenie(m){
       '</div>'+
     '</div>'+
     '<div class="card">'+
-      '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Sipas kategorisë së biznesit</h3>'+
-      '<p class="small mut" style="margin:0 0 12px;">Çfarë u ke dhënë secilës kategori.</p>'+
+      '<h3 class="h" style="font-size:15px;margin:0 0 4px;">By business category</h3>'+
+      '<p class="small mut" style="margin:0 0 12px;">What you\'ve given to each category.</p>'+
       '<div id="anaKatDheneMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
       '<div id="anaKatDheneLegend" style="display:flex;flex-direction:column;gap:6px;max-height:80px;overflow-y:auto;padding-right:4px;margin-bottom:10px;"></div>'+
       '<canvas id="anaKatDheneCanvas" height="110"></canvas>'+
@@ -1136,7 +1136,7 @@ function mainAnaDhenie(m){
   ngarkoAnaKatDhene();
 }
 
-// "Marrje" — S'KA ENDE PËRMBAJTJE TË PËRCAKTUAR (thjesht etiketë, si Deficiti
+// "Marrje" — S'KA ENDE PËRMBAJTJE TË PËRCAKTUAR (thjesht etiketë, si Deficit
 // para se te percaktohej). Placeholder derisa te thuhet çfarë duhet të tregojë.
 function mainAnaMarrje(m){
   m.innerHTML='<h2 class="h">Marrje</h2>'+
@@ -1154,9 +1154,9 @@ function anaPresetDeficit(dite){
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-(dite-1));
   $('anaNgaDeficit').value=anaFmt(nga); $('anaDeriDeficit').value=anaFmt(sot);
   if(window.__anaKalendaret && window.__anaKalendaret.deficit) window.__anaKalendaret.deficit.refreshLabel();
-  anaNgarkoDeficitinTeGjithe();
+  anaNgarkoDeficitnTeGjithe();
 }
-function anaNgarkoDeficitinTeGjithe(){
+function anaNgarkoDeficitnTeGjithe(){
   ngarkoAnaDeficit();
   ngarkoAnaDhenNga();
   ngarkoAnaMarrja();
@@ -1270,7 +1270,7 @@ function anaRenderMarrjaMetrika(){
   });
 }
 
-// Marrin te dhenat NJE HERE (nga i njejti endpoint qe perdor edhe Deficiti) dhe i
+// Marrin te dhenat NJE HERE (nga i njejti endpoint qe perdor edhe Deficit) dhe i
 // ndajne mes te dy grafikeve — shmang 2 thirrje shtese API per te njejtat dite.
 async function ngarkoAnaDhenNga(){
   await anaSigurohuDeficitDhenie();
@@ -1351,10 +1351,10 @@ document.addEventListener('click', function(){
 });
 var _anaSelectedAd=null, _anaRekAll=[], _anaDropdownOpen=false;
 var ANA_METRIKA=[
-  {k:'shfaqje',    l:'Shfaqje',    c:'#f0883e'},
-  {k:'shikime',    l:'Shikime',    c:'#4a9eff'},
-  {k:'klikime',    l:'Klikime',    c:'#3fb950'},
-  {k:'konvertime', l:'Konvertime', c:'#f85149'},
+  {k:'shfaqje',    l:'Impressions',    c:'#f0883e'},
+  {k:'shikime',    l:'Views',    c:'#4a9eff'},
+  {k:'klikime',    l:'Clicks',    c:'#3fb950'},
+  {k:'konvertime', l:'Conversions', c:'#f85149'},
   {k:'ctr',           l:'CTR % (Klikim/Shikim)',    c:'#e05fa0', derived: r => (r.shikime>0) ? Math.round((r.klikime/r.shikime)*1000)/10 : 0, percentazh:true},
   {k:'konvPerShikim', l:'Konvertim/Shikim %',        c:'#a371f7', derived: r => (r.shikime>0) ? Math.round((r.konvertime/r.shikime)*1000)/10 : 0, percentazh:true},
   {k:'cvr',            l:'CVR % (Konvertim/Klikim)', c:'#56d4dd', derived: r => (r.klikime>0) ? Math.round((r.konvertime/r.klikime)*1000)/10 : 0, percentazh:true}
@@ -1392,7 +1392,7 @@ function anaRekThumbHTML(r){
   if(r.html5_url) return '<div style="'+wrap+'font-size:10px;color:var(--mut);">&lt;/&gt;</div>';
   return '<div style="'+wrap+'"></div>';
 }
-async function ngarkoAnaReklamatLista(){
+async function ngarkoAnaAdsLista(){
   try{ _anaRekAll=await(await fetch('/api/reklamat')).json(); }catch(e){ _anaRekAll=[]; }
   anaRenderRekDropdown();
 }
@@ -1410,7 +1410,7 @@ function anaRekRresht(innerHTML, checked, bold, onClickFn){
 function anaRenderRekDropdown(){
   const dd=$('anaRekDropdown'); if(!dd) return;
   dd.innerHTML='';
-  dd.appendChild(anaRekRresht('Të gjitha', !_anaSelectedAd, true, anaZgjidhTeGjitha));
+  dd.appendChild(anaRekRresht('All', !_anaSelectedAd, true, anaZgjidhTeGjitha));
   if(!_anaRekAll.length){ const p=document.createElement('p'); p.className='small mut'; p.style.padding='6px'; p.textContent="S'ke ende reklama."; dd.appendChild(p); anaUpdateRekBtnLabel(); return; }
   const hr=document.createElement('div'); hr.style.cssText='height:1px;background:var(--line);margin:4px 2px;'; dd.appendChild(hr);
   _anaRekAll.forEach(r=>{
@@ -1527,7 +1527,7 @@ var anaMultiColorLinePlugin={
 
 // Version DIVERGJENT — SAKTESISHT si me lart, POR PA kufizimin "mos shko nen zero"
 // (i cili ishte i menduar per metrika qe kurre s'jane negative — shfaqje/klikime etj.
-// Per grafikun e Deficitit (marre-dhene), vlerat DUHET te shkojne nen zero realisht,
+// Per grafikun e Deficitt (marre-dhene), vlerat DUHET te shkojne nen zero realisht,
 // prandaj perdor kete version, jo anaMultiColorLinePlugin te zakonshem.
 var anaMultiColorLinePluginDivergjent={
   id:'anaMultiColorLineDiv',
@@ -1609,14 +1609,14 @@ function anaRenderKategoriMetrika(){
     el.appendChild(btn);
   });
 }
-async function ngarkoAnaKatReklamatLista(){
+async function ngarkoAnaKatAdsLista(){
   try{ _anaKatRekAll = await(await fetch('/api/reklamat')).json(); }catch(e){ _anaKatRekAll=[]; }
   anaRenderKatRekDropdown();
 }
 function anaRenderKatRekDropdown(){
   const dd=$('anaKatRekDropdown'); if(!dd) return;
   dd.innerHTML='';
-  dd.appendChild(anaRekRresht('Të gjitha', !_anaKatSelectedAd, true, anaKatZgjidhTeGjitha));
+  dd.appendChild(anaRekRresht('All', !_anaKatSelectedAd, true, anaKatZgjidhTeGjitha));
   if(!_anaKatRekAll.length){ const p=document.createElement('p'); p.className='small mut'; p.style.padding='6px'; p.textContent="S'ke ende reklama."; dd.appendChild(p); anaKatUpdateBtnLabel(); return; }
   const hr=document.createElement('div'); hr.style.cssText='height:1px;background:var(--line);margin:4px 2px;'; dd.appendChild(hr);
   _anaKatRekAll.forEach(r=>{
@@ -1634,7 +1634,7 @@ function anaKatUpdateBtnLabel(){
 }
 function anaRenderKatLegend(kategorite){
   const el=$('anaKatLegend'); if(!el) return;
-  if(!kategorite.length){ el.innerHTML='<p class="small mut" style="margin:0;">Asnjë kategori me të dhëna.</p>'; return; }
+  if(!kategorite.length){ el.innerHTML='<p class="small mut" style="margin:0;">No category with data.</p>'; return; }
   el.innerHTML = kategorite.map((k,i)=>
     '<div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--txt);">'+
       '<span style="width:10px;height:10px;border-radius:50%;background:'+anaKatPaleta(i)+';flex:0 0 auto;"></span>'+
@@ -1688,7 +1688,7 @@ async function ngarkoAnaListRekamatLista(){
 function anaRenderListRekDropdown(){
   const dd=$('anaListRekDropdown'); if(!dd) return;
   dd.innerHTML='';
-  dd.appendChild(anaRekRresht('Të gjitha', !_anaListSelectedAd, true, anaListZgjidhTeGjitha));
+  dd.appendChild(anaRekRresht('All', !_anaListSelectedAd, true, anaListZgjidhTeGjitha));
   if(!_anaListRekAll.length){ const p=document.createElement('p'); p.className='small mut'; p.style.padding='6px'; p.textContent="S'ke ende reklama."; dd.appendChild(p); anaListUpdateBtnLabel(); return; }
   const hr=document.createElement('div'); hr.style.cssText='height:1px;background:var(--line);margin:4px 2px;'; dd.appendChild(hr);
   _anaListRekAll.forEach(r=>{
@@ -1710,19 +1710,19 @@ async function ngarkoAnaLista(){
   let url='/api/analytics/kategorite?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand');
   if(_anaListSelectedAd) url+='&reklama_ids='+_anaListSelectedAd;
   let d;
-  try{ d=await(await fetch(url)).json(); }catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; return; }
+  try{ d=await(await fetch(url)).json(); }catch(e){ el.innerHTML='<p class="small">Error.</p>'; return; }
   const kategorite=d.kategorite||[];
-  if(!kategorite.length){ el.innerHTML='<p class="small mut">Asnjë kategori me të dhëna në këtë periudhë.</p>'; return; }
+  if(!kategorite.length){ el.innerHTML='<p class="small mut">No category with data in this period.</p>'; return; }
   el.innerHTML = kategorite.map(k=>{
     const tot={shfaqje:0,shikime:0,klikime:0,konvertime:0};
     k.pikat.forEach(p=>{ tot.shfaqje+=p.shfaqje; tot.shikime+=p.shikime; tot.klikime+=p.klikime; tot.konvertime+=p.konvertime; });
     return '<div style="padding:10px 0;border-bottom:1px solid #20262f;">'+
       '<div style="font-weight:600;font-size:13px;margin-bottom:6px;">'+esc(k.emri)+'</div>'+
       '<div style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--mut);">'+
-        '<span>Shfaqje: <b style="color:var(--txt);">'+tot.shfaqje+'</b></span>'+
-        '<span>Shikime: <b style="color:var(--txt);">'+tot.shikime+'</b></span>'+
-        '<span>Klikime: <b style="color:var(--txt);">'+tot.klikime+'</b></span>'+
-        '<span>Konvertime: <b style="color:var(--txt);">'+tot.konvertime+'</b></span>'+
+        '<span>Impressions: <b style="color:var(--txt);">'+tot.shfaqje+'</b></span>'+
+        '<span>Views: <b style="color:var(--txt);">'+tot.shikime+'</b></span>'+
+        '<span>Clicks: <b style="color:var(--txt);">'+tot.klikime+'</b></span>'+
+        '<span>Conversions: <b style="color:var(--txt);">'+tot.konvertime+'</b></span>'+
       '</div>'+
     '</div>';
   }).join('');
@@ -1736,15 +1736,15 @@ function anaKrijoKalendarRangu(cfg){
 
   function fmt(d){ const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0'); return y+'-'+m+'-'+dd; }
   function parse(s){ const p=s.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
-  function fmtShkurt(d){ return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear(); }
+  function fmtFebruary(d){ return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear(); }
   function emriMuajit(d){
-    const emrat=['Janar','Shkurt','Mars','Prill','Maj','Qershor','Korrik','Gusht','Shtator','Tetor','Nëntor','Dhjetor'];
+    const emrat=['January','February','March','April','May','June','July','August','September','October','November','December'];
     return emrat[d.getMonth()]+' '+d.getFullYear();
   }
   function refreshLabel(){
     const btn=$(cfg.btnId); if(!btn) return;
     const ng=parse(cfg.getNga()), dr=parse(cfg.getDeri());
-    btn.textContent = fmtShkurt(ng)+' – '+fmtShkurt(dr)+' 📅';
+    btn.textContent = fmtFebruary(ng)+' – '+fmtFebruary(dr)+' 📅';
   }
   function hapPanelin(){
     selStart=parse(cfg.getNga()); selEnd=parse(cfg.getDeri());
@@ -1780,7 +1780,7 @@ function anaKrijoKalendarRangu(cfg){
       '<button type="button" class="btn" style="padding:4px 10px;" onclick="event.stopPropagation();__anaKalNav(\''+cfg.id+'\',1)">›</button>'+
     '</div>'+
     '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;font-size:11px;color:var(--mut);text-align:center;margin-bottom:4px;">'+
-      ['Hë','Ma','Më','En','Pr','Sh','Di'].map(x=>'<div>'+x+'</div>').join('')+
+      ['Mo','Tu','We','Th','Fr','Sa','Su'].map(x=>'<div>'+x+'</div>').join('')+
     '</div>'+
     '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">';
     for(let i=0;i<zhvend;i++) h+='<div></div>';
@@ -1837,9 +1837,9 @@ async function ngarkoAnaSnipDhene(){
   if(!el||!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
   try{ d=await(await fetch('/api/analytics/snippetet-dhene?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand'))).json(); }
-  catch(e){ el.innerHTML='<p class="small">Gabim.</p>'; return; }
+  catch(e){ el.innerHTML='<p class="small">Error.</p>'; return; }
   const rows=d.snippetet||[];
-  if(!rows.length){ el.innerHTML='<button class="btn cta" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'lidhjaSnippet\'})">Lidh një snippet →</button>'; return; }
+  if(!rows.length){ el.innerHTML='<button class="btn cta" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'lidhjaSnippet\'})">Connect a snippet →</button>'; return; }
   el.innerHTML = rows.map(s=>{
     let statusTxt, statusCol;
     if(s.pauzuar){ statusTxt='Pezulluar'; statusCol='var(--mut)'; }
@@ -1851,10 +1851,10 @@ async function ngarkoAnaSnipDhene(){
         '<span style="font-size:11px;color:'+statusCol+';">'+statusTxt+'</span>'+
       '</div>'+
       '<div style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--mut);">'+
-        '<span>Shfaqje: <b style="color:var(--txt);">'+s.shfaqje+'</b></span>'+
-        '<span>Shikime: <b style="color:var(--txt);">'+s.shikime+'</b></span>'+
-        '<span>Klikime: <b style="color:var(--txt);">'+s.klikime+'</b></span>'+
-        '<span>Konvertime: <b style="color:var(--txt);">'+s.konvertime+'</b></span>'+
+        '<span>Impressions: <b style="color:var(--txt);">'+s.shfaqje+'</b></span>'+
+        '<span>Views: <b style="color:var(--txt);">'+s.shikime+'</b></span>'+
+        '<span>Clicks: <b style="color:var(--txt);">'+s.klikime+'</b></span>'+
+        '<span>Conversions: <b style="color:var(--txt);">'+s.konvertime+'</b></span>'+
       '</div>'+
     '</div>';
   }).join('');
@@ -1880,7 +1880,7 @@ function anaRenderKatDheneMetrika(){
 }
 function anaRenderKatDheneLegend(kategorite){
   const el=$('anaKatDheneLegend'); if(!el) return;
-  if(!kategorite.length){ el.innerHTML='<p class="small mut" style="margin:0;">Asnjë kategori me të dhëna.</p>'; return; }
+  if(!kategorite.length){ el.innerHTML='<p class="small mut" style="margin:0;">No category with data.</p>'; return; }
   el.innerHTML = kategorite.map((k,i)=>
     '<div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--txt);">'+
       '<span style="width:10px;height:10px;border-radius:50%;background:'+anaKatPaleta(i)+';flex:0 0 auto;"></span>'+
@@ -1922,8 +1922,8 @@ async function ngarkoAnaKatDhene(){
 }
 
 // ================= FAQE E VEÇANTË: "Performanca" per "My Ads" =================
-// Nxjerr SAKTESISHT dy grafiket e para te mainAnalytics() (Trafiku + Sipas kategorise),
-// vendosur ne 2 rreshka, PA listen anesore te kategorive dhe PA seksionin "Dhënie".
+// Nxjerr SAKTESISHT dy grafiket e para te mainAnalytics() (Traffic + Sipas kategorise),
+// vendosur ne 2 rreshka, PA listen anesore te kategorive dhe PA seksionin "Given".
 function mainRekPerformanca(m){
   window.__pamjeVecante=true;
   _anaSelectedAd=null; _anaDropdownOpen=false;
@@ -1933,14 +1933,14 @@ function mainRekPerformanca(m){
       '<div style="width:38px;height:38px;border-radius:12px;background:rgba(167,139,250,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>'+
       '</div>'+
-      '<h2 class="h" style="margin:0;">Performanca — Reklamat e mia</h2>'+
+      '<h2 class="h" style="margin:0;">Performanca — Ads e mia</h2>'+
     '</div>'+
-    '<p class="small" style="margin:6px 0 16px;">Ecuria e reklamave të tua me ditë.</p>'+
+    '<p class="small" style="margin:6px 0 16px;">Your ads performance by day.</p>'+
     '<div class="card" style="margin-bottom:16px;">'+
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
-        '<button class="btn" onclick="anaPreset(7)">7 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPreset(30)">30 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPreset(90)">90 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPreset(7)">Last 7 days</button>'+
+        '<button class="btn" onclick="anaPreset(30)">Last 30 days</button>'+
+        '<button class="btn" onclick="anaPreset(90)">Last 90 days</button>'+
         '<span style="flex:1"></span>'+
         '<div style="position:relative;">'+
           '<button type="button" id="anaKalBtn_top" class="btn" style="min-width:170px;"></button>'+
@@ -1951,7 +1951,7 @@ function mainRekPerformanca(m){
       '</div>'+
       '<div style="display:flex;justify-content:flex-end;margin-top:10px;">'+
         '<div style="position:relative;">'+
-          '<button type="button" id="anaRekBtn" class="btn" style="min-width:150px;">Reklamat <span id="anaRekBtnCount"></span> ▾</button>'+
+          '<button type="button" id="anaRekBtn" class="btn" style="min-width:150px;">Ads <span id="anaRekBtnCount"></span> ▾</button>'+
           '<div id="anaRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:240px;max-height:280px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
         '</div>'+
       '</div>'+
@@ -1960,9 +1960,9 @@ function mainRekPerformanca(m){
     '<div class="card"><canvas id="anaCanvas" height="90"></canvas></div>'+
     '<div class="card" style="margin-top:16px;">'+
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
-        '<button class="btn" onclick="anaPresetKat(7)">7 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPresetKat(30)">30 ditët e fundit</button>'+
-        '<button class="btn" onclick="anaPresetKat(90)">90 ditët e fundit</button>'+
+        '<button class="btn" onclick="anaPresetKat(7)">Last 7 days</button>'+
+        '<button class="btn" onclick="anaPresetKat(30)">Last 30 days</button>'+
+        '<button class="btn" onclick="anaPresetKat(90)">Last 90 days</button>'+
         '<span style="flex:1"></span>'+
         '<div style="position:relative;">'+
           '<button type="button" id="anaKalBtn_kat" class="btn" style="min-width:170px;"></button>'+
@@ -1974,13 +1974,13 @@ function mainRekPerformanca(m){
     '</div>'+
     '<div class="card" style="margin-top:16px;">'+
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:14px;">'+
-        '<h3 class="h" style="font-size:15px;margin:0;">Sipas kategorisë së biznesit</h3>'+
+        '<h3 class="h" style="font-size:15px;margin:0;">By business category</h3>'+
         '<div style="flex:0 0 200px;">'+
-          '<div class="small mut" style="font-weight:600;margin-bottom:6px;">Kategoritë e bizneseve që kanë marrë pjesë.</div>'+
+          '<div class="small mut" style="font-weight:600;margin-bottom:6px;">Categories e bizneseve që kanë marrë pjesë.</div>'+
           '<div id="anaKatLegend" style="display:flex;flex-direction:column;gap:6px;max-height:80px;overflow-y:auto;padding-right:4px;"></div>'+
         '</div>'+
         '<div style="position:relative;">'+
-          '<button type="button" id="anaKatRekBtn" class="btn" style="min-width:140px;">Reklamat <span id="anaKatRekBtnCount"></span> ▾</button>'+
+          '<button type="button" id="anaKatRekBtn" class="btn" style="min-width:140px;">Ads <span id="anaKatRekBtnCount"></span> ▾</button>'+
           '<div id="anaKatRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:230px;max-height:260px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
         '</div>'+
       '</div>'+
@@ -2018,28 +2018,28 @@ function mainRekPerformanca(m){
     dd.classList.toggle('hide', !_anaKatDropdownOpen);
   });
   anaRenderMetrika();
-  ngarkoAnaReklamatLista();
+  ngarkoAnaAdsLista();
   anaRenderKategoriMetrika();
-  ngarkoAnaKatReklamatLista();
+  ngarkoAnaKatAdsLista();
   ngarkoAnalitika();
   ngarkoAnaKategorite();
 }
 
 // ================= FAQE E VEÇANTË: "Statistikat" per "Hapësira e reklamave" =================
 // Ripërdor TE NJEJTIN endpoint (kategorite-dhene) dhe TE NJEJTIN pattern grafiku si paneli
-// "Dhënie" brenda Analytics — thjesht si faqe e vetme, e pavarur (sipas kategorise se
+// "Given" brenda Analytics — thjesht si faqe e vetme, e pavarur (sipas kategorise se
 // bizneseve qe kane marre pjese, JO emer biznesi/reklame specifike).
 var _snStatMetrikaAktive='shfaqje', _snStatChart=null;
 
 function mainSnippetStatistikat(m){
   window.__pamjeVecante=true;
-  m.innerHTML='<h2 class="h">Statistikat — Hapësira e reklamave</h2>'+
-    '<p class="small" style="margin:2px 0 16px;">Shfaqje, shikime, klikime dhe konvertime që u ke dhënë bizneseve të tjera nëpërmjet hapësirave tua, sipas kategorisë së tyre.</p>'+
+  m.innerHTML='<h2 class="h">Stats — Ad space</h2>'+
+    '<p class="small" style="margin:2px 0 16px;">Impressions, shikime, klikime dhe konvertime që u ke dhënë bizneseve të tjera nëpërmjet hapësirave tua, sipas kategorisë së tyre.</p>'+
     '<div class="card">'+
       '<div class="presetRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
-        '<button class="btn" onclick="snStatPreset(7)">7 ditët e fundit</button>'+
-        '<button class="btn" onclick="snStatPreset(30)">30 ditët e fundit</button>'+
-        '<button class="btn" onclick="snStatPreset(90)">90 ditët e fundit</button>'+
+        '<button class="btn" onclick="snStatPreset(7)">Last 7 days</button>'+
+        '<button class="btn" onclick="snStatPreset(30)">Last 30 days</button>'+
+        '<button class="btn" onclick="snStatPreset(90)">Last 90 days</button>'+
         '<span style="flex:1"></span>'+
         '<div style="position:relative;">'+
           '<button type="button" id="anaKalBtn_snstat" class="btn" style="min-width:170px;"></button>'+
@@ -2051,7 +2051,7 @@ function mainSnippetStatistikat(m){
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:14px;">'+
         '<div id="snStatMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;"></div>'+
         '<div style="flex:0 0 200px;">'+
-          '<div class="small mut" style="font-weight:600;margin-bottom:6px;">Kategoritë që kanë marrë pjesë.</div>'+
+          '<div class="small mut" style="font-weight:600;margin-bottom:6px;">Categories që kanë marrë pjesë.</div>'+
           '<div id="snStatLegend" style="display:flex;flex-direction:column;gap:6px;max-height:120px;overflow-y:auto;padding-right:4px;"></div>'+
         '</div>'+
       '</div>'+
@@ -2111,7 +2111,7 @@ async function ngarkoSnStatistikat(){
   const legEl=$('snStatLegend');
   if(legEl){
     legEl.innerHTML = !kategorite.length
-      ? '<p class="small mut" style="margin:0;">Asnjë kategori me të dhëna.</p>'
+      ? '<p class="small mut" style="margin:0;">No category with data.</p>'
       : kategorite.map((k,i)=>
           '<div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--txt);">'+
             '<span style="width:10px;height:10px;border-radius:50%;background:'+anaKatPaleta(i)+';flex:0 0 auto;"></span>'+
