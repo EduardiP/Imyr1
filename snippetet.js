@@ -80,7 +80,7 @@ module.exports = function (app, pool, iLoguar, beCeles) {
       const r = await pool.query(
         `SELECT id, celes, emri, madhesia_desktop, madhesia_mobile, pozicioni, snippet_active
          FROM snippetet WHERE id=$1 AND biznes_id=$2`, [req.params.id, req.biznesId]);
-      if (!r.rows.length) return res.status(404).json({ error: 'S\'u gjet.' });
+      if (!r.rows.length) return res.status(404).json({ error: 'Not found.' });
       res.json(r.rows[0]);
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
@@ -93,7 +93,7 @@ module.exports = function (app, pool, iLoguar, beCeles) {
       if (!emri) {
         // fallback: emer automatik nese s'u dha
         const numri = await pool.query('SELECT COUNT(*)::int AS n FROM snippetet WHERE biznes_id=$1', [req.biznesId]);
-        emri = 'Hapësira ' + (numri.rows[0].n + 1);
+        emri = 'Space ' + (numri.rows[0].n + 1);
       }
       const r = await pool.query(
         `INSERT INTO snippetet (biznes_id, celes, emri, madhesia_desktop, madhesia_mobile, pozicioni)
@@ -107,7 +107,7 @@ module.exports = function (app, pool, iLoguar, beCeles) {
   // Ndrysho emrin e nje snippet-i
   app.patch('/api/snippetet/:id', iLoguar, async (req, res) => {
     const emri = ((req.body && req.body.emri) || '').trim();
-    if (!emri) return res.status(400).json({ error: 'Emri bosh.' });
+    if (!emri) return res.status(400).json({ error: 'Name is empty.' });
     try {
       await pool.query('UPDATE snippetet SET emri=$1 WHERE id=$2 AND biznes_id=$3', [emri, req.params.id, req.biznesId]);
       res.json({ ok: true });
@@ -162,10 +162,10 @@ module.exports = function (app, pool, iLoguar, beCeles) {
     const bd = req.body || {};
     const cakto = [], vals = [req.params.id, req.biznesId];
     let n = 2;
-    if (bd.desktop != null) { const v = validoDesktop(bd.desktop); if(!v) return res.status(400).json({error:'Madhesi desktop e pavlefshme.'}); cakto.push('madhesia_desktop=$'+(++n)); vals.push(v); }
-    if (bd.mobile != null)  { const v = validoMobile(bd.mobile);  if(!v) return res.status(400).json({error:'Madhesi mobile e pavlefshme.'});  cakto.push('madhesia_mobile=$'+(++n));  vals.push(v); }
-    if (bd.pozicioni != null){ const v = ['qender','majtas','djathtas'].indexOf(bd.pozicioni)>-1?bd.pozicioni:null; if(!v) return res.status(400).json({error:'Pozicion i pavlefshem.'}); cakto.push('pozicioni=$'+(++n)); vals.push(v); }
-    if (!cakto.length) return res.status(400).json({ error: 'Asgje per te ruajtur.' });
+    if (bd.desktop != null) { const v = validoDesktop(bd.desktop); if(!v) return res.status(400).json({error:'Invalid desktop size.'}); cakto.push('madhesia_desktop=$'+(++n)); vals.push(v); }
+    if (bd.mobile != null)  { const v = validoMobile(bd.mobile);  if(!v) return res.status(400).json({error:'Invalid mobile size.'});  cakto.push('madhesia_mobile=$'+(++n));  vals.push(v); }
+    if (bd.pozicioni != null){ const v = ['qender','majtas','djathtas'].indexOf(bd.pozicioni)>-1?bd.pozicioni:null; if(!v) return res.status(400).json({error:'Invalid position.'}); cakto.push('pozicioni=$'+(++n)); vals.push(v); }
+    if (!cakto.length) return res.status(400).json({ error: 'Nothing to save.' });
     try {
       await pool.query(`UPDATE snippetet SET ${cakto.join(', ')} WHERE id=$1 AND biznes_id=$2`, vals);
       res.json({ ok: true, desktop: bd.desktop, mobile: bd.mobile, pozicioni: bd.pozicioni });
