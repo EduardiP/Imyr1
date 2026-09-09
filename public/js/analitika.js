@@ -3,7 +3,7 @@
 
 function mainAnalytics(m){
   _anaSelectedAd=null; _anaDropdownOpen=false;
-  _anaKatSelectedAd=null; _anaKatDropdownOpen=false; _anaKatMetrikaAktive='shikime';
+  _anaKatSelectedAd=null; _anaKatDropdownOpen=false; _anaKatMetricAktive='shikime';
   _anaListSelectedAd=null; _anaListDropdownOpen=false;
   m.innerHTML='<h2 class="h">Analytics</h2>'+
     '<p class="small" style="margin:2px 0 16px;">Your ads performance by day.</p>'+
@@ -26,7 +26,7 @@ function mainAnalytics(m){
           '<div id="anaRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:240px;max-height:280px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
         '</div>'+
       '</div>'+
-      '<div id="anaMetrikaRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;"></div>'+
+      '<div id="anaMetricRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;"></div>'+
     '</div>'+
     '<div class="card"><canvas id="anaCanvas" height="90"></canvas></div>'+
     '<div class="card" style="margin-top:16px;">'+
@@ -56,7 +56,7 @@ function mainAnalytics(m){
             '<div id="anaKatRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:230px;max-height:260px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
           '</div>'+
         '</div>'+
-        '<div id="anaKatMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
+        '<div id="anaKatMetricRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
         '<canvas id="anaKatCanvas" height="110"></canvas>'+
       '</div>'+
       '<div class="card" style="flex:1;min-width:220px;">'+
@@ -97,7 +97,7 @@ function mainAnalytics(m){
       '<div class="card" style="flex:2;min-width:340px;">'+
         '<h3 class="h" style="font-size:15px;margin:0 0 4px;">By business category</h3>'+
         '<p class="small mut" style="margin:0 0 12px;">What you\'ve given to each category.</p>'+
-        '<div id="anaKatDheneMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
+        '<div id="anaKatDheneMetricRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
         '<div id="anaKatDheneLegend" style="display:flex;flex-direction:column;gap:6px;max-height:80px;overflow-y:auto;padding-right:4px;margin-bottom:10px;"></div>'+
         '<canvas id="anaKatDheneCanvas" height="110"></canvas>'+
       '</div>'+
@@ -117,7 +117,7 @@ function mainAnalytics(m){
         '<input type="date" id="anaNgaDeficit" style="display:none;">'+
         '<input type="date" id="anaDeriDeficit" style="display:none;">'+
       '</div>'+
-      '<div id="anaDeficitMetrikaRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
+      '<div id="anaDeficitMetricRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
       '<canvas id="anaDeficitCanvas" height="110"></canvas>'+
     '</div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
@@ -167,19 +167,19 @@ function mainAnalytics(m){
     _anaListDropdownOpen=!_anaListDropdownOpen;
     dd.classList.toggle('hide', !_anaListDropdownOpen);
   });
-  anaRenderMetrika();
+  anaRenderMetric();
   ngarkoAnaAdsLista();
-  anaRenderKategoriMetrika();
+  anaRenderKategoriMetric();
   ngarkoAnaKatAdsLista();
   ngarkoAnaListRekamatLista();
   ngarkoAnalitika();
   ngarkoAnaKategorite();
   ngarkoAnaLista();
-  anaRenderKatDheneMetrika();
+  anaRenderKatDheneMetric();
   ngarkoAnaPikatProfili();
   ngarkoAnaSnipDhene();
   ngarkoAnaKatDhene();
-  anaRenderDeficitMetrika();
+  anaRenderDeficitMetric();
   ngarkoAnaDeficiti();
 }
 
@@ -242,7 +242,7 @@ function mainAnaTrafiku(m){
           '<input type="date" id="anaDeriOre" style="display:none;">'+
         '</div>'+
         '<p class="small mut" style="margin:0 0 12px;">Pick 1 day (or a range) — the bars show the total for each hour. One metric at a time.</p>'+
-        '<div id="anaOreMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
+        '<div id="anaOreMetricRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
         '<canvas id="anaOreCanvas" height="110"></canvas>'+
       '</div>'+
       '<div class="card" style="flex:1;min-width:260px;">'+
@@ -257,7 +257,7 @@ function mainAnaTrafiku(m){
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
   window.__anaKalendaret = window.__anaKalendaret || {};
 
-  // ─── Ora e ditës + Auction (rreshti i ri, poshtë grafikut kryesor) ───
+  // ─── Hour of day + Auction (rreshti i ri, poshtë grafikut kryesor) ───
   $('anaNgaOre').value=anaFmt(nga); $('anaDeriOre').value=anaFmt(sot);
   anaKrijoKalendarRangu({
     id:'ore', btnId:'anaKalBtn_ore', panelId:'anaKalPanel_ore',
@@ -265,7 +265,7 @@ function mainAnaTrafiku(m){
     setNga:v=>{ $('anaNgaOre').value=v; }, setDeri:v=>{ $('anaDeriOre').value=v; },
     onRuaj: anaNgarkoOreDheAuction
   });
-  anaRenderOreMetrika();
+  anaRenderOreMetric();
   ngarkoAnaOre();
   ngarkoAnaAuctionKategorite();
 
@@ -293,7 +293,7 @@ function mainAnaTrafiku(m){
 var _anaDetAktiv=null; // 'pesha'|'pozicioni'|'reklama'|'kategoria'|null
 var _anaDetPerspektiv='marre'; // 'marre' (ti perfitove, reklamues_id=ti) | 'dhene' (te tjeret perfituan, host_id=ti)
 var _anaDetWeightMode='te_gjitha', _anaDetWeightFiks=null, _anaDetWeightMin=null, _anaDetWeightMax=null;
-var _anaDetPozicioni='te_gjitha';
+var _anaDetPosition='te_gjitha';
 var _anaDetReklamaId='', _anaDetAds=[];
 var _anaDetCategory='', _anaDetKategorite=[];
 
@@ -306,8 +306,8 @@ function anaDetPreset(dite){
 
 function anaDetEmriFiltri(lloji){
   const eshteBalance = (window.__llogariaModaliteti==='barazi');
-  if(lloji==='pesha') return eshteBalance ? 'Bilanci' : (_anaDetWeightMode==='te_gjitha' ? 'Weight' : (_anaDetWeightMode==='fiks' ? 'Weight: '+_anaDetWeightFiks : 'Weight: '+_anaDetWeightMin+'–'+_anaDetWeightMax));
-  if(lloji==='pozicioni') return eshteBalance ? 'Ecuria ditore' : (_anaDetPozicioni==='te_gjitha' ? 'Pozicioni' : 'Pozicioni: #'+_anaDetPozicioni);
+  if(lloji==='pesha') return eshteBalance ? 'Balance' : (_anaDetWeightMode==='te_gjitha' ? 'Weight' : (_anaDetWeightMode==='fiks' ? 'Weight: '+_anaDetWeightFiks : 'Weight: '+_anaDetWeightMin+'–'+_anaDetWeightMax));
+  if(lloji==='pozicioni') return eshteBalance ? 'Daily performance' : (_anaDetPosition==='te_gjitha' ? 'Position' : 'Position: #'+_anaDetPosition);
   if(lloji==='reklama') return _anaDetReklamaId ? 'Reklama: '+((_anaDetAds.find(r=>r.id==_anaDetReklamaId)||{}).emri||'') : 'Reklama';
   if(lloji==='kategoria') return _anaDetCategory ? 'Category: '+_anaDetCategory : 'Category';
 }
@@ -315,12 +315,12 @@ function anaDetEmriFiltri(lloji){
 function anaRenderDetKryesori(){
   const el=$('anaDetKryesoriRow'); if(!el) return;
   const eshteDhene = (_anaDetPerspektiv==='dhene');
-  // Pozicioni/Reklama s'kane kuptim ne "Dhene" (renditja/reklama ime specifike jane
+  // Position/Reklama s'kane kuptim ne "Dhene" (renditja/reklama ime specifike jane
   // koncepte qe vlejne vetem kur UNE konkurroj, jo kur te tjeret konkurrojne te hapesira ime)
   if(eshteDhene && (_anaDetAktiv==='pozicioni' || _anaDetAktiv==='reklama')) _anaDetAktiv='pesha';
   const llojet=[
     {k:'pesha', aktiv: _anaDetWeightMode!=='te_gjitha'},
-    {k:'pozicioni', aktiv: _anaDetPozicioni!=='te_gjitha'},
+    {k:'pozicioni', aktiv: _anaDetPosition!=='te_gjitha'},
     {k:'reklama', aktiv: !!_anaDetReklamaId},
     {k:'kategoria', aktiv: !!_anaDetCategory}
   ].filter(function(x){ return !(eshteDhene && (x.k==='pozicioni' || x.k==='reklama')); });
@@ -358,10 +358,10 @@ function anaDetPerspektivSet(p){
   if(_anaDetPerspektiv===p) return;
   _anaDetPerspektiv=p;
   anaRenderDetPerspektiv();
-  anaRenderDetKryesori(); // fshin/shfaq Pozicioni+Reklama sipas perspektives
+  anaRenderDetKryesori(); // fshin/shfaq Position+Reklama sipas perspektives
   anaRenderDetNenPanel();
   ngarkoAnaDetaje();       // rifreskon tabelen + listen e reklamave/kategorive
-  anaRenderDetRezultati(); // rifreskon grafikun aktual (Weight/Pozicioni/Reklama/Category)
+  anaRenderDetRezultati(); // rifreskon grafikun aktual (Weight/Position/Reklama/Category)
 }
 
 function anaRenderDetNenPanel(){
@@ -389,11 +389,11 @@ function anaRenderDetNenPanel(){
   } else if(_anaDetAktiv==='pozicioni'){
     el.innerHTML =
       '<div style="padding:12px;background:var(--card2);border:1px solid var(--line);border-radius:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;">'+
-        '<button type="button" onclick="anaDetPozicioniSet(\'te_gjitha\')" style="'+(_anaDetPozicioni==='te_gjitha'?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">All</button>'+
+        '<button type="button" onclick="anaDetPositionSet(\'te_gjitha\')" style="'+(_anaDetPosition==='te_gjitha'?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">All</button>'+
         [1,2,3,4,5].map(function(p){
-          return '<button type="button" onclick="anaDetPozicioniSet('+p+')" style="'+(_anaDetPozicioni==p?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">#'+p+'</button>';
+          return '<button type="button" onclick="anaDetPositionSet('+p+')" style="'+(_anaDetPosition==p?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">#'+p+'</button>';
         }).join('')+
-        '<input type="number" id="anaDetPozicioniTjeter" placeholder="other…" min="1" style="width:70px;" onkeydown="if(event.key===\'Enter\')anaDetPozicioniSet(parseInt(this.value,10))">'+
+        '<input type="number" id="anaDetPositionTjeter" placeholder="other…" min="1" style="width:70px;" onkeydown="if(event.key===\'Enter\')anaDetPositionSet(parseInt(this.value,10))">'+
       '</div>';
   } else if(_anaDetAktiv==='reklama'){
     el.innerHTML =
@@ -422,12 +422,12 @@ function anaDetWeightIntervalChange(){
   _anaDetWeightMax = ma.value===''?null:Math.max(0,Math.min(1500,parseFloat(ma.value)));
   anaRenderDetKryesori(); ngarkoAnaDetaje();
 }
-function anaDetPozicioniSet(p){ _anaDetPozicioni = (p==='te_gjitha'||isNaN(p)) ? 'te_gjitha' : p; anaRenderDetKryesori(); anaRenderDetNenPanel(); ngarkoAnaDetaje(); }
+function anaDetPositionSet(p){ _anaDetPosition = (p==='te_gjitha'||isNaN(p)) ? 'te_gjitha' : p; anaRenderDetKryesori(); anaRenderDetNenPanel(); ngarkoAnaDetaje(); }
 function anaDetReklamaSet(id){ _anaDetReklamaId = id; anaRenderDetKryesori(); anaRenderDetNenPanel(); anaDetRenderRekDropdown(); ngarkoAnaDetaje(); }
 function anaDetCategorySet(kat){ _anaDetCategory = kat; anaRenderDetKryesori(); anaRenderDetNenPanel(); ngarkoAnaDetaje(); }
 
 // ═══ Dropdown UNIVERSAL i reklamave — punon PAVARESISHT cilën kategori (Weight/
-// Pozicioni/Reklama/Category) ke aktive, gjithmone i paracaktuar "All" ═══
+// Position/Reklama/Category) ke aktive, gjithmone i paracaktuar "All" ═══
 var _anaDetRekDropdownOpen=false;
 function anaDetRenderRekDropdown(){
   const dd=$('anaDetRekDropdown'); if(!dd) return;
@@ -452,7 +452,7 @@ async function ngarkoAnaDetaje(){
   let url='/api/analytics/ankand-detaje?nga='+ngaEl.value+'&deri='+deriEl.value+'&perspektiv='+_anaDetPerspektiv+'&pesha_mode='+_anaDetWeightMode;
   if(_anaDetWeightMode==='fiks' && _anaDetWeightFiks!=null) url+='&pesha_fiks='+_anaDetWeightFiks;
   if(_anaDetWeightMode==='interval' && _anaDetWeightMin!=null && _anaDetWeightMax!=null) url+='&pesha_min='+_anaDetWeightMin+'&pesha_max='+_anaDetWeightMax;
-  if(_anaDetPozicioni!=='te_gjitha') url+='&pozicioni='+_anaDetPozicioni;
+  if(_anaDetPosition!=='te_gjitha') url+='&pozicioni='+_anaDetPosition;
   if(_anaDetReklamaId) url+='&reklama_id='+_anaDetReklamaId;
   if(_anaDetCategory) url+='&kategoria='+encodeURIComponent(_anaDetCategory);
   let d;
@@ -481,7 +481,7 @@ async function ngarkoAnaDetaje(){
             '<td style="padding:7px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;">'+esc(r.kategoria||'—')+'</td>'+
             '<td style="text-align:center;padding:7px 4px;">'+(r.pozicioni!=null?r.pozicioni:'—')+'</td>'+
             '<td style="text-align:right;padding:7px 8px;">'+r.pesha+'</td>'+
-            '<td style="text-align:right;padding:7px 8px;font-weight:600;color:'+(r.fitoi?'var(--good)':'var(--mut)')+';">'+(r.fitoi?'Fituar':'Humbur')+'</td>'+
+            '<td style="text-align:right;padding:7px 8px;font-weight:600;color:'+(r.fitoi?'var(--good)':'var(--mut)')+';">'+(r.fitoi?'Won':'Humbur')+'</td>'+
           '</tr>';
         }).join('')+
         '</tbody></table>';
@@ -490,17 +490,17 @@ async function ngarkoAnaDetaje(){
 }
 
 // ═══ Kontejneri i rezultateve — ndryshon sipas filtrit AKTIV (_anaDetAktiv) ═══
-var _anaDetWeightHistChart=null, _anaDetPozicionetLista=[], _anaDetPozicioniHapur=null;
+var _anaDetWeightHistChart=null, _anaDetPositionsLista=[], _anaDetPositionHapur=null;
 var _anaDetReklamaChart=null, _anaDetCategoryChart=null;
 
 function anaRenderDetRezultati(){
   const el=$('anaDetRezultati'); if(!el) return;
   if(!_anaDetAktiv){ el.innerHTML=''; return; }
   const eshteBalance = (window.__llogariaModaliteti==='barazi');
-  if(eshteBalance && _anaDetAktiv==='pesha') return anaDetRezBilanciKategori(el);
-  if(eshteBalance && _anaDetAktiv==='pozicioni') return anaDetRezEcuriaDitore(el);
+  if(eshteBalance && _anaDetAktiv==='pesha') return anaDetRezBalanceKategori(el);
+  if(eshteBalance && _anaDetAktiv==='pozicioni') return anaDetRezPerformanceDitore(el);
   if(_anaDetAktiv==='pesha') return anaDetRezWeight(el);
-  if(_anaDetAktiv==='pozicioni') return anaDetRezPozicioni(el);
+  if(_anaDetAktiv==='pozicioni') return anaDetRezPosition(el);
   if(_anaDetAktiv==='reklama') return anaDetRezReklama(el);
   if(_anaDetAktiv==='kategoria') return anaDetRezCategory(el);
 }
@@ -509,7 +509,7 @@ function anaRenderDetRezultati(){
 // per kategori, siper vijes se mesit nese ke MARRE me shume, poshte nese ke DHENE me
 // shume; kategoria e VET biznesit theksohet me ngjyre tjeter ──
 var _anaBilKatNjesia=20, _anaBilKatBoshllek=3, _anaBilKatMaksVizual=12;
-async function anaDetRezBilanciKategori(el){
+async function anaDetRezBalanceKategori(el){
   el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 4px;">Balance by category</h4>'+
     '<p class="small mut" style="margin:0 0 12px;">For each category: squares above the midline if you received more impressions, below if you gave more. Your category is highlighted in a different color.</p>'+
     '<div id="anaBilKatGrafiku" style="display:flex;gap:20px;align-items:flex-start;overflow-x:auto;padding:6px 4px 0;"></div>';
@@ -545,23 +545,23 @@ async function anaDetRezBilanciKategori(el){
   }).join('');
 }
 
-// ── BALANCE — "Ecuria ditore": nje vije e vetme (shfaqje), zero ne mes, +/- sipas
+// ── BALANCE — "Daily performance": nje vije e vetme (shfaqje), zero ne mes, +/- sipas
 // ditës — ripërdor endpoint-in ekzistues te Deficitt, vetem 1 metrike ──
-var _anaEcuriaDitoreChart=null;
-async function anaDetRezEcuriaDitore(el){
-  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 8px;">Ecuria ditore (Received − Given, shfaqje)</h4><canvas id="anaEcuriaDitoreCanvas" height="100"></canvas>';
+var _anaPerformanceDitoreChart=null;
+async function anaDetRezPerformanceDitore(el){
+  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 8px;">Daily performance (Received − Given, shfaqje)</h4><canvas id="anaPerformanceDitoreCanvas" height="100"></canvas>';
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
   try{ d=await(await fetch('/api/analytics/deficiti?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika=barazi')).json(); }catch(e){ return; }
   const rows=d.rows||[];
   const labels=rows.map(r=>r.data);
-  const canvas=$('anaEcuriaDitoreCanvas'); if(!canvas||typeof Chart==='undefined') return;
-  if(_anaEcuriaDitoreChart){ _anaEcuriaDitoreChart.destroy(); _anaEcuriaDitoreChart=null; }
+  const canvas=$('anaPerformanceDitoreCanvas'); if(!canvas||typeof Chart==='undefined') return;
+  if(_anaPerformanceDitoreChart){ _anaPerformanceDitoreChart.destroy(); _anaPerformanceDitoreChart=null; }
   let maksAbs=0; rows.forEach(r=>{ const a=Math.abs(r.shfaqje||0); if(a>maksAbs) maksAbs=a; });
   const jastek = maksAbs>0 ? maksAbs*1.15 : 5;
   const ctx=canvas.getContext('2d');
-  _anaEcuriaDitoreChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Impressions (Received−Given)', data:rows.map(r=>r.shfaqje), borderColor:'#4a9eff', backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:'#4a9eff'}]},
+  _anaPerformanceDitoreChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Impressions (Received−Given)', data:rows.map(r=>r.shfaqje), borderColor:'#4a9eff', backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:'#4a9eff'}]},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
       scales:{
         x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}},
@@ -574,7 +574,7 @@ async function anaDetRezEcuriaDitore(el){
 
 // ── Rasti "Weight" — histogram (qirinj): X=intervale peshe 0-1500, Y=sa here fituar ──
 async function anaDetRezWeight(el){
-  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 8px;">Fitoret sipas peshës</h4><canvas id="anaDetWeightHistCanvas" height="100"></canvas>';
+  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 8px;">Wins by weight</h4><canvas id="anaDetWeightHistCanvas" height="100"></canvas>';
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
@@ -589,41 +589,41 @@ async function anaDetRezWeight(el){
   });
 }
 
-// ── Rasti "Pozicioni" — liste akordeon: vetem nivelet qe kane fituar, klik = zgjeron/mbyll ──
-async function anaDetRezPozicioni(el){
-  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 8px;">Nivelet e pozicionit që kanë fituar</h4><div id="anaDetPozicioniLista"></div>';
+// ── Rasti "Position" — liste akordeon: vetem nivelet qe kane fituar, klik = zgjeron/mbyll ──
+async function anaDetRezPosition(el){
+  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 8px;">Position levels that have won</h4><div id="anaDetPositionLista"></div>';
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
   try{ d=await(await fetch('/api/analytics/ankand-pozicionet-fituara?nga='+ngaEl.value+'&deri='+deriEl.value+'&perspektiv='+_anaDetPerspektiv)).json(); }catch(e){ return; }
-  _anaDetPozicionetLista = d.pozicionet || [];
-  _anaDetPozicioniHapur = null;
-  anaDetRenderPozicionetLista();
+  _anaDetPositionsLista = d.pozicionet || [];
+  _anaDetPositionHapur = null;
+  anaDetRenderPositionsLista();
 }
 
-function anaDetRenderPozicionetLista(){
-  const el=$('anaDetPozicioniLista'); if(!el) return;
-  if(!_anaDetPozicionetLista.length){ el.innerHTML='<p class="small mut">Ende s\'has winning levels in this period.</p>'; return; }
-  el.innerHTML = _anaDetPozicionetLista.map(function(p){
-    const hapur = _anaDetPozicioniHapur===p.pozicioni;
+function anaDetRenderPositionsLista(){
+  const el=$('anaDetPositionLista'); if(!el) return;
+  if(!_anaDetPositionsLista.length){ el.innerHTML='<p class="small mut">Ende s\'has winning levels in this period.</p>'; return; }
+  el.innerHTML = _anaDetPositionsLista.map(function(p){
+    const hapur = _anaDetPositionHapur===p.pozicioni;
     return '<div style="border:1px solid var(--line);border-radius:8px;margin-bottom:8px;overflow:hidden;">'+
-      '<button type="button" onclick="anaDetToggloPozicionin('+p.pozicioni+')" style="width:100%;text-align:left;padding:10px 14px;background:'+(hapur?'rgba(74,158,255,.1)':'transparent')+';border:none;color:var(--txt);cursor:pointer;font-family:inherit;font-size:13px;display:flex;align-items:center;gap:10px;">'+
+      '<button type="button" onclick="anaDetToggloPosition('+p.pozicioni+')" style="width:100%;text-align:left;padding:10px 14px;background:'+(hapur?'rgba(74,158,255,.1)':'transparent')+';border:none;color:var(--txt);cursor:pointer;font-family:inherit;font-size:13px;display:flex;align-items:center;gap:10px;">'+
         '<span style="flex:0 0 28px;height:28px;display:flex;align-items:center;justify-content:center;background:rgba(74,158,255,.15);border:1px solid var(--acc);border-radius:6px;font-weight:700;color:var(--acc);">'+p.pozicioni+'</span>'+
         '<span style="flex:1;">'+p.n+' fitore</span><span class="mut">'+(hapur?'▲':'▼')+'</span>'+
       '</button>'+
-      '<div id="anaDetPozicioniDetaje_'+p.pozicioni+'" style="'+(hapur?'':'display:none;')+'padding:0 14px 12px;"></div>'+
+      '<div id="anaDetPositionDetaje_'+p.pozicioni+'" style="'+(hapur?'':'display:none;')+'padding:0 14px 12px;"></div>'+
     '</div>';
   }).join('');
-  if(_anaDetPozicioniHapur!=null) anaDetNgarkoPozicioniDetaje(_anaDetPozicioniHapur);
+  if(_anaDetPositionHapur!=null) anaDetNgarkoPositionDetaje(_anaDetPositionHapur);
 }
 
-async function anaDetToggloPozicionin(p){
-  _anaDetPozicioniHapur = (_anaDetPozicioniHapur===p) ? null : p;
-  anaDetRenderPozicionetLista();
+async function anaDetToggloPosition(p){
+  _anaDetPositionHapur = (_anaDetPositionHapur===p) ? null : p;
+  anaDetRenderPositionsLista();
 }
 
-async function anaDetNgarkoPozicioniDetaje(p){
-  const el=$('anaDetPozicioniDetaje_'+p); if(!el) return;
+async function anaDetNgarkoPositionDetaje(p){
+  const el=$('anaDetPositionDetaje_'+p); if(!el) return;
   el.innerHTML='<p class="small mut">Loading…</p>';
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
   let d;
@@ -646,24 +646,24 @@ async function anaDetNgarkoPozicioniDetaje(p){
 
 // ── Rasti "Reklama" — ripërdor grafikun kryesor (Traffic), filtruar te reklama e zgjedhur ──
 async function anaDetRezReklama(el){
-  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 8px;">Ecuria e reklamës</h4>'+
-    '<div id="anaDetReklamaMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
+  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 8px;">Ad performance</h4>'+
+    '<div id="anaDetReklamaMetricRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
     '<canvas id="anaDetReklamaCanvas" height="100"></canvas>';
-  anaDetRenderReklamaMetrika();
+  anaDetRenderReklamaMetric();
   await anaDetNgarkoReklamaChart();
 }
-var _anaDetRekMetrikaAktive={shfaqje:true,shikime:true,klikime:true,konvertime:true};
-function anaDetRenderReklamaMetrika(){
-  const el=$('anaDetReklamaMetrikaRow'); if(!el) return;
+var _anaDetRekMetricAktive={shfaqje:true,shikime:true,klikime:true,konvertime:true};
+function anaDetRenderReklamaMetric(){
+  const el=$('anaDetReklamaMetricRow'); if(!el) return;
   el.innerHTML='';
   ANA_METRIKA_BAZE.forEach(x=>{
     const btn=document.createElement('button');
     btn.type='button'; btn.textContent=x.l;
-    const on=_anaDetRekMetrikaAktive[x.k];
+    const on=_anaDetRekMetricAktive[x.k];
     btn.style.cssText = on
       ? 'padding:6px 12px;border-radius:20px;border:1px solid var(--acc);background:rgba(74,158,255,.15);color:var(--acc);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;'
       : 'padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit;';
-    btn.addEventListener('click', function(){ _anaDetRekMetrikaAktive[x.k]=!_anaDetRekMetrikaAktive[x.k]; anaDetRenderReklamaMetrika(); anaDetNgarkoReklamaChart(); });
+    btn.addEventListener('click', function(){ _anaDetRekMetricAktive[x.k]=!_anaDetRekMetricAktive[x.k]; anaDetRenderReklamaMetric(); anaDetNgarkoReklamaChart(); });
     el.appendChild(btn);
   });
 }
@@ -676,7 +676,7 @@ async function anaDetNgarkoReklamaChart(){
   try{ d=await(await fetch(url)).json(); }catch(e){ return; }
   const rows=d.rows||[]; const labels=rows.map(r=>r.data);
   const datasets=[];
-  ANA_METRIKA_BAZE.forEach(x=>{ if(_anaDetRekMetrikaAktive[x.k]) datasets.push({label:x.l, data: rows.map(r=>anaVlera(r,x)), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c}); });
+  ANA_METRIKA_BAZE.forEach(x=>{ if(_anaDetRekMetricAktive[x.k]) datasets.push({label:x.l, data: rows.map(r=>anaVlera(r,x)), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c}); });
   const canvas=$('anaDetReklamaCanvas'); if(!canvas||typeof Chart==='undefined') return;
   if(_anaDetReklamaChart){ _anaDetReklamaChart.destroy(); _anaDetReklamaChart=null; }
   const ctx=canvas.getContext('2d');
@@ -691,28 +691,28 @@ async function anaDetNgarkoReklamaChart(){
 // ── Rasti "Category" — ripërdor grafikun "By category" (nje vije per kategori) ──
 async function anaDetRezCategory(el){
   el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 8px;">By business category</h4>'+
-    '<div id="anaDetKatMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
+    '<div id="anaDetKatMetricRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
     '<div style="display:flex;gap:14px;align-items:stretch;">'+
       '<div style="flex:1;min-width:0;"><canvas id="anaDetCategoryCanvas" height="100"></canvas></div>'+
       '<div style="flex:0 0 150px;">'+
         '<div id="anaDetKatLegend" style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;padding-right:2px;"></div>'+
       '</div>'+
     '</div>';
-  anaDetRenderKatMetrika();
+  anaDetRenderKatMetric();
   await anaDetNgarkoCategoryChart();
 }
-var _anaDetKatMetrikaAktive='shikime';
-function anaDetRenderKatMetrika(){
-  const el=$('anaDetKatMetrikaRow'); if(!el) return;
+var _anaDetKatMetricAktive='shikime';
+function anaDetRenderKatMetric(){
+  const el=$('anaDetKatMetricRow'); if(!el) return;
   el.innerHTML='';
   ANA_METRIKA.forEach(x=>{
     const btn=document.createElement('button');
     btn.type='button'; btn.textContent=x.l;
-    const on=_anaDetKatMetrikaAktive===x.k;
+    const on=_anaDetKatMetricAktive===x.k;
     btn.style.cssText = on
       ? 'padding:6px 12px;border-radius:20px;border:1px solid var(--acc);background:var(--acc);color:#06121f;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;'
       : 'padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit;';
-    btn.addEventListener('click', function(){ _anaDetKatMetrikaAktive=x.k; anaDetRenderKatMetrika(); anaDetNgarkoCategoryChart(); });
+    btn.addEventListener('click', function(){ _anaDetKatMetricAktive=x.k; anaDetRenderKatMetric(); anaDetNgarkoCategoryChart(); });
     el.appendChild(btn);
   });
 }
@@ -723,8 +723,8 @@ async function anaDetNgarkoCategoryChart(){
   let url='/api/analytics/kategorite?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand');
   let d;
   try{ d=await(await fetch(url)).json(); }catch(e){ return; }
-  const detKatMetrikaObj = ANA_METRIKA.find(x=>x.k===_anaDetKatMetrikaAktive) || {k:_anaDetKatMetrikaAktive};
-  const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>anaVlera(p,detKatMetrikaObj)>0));
+  const detKatMetricObj = ANA_METRIKA.find(x=>x.k===_anaDetKatMetricAktive) || {k:_anaDetKatMetricAktive};
+  const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>anaVlera(p,detKatMetricObj)>0));
   const legEl=$('anaDetKatLegend');
   if(legEl) legEl.innerHTML = !kategorite.length ? '<p class="small mut" style="margin:0;">No category.</p>' :
     kategorite.map((k,i)=>'<div style="display:flex;align-items:center;gap:7px;font-size:12px;"><span style="width:10px;height:10px;border-radius:50%;background:'+anaKatPaleta(i)+';"></span>'+esc(k.emri)+'</div>').join('');
@@ -732,9 +732,9 @@ async function anaDetNgarkoCategoryChart(){
   if(_anaDetCategoryChartRef){ _anaDetCategoryChartRef.destroy(); _anaDetCategoryChartRef=null; }
   if(!kategorite.length){ const ctx0=canvas.getContext('2d'); ctx0.clearRect(0,0,canvas.width,canvas.height); return; }
   const labels=kategorite[0].pikat.map(p=>p.data);
-  const datasets=kategorite.map((k,i)=>({label:k.emri, data:k.pikat.map(p=>anaVlera(p,detKatMetrikaObj)), borderColor:anaKatPaleta(i), backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:anaKatPaleta(i)}));
+  const datasets=kategorite.map((k,i)=>({label:k.emri, data:k.pikat.map(p=>anaVlera(p,detKatMetricObj)), borderColor:anaKatPaleta(i), backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:anaKatPaleta(i)}));
   const ctx=canvas.getContext('2d');
-  const detKatEshtePerqindje = !!detKatMetrikaObj.percentazh;
+  const detKatEshtePerqindje = !!detKatMetricObj.percentazh;
   _anaDetCategoryChartRef=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
       scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}},
@@ -749,7 +749,7 @@ async function anaDetNgarkoCategoryChart(){
 
 function anaNgarkoOreDheAuction(){ ngarkoAnaOre(); ngarkoAnaAuctionKategorite(); }
 
-// ═══ "Automatiku — Ndarja e hapësirës" — Auction vs Balance, dite-per-dite ═══
+// ═══ "Automatiku — Space split" — Auction vs Balance, dite-per-dite ═══
 var _anaAutomatikChart=null;
 function mainAnaAutomatik(m){
   m.innerHTML=
@@ -760,8 +760,8 @@ function mainAnaAutomatik(m){
       '<h2 class="h" style="margin:0;">Pool selections</h2>'+
     '</div>'+
     '<div class="card">'+
-      '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Ndarja e hapësirës</h3>'+
-      '<p class="small mut" style="margin:0 0 12px;">Si e ke ndarë hapësirën tënde reklamuese mes pishinës Auction dhe Balance, ditë-për-ditë.</p>'+
+      '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Space split</h3>'+
+      '<p class="small mut" style="margin:0 0 12px;">How you\'ve split your ad space between the Auction and Balance pools, day by day.</p>'+
       '<div class="tabs" style="max-width:280px;margin-bottom:14px;">'+
         '<div class="tab active" id="anaAutTabA" onclick="anaAutomatikSetTab(\'automatik\')">Automatik</div>'+
         '<div class="tab" id="anaAutTabM" onclick="anaAutomatikSetTab(\'manual\')">Manual</div>'+
@@ -839,21 +839,21 @@ async function ngarkoAnaAutomatik(){
 }
 
 // ═══ "By hour of day" — VETEM 1 metrikë (radio), qirinj (bare), 24 shtylla ═══
-var _anaOreMetrikaAktive='shfaqje', _anaOreChart=null;
+var _anaOreMetricAktive='shfaqje', _anaOreChart=null;
 
-function anaRenderOreMetrika(){
-  const el=$('anaOreMetrikaRow'); if(!el) return;
+function anaRenderOreMetric(){
+  const el=$('anaOreMetricRow'); if(!el) return;
   el.innerHTML='';
   ANA_METRIKA.forEach(x=>{
     const btn=document.createElement('button');
     btn.type='button'; btn.textContent=x.l;
-    const on=_anaOreMetrikaAktive===x.k;
+    const on=_anaOreMetricAktive===x.k;
     btn.style.cssText = on
       ? 'padding:6px 12px;border-radius:20px;border:1px solid var(--acc);background:var(--acc);color:#06121f;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;'
       : 'padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit;';
     btn.addEventListener('click', function(){
-      _anaOreMetrikaAktive=x.k;
-      anaRenderOreMetrika();
+      _anaOreMetricAktive=x.k;
+      anaRenderOreMetric();
       ngarkoAnaOre();
     });
     el.appendChild(btn);
@@ -863,12 +863,12 @@ function anaRenderOreMetrika(){
 async function ngarkoAnaOre(){
   const ngaEl=$('anaNgaOre'), deriEl=$('anaDeriOre');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
-  const url='/api/analytics/ore?nga='+ngaEl.value+'&deri='+deriEl.value+'&metrika='+_anaOreMetrikaAktive+'&logjika='+(window.__llogariaModaliteti||'ankand');
+  const url='/api/analytics/ore?nga='+ngaEl.value+'&deri='+deriEl.value+'&metrika='+_anaOreMetricAktive+'&logjika='+(window.__llogariaModaliteti||'ankand');
   let d;
   try{ d=await(await fetch(url)).json(); }catch(e){ return; }
   const oret=d.oret||new Array(24).fill(0);
   const labels=oret.map((_,i)=>i+':00');
-  const ngjyra=(ANA_METRIKA.find(x=>x.k===_anaOreMetrikaAktive)||{}).c||'#4a9eff';
+  const ngjyra=(ANA_METRIKA.find(x=>x.k===_anaOreMetricAktive)||{}).c||'#4a9eff';
   const canvas=$('anaOreCanvas'); if(!canvas||typeof Chart==='undefined') return;
   if(_anaOreChart){ _anaOreChart.destroy(); _anaOreChart=null; }
   const ctx=canvas.getContext('2d');
@@ -921,15 +921,15 @@ function anaRenderAuctionRezultati(){
   if(!_anaAuctionZgjedhur){
     // Pa zgjedhje — trego totalin e pergjithshem (te gjitha kategorite bashke)
     const tot = _anaAuctionKategorite.reduce((acc,k)=>({pjesemarrje:acc.pjesemarrje+k.pjesemarrje, fitore:acc.fitore+k.fitore}), {pjesemarrje:0,fitore:0});
-    el.innerHTML = '<div class="small mut" style="margin-bottom:4px;">Total (të gjitha kategoritë)</div>'+
-      '<div style="font-size:13px;">Pjesëmarrje: <b style="color:var(--txt);">'+tot.pjesemarrje+'</b> &nbsp; Fitore: <b style="color:var(--good);">'+tot.fitore+'</b></div>';
+    el.innerHTML = '<div class="small mut" style="margin-bottom:4px;">Total (all categories)</div>'+
+      '<div style="font-size:13px;">Participation: <b style="color:var(--txt);">'+tot.pjesemarrje+'</b> &nbsp; Wins: <b style="color:var(--good);">'+tot.fitore+'</b></div>';
     return;
   }
   const k = _anaAuctionKategorite.find(x=>x.kategoria===_anaAuctionZgjedhur);
   if(!k){ el.innerHTML='<p class="small mut" style="margin:0;">S\'u gjet.</p>'; return; }
   const perc = k.pjesemarrje ? Math.round(k.fitore/k.pjesemarrje*100) : 0;
   el.innerHTML = '<div class="small mut" style="margin-bottom:4px;">'+esc(k.kategoria)+'</div>'+
-    '<div style="font-size:13px;">Pjesëmarrje: <b style="color:var(--txt);">'+k.pjesemarrje+'</b> &nbsp; Fitore: <b style="color:var(--good);">'+k.fitore+'</b> &nbsp; ('+perc+'%)</div>';
+    '<div style="font-size:13px;">Participation: <b style="color:var(--txt);">'+k.pjesemarrje+'</b> &nbsp; Wins: <b style="color:var(--good);">'+k.fitore+'</b> &nbsp; ('+perc+'%)</div>';
 }
 
 
@@ -957,18 +957,18 @@ function mainAnaDeficiti(m){
         '<input type="date" id="anaNgaDeficit" style="display:none;">'+
         '<input type="date" id="anaDeriDeficit" style="display:none;">'+
       '</div>'+
-      '<div id="anaDeficitMetrikaRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
+      '<div id="anaDeficitMetricRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
       '<canvas id="anaDeficitCanvas" height="110"></canvas>'+
     '</div>'+
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
       '<div class="card" style="flex:1;min-width:300px;">'+
-        '<h3 class="h" style="font-size:15px;margin:0 0 12px;">Vetëm Given</h3>'+
-        '<div id="anaDhenNgaMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 12px;">Given only</h3>'+
+        '<div id="anaDhenNgaMetricRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
         '<canvas id="anaDhenNgaCanvas" height="110"></canvas>'+
       '</div>'+
       '<div class="card" style="flex:1;min-width:300px;">'+
-        '<h3 class="h" style="font-size:15px;margin:0 0 12px;">Vetëm Received</h3>'+
-        '<div id="anaMarrjaMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 12px;">Received only</h3>'+
+        '<div id="anaMarrjaMetricRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
         '<canvas id="anaMarrjaCanvas" height="110"></canvas>'+
       '</div>'+
     '</div>';
@@ -981,19 +981,19 @@ function mainAnaDeficiti(m){
     setNga:v=>{ $('anaNgaDeficit').value=v; }, setDeri:v=>{ $('anaDeriDeficit').value=v; },
     onRuaj: anaNgarkoDeficitnTeGjithe
   });
-  anaRenderDeficitMetrika();
+  anaRenderDeficitMetric();
   ngarkoAnaDeficiti();
-  anaRenderDhenNgaMetrika();
-  anaRenderMarrjaMetrika();
+  anaRenderDhenNgaMetric();
+  anaRenderMarrjaMetric();
   ngarkoAnaDhenNga();
   ngarkoAnaMarrja();
 }
 
 function mainAnaReklamat(m){
-  _anaKatSelectedAd=null; _anaKatDropdownOpen=false; _anaKatMetrikaAktive='shikime';
+  _anaKatSelectedAd=null; _anaKatDropdownOpen=false; _anaKatMetricAktive='shikime';
   _anaListSelectedAd=null; _anaListDropdownOpen=false;
   m.innerHTML='<h2 class="h">Ads — By category</h2>'+
-    '<p class="small" style="margin:2px 0 16px;">Ku janë shfaqur reklamat tuaja, sipas kategorisë së biznesit.</p>'+
+    '<p class="small" style="margin:2px 0 16px;">Where your ads have been shown, by business category.</p>'+
     '<div class="card" style="margin-bottom:16px;">'+
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
         '<button class="btn" onclick="anaPresetKat(7)">Last 7 days</button>'+
@@ -1021,7 +1021,7 @@ function mainAnaReklamat(m){
             '<div id="anaKatRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:230px;max-height:260px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
           '</div>'+
         '</div>'+
-        '<div id="anaKatMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
+        '<div id="anaKatMetricRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
         '<canvas id="anaKatCanvas" height="110"></canvas>'+
       '</div>'+
       '<div class="card" style="flex:1;min-width:220px;">'+
@@ -1055,7 +1055,7 @@ function mainAnaReklamat(m){
     _anaListDropdownOpen=!_anaListDropdownOpen;
     dd.classList.toggle('hide', !_anaListDropdownOpen);
   });
-  anaRenderKategoriMetrika();
+  anaRenderKategoriMetric();
   ngarkoAnaKatAdsLista();
   ngarkoAnaListRekamatLista();
   ngarkoAnaKategorite();
@@ -1118,7 +1118,7 @@ function mainAnaDhenie(m){
     '<div class="card">'+
       '<h3 class="h" style="font-size:15px;margin:0 0 4px;">By business category</h3>'+
       '<p class="small mut" style="margin:0 0 12px;">What you\'ve given to each category.</p>'+
-      '<div id="anaKatDheneMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
+      '<div id="anaKatDheneMetricRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
       '<div id="anaKatDheneLegend" style="display:flex;flex-direction:column;gap:6px;max-height:80px;overflow-y:auto;padding-right:4px;margin-bottom:10px;"></div>'+
       '<canvas id="anaKatDheneCanvas" height="110"></canvas>'+
     '</div>';
@@ -1131,7 +1131,7 @@ function mainAnaDhenie(m){
     setNga:v=>{ $('anaNgaDhene').value=v; }, setDeri:v=>{ $('anaDeriDhene').value=v; },
     onRuaj: ngarkoAnaKatDhene
   });
-  anaRenderKatDheneMetrika();
+  anaRenderKatDheneMetric();
   ngarkoAnaPikatProfili();
   ngarkoAnaKatDhene();
 }
@@ -1140,14 +1140,14 @@ function mainAnaDhenie(m){
 // para se te percaktohej). Placeholder derisa te thuhet çfarë duhet të tregojë.
 function mainAnaMarrje(m){
   m.innerHTML='<h2 class="h">Marrje</h2>'+
-    '<div class="card"><p class="small mut">🚧 Kjo faqe s\'ka ende përmbajtje të përcaktuar.</p></div>';
+    '<div class="card"><p class="small mut">🚧 This page has no defined content yet.</p></div>';
 }
 
 function anaNgarkoTeGjitha(){ ngarkoAnalitika(); }
 function anaNgarkoKategoriteTeGjitha(){ ngarkoAnaKategorite(); ngarkoAnaLista(); }
 function anaNgarkoDheneTeGjitha(){ ngarkoAnaSnipDhene(); ngarkoAnaKatDhene(); }
 
-var _anaDeficitMetrikaAktive={shfaqje:true,shikime:true,klikime:true,konvertime:true};
+var _anaDeficitMetricAktive={shfaqje:true,shikime:true,klikime:true,konvertime:true};
 var _anaDeficitChart=null;
 
 function anaPresetDeficit(dite){
@@ -1162,19 +1162,19 @@ function anaNgarkoDeficitnTeGjithe(){
   ngarkoAnaMarrja();
 }
 
-function anaRenderDeficitMetrika(){
-  const el=$('anaDeficitMetrikaRow'); if(!el) return;
+function anaRenderDeficitMetric(){
+  const el=$('anaDeficitMetricRow'); if(!el) return;
   el.innerHTML='';
   ANA_METRIKA_BAZE.forEach(x=>{
     const btn=document.createElement('button');
     btn.type='button'; btn.textContent=x.l;
-    const on=_anaDeficitMetrikaAktive[x.k];
+    const on=_anaDeficitMetricAktive[x.k];
     btn.style.cssText = on
       ? 'padding:7px 14px;border-radius:20px;border:1px solid var(--acc);background:rgba(74,158,255,.15);color:var(--acc);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;'
       : 'padding:7px 14px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:13px;cursor:pointer;font-family:inherit;';
     btn.addEventListener('click', function(){
-      _anaDeficitMetrikaAktive[x.k]=!_anaDeficitMetrikaAktive[x.k];
-      anaRenderDeficitMetrika();
+      _anaDeficitMetricAktive[x.k]=!_anaDeficitMetricAktive[x.k];
+      anaRenderDeficitMetric();
       ngarkoAnaDeficiti();
     });
     el.appendChild(btn);
@@ -1194,7 +1194,7 @@ async function ngarkoAnaDeficiti(){
 
   const datasets=[];
   ANA_METRIKA_BAZE.forEach(x=>{
-    if(_anaDeficitMetrikaAktive[x.k]) datasets.push({label:x.l, data: rows.map(r=>anaVlera(r,x)), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
+    if(_anaDeficitMetricAktive[x.k]) datasets.push({label:x.l, data: rows.map(r=>anaVlera(r,x)), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
   });
 
   // Rang SIMETRIK rreth zeros — llogarit vleren maksimale absolute (pozitive ose
@@ -1228,42 +1228,42 @@ async function ngarkoAnaDeficiti(){
 // (/api/analytics/deficiti) qe tashme kthen edhe vlerat e papërpunuara per secilen
 // metrike (jo vetem diferencen). Keto jane GJITHMONE >=0, prandaj perdorin plugin-in
 // normal (jo variantin divergjent) dhe beginAtZero standarde. ═══
-var _anaDhenNgaMetrikaAktive={shfaqje:true,shikime:true,klikime:true,konvertime:true};
-var _anaMarrjaMetrikaAktive={shfaqje:true,shikime:true,klikime:true,konvertime:true};
+var _anaDhenNgaMetricAktive={shfaqje:true,shikime:true,klikime:true,konvertime:true};
+var _anaMarrjaMetricAktive={shfaqje:true,shikime:true,klikime:true,konvertime:true};
 var _anaDhenNgaChart=null, _anaMarrjaChart=null;
 var _anaDeficitDhenieRows=[]; // cache-i i fundit i /api/analytics/deficiti — ripërdorur nga te dyja grafiket, pa thirrje shtese
 
-function anaRenderDhenNgaMetrika(){
-  const el=$('anaDhenNgaMetrikaRow'); if(!el) return;
+function anaRenderDhenNgaMetric(){
+  const el=$('anaDhenNgaMetricRow'); if(!el) return;
   el.innerHTML='';
   ANA_METRIKA_BAZE.forEach(x=>{
     const btn=document.createElement('button');
     btn.type='button'; btn.textContent=x.l;
-    const on=_anaDhenNgaMetrikaAktive[x.k];
+    const on=_anaDhenNgaMetricAktive[x.k];
     btn.style.cssText = on
       ? 'padding:6px 12px;border-radius:20px;border:1px solid var(--acc);background:rgba(74,158,255,.15);color:var(--acc);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;'
       : 'padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit;';
     btn.addEventListener('click', function(){
-      _anaDhenNgaMetrikaAktive[x.k]=!_anaDhenNgaMetrikaAktive[x.k];
-      anaRenderDhenNgaMetrika();
+      _anaDhenNgaMetricAktive[x.k]=!_anaDhenNgaMetricAktive[x.k];
+      anaRenderDhenNgaMetric();
       anaVizatoDhenNga();
     });
     el.appendChild(btn);
   });
 }
-function anaRenderMarrjaMetrika(){
-  const el=$('anaMarrjaMetrikaRow'); if(!el) return;
+function anaRenderMarrjaMetric(){
+  const el=$('anaMarrjaMetricRow'); if(!el) return;
   el.innerHTML='';
   ANA_METRIKA_BAZE.forEach(x=>{
     const btn=document.createElement('button');
     btn.type='button'; btn.textContent=x.l;
-    const on=_anaMarrjaMetrikaAktive[x.k];
+    const on=_anaMarrjaMetricAktive[x.k];
     btn.style.cssText = on
       ? 'padding:6px 12px;border-radius:20px;border:1px solid var(--acc);background:rgba(74,158,255,.15);color:var(--acc);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;'
       : 'padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit;';
     btn.addEventListener('click', function(){
-      _anaMarrjaMetrikaAktive[x.k]=!_anaMarrjaMetrikaAktive[x.k];
-      anaRenderMarrjaMetrika();
+      _anaMarrjaMetricAktive[x.k]=!_anaMarrjaMetricAktive[x.k];
+      anaRenderMarrjaMetric();
       anaVizatoMarrja();
     });
     el.appendChild(btn);
@@ -1292,7 +1292,7 @@ function anaVizatoDhenNga(){
   const labels=_anaDeficitDhenieRows.map(r=>r.data);
   const datasets=[];
   ANA_METRIKA_BAZE.forEach(x=>{
-    if(_anaDhenNgaMetrikaAktive[x.k]) datasets.push({label:x.l, data:_anaDeficitDhenieRows.map(r=>r[x.k+'_dhene']), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
+    if(_anaDhenNgaMetricAktive[x.k]) datasets.push({label:x.l, data:_anaDeficitDhenieRows.map(r=>r[x.k+'_dhene']), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
   });
   const ctx=canvas.getContext('2d');
   _anaDhenNgaChart=new Chart(ctx,{type:'line',data:{labels,datasets},
@@ -1312,7 +1312,7 @@ function anaVizatoMarrja(){
   const labels=_anaDeficitDhenieRows.map(r=>r.data);
   const datasets=[];
   ANA_METRIKA_BAZE.forEach(x=>{
-    if(_anaMarrjaMetrikaAktive[x.k]) datasets.push({label:x.l, data:_anaDeficitDhenieRows.map(r=>r[x.k+'_marre']), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
+    if(_anaMarrjaMetricAktive[x.k]) datasets.push({label:x.l, data:_anaDeficitDhenieRows.map(r=>r[x.k+'_marre']), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
   });
   const ctx=canvas.getContext('2d');
   _anaMarrjaChart=new Chart(ctx,{type:'line',data:{labels,datasets},
@@ -1363,22 +1363,22 @@ var ANA_METRIKA_BAZE = ANA_METRIKA.slice(0,4); // vetem 4 origjinalet, per grafi
 // Merr vleren e nje rreshti per nje metrike — direkte (r.k) per te 4 origjinalet,
 // e llogaritur (derived) per 3 te rejat (perqindje, nga te njejtat te dhena, pa kerkuar backend).
 function anaVlera(row, metrika){ return metrika.derived ? metrika.derived(row) : row[metrika.k]; }
-var _anaMetrikaAktive={shfaqje:true,shikime:true,klikime:true,konvertime:true,ctr:false,konvPerShikim:false,cvr:false};
+var _anaMetricAktive={shfaqje:true,shikime:true,klikime:true,konvertime:true,ctr:false,konvPerShikim:false,cvr:false};
 function anaStilBtnMetrike(btn,x){
-  const on=_anaMetrikaAktive[x.k];
+  const on=_anaMetricAktive[x.k];
   btn.style.cssText = on
     ? 'padding:7px 14px;border-radius:20px;border:1px solid var(--acc);background:rgba(74,158,255,.15);color:var(--acc);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;'
     : 'padding:7px 14px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:13px;cursor:pointer;font-family:inherit;';
 }
-function anaRenderMetrika(){
-  const el=$('anaMetrikaRow'); if(!el) return;
+function anaRenderMetric(){
+  const el=$('anaMetricRow'); if(!el) return;
   el.innerHTML='';
   ANA_METRIKA_BAZE.forEach(x=>{
     const btn=document.createElement('button');
     btn.type='button'; btn.textContent=x.l;
     anaStilBtnMetrike(btn,x);
     btn.addEventListener('click', function(){
-      _anaMetrikaAktive[x.k]=!_anaMetrikaAktive[x.k];
+      _anaMetricAktive[x.k]=!_anaMetricAktive[x.k];
       anaStilBtnMetrike(btn,x);
       ngarkoAnalitika();
     });
@@ -1451,7 +1451,7 @@ async function ngarkoAnalitika(){
   const labels=rows.map(r=>r.data);
   const datasets=[];
   ANA_METRIKA_BAZE.forEach(x=>{
-    if(_anaMetrikaAktive[x.k]) datasets.push({label:x.l, data: rows.map(r=>anaVlera(r,x)), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
+    if(_anaMetricAktive[x.k]) datasets.push({label:x.l, data: rows.map(r=>anaVlera(r,x)), borderColor:x.c, backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c});
   });
   const canvas=$('anaCanvas'); if(!canvas||typeof Chart==='undefined') return;
   const ctx=canvas.getContext('2d');
@@ -1584,26 +1584,26 @@ var anaMultiColorLinePluginDivergjent={
 
 // ================= GRAFIKU I DYTE: sipas kategorise se biznesit qe e shfaqi reklamen =================
 var _anaKatSelectedAd=null, _anaKatRekAll=[], _anaKatDropdownOpen=false;
-var _anaKatMetrikaAktive='shikime';
+var _anaKatMetricAktive='shikime';
 var _anaKatChart=null;
 
 function anaKatPaleta(i){
   const hue=(i*137.508)%360;   // kend i artë — ngjyra te dallueshme per cdo numer kategorish
   return 'hsl('+hue.toFixed(0)+',65%,55%)';
 }
-function anaRenderKategoriMetrika(){
-  const el=$('anaKatMetrikaRow'); if(!el) return;
+function anaRenderKategoriMetric(){
+  const el=$('anaKatMetricRow'); if(!el) return;
   el.innerHTML='';
   ANA_METRIKA.forEach(x=>{
     const btn=document.createElement('button');
     btn.type='button'; btn.textContent=x.l;
-    const on=_anaKatMetrikaAktive===x.k;
+    const on=_anaKatMetricAktive===x.k;
     btn.style.cssText = on
       ? 'padding:6px 12px;border-radius:20px;border:1px solid var(--acc);background:var(--acc);color:#06121f;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;'
       : 'padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit;';
     btn.addEventListener('click', function(){
-      _anaKatMetrikaAktive=x.k;
-      anaRenderKategoriMetrika();
+      _anaKatMetricAktive=x.k;
+      anaRenderKategoriMetric();
       ngarkoAnaKategorite();
     });
     el.appendChild(btn);
@@ -1650,8 +1650,8 @@ async function ngarkoAnaKategorite(){
   let d;
   try{ d=await(await fetch(url)).json(); }catch(e){ return; }
   // Vetem kategorite me te pakten 1 tek METRIKA aktualisht e zgjedhur, ne kete periudhe
-  const katMetrikaObj = ANA_METRIKA.find(x=>x.k===_anaKatMetrikaAktive) || {k:_anaKatMetrikaAktive};
-  const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>anaVlera(p,katMetrikaObj)>0));
+  const katMetricObj = ANA_METRIKA.find(x=>x.k===_anaKatMetricAktive) || {k:_anaKatMetricAktive};
+  const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>anaVlera(p,katMetricObj)>0));
   anaRenderKatLegend(kategorite);
   const canvas=$('anaKatCanvas'); if(!canvas||typeof Chart==='undefined') return;
   if(_anaKatChart){ _anaKatChart.destroy(); _anaKatChart=null; }
@@ -1661,12 +1661,12 @@ async function ngarkoAnaKategorite(){
   }
   const labels=kategorite[0].pikat.map(p=>p.data);
   const datasets=kategorite.map((k,i)=>({
-    label:k.emri, data:k.pikat.map(p=>anaVlera(p,katMetrikaObj)),
+    label:k.emri, data:k.pikat.map(p=>anaVlera(p,katMetricObj)),
     borderColor:anaKatPaleta(i), backgroundColor:'transparent',
     tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:anaKatPaleta(i)
   }));
   const ctx=canvas.getContext('2d');
-  const eshtePerqindje = !!katMetrikaObj.percentazh;
+  const eshtePerqindje = !!katMetricObj.percentazh;
   _anaKatChart=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
       scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}},
@@ -1859,20 +1859,20 @@ async function ngarkoAnaSnipDhene(){
     '</div>';
   }).join('');
 }
-var _anaKatDheneMetrikaAktive='shikime', _anaKatDheneChart=null;
-function anaRenderKatDheneMetrika(){
-  const el=$('anaKatDheneMetrikaRow'); if(!el) return;
+var _anaKatDheneMetricAktive='shikime', _anaKatDheneChart=null;
+function anaRenderKatDheneMetric(){
+  const el=$('anaKatDheneMetricRow'); if(!el) return;
   el.innerHTML='';
   ANA_METRIKA.forEach(x=>{
     const btn=document.createElement('button');
     btn.type='button'; btn.textContent=x.l;
-    const on=_anaKatDheneMetrikaAktive===x.k;
+    const on=_anaKatDheneMetricAktive===x.k;
     btn.style.cssText = on
       ? 'padding:6px 12px;border-radius:20px;border:1px solid var(--acc);background:var(--acc);color:#06121f;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;'
       : 'padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit;';
     btn.addEventListener('click', function(){
-      _anaKatDheneMetrikaAktive=x.k;
-      anaRenderKatDheneMetrika();
+      _anaKatDheneMetricAktive=x.k;
+      anaRenderKatDheneMetric();
       ngarkoAnaKatDhene();
     });
     el.appendChild(btn);
@@ -1893,8 +1893,8 @@ async function ngarkoAnaKatDhene(){
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
   try{ d=await(await fetch('/api/analytics/kategorite-dhene?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand'))).json(); }catch(e){ return; }
-  const katDheneMetrikaObj = ANA_METRIKA.find(x=>x.k===_anaKatDheneMetrikaAktive) || {k:_anaKatDheneMetrikaAktive};
-  const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>anaVlera(p,katDheneMetrikaObj)>0));
+  const katDheneMetricObj = ANA_METRIKA.find(x=>x.k===_anaKatDheneMetricAktive) || {k:_anaKatDheneMetricAktive};
+  const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>anaVlera(p,katDheneMetricObj)>0));
   anaRenderKatDheneLegend(kategorite);
   const canvas=$('anaKatDheneCanvas'); if(!canvas||typeof Chart==='undefined') return;
   if(_anaKatDheneChart){ _anaKatDheneChart.destroy(); _anaKatDheneChart=null; }
@@ -1904,12 +1904,12 @@ async function ngarkoAnaKatDhene(){
   }
   const labels=kategorite[0].pikat.map(p=>p.data);
   const datasets=kategorite.map((k,i)=>({
-    label:k.emri, data:k.pikat.map(p=>anaVlera(p,katDheneMetrikaObj)),
+    label:k.emri, data:k.pikat.map(p=>anaVlera(p,katDheneMetricObj)),
     borderColor:anaKatPaleta(i), backgroundColor:'transparent',
     tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:anaKatPaleta(i)
   }));
   const ctx=canvas.getContext('2d');
-  const katDheneEshtePerqindje = !!katDheneMetrikaObj.percentazh;
+  const katDheneEshtePerqindje = !!katDheneMetricObj.percentazh;
   _anaKatDheneChart=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
       scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}},
@@ -1927,7 +1927,7 @@ async function ngarkoAnaKatDhene(){
 function mainRekPerformanca(m){
   window.__pamjeVecante=true;
   _anaSelectedAd=null; _anaDropdownOpen=false;
-  _anaKatSelectedAd=null; _anaKatDropdownOpen=false; _anaKatMetrikaAktive='shikime';
+  _anaKatSelectedAd=null; _anaKatDropdownOpen=false; _anaKatMetricAktive='shikime';
   m.innerHTML=
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">'+
       '<div style="width:38px;height:38px;border-radius:12px;background:rgba(167,139,250,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
@@ -1955,7 +1955,7 @@ function mainRekPerformanca(m){
           '<div id="anaRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:240px;max-height:280px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
         '</div>'+
       '</div>'+
-      '<div id="anaMetrikaRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;"></div>'+
+      '<div id="anaMetricRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;"></div>'+
     '</div>'+
     '<div class="card"><canvas id="anaCanvas" height="90"></canvas></div>'+
     '<div class="card" style="margin-top:16px;">'+
@@ -1976,7 +1976,7 @@ function mainRekPerformanca(m){
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:14px;">'+
         '<h3 class="h" style="font-size:15px;margin:0;">By business category</h3>'+
         '<div style="flex:0 0 200px;">'+
-          '<div class="small mut" style="font-weight:600;margin-bottom:6px;">Categories e bizneseve që kanë marrë pjesë.</div>'+
+          '<div class="small mut" style="font-weight:600;margin-bottom:6px;">Categories of businesses that participated.</div>'+
           '<div id="anaKatLegend" style="display:flex;flex-direction:column;gap:6px;max-height:80px;overflow-y:auto;padding-right:4px;"></div>'+
         '</div>'+
         '<div style="position:relative;">'+
@@ -1984,7 +1984,7 @@ function mainRekPerformanca(m){
           '<div id="anaKatRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:230px;max-height:260px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
         '</div>'+
       '</div>'+
-      '<div id="anaKatMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
+      '<div id="anaKatMetricRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
       '<canvas id="anaKatCanvas" height="110"></canvas>'+
     '</div>';
 
@@ -2017,9 +2017,9 @@ function mainRekPerformanca(m){
     _anaKatDropdownOpen=!_anaKatDropdownOpen;
     dd.classList.toggle('hide', !_anaKatDropdownOpen);
   });
-  anaRenderMetrika();
+  anaRenderMetric();
   ngarkoAnaAdsLista();
-  anaRenderKategoriMetrika();
+  anaRenderKategoriMetric();
   ngarkoAnaKatAdsLista();
   ngarkoAnalitika();
   ngarkoAnaKategorite();
@@ -2029,12 +2029,12 @@ function mainRekPerformanca(m){
 // Ripërdor TE NJEJTIN endpoint (kategorite-dhene) dhe TE NJEJTIN pattern grafiku si paneli
 // "Given" brenda Analytics — thjesht si faqe e vetme, e pavarur (sipas kategorise se
 // bizneseve qe kane marre pjese, JO emer biznesi/reklame specifike).
-var _snStatMetrikaAktive='shfaqje', _snStatChart=null;
+var _snStatMetricAktive='shfaqje', _snStatChart=null;
 
 function mainSnippetStatistikat(m){
   window.__pamjeVecante=true;
   m.innerHTML='<h2 class="h">Stats — Ad space</h2>'+
-    '<p class="small" style="margin:2px 0 16px;">Impressions, shikime, klikime dhe konvertime që u ke dhënë bizneseve të tjera nëpërmjet hapësirave tua, sipas kategorisë së tyre.</p>'+
+    '<p class="small" style="margin:2px 0 16px;">Impressions, views, clicks and conversions you\'ve given other businesses through your spaces, by their category.</p>'+
     '<div class="card">'+
       '<div class="presetRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
         '<button class="btn" onclick="snStatPreset(7)">Last 7 days</button>'+
@@ -2049,16 +2049,16 @@ function mainSnippetStatistikat(m){
         '<input type="date" id="snStatDeri" style="display:none;">'+
       '</div>'+
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:14px;">'+
-        '<div id="snStatMetrikaRow" style="display:flex;gap:6px;flex-wrap:wrap;"></div>'+
+        '<div id="snStatMetricRow" style="display:flex;gap:6px;flex-wrap:wrap;"></div>'+
         '<div style="flex:0 0 200px;">'+
-          '<div class="small mut" style="font-weight:600;margin-bottom:6px;">Categories që kanë marrë pjesë.</div>'+
+          '<div class="small mut" style="font-weight:600;margin-bottom:6px;">Categories that participated.</div>'+
           '<div id="snStatLegend" style="display:flex;flex-direction:column;gap:6px;max-height:120px;overflow-y:auto;padding-right:4px;"></div>'+
         '</div>'+
       '</div>'+
       '<canvas id="snStatCanvas" height="110"></canvas>'+
     '</div>';
 
-  anaRenderSnStatMetrika();
+  anaRenderSnStatMetric();
 
   const sot=new Date(), fill=new Date(); fill.setDate(fill.getDate()-29);
   const fmt=d=>{ const y=d.getFullYear(), mo=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0'); return y+'-'+mo+'-'+dd; };
@@ -2082,19 +2082,19 @@ function snStatPreset(dite){
   ngarkoSnStatistikat();
 }
 
-function anaRenderSnStatMetrika(){
-  const el=$('snStatMetrikaRow'); if(!el) return;
+function anaRenderSnStatMetric(){
+  const el=$('snStatMetricRow'); if(!el) return;
   el.innerHTML='';
   ANA_METRIKA.forEach(x=>{
     const btn=document.createElement('button');
     btn.type='button'; btn.textContent=x.l;
-    const on=_snStatMetrikaAktive===x.k;
+    const on=_snStatMetricAktive===x.k;
     btn.style.cssText = on
       ? 'padding:6px 12px;border-radius:20px;border:1px solid var(--acc);background:var(--acc);color:#06121f;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;'
       : 'padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit;';
     btn.addEventListener('click', function(){
-      _snStatMetrikaAktive=x.k;
-      anaRenderSnStatMetrika();
+      _snStatMetricAktive=x.k;
+      anaRenderSnStatMetric();
       ngarkoSnStatistikat();
     });
     el.appendChild(btn);
@@ -2106,8 +2106,8 @@ async function ngarkoSnStatistikat(){
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
   try{ d=await(await fetch('/api/analytics/kategorite-dhene?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand'))).json(); }catch(e){ return; }
-  const snStatMetrikaObj = ANA_METRIKA.find(x=>x.k===_snStatMetrikaAktive) || {k:_snStatMetrikaAktive};
-  const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>anaVlera(p,snStatMetrikaObj)>0));
+  const snStatMetricObj = ANA_METRIKA.find(x=>x.k===_snStatMetricAktive) || {k:_snStatMetricAktive};
+  const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>anaVlera(p,snStatMetricObj)>0));
   const legEl=$('snStatLegend');
   if(legEl){
     legEl.innerHTML = !kategorite.length
@@ -2127,12 +2127,12 @@ async function ngarkoSnStatistikat(){
   }
   const labels=kategorite[0].pikat.map(p=>p.data);
   const datasets=kategorite.map((k,i)=>({
-    label:k.emri, data:k.pikat.map(p=>anaVlera(p,snStatMetrikaObj)),
+    label:k.emri, data:k.pikat.map(p=>anaVlera(p,snStatMetricObj)),
     borderColor:anaKatPaleta(i), backgroundColor:'transparent',
     tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:anaKatPaleta(i)
   }));
   const ctx=canvas.getContext('2d');
-  const snStatEshtePerqindje = !!snStatMetrikaObj.percentazh;
+  const snStatEshtePerqindje = !!snStatMetricObj.percentazh;
   _snStatChart=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
       scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}},
