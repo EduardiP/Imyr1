@@ -13,7 +13,7 @@ var CIL_ICONS = {
 var CIL_STRUKTURA=[
   { k:'account', l:'Account' },
   { k:'hosting', l:'Ad Delivery' },
-  { k:'kufizimetKat', l:'Kufizimet e Kategorive' }
+  { k:'kufizimetKat', l:'Category Limits' }
 ];
 
 function renderCilesimetNav(){
@@ -85,11 +85,11 @@ var _hostCache=null; // { mode, menyra, barazi_perqindje, snippetet:[{id,emri,ba
 
 async function adDelHosting(body){
   body.innerHTML='<h2 class="h">Hosting</h2>'+
-    '<p class="small mut" style="margin:4px 0 16px;">Zgjidh si do të vendoset shpërndarja e reklamave në snippet-et e tua.</p>'+
+    '<p class="small mut" style="margin:4px 0 16px;">Choose how ad distribution is set for your snippets.</p>'+
     '<div id="hostModeWrap" style="margin-bottom:18px;"></div>'+
     '<div id="hostManualWrap"></div>'+
-    '<button class="btn" onclick="hostRuaj()" style="margin-top:16px;">Ruaj</button>'+
-    '<span class="small" id="hostRuajMsg" style="margin-left:10px;"></span>';
+    '<button class="btn" onclick="hostSave()" style="margin-top:16px;">Save</button>'+
+    '<span class="small" id="hostSaveMsg" style="margin-left:10px;"></span>';
   try{ _hostCache = await (await fetch('/api/hosting/cilesimet')).json(); }
   catch(e){ _hostCache = { mode:'automatik', menyra:'te-gjitha', barazi_perqindje:50, snippetet:[] }; }
   _hostMode   = (_hostCache && _hostCache.mode)   || 'automatik';
@@ -102,7 +102,7 @@ function hostRenderMode(){
   var el=$('hostModeWrap'); if(!el) return;
   function opt(v, titull, pershkrim, isRecommended){
     var sel = _hostMode===v;
-    var badge = isRecommended ? '<span style="background:var(--acc);color:#fff;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;margin-left:8px;">REKOMANDUAR</span>' : '';
+    var badge = isRecommended ? '<span style="background:var(--acc);color:#fff;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;margin-left:8px;">RECOMMENDED</span>' : '';
     return '<label onclick="hostZgjidhMode(\''+v+'\')" style="display:block;cursor:pointer;padding:14px;border:1px solid '+(sel?'var(--acc)':'var(--line)')+';border-radius:8px;margin-bottom:8px;background:'+(sel?'rgba(59,130,246,0.08)':'transparent')+';">'+
       '<div style="display:flex;align-items:center;gap:10px;">'+
         '<span style="width:16px;height:16px;border-radius:50%;border:2px solid '+(sel?'var(--acc)':'var(--mut)')+';display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
@@ -114,8 +114,8 @@ function hostRenderMode(){
     '</label>';
   }
   el.innerHTML=
-    opt('automatik','Automatik','Sistemi vendos vetë ekuilibrin optimal Ankand↔Balancë për çdo snippet, bazuar në aktivitetin e biznesit tënd.',true)+
-    opt('manual','Manual','Cakto vetë përqindjen Ankand/Balancë — për të gjithë snippet-et bashkë, ose veç e veç për secilin.',false);
+    opt('automatik','Automatic','The system sets the optimal Auction↔Balance mix for each snippet on its own, based on your business activity.',true)+
+    opt('manual','Manual','Set the Auction/Balance percentage yourself — for all snippets together, or individually for each.',false);
 }
 
 function hostZgjidhMode(v){
@@ -133,10 +133,10 @@ async function hostRenderManual(){
   // Mode = manual → shfaq strukturen ekzistuese (nenzgjedhja + sliderat)
   el.innerHTML=
     '<div style="margin-top:8px;padding:16px;border:1px solid var(--line);border-radius:8px;background:#0a0d12;">'+
-      '<label>Si do t\'i caktosh përqindjet manualisht?</label>'+
+      '<label>How do you want to set the percentages manually?</label>'+
       '<select id="hostMenyra" onchange="hostNdryshoMenyren(this.value)" style="width:100%;max-width:320px;padding:9px;background:#0e1116;border:1px solid var(--line);border-radius:8px;color:var(--txt);margin-top:6px;">'+
-        '<option value="vecmas">Snippet veç e veç</option>'+
-        '<option value="te-gjitha">Të gjithë snippet-et</option>'+
+        '<option value="vecmas">Snippet by snippet</option>'+
+        '<option value="te-gjitha">All snippets together</option>'+
       '</select>'+
       '<div id="hostPercentazhet" style="margin-top:20px;"></div>'+
     '</div>';
@@ -148,8 +148,8 @@ function hostSliderHTML(id, ankandFillestar){
   ankandFillestar = ankandFillestar==null ? 50 : ankandFillestar;
   return '<div style="margin-top:6px;">'+
     '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">'+
-      '<span>Ankand: <b id="'+id+'_ankand_v">'+ankandFillestar+'%</b></span>'+
-      '<span>Balancë: <b id="'+id+'_bal_v">'+(100-ankandFillestar)+'%</b></span>'+
+      '<span>Auction: <b id="'+id+'_ankand_v">'+ankandFillestar+'%</b></span>'+
+      '<span>Balance: <b id="'+id+'_bal_v">'+(100-ankandFillestar)+'%</b></span>'+
     '</div>'+
     '<input type="range" min="0" max="100" value="'+ankandFillestar+'" id="'+id+'" style="width:100%;" oninput="hostSliderNdrysho(\''+id+'\', this.value)">'+
   '</div>';
@@ -163,15 +163,15 @@ function hostSliderNdrysho(id, v){
 async function hostRenderPercentazhet(){
   var el=$('hostPercentazhet'); if(!el) return;
   if(_hostMenyra==='te-gjitha'){
-    var baraziRuajtur = (_hostCache && _hostCache.barazi_perqindje!=null) ? _hostCache.barazi_perqindje : 50;
-    el.innerHTML='<div class="card">'+hostSliderHTML('host_te_gjitha', 100-baraziRuajtur)+'</div>';
+    var baraziSavetur = (_hostCache && _hostCache.barazi_perqindje!=null) ? _hostCache.barazi_perqindje : 50;
+    el.innerHTML='<div class="card">'+hostSliderHTML('host_te_gjitha', 100-baraziSavetur)+'</div>';
     return;
   }
-  el.innerHTML='<p class="small mut">Po ngarkoj snippet-et…</p>';
+  el.innerHTML='<p class="small mut">Loading snippets…</p>';
   try{
     var r=await (await fetch('/api/snippetet')).json();
     var lista=r.snippetet||[];
-    if(!lista.length){ el.innerHTML='<p class="small mut">Ende s\'ke snippet-e.</p>'; return; }
+    if(!lista.length){ el.innerHTML='<p class="small mut">You don\'t have any snippets yet.</p>'; return; }
     var ruajtura = (_hostCache && _hostCache.snippetet) || [];
     el.innerHTML=lista.map(function(sn){
       var id='host_sn_'+sn.id;
@@ -182,10 +182,10 @@ async function hostRenderPercentazhet(){
         hostSliderHTML(id, 100-baraziV)+
       '</div>';
     }).join('');
-  }catch(e){ el.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
+  }catch(e){ el.innerHTML='<p class="small">Loading error.</p>'; }
 }
-async function hostRuaj(){
-  var msg=$('hostRuajMsg');
+async function hostSave(){
+  var msg=$('hostSaveMsg');
   var payload={ mode:_hostMode };
   if(_hostMode==='manual'){
     payload.menyra=_hostMenyra;
@@ -206,13 +206,13 @@ async function hostRuaj(){
   try{
     var r=await (await fetch('/api/hosting/ruaj',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})).json();
     if(r.error){ if(msg){ msg.style.color='var(--err)'; msg.textContent=r.error; } return; }
-    if(msg){ msg.style.color='var(--good)'; msg.textContent='✓ U ruajt.'; }
-  }catch(e){ if(msg){ msg.style.color='var(--err)'; msg.textContent='Gabim: '+e.message; } }
+    if(msg){ msg.style.color='var(--good)'; msg.textContent='✓ Saved.'; }
+  }catch(e){ if(msg){ msg.style.color='var(--err)'; msg.textContent='Error: '+e.message; } }
 }
 
 // ═══ ADVERTISING — ende bosh ═══
 function adDelAdvertising(body){
-  body.innerHTML='<h2 class="h">Advertising</h2><p class="small mut" style="margin-top:8px;">Së shpejti.</p>';
+  body.innerHTML='<h2 class="h">Advertising</h2><p class="small mut" style="margin-top:8px;">Coming soon.</p>';
 }
 async function ruajLogjikaCilesime(){
   const v = segVal('cl_logjika')||'ankand';
@@ -224,7 +224,7 @@ async function ruajLogjikaCilesime(){
       body:JSON.stringify({logjika_shperndarjes:v})})).json();
     if(r.error){ if(msg){msg.style.color='var(--err)';msg.textContent=r.error;} if(btn) btn.disabled=false; return; }
     if(une) une.logjika_shperndarjes=v;
-    if(msg){ msg.style.color='var(--good)'; msg.textContent='✓ U ruajt.'; }
-  }catch(e){ if(msg){msg.style.color='var(--err)';msg.textContent='Gabim: '+e.message;} }
+    if(msg){ msg.style.color='var(--good)'; msg.textContent='✓ Saved.'; }
+  }catch(e){ if(msg){msg.style.color='var(--err)';msg.textContent='Error: '+e.message;} }
   if(btn) btn.disabled=false;
 }
