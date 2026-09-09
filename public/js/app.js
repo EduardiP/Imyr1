@@ -1965,7 +1965,7 @@ async function ndertoMadhesineNjeSnip(cont, snipId, snipData){
   }catch(e){}
   cont.innerHTML=
     '<div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--line);">'+
-    '<div class="small" style="margin-bottom:10px;font-weight:600;">Madhësia e kësaj hapësire</div>'+
+    '<div class="small" style="margin-bottom:10px;font-weight:600;">Size of this space</div>'+
     '<div style="display:flex;gap:10px;margin-bottom:14px;">'+
       '<button class="madhPaj active" data-p="desktop" onclick="madhPajisjaNjeSnip(\'desktop\')">Desktop</button>'+
       '<button class="madhPaj" data-p="mobile" onclick="madhPajisjaNjeSnip(\'mobile\')">Mobile</button>'+
@@ -1976,40 +1976,101 @@ async function ndertoMadhesineNjeSnip(cont, snipId, snipData){
 }
 function madhPajisjaNjeSnip(p){
   _madNjeSnip.pajisje=p;
-  document.querySelectorAll('#madhWrapNjeSnip .madhPaj').forEach(b=>b.classList.toggle('active', b.getAttribute('data-p')===p));
-  const d=document.querySelector('#madhDesktopNjeSnip');
+  const wrap=_madNjeSnip.cont ? _madNjeSnip.cont.closest('[id^="snipMadhBox"],#madhWrapNjeSnip') : null;
+  const scope = wrap || document;
+  scope.querySelectorAll('.madhPaj').forEach(b=>b.classList.toggle('active', b.getAttribute('data-p')===p));
+  const d=scope.querySelector('#madhDesktopNjeSnip');
   if(d) ndertoKanavasinNjeSnip(d, p);
 }
 function ndertoKanavasinNjeSnip(cont, pajisje){
   if(!cont) return;
+  _madNjeSnip.cont = cont;
   const eshteMob = pajisje==='mobile';
   const MAXW = eshteMob?_madNjeSnip.mMAXW:_madNjeSnip.MAXW, MAXH = eshteMob?_madNjeSnip.mMAXH:_madNjeSnip.MAXH;
   const MINW = eshteMob?_madNjeSnip.mMINW:_madNjeSnip.MINW, MINH = eshteMob?_madNjeSnip.mMINH:_madNjeSnip.MINH;
   const W = eshteMob?_madNjeSnip.mw:_madNjeSnip.w, H = eshteMob?_madNjeSnip.mh:_madNjeSnip.h;
+  const etiketa = eshteMob ? 'mobile' : 'desktop';
   cont.innerHTML=
-    '<div style="display:flex;align-items:center;gap:14px;margin-top:8px;flex-wrap:wrap;">'+
-      '<label class="small">Gjerësi <input id="madhWns" type="number" value="'+W+'" min="'+MINW+'" max="'+MAXW+'" style="width:70px;" onchange="madhNumratNjeSnip()"></label>'+
-      '<label class="small">Lartësi <input id="madhHns" type="number" value="'+H+'" min="'+MINH+'" max="'+MAXH+'" style="width:70px;" onchange="madhNumratNjeSnip()"></label>'+
+    '<p class="small" style="margin-bottom:10px;">The space the snippet will take up on your site ('+etiketa+'). Drag the corner or edit the numbers. Ads adapt to fit within this size.</p>'+
+    '<div id="madhKanavasNs" style="position:relative;width:'+MAXW+'px;max-width:100%;height:'+MAXH+'px;'+
+      'border:1px dashed var(--line);border-radius:12px;background:var(--card2);overflow:hidden;">'+
+      '<div id="madhKutiNs" style="position:absolute;top:0;left:0;width:'+W+'px;height:'+H+'px;'+
+        'background:rgba(59,110,240,.13);border:2px solid var(--acc);box-sizing:border-box;border-radius:4px;">'+
+        '<div id="madhDoreNs" style="position:absolute;right:-6px;bottom:-6px;width:14px;height:14px;'+
+          'background:var(--acc);border-radius:4px;cursor:nwse-resize;"></div>'+
+      '</div>'+
     '</div>'+
-    '<button class="primary" id="madhRuajNs" onclick="ruajMadhesineNjeSnip()" style="margin-top:14px;">Save</button>'+
+    '<div style="display:flex;align-items:center;gap:14px;margin-top:14px;flex-wrap:wrap;">'+
+      '<label class="small">Width <input id="madhWns" type="number" value="'+W+'" min="'+MINW+'" max="'+MAXW+'" style="width:70px;"></label>'+
+      '<label class="small">Height <input id="madhHns" type="number" value="'+H+'" min="'+MINH+'" max="'+MAXH+'" style="width:70px;"></label>'+
+      '<span class="small" id="madhLiveNs" style="font-weight:600;color:var(--acc);font-family:var(--f-mono);">'+W+' × '+H+' px</span>'+
+    '</div>'+
+    '<div style="margin-top:18px;">'+
+      '<div class="small" style="margin-bottom:8px;">Position within the space</div>'+
+      '<div style="display:flex;gap:6px;">'+
+        '<button class="madhPoz'+(_madNjeSnip.pozicioni==='majtas'?' active':'')+'" data-poz="majtas" onclick="madhPozicioniNjeSnip(\'majtas\')">Left</button>'+
+        '<button class="madhPoz'+(_madNjeSnip.pozicioni==='qender'?' active':'')+'" data-poz="qender" onclick="madhPozicioniNjeSnip(\'qender\')">Center</button>'+
+        '<button class="madhPoz'+(_madNjeSnip.pozicioni==='djathtas'?' active':'')+'" data-poz="djathtas" onclick="madhPozicioniNjeSnip(\'djathtas\')">Right</button>'+
+      '</div>'+
+    '</div>'+
+    '<button class="primary" id="madhRuajNs" onclick="ruajMadhesineNjeSnip()" style="margin-top:16px;">Save</button>'+
     '<div class="msg" id="madhMsgNs"></div>';
+  madhLidhTerheqjenNjeSnip();
+  const iW=_mqns('madhWns'), iH=_mqns('madhHns');
+  if(iW) iW.oninput=()=>madhNgaNumratNjeSnip();
+  if(iH) iH.oninput=()=>madhNgaNumratNjeSnip();
 }
-function madhNumratNjeSnip(){
-  const w=parseInt((document.getElementById('madhWns')||{}).value,10);
-  const h=parseInt((document.getElementById('madhHns')||{}).value,10);
-  if(_madNjeSnip.pajisje==='mobile'){ _madNjeSnip.mw=w; _madNjeSnip.mh=h; } else { _madNjeSnip.w=w; _madNjeSnip.h=h; }
+function _mqns(id){ return _madNjeSnip.cont ? _madNjeSnip.cont.querySelector('#'+id) : document.getElementById(id); }
+function madhPozicioniNjeSnip(p){
+  _madNjeSnip.pozicioni=p;
+  if(_madNjeSnip.cont) _madNjeSnip.cont.querySelectorAll('.madhPoz').forEach(b=>b.classList.toggle('active', b.getAttribute('data-poz')===p));
+}
+function madhKufiPNs(){
+  return _madNjeSnip.pajisje==='mobile'
+    ? {MINW:_madNjeSnip.mMINW,MAXW:_madNjeSnip.mMAXW,MINH:_madNjeSnip.mMINH,MAXH:_madNjeSnip.mMAXH}
+    : {MINW:_madNjeSnip.MINW,MAXW:_madNjeSnip.MAXW,MINH:_madNjeSnip.MINH,MAXH:_madNjeSnip.MAXH};
+}
+function madhKufizoNs(w,h){
+  const k=madhKufiPNs();
+  w=Math.max(k.MINW,Math.min(k.MAXW,w||k.MINW));
+  h=Math.max(k.MINH,Math.min(k.MAXH,h||k.MINH));
+  return {w,h};
+}
+function madhVendosNs(w,h){
+  const c=madhKufizoNs(w,h);
+  if(_madNjeSnip.pajisje==='mobile'){ _madNjeSnip.mw=c.w; _madNjeSnip.mh=c.h; } else { _madNjeSnip.w=c.w; _madNjeSnip.h=c.h; }
+  const kuti=_mqns('madhKutiNs'); if(kuti){ kuti.style.width=c.w+'px'; kuti.style.height=c.h+'px'; }
+  const live=_mqns('madhLiveNs'); if(live) live.textContent=c.w+' × '+c.h+' px';
+  const iW=_mqns('madhWns'), iH=_mqns('madhHns');
+  if(iW && document.activeElement!==iW) iW.value=c.w;
+  if(iH && document.activeElement!==iH) iH.value=c.h;
+}
+function madhNgaNumratNjeSnip(){
+  const w=parseInt((_mqns('madhWns')||{}).value,10);
+  const h=parseInt((_mqns('madhHns')||{}).value,10);
+  madhVendosNs(w,h);
+}
+function madhLidhTerheqjenNjeSnip(){
+  const dore=_mqns('madhDoreNs'), kuti=_mqns('madhKutiNs'), kanavas=_mqns('madhKanavasNs');
+  if(!dore||!kuti||!kanavas) return;
+  let duke=false, x0=0, y0=0, w0=0, h0=0;
+  const nis=(e)=>{ duke=true; const t=e.touches?e.touches[0]:e; x0=t.clientX; y0=t.clientY;
+    w0=kuti.offsetWidth; h0=kuti.offsetHeight; e.preventDefault(); };
+  const lviz=(e)=>{ if(!duke) return; const t=e.touches?e.touches[0]:e;
+    madhVendosNs(w0+(t.clientX-x0), h0+(t.clientY-y0)); };
+  const mbaro=()=>{ duke=false; };
+  dore.addEventListener('mousedown',nis); document.addEventListener('mousemove',lviz); document.addEventListener('mouseup',mbaro);
+  dore.addEventListener('touchstart',nis,{passive:false}); document.addEventListener('touchmove',lviz,{passive:false}); document.addEventListener('touchend',mbaro);
 }
 async function ruajMadhesineNjeSnip(){
   const btn=$('madhRuajNs'); if(btn) btn.disabled=true;
-  const msg=$('madhMsgNs'); if(msg){ msg.className='msg'; msg.textContent='Po ruaj…'; }
-  const trupi = _madNjeSnip.pajisje==='mobile'
-    ? { mobile:_madNjeSnip.mw+'x'+_madNjeSnip.mh, pozicioni:_madNjeSnip.pozicioni }
-    : { desktop:_madNjeSnip.w+'x'+_madNjeSnip.h, pozicioni:_madNjeSnip.pozicioni };
+  const msg=$('madhMsgNs'); if(msg){ msg.className='msg'; msg.textContent='Saving…'; }
+  const trupi = { desktop:_madNjeSnip.w+'x'+_madNjeSnip.h, mobile:_madNjeSnip.mw+'x'+_madNjeSnip.mh, pozicioni:_madNjeSnip.pozicioni };
   try{
     const r=await(await fetch('/api/snippetet/'+_madNjeSnip.snipId+'/madhesia',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify(trupi)})).json();
-    if(msg){ msg.className=r.error?'msg err':'msg ok'; msg.textContent=r.error?('Gabim: '+r.error):'U ruajt.'; }
-  }catch(e){ if(msg){ msg.className='msg err'; msg.textContent='Gabim.'; } }
+    if(msg){ msg.className=r.error?'msg err':'msg ok'; msg.textContent=r.error?('Error: '+r.error):'Saved.'; }
+  }catch(e){ if(msg){ msg.className='msg err'; msg.textContent='Error.'; } }
   if(btn) btn.disabled=false;
 }
 
