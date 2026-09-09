@@ -311,9 +311,11 @@ async function boot(){
   const loginRez = params.get('login');
   await loadMe();
 
-  // Ngarkim i drejtperdrejte/refresh/link i ndare — rindërto gjendjen nga vetë URL-ja
-  // (zevendeson rastet e vjetra hardcoded /ekipi dhe /cilesimet me nje zgjidhje te pergjithshme).
+  // Ngarkim i drejtperdrejte/refresh/link i ndare — rindërto gjendjen nga vetë URL-ja.
   if(!history.state && une){
+    // GUARD: nese Biznesi ose Pershkrimi s'jane plotesuar, dhogaria s'eshte gati —
+    // dergo te hapi perkates, PAVARESISHT URL-se se shkruar (p.sh. /app/dashboard).
+    if(prog && (!prog.llogaria || !prog.pershkrimi)){ applyState(pasHyrjes(), true); return; }
     const gjendjaNgaUrl = urlToState(location.pathname);
     if(gjendjaNgaUrl){ applyState(gjendjaNgaUrl, true); return; }
   }
