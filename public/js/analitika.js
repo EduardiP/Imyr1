@@ -147,7 +147,7 @@ function mainAnalytics(m){
     id:'deficit', btnId:'anaKalBtn_deficit', panelId:'anaKalPanel_deficit',
     getNga:()=>$('anaNgaDeficit').value, getDeri:()=>$('anaDeriDeficit').value,
     setNga:v=>{ $('anaNgaDeficit').value=v; }, setDeri:v=>{ $('anaDeriDeficit').value=v; },
-    onRuaj: ngarkoAnaDeficit
+    onRuaj: ngarkoAnaDeficiti
   });
   $('anaRekBtn').addEventListener('click', function(e){
     e.stopPropagation();
@@ -180,7 +180,7 @@ function mainAnalytics(m){
   ngarkoAnaSnipDhene();
   ngarkoAnaKatDhene();
   anaRenderDeficitMetrika();
-  ngarkoAnaDeficit();
+  ngarkoAnaDeficiti();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -190,7 +190,7 @@ function mainAnalytics(m){
 // asnje click normal — vetem funksionet e reja poshte perdoren tani.
 // ═══════════════════════════════════════════════════════════════════
 
-function mainAnaTraffic(m){
+function mainAnaTrafiku(m){
   _anaSelectedAd=null; _anaDropdownOpen=false;
   _anaDetAktiv='pesha'; // Weight e zgjedhur si parazgjedhje, jo asnje
   _anaDetPerspektiv='marre'; // Received (ti përfitove) parazgjedhje; Given (të tjerët përfituan) opsional
@@ -934,7 +934,7 @@ function anaRenderAuctionRezultati(){
 
 
 
-function mainAnaDeficit(m){
+function mainAnaDeficiti(m){
   m.innerHTML=
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">'+
       '<div style="width:38px;height:38px;border-radius:12px;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
@@ -982,14 +982,14 @@ function mainAnaDeficit(m){
     onRuaj: anaNgarkoDeficitnTeGjithe
   });
   anaRenderDeficitMetrika();
-  ngarkoAnaDeficit();
+  ngarkoAnaDeficiti();
   anaRenderDhenNgaMetrika();
   anaRenderMarrjaMetrika();
   ngarkoAnaDhenNga();
   ngarkoAnaMarrja();
 }
 
-function mainAnaAds(m){
+function mainAnaReklamat(m){
   _anaKatSelectedAd=null; _anaKatDropdownOpen=false; _anaKatMetrikaAktive='shikime';
   _anaListSelectedAd=null; _anaListDropdownOpen=false;
   m.innerHTML='<h2 class="h">Ads — By category</h2>'+
@@ -1157,7 +1157,7 @@ function anaPresetDeficit(dite){
   anaNgarkoDeficitnTeGjithe();
 }
 function anaNgarkoDeficitnTeGjithe(){
-  ngarkoAnaDeficit();
+  ngarkoAnaDeficiti();
   ngarkoAnaDhenNga();
   ngarkoAnaMarrja();
 }
@@ -1175,13 +1175,13 @@ function anaRenderDeficitMetrika(){
     btn.addEventListener('click', function(){
       _anaDeficitMetrikaAktive[x.k]=!_anaDeficitMetrikaAktive[x.k];
       anaRenderDeficitMetrika();
-      ngarkoAnaDeficit();
+      ngarkoAnaDeficiti();
     });
     el.appendChild(btn);
   });
 }
 
-async function ngarkoAnaDeficit(){
+async function ngarkoAnaDeficiti(){
   const ngaEl=$('anaNgaDeficit'), deriEl=$('anaDeriDeficit');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   const url='/api/analytics/deficiti?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand');
