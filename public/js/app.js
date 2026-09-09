@@ -149,7 +149,7 @@ async function mainInsights(m){
     '<div id="vshtWrap"><p class="small mut">Po ngarkoj…</p></div>';
   const wrap=$('vshtWrap');
   let d;
-  try{ d=await(await fetch('/api/vshtrime')).json(); }catch(e){ wrap.innerHTML='<p class="small">Gabim në ngarkim.</p>'; return; }
+  try{ d=await(await fetch('/api/vshtrime')).json(); }catch(e){ wrap.innerHTML='<p class="small">Loading error.</p>'; return; }
 
   function kutia(titull, shpjegim, njesi, yti, mesatarja, minGjeresia){
     minGjeresia = minGjeresia || 260;
@@ -1314,7 +1314,7 @@ function mainKreative_NEW(m, s){
   const zgjedhur = s.lloji || null;
   const KR_TIPE = [
     { id:'imazh', l:'Imazh', d:'PNG, JPG, WebP · AI-gjeneruar ose i ngarkuar', icon:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>' },
-    { id:'video', l:'Video', d:'MP4, WebM · animacion ose reklamë video', icon:'<path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>' },
+    { id:'video', l:'Video', d:'MP4, WebM · animation or video ad', icon:'<path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>' },
     { id:'html5', l:'HTML5', d:'Banner interaktiv me HTML, CSS, JS', icon:'<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>' }
   ];
   m.innerHTML = '<h2 class="h">Creative</h2>'+
@@ -1324,7 +1324,7 @@ function mainKreative_NEW(m, s){
       '<div class="tab '+(tab==='lista'?'active':'')+'" onclick="krTab(\'lista\')">Krijimet e mia</div>'+
     '</div>'+
     (tab==='krijo' ? (
-      '<label>Çfarë do të krijosh?</label>'+
+      '<label>What do you want to create?</label>'+
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;max-width:820px;margin:12px 0 6px;">'+
         KR_TIPE.map(function(t){
           const sel = zgjedhur===t.id;
@@ -1337,7 +1337,7 @@ function mainKreative_NEW(m, s){
           '</button>';
         }).join('')+
       '</div>'+
-      (zgjedhur ? formaKreative(zgjedhur) : '<p class="small" style="color:var(--acc);margin-top:16px;">Zgjidh një lloj për të vazhduar.</p>')
+      (zgjedhur ? formaKreative(zgjedhur) : '<p class="small" style="color:var(--acc);margin-top:16px;">Choose a type to continue.</p>')
     ) : (
       '<div id="krGatiWrap" style="margin-top:18px;">'+
         '<div id="krGatiLista" style="display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;padding:8px 4px;"></div>'+
@@ -1362,7 +1362,7 @@ async function ngarkoKreativetGati(){
   try{
     const r=await(await fetch('/api/kreative')).json();
     const rows=r.kreative||[];
-    if(!rows.length){ el.innerHTML='<p class="small mut">Ende s\'ke krijuar asgjë.</p>'; return; }
+    if(!rows.length){ el.innerHTML='<p class="small mut">You haven\'t created anything yet.</p>'; return; }
     el.innerHTML = rows.map(k=>{
       const url = k.output_url||k.skedari_url;
       const eshteImazh = (k.lloji==='imazh' && url);
@@ -1374,7 +1374,7 @@ async function ngarkoKreativetGati(){
             : (k.lloji==='video' ? '<span style="font-size:22px;color:var(--mut);">▶</span>' : '<span style="font-size:16px;color:var(--mut);">&lt;/&gt;</span>'))+
         '</div>'+
         (url
-          ? '<button onclick="krHapPamjenPlote(\''+esc(url)+'\')" title="Shiko madhësinë reale" '+
+          ? '<button onclick="krHapPamjenPlote(\''+esc(url)+'\')" title="View actual size" '+
             'style="position:absolute;top:4px;right:44px;width:24px;height:24px;border-radius:50%;background:rgba(14,17,22,.85);border:1px solid var(--line);color:var(--txt);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;">🔍</button>'
           : '')+
         (eshteImazh
@@ -1390,10 +1390,10 @@ async function ngarkoKreativetGati(){
         '<div style="font-size:11px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--mut);">'+esc(k.emri||'')+'</div>'+
       '</div>';
     }).join('');
-  }catch(e){ el.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
+  }catch(e){ el.innerHTML='<p class="small">Loading error.</p>'; }
 }
 async function krFshi(id){
-  if(!confirm('Fshi këtë krijim?')) return;
+  if(!confirm('Delete this creation?')) return;
   try{
     await fetch('/api/kreative/'+id,{method:'DELETE'});
     ngarkoKreativetGati();
@@ -1465,7 +1465,7 @@ function krFilerobotDuke(payload){
   if(!canvas || !_fieAktualiId){ return false; }
   var dataUrl = canvas.toDataURL('image/png');
   if(_fieOrigjinaliFingerprint && dataUrl === _fieOrigjinaliFingerprint){
-    alert('S\'ke bërë asnjë ndryshim — ruajtja u anulua.');
+    alert('You haven\'t made any changes - save cancelled.');
     return false;
   }
   krShfaqZgjedhjenRuajtje(function(mode){ krRuajEditorin(_fieAktualiId, dataUrl, mode); });
@@ -1479,9 +1479,9 @@ function krShfaqZgjedhjenRuajtje(onZgjedh){
   p.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10002;display:flex;align-items:center;justify-content:center;';
   p.innerHTML=
     '<div style="background:#12151b;border:1px solid var(--line);border-radius:10px;padding:22px;max-width:320px;text-align:center;">'+
-      '<p style="margin:0 0 16px;font-size:14px;">Si dëshiron ta ruash?</p>'+
+      '<p style="margin:0 0 16px;font-size:14px;">How do you want to save it?</p>'+
       '<button class="btn primary" style="width:100%;margin-bottom:8px;" onclick="krZgjedhjaBerja(\'copy\')">📄 Ruaj si Kopje</button>'+
-      '<button class="btn" style="width:100%;margin-bottom:8px;" onclick="krZgjedhjaBerja(\'overwrite\')">💾 Zëvendëso Origjinalin</button>'+
+      '<button class="btn" style="width:100%;margin-bottom:8px;" onclick="krZgjedhjaBerja(\'overwrite\')">💾 Overwrite Original</button>'+
       '<button class="btn" style="width:100%;background:transparent;" onclick="krZgjedhjaAnulo()">Anulo</button>'+
     '</div>';
   document.body.appendChild(p);
@@ -1519,7 +1519,7 @@ async function krHapEditorHtml5(kreativId, url){
   var htmlContent = '';
   try{
     htmlContent = await (await fetch('/api/kreative/proxy?url=' + encodeURIComponent(url))).text();
-  }catch(e){ alert('Gabim: s\'u ngarkua përmbajtja HTML.'); return; }
+  }catch(e){ alert('Error: HTML content didn\'t load.'); return; }
 
   _gjsAktualiId = kreativId;
   var overlay = document.createElement('div');
@@ -1571,7 +1571,7 @@ function krNgarkoGrapes(htmlContent){
 
 function krRuajGjsPergjigje(){
   if(_gjsEditor && _gjsEditor.UndoManager && !_gjsEditor.UndoManager.hasChanges()){
-    alert('S\'ke bërë asnjë ndryshim — ruajtja u anulua.');
+    alert('You haven\'t made any changes - save cancelled.');
     return;
   }
   krShfaqZgjedhjenRuajtje(function(mode){ krRuajGjs(mode); });
@@ -1600,16 +1600,16 @@ function formaKreative(lloji){
   const shumefishte = (lloji==='video' || lloji==='html5');
   const accept = lloji==='html5' ? 'image/*,.htm,.html,.zip' : 'image/*';
   const ndihma = lloji==='html5'
-    ? 'Mund të ngarkosh disa imazhe (secili do t\'i referohet Claude sipas emrit që i vendos), ose një skedar .htm/.zip për modifikim.'
+    ? 'You can upload several images (Claude will reference each by the name you give it), or an .htm/.zip file to modify.'
     : lloji==='video'
-      ? 'Mund të ngarkosh disa imazhe, por modeli i videos përdor VETËM imazhin e parë si bazë.'
-      : 'Mund të ngarkosh vetëm imazhe (JPG, PNG).';
+      ? 'You can upload several images, but the video model uses ONLY the first image as its base.'
+      : 'You can upload only images (JPG, PNG).';
   krZgjedhurit = []; // reset sa here që hapet forma nga e para
   window._formaKreativeLloji = lloji; // lexohet nga kreative-chat-ui.js
   if(window.krPermasaReset) krPermasaReset(); // gjendja e "Cakto madhësinë" — modul i veçantë (kreative-permasa.js)
   if(window.krChatReset) krChatReset(); // gjendja e "Përshkruaj te AI" — modul i veçantë (kreative-chat-ui.js)
   const imgZgjedhBtn = shumefishte
-    ? '<button type="button" class="btn" onclick="krZgjidhImazh()" style="margin-left:8px;">📁 Nga imazhet e mia</button>'
+    ? '<button type="button" class="btn" onclick="krZgjidhImazh()" style="margin-left:8px;">📁 From my images</button>'
     : '';
   // "Cakto madhësinë" vlen per Imazh (gjenerim AI direkt) dhe HTML5 (Claude ndertohet fiks
   // per kete permase). Per Video, permasa rrjedh nga imazhi baze, s'ka opsion te vetin.
@@ -1623,15 +1623,15 @@ function formaKreative(lloji){
   const pershkrimiHTML = window.krChatEmbedHTML
     ? krChatEmbedHTML()
     : ('<p style="margin-top:12px;padding:12px;background:#3a1414;border:1px solid #a33;border-radius:8px;color:#ff8080;">'+
-       '⚠️ GABIM: kreative-chat-ui.js s\'është ngarkuar. Kontrollo &lt;script src="/js/kreative-chat-ui.js"&gt; te index.html.</p>');
+       '⚠️ ERROR: kreative-chat-ui.js hasn\'t loaded. Check &lt;script src="/js/kreative-chat-ui.js"&gt; in index.html.</p>');
   return '<div id="krForma" style="margin-top:18px;">'+
-    '<label>Emri</label>'+
-    '<input id="krEmri" placeholder="Emri i reklamës (p.sh. Fushata Verë)">'+
+    '<label>Name</label>'+
+    '<input id="krEmri" placeholder="Ad name (e.g. Summer Campaign)">'+
     pershkrimiHTML+
-    '<label style="margin-top:12px;">Ngarko skedarë</label>'+
+    '<label style="margin-top:12px;">Upload files</label>'+
     '<div class="krFile" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'+
       '<input type="file" id="krFile" accept="'+accept+'"'+(shumefishte?' multiple':'')+' onchange="krNdryshoFile(this,\''+lloji+'\')" style="display:none;">'+
-      '<button type="button" class="btn" onclick="document.getElementById(\'krFile\').click()">📁 Zgjidh skedar</button>'+
+      '<button type="button" class="btn" onclick="document.getElementById(\'krFile\').click()">📁 Choose file</button>'+
       imgZgjedhBtn+
     '</div>'+
     '<div id="krEmertimet" style="margin-top:6px;"></div>'+
@@ -1640,7 +1640,7 @@ function formaKreative(lloji){
     '<input type="hidden" id="krImageUrl" value="">'+
     '<div id="krZgjedhPrev"></div>'+
     '<div id="krZgjedhurLista" style="margin-top:10px;"></div>'+
-    '<button class="primary" id="krGjenBtn" onclick="krGjenero(\''+lloji+'\')" style="margin-top:18px;">✨ Gjenero me AI</button>'+
+    '<button class="primary" id="krGjenBtn" onclick="krGjenero(\''+lloji+'\')" style="margin-top:18px;">✨ Generate with AI</button>'+
     '<span class="small mut" id="krKufiri" style="margin-left:10px;"></span>'+
     '<p id="krMsg" class="msg"></p>'+
   '</div>';
@@ -1680,9 +1680,9 @@ function krTregoEmertimin(lista){
   el.innerHTML = '<div class="small" style="color:var(--acc);line-height:1.6;">'+
     lista.map(function(x){
       if(x.origjinali){
-        return '📌 <b>'+esc(x.origjinali)+'</b> emërtohet si <b>'+esc(x.emri)+'</b> — përdore <b>"'+esc(x.emri)+'"</b> te biseda.';
+        return '📌 <b>'+esc(x.origjinali)+'</b> is named <b>'+esc(x.emri)+'</b> — use <b>"'+esc(x.emri)+'"</b> in the chat.';
       }
-      return '📌 <b>'+esc(x.emri)+'</b> — përdore <b>"'+esc(x.emri)+'"</b> te biseda.';
+      return '📌 <b>'+esc(x.emri)+'</b> — use <b>"'+esc(x.emri)+'"</b> in the chat.';
     }).join('<br>')+
   '</div>';
 }
@@ -1694,7 +1694,7 @@ function krRenderZgjedhurit(){
       const thumb = x.burimi==='url' ? x.url : URL.createObjectURL(x.file);
       return '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;">'+
         '<img src="'+esc(thumb)+'" style="width:40px;height:40px;border-radius:6px;object-fit:cover;">'+
-        '<input value="'+esc(x.emri)+'" placeholder="Emërto këtë imazh (p.sh. Logo)" '+
+        '<input value="'+esc(x.emri)+'" placeholder="Name this image (e.g. Logo)" '+
           'oninput="krZgjedhurit['+i+'].emri=this.value; krTregoEmertimin(krZgjedhurit);" style="flex:1;">'+
         '<button type="button" class="btn" onclick="krHiqZgjedhurin('+i+')" style="padding:4px 10px;">✕</button>'+
       '</div>';
@@ -1711,8 +1711,8 @@ async function krNgarkoKufirin(lloji){
     if(r.premium){
       el.innerHTML='<span style="color:var(--good);">✓ Pakufi (Premium)</span>';
     } else {
-      el.innerHTML='<span>'+r.krijime_mbetura+'/'+r.krijime_gjithsej+' krijime të mbetura këtë muaj</span> · '+
-        '<a href="#" onclick="event.preventDefault();nav({v:\'profile\',nav:\'plani\'})" style="color:var(--acc2);">Kalo te Pro për pakufi →</a>';
+      el.innerHTML='<span>'+r.krijime_mbetura+'/'+r.krijime_gjithsej+' creations remaining this month</span> · '+
+        '<a href="#" onclick="event.preventDefault();nav({v:\'profile\',nav:\'plani\'})" style="color:var(--acc2);">Upgrade to Pro for unlimited →</a>';
     }
   }catch(e){}
 }
@@ -1742,7 +1742,7 @@ async function krZgjidhImazh(){
   try{
     const r = await (await fetch('/api/kreative/gati')).json();
     const imazhet = (r.kreative||[]).filter(k=>k.lloji==='imazh' && (k.output_url||k.skedari_url));
-    if(!imazhet.length){ grid.innerHTML='<p class="small mut">S\'ke imazhe të gatshme. Krijo së pari një imazh.</p>'; return; }
+    if(!imazhet.length){ grid.innerHTML='<p class="small mut">You don\'t have ready-made images. Create an image first.</p>'; return; }
     grid.innerHTML = imazhet.map((k,i)=>{
       const url = k.output_url||k.skedari_url;
       return '<div id="krZgjModItem'+i+'" onclick="krZgjidhImazhToggle('+i+',\''+esc(url)+'\',\''+esc(k.emri||'')+'\')" '+
@@ -1800,11 +1800,11 @@ async function krGjenero(lloji){
     if(p){ permasaW = p.w; permasaH = p.h; }
   }
   if(!emri.trim()){ if(msg){msg.className='msg err';msg.textContent='Vendos emrin.';} return; }
-  if(lloji==='imazh' && !skedariNjeshi && !pershkrimiChat){ if(msg){msg.className='msg err';msg.textContent='Përfundo bisedën "Përshkruaj te AI" ose ngarko një skedar.';} return; }
-  if((lloji==='video'||lloji==='html5') && !pershkrimiChat){ if(msg){msg.className='msg err';msg.textContent='Përfundo bisedën "Përshkruaj te AI" së pari.';} return; }
-  if(lloji==='video' && !krZgjedhurit.length){ if(msg){msg.className='msg err';msg.textContent='Ngarko ose zgjidh të paktën një imazh bazë për videon.';} return; }
+  if(lloji==='imazh' && !skedariNjeshi && !pershkrimiChat){ if(msg){msg.className='msg err';msg.textContent='Finish the "Describe to AI" chat or upload a file.';} return; }
+  if((lloji==='video'||lloji==='html5') && !pershkrimiChat){ if(msg){msg.className='msg err';msg.textContent='Finish the "Describe to AI" chat first.';} return; }
+  if(lloji==='video' && !krZgjedhurit.length){ if(msg){msg.className='msg err';msg.textContent='Upload or choose at least one base image for the video.';} return; }
   if(btn) btn.disabled=true;
-  var kohaTxt = lloji==='video'?'Duke gjeneruar video… (mund të zgjasë deri 1 min)' : lloji==='html5'?'Duke gjeneruar HTML5…' : (skedariNjeshi?'Duke ngarkuar…':'Duke gjeneruar… (disa sekonda)');
+  var kohaTxt = lloji==='video'?'Generating video… (may take up to 1 min)' : lloji==='html5'?'Generating HTML5…' : (skedariNjeshi?'Uploading…':'Generating… (a few seconds)');
   if(msg){msg.className='msg';msg.textContent=kohaTxt;}
   try{
     let resp;
@@ -1854,8 +1854,8 @@ function krShfaqRezultatin(k){
   el.innerHTML=
     '<div id="krImgWrap">'+preview+'</div>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">'+
-      '<button class="btn" onclick="krHapPamjenPlote(\''+esc(k.output_url)+'\')" title="Shiko madhësinë reale">🔍</button>'+
-      (k.lloji==='video' ? '<a class="btn" href="'+esc(k.output_url)+'" download="kreative_'+k.id+'.mp4" style="text-decoration:none;">⬇ Shkarko</a>' : '')+
+      '<button class="btn" onclick="krHapPamjenPlote(\''+esc(k.output_url)+'\')" title="View actual size">🔍</button>'+
+      (k.lloji==='video' ? '<a class="btn" href="'+esc(k.output_url)+'" download="kreative_'+k.id+'.mp4" style="text-decoration:none;">⬇ Download</a>' : '')+
       '<button class="btn" onclick="krRuaj('+k.id+')">💾 Ruaje</button>'+
       '<button class="btn" onclick="krHapModifiko('+k.id+',\''+esc(k.lloji)+'\')">✏️ Modifiko</button>'+
     '</div>'+
@@ -1877,9 +1877,9 @@ async function krRuaj(id){
     const r=await(await fetch('/api/kreative')).json();
     const k=(r.kreative||[]).find(x=>x.id===id);
     if(k && k.output_url && k.status==='gati'){
-      if(msg){msg.style.color='var(--good)';msg.textContent='✓ Tashmë i ruajtur.';}
+      if(msg){msg.style.color='var(--good)';msg.textContent='✓ Already saved.';}
     } else {
-      if(msg){msg.style.color='var(--mut)';msg.textContent='S\'ka çfarë ruhet ende.';}
+      if(msg){msg.style.color='var(--mut)';msg.textContent='Nothing to save yet.';}
     }
   }catch(e){ if(msg){msg.style.color='var(--err)';msg.textContent='Gabim.';} }
 }
@@ -1888,14 +1888,14 @@ async function krNgarkoModKufirin(id, lloji){
   try{
     const r=await(await fetch('/api/kreative/kufijte?lloji='+lloji+'&id='+id)).json();
     if(r.error || r.modifikime_mbetura==null) return;
-    el.textContent='Modifikime të mbetura: '+r.modifikime_mbetura+'/'+r.modifikime_gjithsej;
+    el.textContent='Edits remaining: '+r.modifikime_mbetura+'/'+r.modifikime_gjithsej;
   }catch(e){}
 }
 function krHapModifiko(id, lloji){
   const el=$('krModForm'); if(!el) return;
   el.innerHTML=
-    '<label style="margin-top:14px;">Çfarë të ndryshohet?</label>'+
-    '<textarea id="krModPer" placeholder="p.sh. bëje sfondin blu, shto një filxhan kafeje" style="min-height:80px;"></textarea>'+
+    '<label style="margin-top:14px;">What should be changed?</label>'+
+    '<textarea id="krModPer" placeholder="e.g. make the background blue, add a coffee cup" style="min-height:80px;"></textarea>'+
     '<button class="primary" id="krModBtn" onclick="krModifiko('+id+',\''+lloji+'\')" style="margin-top:12px;">✨ Gjenero me AI</button>'+
     '<p id="krModMsg" class="msg"></p>';
 }
@@ -1903,7 +1903,7 @@ async function krModifiko(id, lloji){
   const pershkrimi = ($('krModPer')||{}).value || '';
   const msg = $('krModMsg');
   const btn = $('krModBtn');
-  if(!pershkrimi.trim()){ if(msg){msg.className='msg err';msg.textContent='Shkruaj çfarë të ndryshohet.';} return; }
+  if(!pershkrimi.trim()){ if(msg){msg.className='msg err';msg.textContent='Write what should be changed.';} return; }
   if(btn) btn.disabled=true;
   if(msg){msg.className='msg';msg.textContent='Duke korrigjuar…';}
   try{
@@ -1938,7 +1938,7 @@ function mainLidhja(m){
     const extra=document.createElement('div');
     extra.innerHTML=
       '<div style="margin-top:16px;"><a href="#" id="caktoLink" style="color:#4a9eff;text-decoration:none;font-size:14px;" '+
-      'onclick="event.preventDefault();document.getElementById(\'madhBox\').classList.toggle(\'hide\');">Cakto parametrat e hapësirës</a></div>'+
+      'onclick="event.preventDefault();document.getElementById(\'madhBox\').classList.toggle(\'hide\');">Set the space parameters</a></div>'+
       '<div id="madhBox" class="hide" style="margin-top:12px;"></div>';
     b.appendChild(extra);
     ndertoMadhesine($('madhBox'), false);
@@ -2087,30 +2087,30 @@ async function mainMadhesiaShumefishte(m){
       '<div style="width:38px;height:38px;border-radius:12px;background:rgba(59,110,240,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b6ef0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18"/></svg>'+
       '</div>'+
-      '<h2 class="h" style="margin:0;">Cakto madhësinë</h2>'+
+      '<h2 class="h" style="margin:0;">Set the size</h2>'+
     '</div>'+
-    '<p class="small" style="margin:6px 0 20px;">Zgjidh pajisjen, pastaj zgjidh cilat hapësira do të marrin këtë madhësi.</p>'+
-    '<div class="card" id="madhWrap"><p class="small">Po ngarkoj…</p></div>';
+    '<p class="small" style="margin:6px 0 20px;">Choose the device, then choose which spaces will get this size.</p>'+
+    '<div class="card" id="madhWrap"><p class="small">Loading…</p></div>';
   const w=$('madhWrap');
   await ndertoMadhesine(w);
 }
 
 async function madhListoSnippetet(cont){
-  cont.innerHTML='<p class="small">Po ngarkoj hapësirat…</p>';
+  cont.innerHTML='<p class="small">Loading spaces…</p>';
   try{
     const r=await(await fetch('/api/snippetet')).json();
     const lista=r.snippetet||[];
-    if(!lista.length){ cont.innerHTML='<p class="small mut">Ende s\'ke asnjë hapësirë të krijuar.</p>'; return; }
+    if(!lista.length){ cont.innerHTML='<p class="small mut">You don\'t have any space created yet.</p>'; return; }
     cont.innerHTML='<div style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;">'+
       lista.map(sn=>
         '<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card2);cursor:pointer;">'+
           '<input type="checkbox" onchange="madhToggleSnip('+sn.id+',this.checked)" style="width:15px;height:15px;accent-color:var(--acc);flex:0 0 auto;">'+
-          '<span style="font-size:13px;color:var(--txt);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(sn.emri||'(Pa emër)')+'</span>'+
+          '<span style="font-size:13px;color:var(--txt);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(sn.emri||'(No name)')+'</span>'+
           '<span class="small mut" style="flex:0 0 auto;font-family:var(--f-mono);font-size:11px;">'+esc(sn.madhesia_desktop||'—')+'</span>'+
         '</label>'
       ).join('')+
     '</div>';
-  }catch(e){ cont.innerHTML='<p class="small err">Gabim në ngarkim.</p>'; }
+  }catch(e){ cont.innerHTML='<p class="small err">Loading error.</p>'; }
 }
 function madhToggleSnip(id, checked){
   if(checked) _madSnipZgjedhur.add(id); else _madSnipZgjedhur.delete(id);
@@ -2248,7 +2248,7 @@ async function ruajMadhesine(){
     : { desktop:_mad.w+'x'+_mad.h, pozicioni:_mad.pozicioni };
 
   if(!_madSnipZgjedhur.size){
-    if(msg){ msg.className='msg err'; msg.textContent='Zgjidh të paktën një hapësirë sipër.'; }
+    if(msg){ msg.className='msg err'; msg.textContent='Choose at least one space above.'; }
     if(btn) btn.disabled=false;
     return;
   }
@@ -2260,7 +2260,7 @@ async function ruajMadhesine(){
         body:JSON.stringify(trupi)})).json();
       if(r.error) dështoi=true;
     }
-    if(msg){ msg.className=dështoi?'msg err':'msg ok'; msg.textContent=dështoi?'Disa dështuan.':('U ruajt për '+_madSnipZgjedhur.size+' hapësira.'); }
+    if(msg){ msg.className=dështoi?'msg err':'msg ok'; msg.textContent=dështoi?'Some failed.':('Saved for '+_madSnipZgjedhur.size+' spaces.'); }
   }catch(e){ if(msg){ msg.className='msg err'; msg.textContent='Gabim.'; } }
   if(btn) btn.disabled=false;
 }
@@ -2428,14 +2428,14 @@ function rekRenderReklama(r, id){
       '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.klikime||0)+'</div><div class="small">Klikime</div></div>'+
       konvKuti+
     '</div>'+
-    '<p class="small">Variantet e krijuara (Image / Video / HTML5) do të shfaqen këtu — për të parë cili performon më mirë në testim.</p>'+
+    '<p class="small">Variants created (Image / Video / HTML5) will show here — to see which performs best in testing.</p>'+
     '<div class="card" style="margin-top:18px;">'+
       '<h3 class="h" style="font-size:15px;margin:0 0 12px;">Ecuria</h3>'+
       '<div id="rekMetrikaRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
-        '<button class="btn" onclick="rekEcuriaPreset('+id+',7)">7 ditë</button>'+
-        '<button class="btn" onclick="rekEcuriaPreset('+id+',30)">30 ditë</button>'+
-        '<button class="btn" onclick="rekEcuriaPreset('+id+',90)">90 ditë</button>'+
+        '<button class="btn" onclick="rekEcuriaPreset('+id+',7)">7 days</button>'+
+        '<button class="btn" onclick="rekEcuriaPreset('+id+',30)">30 days</button>'+
+        '<button class="btn" onclick="rekEcuriaPreset('+id+',90)">90 days</button>'+
         '<span class="small mut">ose:</span>'+
         '<input type="date" id="rekNga" class="small" style="width:150px;">'+
         '<span class="small">—</span>'+
@@ -2492,7 +2492,7 @@ async function rekVizatoEcurine(id, dite, nga, deri){
 
     if(skaDhena){
       if(window.__rekChart){ window.__rekChart.destroy(); window.__rekChart=null; }
-      if(wrap) wrap.innerHTML='<p class="small mut" style="text-align:center;padding:30px 0;">Ende s\'ka të dhëna për këtë periudhë.</p>';
+      if(wrap) wrap.innerHTML='<p class="small mut" style="text-align:center;padding:30px 0;">There\'s no data for this period yet.</p>';
       return;
     }
     if(wrap && !$('rekEcuriaCanvas')) wrap.innerHTML='<canvas id="rekEcuriaCanvas" height="90"></canvas>';
@@ -2517,16 +2517,16 @@ async function rekRenderAudienca(id){
   c.innerHTML='<p class="small">Po ngarkoj…</p>';
   let cur={vendet:[],pajisjet:[]};
   try{ cur=await(await fetch('/api/reklamat/'+id+'/audienca')).json(); }catch(e){}
-  const VENDET=['Australi','Austri','Belgjikë','Bosnjë','Brazil','Bullgari','Danimarkë','Egjipt','Emiratet e Bashkuara Arabe','Finlandë','Francë','Gjermani','Greqi','Hollandë','Indi','Indonezi','Irlandë','Islandë','Itali','Izrael','Japoni','Kanada','Kinë','Kore Jugore','Kroaci','Malajzi','Meksikë','Mbretëri e Bashkuar','Norvegji','Poloni','Portugali','Rumani','Serbi','Singapor','Spanjë','SHBA','Suedi','Zvicër','Tajlandë','Turqi','Ukrainë','Zelandë e Re','Tjetër (çdo shtet tjetër i palistuar)'];
+  const VENDET=['Australia','Austria','Belgium','Bosnia','Brazil','Bulgaria','Denmark','Egypt','United Arab Emirates','Finland','France','Germany','Greece','Netherlands','India','Indonesia','Ireland','Iceland','Italy','Israel','Japan','Canada','China','South Korea','Croatia','Malaysia','Mexico','United Kingdom','Norway','Poland','Portugal','Romania','Serbia','Singapore','Spain','USA','Sweden','Switzerland','Thailand','Turkey','Ukraine','New Zealand','Other (any unlisted country)'];
   const PAJISJET=[{v:'desktop',l:'Desktop'},{v:'mobile',l:'Mobile'}];
   const teGjithaVend = cur.vendet.length===0;
   const teGjithaPaj = cur.pajisjet.length===0;
   c.innerHTML=
-    '<p class="small mut" style="margin-bottom:16px;">Zgjidh shtetet/pajisjet ku dëshiron ta shfaqësh (të gjitha të zgjedhura = shfaqet kudo).</p>'+
+    '<p class="small mut" style="margin-bottom:16px;">Choose the countries/devices where you want it shown (all selected = shown everywhere).</p>'+
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'+
       '<div class="small" style="font-weight:600;">Shtetet</div>'+
       '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;">'+
-        '<input type="checkbox" id="rekAudVendTeGjitha" '+(teGjithaVend?'checked':'')+' onchange="rekAudTeGjitha(\'.rekAudVend\',this.checked)"> Të gjitha'+
+        '<input type="checkbox" id="rekAudVendTeGjitha" '+(teGjithaVend?'checked':'')+' onchange="rekAudTeGjitha(\'.rekAudVend\',this.checked)"> All'+
       '</label>'+
     '</div>'+
     '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;max-height:220px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:10px;">'+
@@ -2536,7 +2536,7 @@ async function rekRenderAudienca(id){
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'+
       '<div class="small" style="font-weight:600;">Pajisjet</div>'+
       '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;">'+
-        '<input type="checkbox" id="rekAudPajTeGjitha" '+(teGjithaPaj?'checked':'')+' onchange="rekAudTeGjitha(\'.rekAudPaj\',this.checked)"> Të gjitha'+
+        '<input type="checkbox" id="rekAudPajTeGjitha" '+(teGjithaPaj?'checked':'')+' onchange="rekAudTeGjitha(\'.rekAudPaj\',this.checked)"> All'+
       '</label>'+
     '</div>'+
     '<div style="display:flex;gap:8px;margin-bottom:20px;">'+
