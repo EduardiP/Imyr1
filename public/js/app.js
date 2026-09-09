@@ -693,9 +693,9 @@ async function profiliRuaj(){
   const web=($('pe_web').value||'').trim();
   const tipi=segVal('pe_tipi');
   const msg=$('pe_msg');
-  if(!emri){ msg.className='msg err'; msg.textContent='Shkruaj emrin e biznesit.'; return; }
+  if(!emri){ msg.className='msg err'; msg.textContent='Enter your business name.'; return; }
   if(!web){ msg.className='msg err'; msg.textContent='Enter your website URL.'; return; }
-  if(!tipi){ msg.className='msg err'; msg.textContent='Zgjidh kujt i shërben platforma.'; return; }
+  if(!tipi){ msg.className='msg err'; msg.textContent='Choose who the platform serves.'; return; }
   $('pe_btn').disabled=true;
   try{
     const r=await(await fetch('/api/biz-baza',{method:'POST',headers:{'Content-Type':'application/json'},
@@ -1217,8 +1217,10 @@ async function snipDetaje(m, id){
           '<input id="snipEmriFush" value="'+esc(sn.emri||'')+'" placeholder="e.g. Footer, Sidebar" onblur="snipEmriRuajFush('+id+')">'+
         '</div>'+
         '<p class="small" style="margin:6px 0 10px;">Place this line where you want the ad to appear on your site.</p>'+
-        '<textarea class="kod" id="snipKod" readonly>'+esc(snipKodi(sn.celes))+'</textarea>'+
-        '<div class="rowbtn"><button class="btn cta" id="snipCbtn" onclick="snipKopjo()">Copy</button></div>'+
+        '<div style="position:relative;">'+
+          '<textarea class="kod" id="snipKod" readonly>'+esc(snipKodi(sn.celes))+'</textarea>'+
+          '<button class="btn" id="snipCbtn" onclick="snipKopjo()" style="position:absolute;top:8px;right:8px;padding:4px 10px;font-size:12px;line-height:1;">Copy</button>'+
+        '</div>'+
         '<div id="claudeSuport'+id+'" style="margin:14px 0;"></div>'+
         '<div style="margin-top:14px;">'+
           '<label>URL of the page where you placed it</label>'+
@@ -2673,7 +2675,7 @@ var _zgjTab = 'automatic';
 function renderZgjedhja(){
   const el = $('v-zgjedhja'); if(!el) return;
   el.innerHTML =
-    '<div class="wrap" style="max-width:640px;margin:60px auto;">'+
+    '<div class="wrap" style="max-width:640px;margin:32px auto;">'+
       '<h2 class="h" style="text-align:center;">How would you like to start?</h2>'+
       '<p class="small mut" style="text-align:center;margin:6px 0 28px;">Pick one — you can change it later.</p>'+
       '<style>'+
@@ -3337,9 +3339,9 @@ async function wizPlotesoBiz(){
   const emri=($('a_emri').value||'').trim();
   const web=($('a_web').value||'').trim();
   const tipi=segVal('a_tipi');
-  if(!emri){ $('a_msg').className='msg err'; $('a_msg').textContent='Shkruaj emrin e biznesit.'; return; }
+  if(!emri){ $('a_msg').className='msg err'; $('a_msg').textContent='Enter your business name.'; return; }
   if(!web){ $('a_msg').className='msg err'; $('a_msg').textContent='Enter your website URL.'; return; }
-  if(!tipi){ $('a_msg').className='msg err'; $('a_msg').textContent='Zgjidh kujt i shërben platforma.'; return; }
+  if(!tipi){ $('a_msg').className='msg err'; $('a_msg').textContent='Choose who the platform serves.'; return; }
   $('a_btn').disabled=true;
   try{
     const r=await(await fetch('/api/biz-baza',{method:'POST',headers:{'Content-Type':'application/json'},
@@ -3356,7 +3358,7 @@ async function wizKrijo(){
   const tipi=segVal('a_tipi');
   if(!emri||!email||!pass){ $('a_msg').className='msg err'; $('a_msg').textContent='Plotëso emrin, email-in dhe fjalëkalimin.'; return; }
   if(pass.length<6){ $('a_msg').className='msg err'; $('a_msg').textContent='Fjalëkalimi min 6 shkronja.'; return; }
-  if(!tipi){ $('a_msg').className='msg err'; $('a_msg').textContent='Zgjidh kujt i shërben platforma.'; return; }
+  if(!tipi){ $('a_msg').className='msg err'; $('a_msg').textContent='Choose who the platform serves.'; return; }
   $('a_btn').disabled=true;
   try{
     const r=await(await fetch('/api/regjistrohu',{method:'POST',headers:{'Content-Type':'application/json'},
