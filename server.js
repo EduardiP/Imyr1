@@ -554,7 +554,7 @@ app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
         const ekzistuese = await pool.query(`SELECT 1 FROM kreativitetet WHERE biznes_id=$1 LIMIT 1`, [req.biznesId]);
         if (ekzistuese.rows.length) return;
         const falKlient = require('./fal-klient');
-        const falImgUrl = await falKlient.gjeneroImazh(perm || webTekst.slice(0,300), null, null);
+        const falImgUrl = await falKlient.gjeneroImazh(perm || webTekst.slice(0,300), null, null, true);
         // R2: shkarko nga fal.ai dhe ngarko te R2 jone — njesoj si rruga tjeter e krijimit auto.
         const imgResp2 = await fetch(falImgUrl);
         const buf2 = Buffer.from(await imgResp2.arrayBuffer());
@@ -2504,7 +2504,7 @@ app.post('/api/analizo', iLoguar, async (req, res) => {
         const logjika = (bizRow.rows[0] && bizRow.rows[0].logjika_shperndarjes) || 'ankand';
 
         const falKlient = require('./fal-klient');
-        const falUrl = await falKlient.gjeneroImazh(perm || pershkrimi, null, null);
+        const falUrl = await falKlient.gjeneroImazh(perm || pershkrimi, null, null, true);
         // R2: shkarko imazhin nga fal.ai dhe ngarkoje ne R2 tonin — i njejti model si
         // krijimi manual (kreative.js) — perndryshe editori (proxy-ja R2) s'e njeh URL-ne.
         const imgResp = await fetch(falUrl);
