@@ -174,7 +174,7 @@ function setHeaderLoggedIn(){
       '<input id="kerkInput" placeholder="Search…" autocomplete="off" oninput="kerkoRun(this.value)" style="border:none;background:none;padding:0;height:auto;font-size:12px;">'+
       '<div id="kerkRez" class="hide"></div>'+
     '</div>'+
-    '<button class="hdrIco" title="Choose language" style="display:flex;align-items:center;gap:5px;height:32px;padding:0 10px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--mut2);font-family:var(--f-mono);font-size:11px;font-weight:600;cursor:pointer;">'+
+    '<button class="hdrIco" title="Choose language" style="display:none;align-items:center;gap:5px;height:32px;padding:0 10px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--mut2);font-family:var(--f-mono);font-size:11px;font-weight:600;cursor:pointer;">'+
       '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/></svg>'+
       '<span>EN</span>'+
     '</button>'+
