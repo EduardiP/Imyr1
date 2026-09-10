@@ -554,7 +554,13 @@ app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
         const ekzistuese = await pool.query(`SELECT 1 FROM kreativitetet WHERE biznes_id=$1 LIMIT 1`, [req.biznesId]);
         if (ekzistuese.rows.length) return;
         const falKlient = require('./fal-klient');
-        const imgUrl = await falKlient.gjeneroImazh(perm || webTekst.slice(0,300), null, null);
+        const falImgUrl = await falKlient.gjeneroImazh(perm || webTekst.slice(0,300), null, null);
+        // R2: shkarko nga fal.ai dhe ngarko te R2 jone — njesoj si rruga tjeter e krijimit auto.
+        const imgResp2 = await fetch(falImgUrl);
+        const buf2 = Buffer.from(await imgResp2.arrayBuffer());
+        const key2 = 'kreative/' + req.biznesId + '_' + Date.now() + '.png';
+        await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key2, Body: buf2, ContentType: 'image/png' }));
+        const imgUrl = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + key2;
         await pool.query(
           `INSERT INTO kreativitetet (biznes_id, lloji, emri, pershkrimi, output_url, status, auto_krijuar)
            VALUES ($1,'imazh','Automatically created ad',$2,$3,'gati',true)`,
@@ -2480,7 +2486,14 @@ app.post('/api/analizo', iLoguar, async (req, res) => {
         const logjika = (bizRow.rows[0] && bizRow.rows[0].logjika_shperndarjes) || 'ankand';
 
         const falKlient = require('./fal-klient');
-        const url = await falKlient.gjeneroImazh(perm || pershkrimi, null, null);
+        const falUrl = await falKlient.gjeneroImazh(perm || pershkrimi, null, null);
+        // R2: shkarko imazhin nga fal.ai dhe ngarkoje ne R2 tonin — i njejti model si
+        // krijimi manual (kreative.js) — perndryshe editori (proxy-ja R2) s'e njeh URL-ne.
+        const imgResp = await fetch(falUrl);
+        const buf = Buffer.from(await imgResp.arrayBuffer());
+        const key = 'kreative/' + req.biznesId + '_' + Date.now() + '.png';
+        await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: 'image/png' }));
+        const url = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + key;
 
         await pool.query(
           `INSERT INTO kreativitetet (biznes_id, lloji, emri, pershkrimi, output_url, status, auto_krijuar)
