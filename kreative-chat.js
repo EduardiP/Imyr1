@@ -12,13 +12,23 @@
 
 const deepseek = require('./deepseek-klient');
 
-function sistemiPrompt(lloji) {
+function sistemiPrompt(lloji, pershkrimiBiznesit) {
   const llojiEtiketa = { imazh: 'an image', video: 'a video', html5: 'an HTML5 banner' }[lloji] || 'an advertisement';
+  const kontekstiBiznesit = pershkrimiBiznesit
+    ? '\n\nIMPORTANT — YOU ALREADY KNOW THIS BUSINESS: the platform has this business\'s own description on ' +
+      'file: "' + pershkrimiBiznesit + '". Use this as your starting context — do NOT ask "what does your ' +
+      'business offer" from scratch, since you already know. Instead, jump straight to the more specific ' +
+      'creative questions (target audience for THIS ad, key message/offer to highlight, preferred colors/' +
+      'style/mood, any specific text or CTA). You may still briefly confirm or ask the client to expand on ' +
+      'this description if it seems incomplete or if the ad is for a specific product narrower than the ' +
+      'general business.'
+    : '';
   return 'You are a helpful assistant that helps a business owner clarify what advertisement ' +
-    '(' + llojiEtiketa + ') they want an AI to generate. ' +
-    'If the user\'s message is exactly "[FILLIMI]", this means the conversation is just starting and ' +
-    'the user has not written anything yet — YOU must start: greet briefly and ask what they would like ' +
-    'to advertise. Default to ENGLISH for this opening message, since this is an English-language platform. ' +
+    '(' + llojiEtiketa + ') they want an AI to generate.' + kontekstiBiznesit +
+    '\n\nIf the user\'s message is exactly "[FILLIMI]", this means the conversation is just starting and ' +
+    'the user has not written anything yet — YOU must start: greet briefly' +
+    (pershkrimiBiznesit ? ', show that you already know what their business offers (briefly reference it), and ask your first specific creative question' : ' and ask what they would like to advertise') + '. ' +
+    'Default to ENGLISH for this opening message, since this is an English-language platform. ' +
     'ALWAYS respond in the SAME LANGUAGE the user is writing in from then on (they may switch to any language) ' +
     'while you ask your clarifying questions — never switch language on your own once the user has picked one. ' +
     '\n\nNEVER ask about pixel dimensions, banner size, or width/height (e.g. "300x250", "728x90"). ' +
@@ -65,7 +75,12 @@ module.exports = function (app, pool, iLoguar) {
       return res.status(400).json({ error: 'At least one message must be sent.' });
     }
     try {
-      const teksti = await deepseek.pyetDeepSeek(mesazhet, sistemiPrompt(lloji));
+      let pershkrimiBiznesit = null;
+      try {
+        const b = await pool.query('SELECT permbledhje, pershkrimi FROM bizneset WHERE id=$1', [req.biznesId]);
+        pershkrimiBiznesit = b.rows.length ? (b.rows[0].permbledhje || b.rows[0].pershkrimi || null) : null;
+      } catch (e) { /* fail-open — biseda vazhdon edhe pa kontekst biznesi */ }
+      const teksti = await deepseek.pyetDeepSeek(mesazhet, sistemiPrompt(lloji, pershkrimiBiznesit));
 
       // Provo ta lexojme si JSON perfundimtar {gati:true, pershkrim_anglisht:...} — KUDO
       // ne tekst (jo vetem ne fillim), sepse DeepSeek ndonjehere shton fjali shpjeguese
