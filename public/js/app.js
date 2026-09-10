@@ -144,9 +144,9 @@ function proUpsellHTML(pershkrimi){
   '</div>';
 }
 async function mainInsights(m){
-  m.innerHTML='<h2 class="h">Vështrime</h2>'+
-    '<p class="small" style="margin:8px 0 18px;">Si krahasohesh me mesataren e rrjetit.</p>'+
-    '<div id="vshtWrap"><p class="small mut">Po ngarkoj…</p></div>';
+  m.innerHTML='<h2 class="h">Insights</h2>'+
+    '<p class="small" style="margin:8px 0 18px;">How you compare to the network average.</p>'+
+    '<div id="vshtWrap"><p class="small mut">Loading…</p></div>';
   const wrap=$('vshtWrap');
   let d;
   try{ d=await(await fetch('/api/vshtrime')).json(); }catch(e){ wrap.innerHTML='<p class="small">Loading error.</p>'; return; }
@@ -158,7 +158,7 @@ async function mainInsights(m){
       return '<div class="card" style="flex:1;min-width:'+minGjeresia+'px;">'+
         '<h3 class="h" style="font-size:15px;margin:0 0 6px;">'+titull+'</h3>'+
         shpjegimHTML+
-        '<p class="small mut">Ende s\'ka mjaftueshëm të dhëna.</p></div>';
+        '<p class="small mut">Not enough data yet.</p></div>';
     }
     const ndryshimi = mesatarja>0 ? Math.round(((yti-mesatarja)/mesatarja)*1000)/10 : 0;
     const poziti = ndryshimi>=0;
@@ -168,48 +168,48 @@ async function mainInsights(m){
       '<h3 class="h" style="font-size:15px;margin:0 0 6px;">'+titull+'</h3>'+
       shpjegimHTML+
       '<div style="display:flex;gap:20px;align-items:baseline;flex-wrap:wrap;">'+
-        '<div><div style="font-size:24px;font-weight:700;">'+yti+njesi+'</div><div class="small mut">Ti</div></div>'+
-        '<div><div style="font-size:24px;font-weight:700;color:var(--mut);">'+mesatarja+njesi+'</div><div class="small mut">Mesatarja</div></div>'+
+        '<div><div style="font-size:24px;font-weight:700;">'+yti+njesi+'</div><div class="small mut">You</div></div>'+
+        '<div><div style="font-size:24px;font-weight:700;color:var(--mut);">'+mesatarja+njesi+'</div><div class="small mut">Average</div></div>'+
       '</div>'+
-      '<div style="color:'+ngjyra+';font-weight:600;font-size:13px;margin-top:8px;">'+shenja+' '+Math.abs(ndryshimi)+'% '+(poziti?'mbi':'nën')+' mesataren</div>'+
+      '<div style="color:'+ngjyra+';font-weight:600;font-size:13px;margin-top:8px;">'+shenja+' '+Math.abs(ndryshimi)+'% '+(poziti?'above':'below')+' average</div>'+
       '</div>';
   }
 
   const pjesaMarreDheneRaportet =
     '<div>'+
-      '<h4 class="small mut" style="text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;">Marrë (si reklamues)</h4>'+
+      '<h4 class="small mut" style="text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;">Received (as advertiser)</h4>'+
       '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
-        kutia('Shfaqje të marra', null, '', d.shfaqjeMarre.yti, d.shfaqjeMarre.mesatarja, 180)+
-        kutia('Shikime të marra', null, '', d.shikimeMarre.yti, d.shikimeMarre.mesatarja, 180)+
-        kutia('Klikime të marra', null, '', d.klikimeMarre.yti, d.klikimeMarre.mesatarja, 180)+
-        kutia('Konvertime të marra', null, '', d.konvertimeMarre.yti, d.konvertimeMarre.mesatarja, 180)+
+        kutia('Impressions received', null, '', d.shfaqjeMarre.yti, d.shfaqjeMarre.mesatarja, 180)+
+        kutia('Views received', null, '', d.shikimeMarre.yti, d.shikimeMarre.mesatarja, 180)+
+        kutia('Clicks received', null, '', d.klikimeMarre.yti, d.klikimeMarre.mesatarja, 180)+
+        kutia('Conversions received', null, '', d.konvertimeMarre.yti, d.konvertimeMarre.mesatarja, 180)+
       '</div>'+
     '</div>'+
     '<div>'+
-      '<h4 class="small mut" style="text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;">Dhënë (si host)</h4>'+
+      '<h4 class="small mut" style="text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;">Given (as host)</h4>'+
       '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
-        kutia('Shfaqje të dhëna', null, '', d.shfaqjeDhene.yti, d.shfaqjeDhene.mesatarja, 180)+
-        kutia('Shikime të dhëna', null, '', d.shikimeDhene.yti, d.shikimeDhene.mesatarja, 180)+
-        kutia('Klikime të dhëna', null, '', d.klikimeDhene.yti, d.klikimeDhene.mesatarja, 180)+
-        kutia('Konvertime të dhëna', null, '', d.konvertimeDhene.yti, d.konvertimeDhene.mesatarja, 180)+
+        kutia('Impressions given', null, '', d.shfaqjeDhene.yti, d.shfaqjeDhene.mesatarja, 180)+
+        kutia('Views given', null, '', d.shikimeDhene.yti, d.shikimeDhene.mesatarja, 180)+
+        kutia('Clicks given', null, '', d.klikimeDhene.yti, d.klikimeDhene.mesatarja, 180)+
+        kutia('Conversions given', null, '', d.konvertimeDhene.yti, d.konvertimeDhene.mesatarja, 180)+
       '</div>'+
     '</div>'+
     '<div>'+
-      '<h4 class="small mut" style="text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;">Raportet</h4>'+
+      '<h4 class="small mut" style="text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;">Reports</h4>'+
       '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
-        kutia('CTR (Klikime ÷ Shikime)', null, '%', d.ctr.yti, d.ctr.mesatarja, 180)+
-        kutia('CVR (Konvertime ÷ Klikime)', null, '%', d.cvr.yti, d.cvr.mesatarja, 180)+
-        kutia('Konvertim-për-shikim', null, '%', d.konvertimi.yti, d.konvertimi.mesatarja, 180)+
+        kutia('CTR (Clicks ÷ Views)', null, '%', d.ctr.yti, d.ctr.mesatarja, 180)+
+        kutia('CVR (Conversions ÷ Clicks)', null, '%', d.cvr.yti, d.cvr.mesatarja, 180)+
+        kutia('Conversion-per-view', null, '%', d.konvertimi.yti, d.konvertimi.mesatarja, 180)+
       '</div>'+
     '</div>';
 
   wrap.innerHTML=
     '<div style="display:flex;flex-direction:column;gap:20px;">'+
       '<div>'+
-        '<h4 class="small mut" style="text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;">Pikët AI</h4>'+
+        '<h4 class="small mut" style="text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;">AI Points</h4>'+
         '<div style="display:flex;gap:14px;flex-wrap:wrap;">'+
-          kutia('Pikë AI — Si reklamues', 'Sa tërheqës je për audiencat e bizneseve që të shfaqin.', '', d.pikeAIReklamues.yti, d.pikeAIReklamues.mesatarja)+
-          kutia('Pikë AI — Si host', 'Sa relevante janë, mesatarisht, reklamat e të tjerëve për audiencën tënde.', '', d.pikeAIHost.yti, d.pikeAIHost.mesatarja)+
+          kutia('AI Points — As advertiser', 'How appealing you are to the audiences of businesses that show you.', '', d.pikeAIReklamues.yti, d.pikeAIReklamues.mesatarja)+
+          kutia('AI Points — As host', 'How relevant, on average, other businesses\' ads are for your audience.', '', d.pikeAIHost.yti, d.pikeAIHost.mesatarja)+
         '</div>'+
       '</div>'+
       pjesaMarreDheneRaportet+
@@ -268,11 +268,11 @@ async function ruajPershkrim(){
     window.__permOrig=perm;
     const msg=$('e_msg');
     if(rikombinim && r.kombinim===false && r.arsyeja==='snippet'){
-      if(msg){ msg.className='msg err'; msg.textContent="U ruajt, por studimi AI u pengua sepse s'keni një snippet reklamë aktive (për shfaqjen e reklamave të të tjerëve)."; }
+      if(msg){ msg.className='msg err'; msg.textContent="Saved, but AI matching was blocked because you don't have an active ad snippet (for showing others' ads)."; }
     } else {
-      if(msg){ msg.className='msg ok'; msg.textContent='✓ U ruajt.'; }
+      if(msg){ msg.className='msg ok'; msg.textContent='✓ Saved.'; }
     }
-  }catch(e){ $('e_msg').className='msg err'; $('e_msg').textContent='Gabim: '+e.message; }
+  }catch(e){ $('e_msg').className='msg err'; $('e_msg').textContent='Error: '+e.message; }
   $('e_next').disabled=true;
 }
 
@@ -2419,28 +2419,28 @@ function rekFormatPreviewHTML(r){
 }
 function rekRenderReklama(r, id){
   const konvLidhur = !!(une && une.url_konvertimi);
-  const konvKuti = '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.konvertime||0)+'</div><div class="small">Konvertime</div></div>';
+  const konvKuti = '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.konvertime||0)+'</div><div class="small">Conversions</div></div>';
   const c=$('rekTabPermbajtja'); if(!c) return;
   c.innerHTML=
     '<div style="margin-bottom:16px;">'+rekFormatPreviewHTML(r)+'</div>'+
     '<div style="display:flex;gap:10px;margin:14px 0;">'+
-      '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.shikime||0)+'</div><div class="small">Shikime</div></div>'+
-      '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.klikime||0)+'</div><div class="small">Klikime</div></div>'+
+      '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.shikime||0)+'</div><div class="small">Views</div></div>'+
+      '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.klikime||0)+'</div><div class="small">Clicks</div></div>'+
       konvKuti+
     '</div>'+
     '<p class="small">Variants created (Image / Video / HTML5) will show here — to see which performs best in testing.</p>'+
     '<div class="card" style="margin-top:18px;">'+
-      '<h3 class="h" style="font-size:15px;margin:0 0 12px;">Ecuria</h3>'+
+      '<h3 class="h" style="font-size:15px;margin:0 0 12px;">Performance</h3>'+
       '<div id="rekMetrikaRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
         '<button class="btn" onclick="rekEcuriaPreset('+id+',7)">7 days</button>'+
         '<button class="btn" onclick="rekEcuriaPreset('+id+',30)">30 days</button>'+
         '<button class="btn" onclick="rekEcuriaPreset('+id+',90)">90 days</button>'+
-        '<span class="small mut">ose:</span>'+
+        '<span class="small mut">or:</span>'+
         '<input type="date" id="rekNga" class="small" style="width:150px;">'+
         '<span class="small">—</span>'+
         '<input type="date" id="rekDeri" class="small" style="width:150px;">'+
-        '<button class="btn" onclick="rekEcuriaPersonalizuar('+id+')">Apliko</button>'+
+        '<button class="btn" onclick="rekEcuriaPersonalizuar('+id+')">Apply</button>'+
       '</div>'+
       '<div id="rekEcuriaWrap"><canvas id="rekEcuriaCanvas" height="90"></canvas></div>'+
     '</div>';
@@ -2448,10 +2448,10 @@ function rekRenderReklama(r, id){
   rekVizatoEcurine(id, 30);
 }
 var REK_METRIKA=[
-  {k:'shfaqje',    l:'Shfaqje',    c:'#f0883e'},
-  {k:'shikime',    l:'Shikime',    c:'#4a9eff'},
-  {k:'klikime',    l:'Klikime',    c:'#3fb950'},
-  {k:'konvertime', l:'Konvertime', c:'#f85149'}
+  {k:'shfaqje',    l:'Impressions', c:'#f0883e'},
+  {k:'shikime',    l:'Views',       c:'#4a9eff'},
+  {k:'klikime',    l:'Clicks',      c:'#3fb950'},
+  {k:'konvertime', l:'Conversions', c:'#f85149'}
 ];
 var _rekMetrikaAktive={shfaqje:true,shikime:true,klikime:true,konvertime:true};
 function rekStilBtnMetrike(btn,x){
