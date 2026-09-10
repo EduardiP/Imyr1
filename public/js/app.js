@@ -1378,14 +1378,14 @@ async function ngarkoKreativetGati(){
             'style="position:absolute;top:4px;right:44px;width:24px;height:24px;border-radius:50%;background:rgba(14,17,22,.85);border:1px solid var(--line);color:var(--txt);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;">🔍</button>'
           : '')+
         (eshteImazh
-          ? '<button onclick="krHapEditor('+k.id+',\''+esc(url)+'\')" title="Ndrysho" '+
+          ? '<button onclick="krHapEditor('+k.id+',\''+esc(url)+'\')" title="Edit" '+
             'style="position:absolute;top:4px;right:24px;width:24px;height:24px;border-radius:50%;background:rgba(14,17,22,.85);border:1px solid var(--line);color:var(--txt);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">✎</button>'
           : '')+
         (eshteHtml5
-          ? '<button onclick="krHapEditorHtml5('+k.id+',\''+esc(url)+'\')" title="Ndrysho" '+
+          ? '<button onclick="krHapEditorHtml5('+k.id+',\''+esc(url)+'\')" title="Edit" '+
             'style="position:absolute;top:4px;right:24px;width:24px;height:24px;border-radius:50%;background:rgba(14,17,22,.85);border:1px solid var(--line);color:var(--txt);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">✎</button>'
           : '')+
-        '<button onclick="krFshi('+k.id+')" title="Fshi" '+
+        '<button onclick="krFshi('+k.id+')" title="Delete" '+
           'style="position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;background:rgba(14,17,22,.85);border:1px solid var(--line);color:var(--txt);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;">✕</button>'+
         '<div style="font-size:11px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--mut);">'+esc(k.emri||'')+'</div>'+
       '</div>';
@@ -1441,7 +1441,7 @@ async function krHapEditor(kreativId, imageUrl){
   function fillimi(){
     if(!_fieInstance){
       _fieInstance = new FilerobotImageEditor(
-        { tools:['adjust','effects','filters','rotate','crop','resize'], colorScheme:'dark', finishButtonLabel:'Ruaj' },
+        { tools:['adjust','effects','filters','rotate','crop','resize'], colorScheme:'dark', finishButtonLabel:'Save' },
         {
           onBeforeComplete: krFilerobotDuke, // ndalon upload/download automatik, ruan vete
           onClose: function(){ _fieAktualiId=null; }
