@@ -21,14 +21,25 @@ async function falThirr(endpoint, input) {
   return data;
 }
 
-// Prompt "qellimi" — kombinohet me pershkrimin e klientit, per te dhene rezultate te natyres reklame
+// Prompt "qellimi" — kombinohet me pershkrimin e klientit, per te dhene rezultate te natyres reklame.
+// KRITIKE: reklama pa tekst/mesazh te qarte s'konverton — kerkojme eksplicit titull te shkurter,
+// impaktues, DHE sfond qe lidhet LOGJIKISHT me ate qe ofron biznesi (jo abstrakt/dekorativ pa qellim).
 const QELLIMI_IMAZH =
-  'Generate this as a professional advertisement creative. ' +
-  'Design constraints: clean layout with clear visual hierarchy, high resolution, ' +
-  'no watermarks, no placeholder text unless explicitly requested, ' +
-  'balanced white space, eye-catching but not cluttered, ' +
-  'suitable for digital display advertising (banner, social, web). ' +
-  'Accept the description in any language. ';
+  'Generate this as a professional, HIGH-CONVERTING advertisement creative — not just a pretty background, ' +
+  'an ad that makes someone want to click. Two things are NON-NEGOTIABLE: ' +
+  '(1) TEXT: include a short, punchy headline (3-7 words) in LARGE, highly readable typography, ' +
+  'that instantly communicates the core offer or the exact problem it solves — think in the style of ' +
+  '"Not just exposure. Real conversion." or a bold side-by-side price/value comparison (e.g. one number ' +
+  'crossed out or shown as expensive, a much smaller number as the alternative). Pick whichever angle — ' +
+  'benefit-led headline, or comparison — best fits the business description below. The headline must be the ' +
+  'visual focal point, not an afterthought squeezed into a corner. ' +
+  '(2) BACKGROUND & IMAGERY: everything visual must connect LOGICALLY to what this specific business actually ' +
+  'offers — no generic abstract gradients or unrelated stock-photo filler chosen just because it looks nice. ' +
+  'If unsure what imagery fits, default to something that visually represents the outcome or industry context ' +
+  'described below, not decoration for its own sake. ' +
+  'Design constraints: clean layout with clear visual hierarchy, high resolution, no watermarks, ' +
+  'no placeholder/lorem-ipsum text, balanced composition, suitable for digital display advertising ' +
+  '(banner, social, web). Accept the business description in any language. ';
 
 // ═══ PËRKTHIM AUTOMATIK (shqip → anglisht) — VETEM per modelet e imazhit/videos (Flux/Wan),
 // te cilat kuptojne shume me mire anglishten se gjuhet "me pak burime" si shqipja. Claude
@@ -55,14 +66,49 @@ async function perkthejNeAnglisht(teksti) {
   } catch (e) { return teksti; } // fail-open — mos e ndal gjenerimin per shkak te perkthimit
 }
 
+// ═══ HAPI 1 i ri — Claude si COPYWRITER: shkruan titullin konkret, kompelues, PARA se
+// t'i kalohet modelit te imazhit. Modelet e imazhit (edhe Ideogram) jane te mira te
+// RENDERING i tekstit, POR JO aq te mira te SHKRIMI KRIJUES i vete tekstit — prandaj
+// i ndajme: Claude shkruan kopjen, Ideogram e rikrijon vizualisht SAKTESISHT ate. ═══
+async function shkruajTitullinReklames(pershkrimiBiznesit) {
+  const key = process.env.ANTHROPIC_API_KEY;
+  const fallback = null; // nese deshton, gjeneroImazh() vazhdon pa titull te detyruar
+  if (!key || !pershkrimiBiznesit) return fallback;
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 200,
+        system: 'You are a world-class advertising copywriter. Given a business description, write ONE short, ' +
+          'punchy ad headline (3-7 words) that instantly communicates the core value or the exact problem it ' +
+          'solves — in the style of "Not just exposure. Real conversion." or a bold price/value contrast. ' +
+          'Be concrete and specific to THIS business, not generic. Output ONLY the headline text itself, ' +
+          'nothing else — no quotes, no explanation, no preamble.',
+        messages: [{ role: 'user', content: pershkrimiBiznesit }]
+      })
+    });
+    const data = await r.json();
+    const titulli = data.content && data.content.map(c => c.text || '').join('').trim();
+    return titulli || fallback;
+  } catch (e) { return fallback; } // fail-open — gjenerimi i imazhit vazhdon edhe pa titull
+}
+
 // Gjenerim i PARE (tekst → imazh) — Flux Schnell (jo me Ideogram).
 // Flux PRANON REALISHT permasa custom {width,height} — rezultati eshte FIKS,
 // pikerisht ai qe kerkohet, pa nevoje per prerje/ripermasim shtese pas gjenerimit.
 async function gjeneroImazh(pershkrimi, width, height) {
   const imageSize = (width && height) ? { width: width, height: height } : 'square_hd';
   const pershkrimiAnglisht = await perkthejNeAnglisht(pershkrimi);
-  const data = await falThirr('fal-ai/flux/schnell', {
-    prompt: QELLIMI_IMAZH + pershkrimiAnglisht,
+  // HAPI 1: Claude shkruan titullin konkret PARA gjenerimit vizual.
+  const titulliKonkret = await shkruajTitullinReklames(pershkrimiAnglisht);
+  // HAPI 2: Ideogram-it i themi SAKTESISHT çfarë teksti te rikrijoje, jo t'ia lëmë ta shpikë vetë.
+  const udhezimiTitullit = titulliKonkret
+    ? 'The EXACT headline text to render, prominently and legibly, is: "' + titulliKonkret + '" — use this precise wording, do not paraphrase or shorten it further. '
+    : '';
+  const data = await falThirr('fal-ai/ideogram/v3', {
+    prompt: QELLIMI_IMAZH + udhezimiTitullit + 'Business this ad is for: ' + pershkrimiAnglisht,
     image_size: imageSize
   });
   const url = data && data.images && data.images[0] && data.images[0].url;
