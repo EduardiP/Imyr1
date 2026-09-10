@@ -7,32 +7,18 @@
 // te strukturuar. Nese cilesia del e dobet (p.sh. me shqip), ndryshohet lehte
 // vetem duke zevendesuar require('./deepseek-klient') me nje klient tjeter.
 //
-// Server.js e therret: require('./kreative-chat')(app, pool, iLoguar);
+// Server.js e therret: require('./kreative-chat')(app, iLoguar);
 // Endpoint: POST /api/kreative/chat  { mesazhet: [{role,content}], lloji }
 
 const deepseek = require('./deepseek-klient');
 
-function sistemiPrompt(lloji, biznesi) {
+function sistemiPrompt(lloji) {
   const llojiEtiketa = { imazh: 'an image', video: 'a video', html5: 'an HTML5 banner' }[lloji] || 'an advertisement';
-
-  let kontekstiBiznesit = '';
-  if (biznesi) {
-    kontekstiBiznesit = '\n\nIMPORTANT — WHO YOU ARE HELPING: you are assisting "' + (biznesi.emri || 'this business') +
-      '"' + (biznesi.website ? (' (' + biznesi.website + ')') : '') + '. ' +
-      (biznesi.permbledhje ? ('Here is what this business offers: ' + biznesi.permbledhje + '. ') : '') +
-      (biznesi.kategoria_kryesore ? ('Category: ' + biznesi.kategoria_kryesore + '. ') : '') +
-      (biznesi.tipi ? ('Audience type: ' + (biznesi.tipi === 'b2b' ? 'B2B (businesses)' : biznesi.tipi === 'b2c' ? 'B2C (consumers)' : 'both B2B and B2C') + '. ') : '') +
-      'USE this context proactively — you already know what they sell and to whom, so do NOT ask basic questions ' +
-      'like "what does your business do" or "who is your target audience" unless the user\'s request genuinely ' +
-      'contradicts or goes beyond this profile. Jump straight to more useful, specific clarifying questions ' +
-      '(offer/promotion details, visual style, must-include text) since the business context is already known.';
-  }
-
   return 'You are a helpful assistant that helps a business owner clarify what advertisement ' +
-    '(' + llojiEtiketa + ') they want an AI to generate.' + kontekstiBiznesit + ' ' +
+    '(' + llojiEtiketa + ') they want an AI to generate. ' +
     'If the user\'s message is exactly "[FILLIMI]", this means the conversation is just starting and ' +
     'the user has not written anything yet — YOU must start: greet briefly and ask what they would like ' +
-    'to advertise. Default to ALBANIAN for this opening message, since this is an Albanian-language platform. ' +
+    'to advertise. Default to ENGLISH for this opening message, since this is an English-language platform. ' +
     'ALWAYS respond in the SAME LANGUAGE the user is writing in from then on (they may switch to any language) ' +
     'while you ask your clarifying questions — never switch language on your own once the user has picked one. ' +
     '\n\nNEVER ask about pixel dimensions, banner size, or width/height (e.g. "300x250", "728x90"). ' +
@@ -70,30 +56,16 @@ function sistemiPrompt(lloji, biznesi) {
     'once they click the Generate button in the app — do not explain how AI image generators work in general.';
 }
 
-module.exports = function (app, pool, iLoguar) {
+module.exports = function (app, iLoguar) {
 
   app.post('/api/kreative/chat', iLoguar, async (req, res) => {
     const lloji = ((req.body && req.body.lloji) || 'imazh').trim();
     const mesazhet = (req.body && req.body.mesazhet) || [];
     if (!Array.isArray(mesazhet) || !mesazhet.length) {
-      return res.status(400).json({ error: 'Duhet të dërgohet të paktën një mesazh.' });
+      return res.status(400).json({ error: 'At least one message must be sent.' });
     }
     try {
-      // Merr profilin e biznesit PARA se te thirret AI — ashtu qe AI-ja ta njohe klientin
-      // qe nga fillimi, pa kerkuar klientit te shpjegoje vete cfare ofron biznesi i tij.
-      let biznesi = null;
-      try {
-        const bizRow = await pool.query(
-          'SELECT emri, website, permbledhje, pershkrimi, kategoria_kryesore, tipi FROM bizneset WHERE id=$1',
-          [req.biznesId]);
-        if (bizRow.rows.length) {
-          const b = bizRow.rows[0];
-          biznesi = { emri: b.emri, website: b.website, permbledhje: b.permbledhje || b.pershkrimi,
-            kategoria_kryesore: b.kategoria_kryesore, tipi: b.tipi };
-        }
-      } catch (e) { /* fail-open — nese s'gjendet dot profili, vazhdo pa te, mos e ndal biseden */ }
-
-      const teksti = await deepseek.pyetDeepSeek(mesazhet, sistemiPrompt(lloji, biznesi));
+      const teksti = await deepseek.pyetDeepSeek(mesazhet, sistemiPrompt(lloji));
 
       // Provo ta lexojme si JSON perfundimtar {gati:true, pershkrim_anglisht:...} — KUDO
       // ne tekst (jo vetem ne fillim), sepse DeepSeek ndonjehere shton fjali shpjeguese
