@@ -418,6 +418,18 @@ app.post('/api/suport/kerkese', iLoguar, async (req, res) => {
   res.json({ ok:true });
 });
 
+app.get('/api/promovim-platforme', iLoguar, async (req, res) => {
+  try {
+    const r = await pool.query('SELECT pranoi_promovim_platforme FROM bizneset WHERE id=$1', [req.biznesId]);
+    res.json({ lejon: !!(r.rows[0] && r.rows[0].pranoi_promovim_platforme) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.post('/api/promovim-platforme', iLoguar, async (req, res) => {
+  try {
+    await pool.query('UPDATE bizneset SET pranoi_promovim_platforme=$1 WHERE id=$2', [!!req.body.lejon, req.biznesId]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 app.post('/api/plani', iLoguar, async (req, res) => {
   const plani = (req.body && req.body.plani) === 'premium' ? 'premium' : 'falas';
   await pool.query('UPDATE bizneset SET plani=$1 WHERE id=$2', [plani, req.biznesId]);
