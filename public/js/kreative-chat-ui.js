@@ -113,6 +113,10 @@ async function krChatThirr(tekstiRiJetiRi){
       krChatShtoBulle('ai', '📋 This is the request that will be sent to the generator:\n\n'+r.pershkrim_anglisht);
       krChatShtoBulle('ai', '✓ Ready! Click "✨ Generate with AI" below when you are ready.');
       if(input){ input.disabled = true; input.placeholder = 'The conversation is complete.'; }
+      var gjenBtn = document.getElementById('krGjenBtn');
+      if(gjenBtn){ gjenBtn.disabled = false; gjenBtn.style.opacity = '1'; gjenBtn.style.cursor = 'pointer'; }
+      var hint = document.getElementById('krGjenHint');
+      if(hint) hint.style.display = 'none';
       return;
     }
     _kcHistoriku.push({ role:'assistant', content: r.pyetje });
