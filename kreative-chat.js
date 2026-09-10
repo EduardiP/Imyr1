@@ -56,7 +56,7 @@ function sistemiPrompt(lloji) {
     'once they click the Generate button in the app — do not explain how AI image generators work in general.';
 }
 
-module.exports = function (app, iLoguar) {
+module.exports = function (app, pool, iLoguar) {
 
   app.post('/api/kreative/chat', iLoguar, async (req, res) => {
     const lloji = ((req.body && req.body.lloji) || 'imazh').trim();
