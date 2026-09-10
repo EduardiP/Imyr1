@@ -2417,12 +2417,44 @@ function rekFormatPreviewHTML(r){
   if(r.teksti) return '<div style="padding:16px;background:#0e1116;border-radius:10px;">'+esc(r.teksti)+'</div>';
   return '<p class="small mut">Pa format ende.</p>';
 }
+function rekEditHap(id, emriAktual, linkAktual){
+  const bd=$('backdrop'); if(!bd) return;
+  bd.innerHTML='<div class="modal card"><button class="x" onclick="rekEditMbyll()">×</button>'+
+    '<h3 style="margin:0 0 14px;">Edit ad</h3>'+
+    '<label>Name</label><input id="rekEditEmri" value="'+esc(emriAktual||'')+'" placeholder="Ad name">'+
+    '<label style="margin-top:12px;">Destination URL</label>'+
+    '<input id="rekEditLink" value="'+esc(linkAktual||'')+'" placeholder="https://my-website.com/offer" inputmode="url">'+
+    '<div class="small mut" style="margin-top:4px;">Where visitors go when they click this ad.</div>'+
+    '<button class="primary" id="rekEditBtn" onclick="rekEditRuaj('+id+')" style="margin-top:16px;width:100%;">Save</button>'+
+    '<div class="msg" id="rekEditMsg"></div></div>';
+  bd.classList.remove('hide');
+}
+function rekEditMbyll(){ const bd=$('backdrop'); if(bd){ bd.classList.add('hide'); bd.innerHTML=''; } }
+async function rekEditRuaj(id){
+  const emri=($('rekEditEmri').value||'').trim();
+  const link=($('rekEditLink').value||'').trim();
+  const msg=$('rekEditMsg');
+  if(!emri){ msg.className='msg err'; msg.textContent='Name is required.'; return; }
+  if(!link){ msg.className='msg err'; msg.textContent='Destination URL is required.'; return; }
+  $('rekEditBtn').disabled=true;
+  try{
+    const r=await(await fetch('/api/reklamat/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({emri,link})})).json();
+    if(r.error){ msg.className='msg err'; msg.textContent=r.error; $('rekEditBtn').disabled=false; return; }
+    rekEditMbyll();
+    window.__reklamat=null; // pastro cache-in, qe faqja e re te marre te dhena te freskta
+    nav({v:'profile',nav:'reklamat',sub:'detail',id:id});
+  }catch(e){ msg.className='msg err'; msg.textContent='Error: '+e.message; $('rekEditBtn').disabled=false; }
+}
 function rekRenderReklama(r, id){
   const konvLidhur = !!(une && une.url_konvertimi);
   const konvKuti = '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.konvertime||0)+'</div><div class="small">Conversions</div></div>';
   const c=$('rekTabPermbajtja'); if(!c) return;
   c.innerHTML=
-    '<div style="margin-bottom:16px;">'+rekFormatPreviewHTML(r)+'</div>'+
+    '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:16px;">'+
+      '<div style="flex:1;">'+rekFormatPreviewHTML(r)+'</div>'+
+      '<button class="btn" onclick="rekEditHap('+id+',\''+esc((r.emri||'').replace(/'/g,"\\'"))+'\',\''+esc((r.link||'').replace(/'/g,"\\'"))+'\')" title="Edit name & destination">✎ Edit</button>'+
+    '</div>'+
     '<div style="display:flex;gap:10px;margin:14px 0;">'+
       '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.shikime||0)+'</div><div class="small">Views</div></div>'+
       '<div style="flex:1;background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:12px 14px;"><div style="font-size:22px;font-weight:700;color:var(--acc);">'+(r.klikime||0)+'</div><div class="small">Clicks</div></div>'+
