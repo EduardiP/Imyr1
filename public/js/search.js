@@ -60,7 +60,7 @@
     (typeof NAV2!=='undefined' ? NAV2 : []).forEach(function(n){
       // Vetë kategoria (niveli i pare) — kerkueshme me vete
       if(fillonMe(n.l, q)){
-        gKategori.push(rreshti('<span style="color:var(--mut);">▸</span>', n.l, 'Kategori', function(){
+        gKategori.push(rreshti('<span style="color:var(--mut);">▸</span>', n.l, 'Category', function(){
           if(n.k==='analytics') nav({v:'analitika-full'});
           else nav({v:'profile', nav:n.k});
         }));
@@ -79,7 +79,7 @@
     // Reklama (Creative — imazh/video/html5)
     (cache.kreative||[]).forEach(function(k){
       if(fillonMe(k.emri, q)){
-        gCreative.push(rreshti(krIkonaKerkimi(k), k.emri||'(pa emër)', 'Creative · '+(k.lloji||''), function(){
+        gCreative.push(rreshti(krIkonaKerkimi(k), k.emri||'(no name)', 'Creative · '+(k.lloji||''), function(){
           nav({v:'profile', nav:'kreative', tab:'lista'});
         }));
       }
@@ -87,9 +87,9 @@
 
     // Snippetet
     (cache.snippetet||[]).forEach(function(sn){
-      var emri = sn.emri||('Hapësira '+sn.id);
+      var emri = sn.emri||('Space '+sn.id);
       if(fillonMe(emri, q)){
-        gSnippet.push(rreshti('📍', emri, 'Hapësira e reklamave', function(){
+        gSnippet.push(rreshti('📍', emri, 'Ad space', function(){
           nav({v:'profile', nav:'snippetet', sub:'detail', id:sn.id});
         }));
       }
@@ -98,14 +98,14 @@
     // Gjithçka tjetër — Konvertimet (URL) + Zonat (kod)
     (cache.konvertimet||[]).forEach(function(kv){
       if(fillonMe(kv.url, q)){
-        gTjeter.push(rreshti('🔗', kv.url, 'Konvertim · URL', function(){
+        gTjeter.push(rreshti('🔗', kv.url, 'Conversion · URL', function(){
           nav({v:'profile', nav:'konvertimet'});
         }));
       }
     });
     (cache.zonat||[]).forEach(function(z){
       if(fillonMe(z.emri, q)){
-        gTjeter.push(rreshti('🎯', z.emri, 'Konvertim · Zonë me kod', function(){
+        gTjeter.push(rreshti('🎯', z.emri, 'Conversion · Code zone', function(){
           nav({v:'profile', nav:'konvertimet'});
         }));
       }
@@ -115,7 +115,7 @@
 
     box.innerHTML='';
     if(!rezultate.length){
-      box.innerHTML='<p class="small mut" style="padding:12px 14px;">Asnjë rezultat.</p>';
+      box.innerHTML='<p class="small mut" style="padding:12px 14px;">No results.</p>';
     } else {
       rezultate.slice(0,20).forEach(function(r){ box.appendChild(r); });
     }
