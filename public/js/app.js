@@ -280,7 +280,7 @@ async function ruajPershkrim(){
 const AD_TYPES = [
   { k:'image', l:'Image', d:'JPG / PNG / GIF' },
   { k:'video', l:'Video', d:'MP4' },
-  { k:'html5', l:'HTML5', d:'.zip interaktiv' }
+  { k:'html5', l:'HTML5', d:'Interactive .zip' }
 ];
 function adTypeUI(el){
   el.innerHTML=''+
@@ -1313,15 +1313,15 @@ function mainKreative_NEW(m, s){
   const tab = s.tab || 'krijo';
   const zgjedhur = s.lloji || null;
   const KR_TIPE = [
-    { id:'imazh', l:'Imazh', d:'PNG, JPG, WebP · AI-gjeneruar ose i ngarkuar', icon:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>' },
+    { id:'imazh', l:'Image', d:'PNG, JPG, WebP · AI-generated or uploaded', icon:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>' },
     { id:'video', l:'Video', d:'MP4, WebM · animation or video ad', icon:'<path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>' },
-    { id:'html5', l:'HTML5', d:'Banner interaktiv me HTML, CSS, JS', icon:'<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>' }
+    { id:'html5', l:'HTML5', d:'Interactive banner with HTML, CSS, JS', icon:'<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>' }
   ];
   m.innerHTML = '<h2 class="h">Creative</h2>'+
-    '<p class="small" style="margin:8px 0 16px;">Krijo reklama me AI: imazh, video, ose HTML5.</p>'+
+    '<p class="small" style="margin:8px 0 16px;">Create ads with AI: image, video, or HTML5.</p>'+
     '<div class="tabs" style="max-width:320px;">'+
-      '<div class="tab '+(tab==='krijo'?'active':'')+'" onclick="krTab(\'krijo\')">Krijo</div>'+
-      '<div class="tab '+(tab==='lista'?'active':'')+'" onclick="krTab(\'lista\')">Krijimet e mia</div>'+
+      '<div class="tab '+(tab==='krijo'?'active':'')+'" onclick="krTab(\'krijo\')">Create</div>'+
+      '<div class="tab '+(tab==='lista'?'active':'')+'" onclick="krTab(\'lista\')">My Creatives</div>'+
     '</div>'+
     (tab==='krijo' ? (
       '<label>What do you want to create?</label>'+
@@ -2574,8 +2574,8 @@ function krijoReklame(m, s){
   if(s.format==='html5'){ window.__adType='html5'; return ngarkoHtml5UI(); }
   // Ndryshe, shfaq zgjedhjen e tre formateve
   m.innerHTML=
-    '<h2 class="h">Krijo reklamë</h2>'+
-    '<p class="small" style="margin:2px 0 16px;">Zgjidh llojin që do të ngarkosh.</p>'+
+    '<h2 class="h">Create an ad</h2>'+
+    '<p class="small" style="margin:2px 0 16px;">Choose the type you want to upload.</p>'+
     '<div id="adTypeWrap2"></div>';
   adTypeUI($('adTypeWrap2'));
 }
@@ -2588,9 +2588,9 @@ var _ekipiTab = 'permbledhje';
 var _ekipiCache = { anetaret: null, rolet: null, ftesat: null, aktiviteti: null };
 
 function mainEkipi(m){
-  m.innerHTML='<h2 class="h">Ekipi & Rolet</h2>'+
-    '<p class="small" style="margin:8px 0 16px;">Ftoj kolegë të menaxhojnë llogarinë me role të ndryshme (admin/editor/lexues).</p>'+
-    '<div class="card"><p class="small mut">Kjo veçori vjen së shpejti.</p></div>';
+  m.innerHTML='<h2 class="h">Team & Roles</h2>'+
+    '<p class="small" style="margin:8px 0 16px;">Invite colleagues to manage the account with different roles (admin/editor/viewer).</p>'+
+    '<div class="card"><p class="small mut">This feature is coming soon.</p></div>';
 }
 
 
