@@ -1422,7 +1422,7 @@ async function krHapEditor(kreativId, imageUrl){
     var blob = await resp.blob();
     blobUrl = URL.createObjectURL(blob);
   }catch(e){
-    alert('Gabim: s\'u mor imazhi (' + e.message + ').');
+    alert('Error: could not load the image (' + e.message + ').');
     return;
   }
   // Gjurma e imazhit ORIGJINAL — e kalojme neper te njejtin encode PNG qe do perdore
