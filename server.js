@@ -557,11 +557,11 @@ app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
         const imgUrl = await falKlient.gjeneroImazh(perm || webTekst.slice(0,300), null, null);
         await pool.query(
           `INSERT INTO kreativitetet (biznes_id, lloji, emri, pershkrimi, output_url, status, auto_krijuar)
-           VALUES ($1,'imazh','Reklamë e krijuar automatikisht',$2,$3,'gati',true)`,
+           VALUES ($1,'imazh','Automatically created ad',$2,$3,'gati',true)`,
           [req.biznesId, perm || webTekst.slice(0,300), imgUrl]);
         await pool.query(
           `INSERT INTO promovimet (biznes_id, titulli, imazh_url, link, aktiv, logjika_shperndarjes)
-           VALUES ($1,'Reklamë e krijuar automatikisht',$2,$3,true,'ankand')`,
+           VALUES ($1,'Automatically created ad',$2,$3,true,'ankand')`,
           [req.biznesId, imgUrl, url]);
       } catch (e) { console.error('Gjenerim automatik reklame (zgjedhja-automatike) deshtoi:', e.message); }
     })();
@@ -2484,12 +2484,12 @@ app.post('/api/analizo', iLoguar, async (req, res) => {
 
         await pool.query(
           `INSERT INTO kreativitetet (biznes_id, lloji, emri, pershkrimi, output_url, status, auto_krijuar)
-           VALUES ($1,'imazh','Reklamë e krijuar automatikisht',$2,$3,'gati',true)`,
+           VALUES ($1,'imazh','Automatically created ad',$2,$3,'gati',true)`,
           [req.biznesId, perm || pershkrimi, url]);
 
         await pool.query(
           `INSERT INTO promovimet (biznes_id, titulli, imazh_url, link, aktiv, logjika_shperndarjes)
-           VALUES ($1,'Reklamë e krijuar automatikisht',$2,$3,true,$4)`,
+           VALUES ($1,'Automatically created ad',$2,$3,true,$4)`,
           [req.biznesId, url, link, logjika]);
       } catch (e) { console.error('Gjenerim automatik reklame deshtoi:', e.message); }
     })();
