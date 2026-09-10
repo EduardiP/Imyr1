@@ -74,8 +74,32 @@ function cilShkoTek(tab){
 }
 function cilAccount(body){
   body.innerHTML='<h2 class="h">Account</h2>'+
-    '<div class="card" id="cl_pershkrimi_wrap"></div>';
+    '<div class="card" id="cl_pershkrimi_wrap"></div>'+
+    '<div class="card" style="margin-top:16px;">'+
+      '<h3 class="h" style="font-size:15px;margin:0 0 6px;">Platform promotion</h3>'+
+      '<p class="small mut" style="margin:0 0 12px;">Allow PhronexusAI to also show its own promotion in your ad space, alongside other participating businesses. This is optional and you can change it anytime.</p>'+
+      '<label class="tgl" style="display:inline-flex;align-items:center;gap:10px;">'+
+        '<input type="checkbox" id="cl_promovim" onchange="cilPromovimNdrysho(this.checked)"><span class="slider"></span>'+
+        '<span class="small" id="cl_promovim_lbl">Loading…</span>'+
+      '</label>'+
+    '</div>';
   stepPershkrimi($('cl_pershkrimi_wrap'));
+  cilPromovimNgarko();
+}
+async function cilPromovimNgarko(){
+  try{
+    const r=await(await fetch('/api/promovim-platforme')).json();
+    const cb=$('cl_promovim'), lbl=$('cl_promovim_lbl');
+    if(cb) cb.checked=!!r.lejon;
+    if(lbl) lbl.textContent = r.lejon ? 'Enabled' : 'Disabled';
+  }catch(e){}
+}
+async function cilPromovimNdrysho(lejon){
+  const lbl=$('cl_promovim_lbl'); if(lbl) lbl.textContent='Saving…';
+  try{
+    await fetch('/api/promovim-platforme',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lejon})});
+    if(lbl) lbl.textContent = lejon ? 'Enabled' : 'Disabled';
+  }catch(e){ if(lbl) lbl.textContent='Error saving.'; }
 }
 
 // ═══ HOSTING — dy nivele zgjedhjeje: (1) mode automatik/manual, (2) nese manual → vec e vec / te-gjitha ═══
