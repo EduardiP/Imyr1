@@ -47,8 +47,8 @@ module.exports = function (app, pool, iLoguar, iAdmin) {
     const teksti = (b.teksti || '').trim();
     const veprim = (b.veprim || '').trim();
     const veprim_label = (b.veprim_label || '').trim();
-    if (!idet.length) return res.status(400).json({ error: 'Zgjidh të paktën një biznes.' });
-    if (!titulli) return res.status(400).json({ error: 'Titulli është i detyrueshëm.' });
+    if (!idet.length) return res.status(400).json({ error: 'Choose at least one business.' });
+    if (!titulli) return res.status(400).json({ error: 'Title is required.' });
     try {
       let n = 0;
       for (const bid of idet) {
@@ -82,7 +82,7 @@ module.exports = function (app, pool, iLoguar, iAdmin) {
       const r = await pool.query(
         'UPDATE njoftimet_admin SET plotesuar=true WHERE id=$1 AND biznes_id=$2 RETURNING id',
         [req.params.id, req.biznesId]);
-      if (!r.rows.length) return res.status(404).json({ error: 'Njoftimi s\'u gjet.' });
+      if (!r.rows.length) return res.status(404).json({ error: 'Notification not found.' });
       res.json({ ok: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
