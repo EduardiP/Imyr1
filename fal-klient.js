@@ -98,12 +98,15 @@ async function shkruajTitullinReklames(pershkrimiBiznesit) {
 // Gjenerim i PARE (tekst → imazh) — Flux Schnell (jo me Ideogram).
 // Flux PRANON REALISHT permasa custom {width,height} — rezultati eshte FIKS,
 // pikerisht ai qe kerkohet, pa nevoje per prerje/ripermasim shtese pas gjenerimit.
-async function gjeneroImazh(pershkrimi, width, height) {
+// "shkruajTitull" (default false): PERDORET VETEM per rrugen automatike (regjistrimi), ku
+// s'ka rafinim klienti. Rruga manuale (kreative.js) e LEN false — klienti tashmë e ka
+// rafinuar pershkrimin vete permes chat-it "Përshkruaj te AI", s'duhet mbivendosur.
+async function gjeneroImazh(pershkrimi, width, height, shkruajTitull) {
   const imageSize = (width && height) ? { width: width, height: height } : 'square_hd';
   const pershkrimiAnglisht = await perkthejNeAnglisht(pershkrimi);
-  // HAPI 1: Claude shkruan titullin konkret PARA gjenerimit vizual.
-  const titulliKonkret = await shkruajTitullinReklames(pershkrimiAnglisht);
-  // HAPI 2: Ideogram-it i themi SAKTESISHT çfarë teksti te rikrijoje, jo t'ia lëmë ta shpikë vetë.
+  // HAPI 1 (VETEM nese kerkohet eksplicit): Claude shkruan titullin konkret.
+  const titulliKonkret = shkruajTitull ? await shkruajTitullinReklames(pershkrimiAnglisht) : null;
+  // HAPI 2: Ideogram-it i themi SAKTESISHT çfarë teksti te rikrijoje, kur ka titull te dhene.
   const udhezimiTitullit = titulliKonkret
     ? 'The EXACT headline text to render, prominently and legibly, is: "' + titulliKonkret + '" — use this precise wording, do not paraphrase or shorten it further. '
     : '';
