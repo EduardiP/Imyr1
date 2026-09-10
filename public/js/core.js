@@ -253,8 +253,8 @@ async function njAdminButon(id, veprim){
 function renderNjBox(){
   const box=$('njBox'); if(!box) return;
   const nj=window.__njoftimet||[];
-  let h='<div class="njHead">Njoftime</div>';
-  if(!nj.length){ h+='<div class="njEmpty">S\'ke njoftime të reja.</div>'; }
+  let h='<div class="njHead">Notifications</div>';
+  if(!nj.length){ h+='<div class="njEmpty">You have no new notifications.</div>'; }
   else {
     nj.slice(0,5).forEach((x,i)=>{
       if(x.nga_admin){
@@ -269,7 +269,7 @@ function renderNjBox(){
       }
     });
   }
-  h+='<div class="njMore" onclick="hapNjoftimet()">Shiko më shumë →</div>';
+  h+='<div class="njMore" onclick="hapNjoftimet()">See more →</div>';
   box.innerHTML=h;
 }
 function hapNjoftimet(){
