@@ -1640,8 +1640,9 @@ function formaKreative(lloji){
     '<input type="hidden" id="krImageUrl" value="">'+
     '<div id="krZgjedhPrev"></div>'+
     '<div id="krZgjedhurLista" style="margin-top:10px;"></div>'+
-    '<button class="primary" id="krGjenBtn" onclick="krGjenero(\''+lloji+'\')" style="margin-top:18px;">✨ Generate with AI</button>'+
+    '<button class="primary" id="krGjenBtn" onclick="krGjenero(\''+lloji+'\')" disabled style="margin-top:18px;opacity:.45;cursor:not-allowed;">✨ Generate with AI</button>'+
     '<span class="small mut" id="krKufiri" style="margin-left:10px;"></span>'+
+    '<p class="small mut" id="krGjenHint" style="margin-top:4px;">Finish the conversation above first — this unlocks once your description is ready.</p>'+
     '<p id="krMsg" class="msg"></p>'+
   '</div>';
 }
