@@ -1096,10 +1096,10 @@ async function snipKonfirmoFshi(id, emri, ishteLidhur){
     stat.remove();
     if(r.gjendet){
       // Kodi eshte ende aty → mos e fshi, kerko ta heqe
-      fshiDialogThjesht('Kodi i kësaj hapësire është ende te faqja jote. <b>Hiqe së pari kodin</b> ('+esc(emri||'')+') nga skedari i faqes, pastaj provo ta fshish sërish. Përndryshe reklama do të vazhdojë të shfaqet.');
+      fshiDialogThjesht('The code for this space is still on your site. <b>Remove the code first</b> ('+esc(emri||'')+') from your site\'s file, then try deleting it again. Otherwise, the ad will keep showing.');
     } else {
       // S'u gjet (ose s'u arrit faqja) → lejo fshirjen me konfirmim
-      fshiDialog('Kodi s\'u gjet më te faqja. Do ta heqësh hapësirën <b>'+esc(emri||'')+'</b>?', ()=>snipFshi(id));
+      fshiDialog('The code wasn\'t found on the page anymore. Do you want to delete the space <b>'+esc(emri||'')+'</b>?', ()=>snipFshi(id));
     }
   }catch(e){ stat.remove(); }
 }
@@ -1115,9 +1115,9 @@ function fshiDialogThjesht(mesazhi){
   if(!d){ d=document.createElement('div'); d.id='fshiModal'; document.body.appendChild(d); }
   d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999;';
   d.innerHTML='<div style="background:var(--bg2,#161a22);border:1px solid var(--line);border-radius:12px;padding:22px;max-width:420px;margin:16px;">'+
-    '<div style="font-weight:600;font-size:16px;margin-bottom:10px;">Hiq kodin së pari</div>'+
+    '<div style="font-weight:600;font-size:16px;margin-bottom:10px;">Remove the code first</div>'+
     '<p class="small" style="margin:0 0 18px;">'+mesazhi+'</p>'+
-    '<div style="display:flex;justify-content:flex-end;"><button class="btn" onclick="fshiMbyll()">E kuptova</button></div></div>';
+    '<div style="display:flex;justify-content:flex-end;"><button class="btn" onclick="fshiMbyll()">Got it</button></div></div>';
 }
 function snipEmriEdito(id, emriAktual){
   const span=$('snipEmri'+id); if(!span) return;
@@ -3051,12 +3051,12 @@ function fshiDialog(mesazhi, onFshi){
   if(!d){ d=document.createElement('div'); d.id='fshiModal'; document.body.appendChild(d); }
   d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999;';
   d.innerHTML='<div style="background:var(--bg2,#161a22);border:1px solid var(--line);border-radius:12px;padding:22px;max-width:420px;margin:16px;">'+
-    '<div style="font-weight:600;font-size:16px;margin-bottom:10px;">A je i sigurt?</div>'+
+    '<div style="font-weight:600;font-size:16px;margin-bottom:10px;">Are you sure?</div>'+
     '<p class="small" style="margin:0 0 8px;">'+mesazhi+'</p>'+
     '<p class="small" style="margin:0 0 18px;color:var(--mut);">Remember to also remove the matching code/URL from your site\'s file - otherwise it will keep sending signals that won\'t be counted.</p>'+
     '<div style="display:flex;gap:10px;justify-content:flex-end;">'+
-      '<button class="btn" onclick="fshiMbyll()">Anulo</button>'+
-      '<button class="primary" id="fshiPo" style="background:var(--err);border-color:var(--err);">Po, hiqe</button>'+
+      '<button class="btn" onclick="fshiMbyll()">Cancel</button>'+
+      '<button class="primary" id="fshiPo" style="background:var(--err);border-color:var(--err);">Yes, remove it</button>'+
     '</div></div>';
   $('fshiPo').onclick=()=>{ fshiMbyll(); onFshi(); };
 }
