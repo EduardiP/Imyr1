@@ -1089,7 +1089,7 @@ async function snipKonfirmoFshi(id, emri, ishteLidhur){
   const c=$('snipLista');
   const stat=document.createElement('div');
   stat.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999;';
-  stat.innerHTML='<div style="background:var(--bg2,#161a22);border:1px solid var(--line);border-radius:12px;padding:22px;max-width:420px;margin:16px;text-align:center;"><span class="spin"></span> Po kontrolloj nëse kodi është ende te faqja jote…</div>';
+  stat.innerHTML='<div style="background:var(--bg2,#161a22);border:1px solid var(--line);border-radius:12px;padding:22px;max-width:420px;margin:16px;text-align:center;"><span class="spin"></span> Checking whether the code is still on your page…</div>';
   document.body.appendChild(stat);
   try{
     const r=await(await fetch('/api/snippetet/'+id+'/gjurmo')).json();
@@ -3322,7 +3322,7 @@ async function verifikoNje(i){
   let hapUrl = u.url.trim();
   if(!/^https?:\/\//i.test(hapUrl)) hapUrl='https://'+hapUrl;
   try{ window.open(hapUrl, '_blank', 'noopener'); }catch(e){}
-  if(st) st.innerHTML='<span class="spin"></span> Hapëm faqen në një skedë. Po kontrolloj…';
+  if(st) st.innerHTML='<span class="spin"></span> Opened the page in a new tab. Checking…';
   vizatoKonvertimet();
   if(kTimer){ clearInterval(kTimer); kTimer=null; }
   const kontrollo=async()=>{ return await kStatus(); };
