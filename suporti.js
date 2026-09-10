@@ -33,6 +33,11 @@ TRE GJERAT QE VENDOS BIZNESI:
 2. Konvertimet — mat kur nje vizitor kryen nje veprim me vlere (blerje/regjistrim). Rrisin piket.
 3. Reklama e vet (creatives) qe shfaqet te te tjeret.
 
+ROTACIONI I REKLAMAVE (per te njejtin vizitor):
+- Nese nje biznes ka disa reklama aktive, i njejti vizitor NUK sheh te njejten reklame perseri, cdo here qe rifreskon faqen ose lundron ne faqe te tjera te te njejtit sajt (brenda te njejtes vizite).
+- Sistemi i tregon reklama te ndryshme, njeren pas tjetres, derisa vizitori t'i kete pare te gjitha reklamat e mundshme njehere — pastaj cikli fillon perseri nga e para.
+- Kjo ndodh automatikisht, pa asnje konfigurim nga ana e biznesit.
+
 CMIMI: Bizneset paguajne nje plan mujor per te perdorur platformen.
 
 Ky eshte nje mjet software (SaaS) — gjithcka ndodh automatikisht permes algoritmit, jo me pune manuale.
