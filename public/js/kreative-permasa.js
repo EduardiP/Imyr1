@@ -18,7 +18,7 @@ var _kpLimits = null;     // cache nga /api/madhesia
 // ═══ BUTONI + STATUSI (thirret nga formaKreative() ne app.js) ═══
 function krPermasaLinkHTML(){
   return '<button type="button" class="btn" onclick="krPermasaHap()" '+
-    'style="font-size:12px;padding:5px 10px;opacity:.8;">🔧 Ndrysho madhësinë</button>'+
+    'style="font-size:12px;padding:5px 10px;opacity:.8;">🔧 Change size</button>'+
     '<span id="krPermasaStatus" class="small mut" style="margin-left:8px;"></span>';
 }
 
@@ -38,7 +38,7 @@ async function krPermasaHap(){
   overlay.innerHTML =
     '<div style="width:min(400px,92vw);max-height:85vh;overflow-y:auto;background:var(--card);border-radius:12px;border:1px solid var(--line);">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);">'+
-        '<span style="font-weight:600;">🔧 Ndrysho madhësinë</span>'+
+        '<span style="font-weight:600;">🔧 Change size</span>'+
         '<button type="button" onclick="krPermasaMbyll()" style="background:none;border:none;color:var(--mut);cursor:pointer;font-size:16px;">✕</button>'+
       '</div>'+
       '<div id="krPermasaBrendesia" style="padding:16px;"></div>'+
@@ -46,10 +46,10 @@ async function krPermasaHap(){
   document.body.appendChild(overlay);
 
   const brendesia = document.getElementById('krPermasaBrendesia');
-  brendesia.innerHTML = '<p class="small mut">Po ngarkoj kufijtë…</p>';
+  brendesia.innerHTML = '<p class="small mut">Loading limits…</p>';
   if(!_kpLimits){
     try{ _kpLimits = await (await fetch('/api/madhesia')).json(); }
-    catch(e){ brendesia.innerHTML = '<p class="small">Gabim gjatë ngarkimit të kufijve.</p>'; return; }
+    catch(e){ brendesia.innerHTML = '<p class="small">Error loading limits.</p>'; return; }
   }
   // Vazhdo nga zgjedhja e fundit e konfirmuar, nese ka
   _kpPajisje = (_kpKonfirmuar && _kpKonfirmuar.pajisje) || null;
@@ -65,14 +65,14 @@ function krPermasaMbyll(){
 function krPermasaRenderZgjedhesin(){
   var el = document.getElementById('krPermasaBrendesia'); if(!el) return;
   el.innerHTML =
-    '<p class="small mut" style="margin-bottom:8px;">⚠️ Zgjidh <b>VETËM NJË</b> — do të krijohet <b>një krijim i vetëm</b>, jo dy:</p>'+
+    '<p class="small mut" style="margin-bottom:8px;">⚠️ Choose <b>ONLY ONE</b> — this will create <b>a single creative</b>, not two:</p>'+
     '<div style="display:flex;gap:8px;margin-bottom:10px;">'+
       '<button type="button" class="btn" id="kpBtnDesktop" onclick="krPermasaZgjidhPajisjen(\'desktop\')">🖥️ Desktop</button>'+
       '<button type="button" class="btn" id="kpBtnMobile" onclick="krPermasaZgjidhPajisjen(\'mobile\')">📱 Mobile</button>'+
     '</div>'+
     '<div id="kpKanavasWrap"></div>'+
-    '<p class="small mut" id="kpInfo" style="margin-top:8px;">Zgjidh Desktop ose Mobile për të filluar.</p>'+
-    '<button type="button" class="btn primary" onclick="krPermasaRuaj()" style="margin-top:14px;width:100%;">💾 Ruaj</button>';
+    '<p class="small mut" id="kpInfo" style="margin-top:8px;">Choose Desktop or Mobile to start.</p>'+
+    '<button type="button" class="btn primary" onclick="krPermasaRuaj()" style="margin-top:14px;width:100%;">💾 Save</button>';
   // Nese ka zgjedhje te meparshme, vazhdo direkt nga aty (mos rifillo nga zero)
   if(_kpPajisje) krPermasaZgjidhPajisjen(_kpPajisje, /*ruajZgjedhurin=*/true);
 }
@@ -110,8 +110,8 @@ function krPermasaRenderKanavasin(maxW, maxH, minW, minH){
       '</div>'+
     '</div>'+
     '<div style="display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap;">'+
-      '<label class="small">Gjerësi <input id="kpW" type="number" value="'+_kpZgjedhur.w+'" min="'+minW+'" max="'+maxW+'" style="width:70px;"></label>'+
-      '<label class="small">Lartësi <input id="kpH" type="number" value="'+_kpZgjedhur.h+'" min="'+minH+'" max="'+maxH+'" style="width:70px;"></label>'+
+      '<label class="small">Width <input id="kpW" type="number" value="'+_kpZgjedhur.w+'" min="'+minW+'" max="'+maxW+'" style="width:70px;"></label>'+
+      '<label class="small">Height <input id="kpH" type="number" value="'+_kpZgjedhur.h+'" min="'+minH+'" max="'+maxH+'" style="width:70px;"></label>'+
     '</div>';
   krPermasaVendos(_kpZgjedhur.w, _kpZgjedhur.h, maxW, maxH, minW, minH);
   krPermasaLidhTerheqjen(maxW, maxH, minW, minH);
@@ -136,7 +136,7 @@ function krPermasaVendos(w, h, maxW, maxH, minW, minH){
   if(iW) iW.value = w;
   if(iH) iH.value = h;
   var info = document.getElementById('kpInfo');
-  if(info) info.innerHTML = '✓ Do të krijohet <b>1 (një) krijim</b>, saktësisht <b>'+w+'×'+h+' px</b>';
+  if(info) info.innerHTML = '✓ This will create <b>1 (one) creative</b>, exactly <b>'+w+'×'+h+' px</b>';
 }
 
 function krPermasaLidhTerheqjen(maxW, maxH, minW, minH){
@@ -163,12 +163,12 @@ function krPermasaLidhTerheqjen(maxW, maxH, minW, minH){
 // ═══ RUAJ — konfirmon draft-in, e mbyll modalin, perditeson statusin ═══
 function krPermasaRuaj(){
   if(!_kpPajisje || !_kpZgjedhur){
-    alert('Zgjidh Desktop ose Mobile së pari.');
+    alert('Choose Desktop or Mobile first.');
     return;
   }
   _kpKonfirmuar = { w: _kpZgjedhur.w, h: _kpZgjedhur.h, pajisje: _kpPajisje };
   var st = document.getElementById('krPermasaStatus');
-  if(st) st.textContent = '✓ '+_kpKonfirmuar.w+'×'+_kpKonfirmuar.h+' px të ruajtura';
+  if(st) st.textContent = '✓ '+_kpKonfirmuar.w+'×'+_kpKonfirmuar.h+' px saved';
   krPermasaMbyll();
 }
 
