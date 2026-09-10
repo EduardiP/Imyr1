@@ -1278,20 +1278,20 @@ app.get('/api/njoftimet', iLoguar, async (req, res) => {
     const njf = [];
 
     if (!kaSnippetAktiv && !neGraceperiodAuto) {
-      njf.push({ tip: 'snippet', titull: 'Reklamat e tua nuk po shfaqen',
-        teksti: "S'ke asnjë hapësirë reklame aktive. Meqë s'po shfaq reklamat e të tjerëve, as reklamat e tua s'po marrin shfaqje te rrjeti. Lidh një hapësirë që të kthehet gjithçka në normalitet.", veprim: 'lidhja' });
+      njf.push({ tip: 'snippet', titull: 'Your ads aren\'t showing',
+        teksti: "You don't have any active ad space. Since you aren't showing others' ads, your own ads aren't getting shown across the network either. Connect a space to get everything back to normal.", veprim: 'lidhja' });
     }
     if (!kaReklame) {
-      njf.push({ tip: 'reklama', titull: 'Reklamat e tua nuk po shfaqen',
-        teksti: "S'ke asnjë reklamë aktive. Krijo një të re ose riaktivizo një të pauzuar që të fillosh të shfaqesh te rrjeti.", veprim: 'reklamat' });
+      njf.push({ tip: 'reklama', titull: 'Your ads aren\'t showing',
+        teksti: "You don't have any active ad. Create a new one or reactivate a paused one to start showing across the network.", veprim: 'reklamat' });
     }
     if (!kaKonvertimTeLidhur) {
-      njf.push({ tip: 'konvertim', titull: 'Aktivizo gjurmimin e konvertimeve',
-        teksti: "Gjurmimi i leads-ave s'është aktiv. Aktivizoje — konvertimet rrisin pikët e tua të profilit, që rrisin sa shpesh shfaqet reklama jote.", veprim: 'konvertimi' });
+      njf.push({ tip: 'konvertim', titull: 'Activate conversion tracking',
+        teksti: "Lead tracking isn't active. Turn it on — conversions raise your profile points, which increase how often your ad gets shown.", veprim: 'konvertimi' });
     }
     if (ditet >= 3 && !kaKonvertimTeLidhur) {
-      njf.push({ tip: 'kujtese', titull: 'Kanë kaluar disa ditë',
-        teksti: "Lidhja e konvertimit ende s'është bërë. Është mënyra kryesore për të mbledhur pikë nëse ke pak trafik.", veprim: 'konvertimi' });
+      njf.push({ tip: 'kujtese', titull: 'A few days have passed',
+        teksti: "Conversion tracking still hasn't been set up. It's the main way to earn points if you have low traffic.", veprim: 'konvertimi' });
     }
 
     // Njoftimet manuale nga admin (shtohen ne fillim — jane te rendesishme)
