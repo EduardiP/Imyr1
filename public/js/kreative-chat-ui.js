@@ -28,13 +28,13 @@ var _kcGati = false;
 var _kcPershkrimFinal = null;
 
 function krChatEmbedHTML(){
-  return '<label style="margin-top:12px;">Përshkruaj te AI</label>'+
-    '<div id="krChatInline" style="border:1px solid var(--line);border-radius:8px;background:var(--card2);'+
+  return '<label style="margin-top:12px;">Describe to AI</label>'+
+    '<div id="krChatInline" style="border:1px solid var(--line);border-radius:8px;background:#0e1116;'+
       'display:flex;flex-direction:column;height:230px;overflow:hidden;margin-top:8px;">'+
       '<div id="krChatMesazhet" style="flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;"></div>'+
       '<div style="flex:0 0 auto;padding:8px 10px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:stretch;">'+
-        '<input id="krChatInput" placeholder="Shkruaj përgjigjen…" '+
-          'style="flex:1 1 auto;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:6px;color:var(--txt);padding:7px 10px;font-size:13px;" '+
+        '<input id="krChatInput" placeholder="Type your reply…" '+
+          'style="flex:1 1 auto;min-width:0;background:#12151b;border:1px solid var(--line);border-radius:6px;color:var(--txt);padding:7px 10px;font-size:13px;" '+
           'onkeydown="if(event.key===\'Enter\')krChatDergo()">'+
         '<button type="button" onclick="krChatDergo()" '+
           'style="flex:0 0 auto;width:38px;background:var(--acc);border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:15px;">➤</button>'+
@@ -63,7 +63,7 @@ function krChatShtoBulle(kush, teksti, ephemer){
   var b = document.createElement('div');
   b.style.cssText = 'max-width:88%;padding:7px 11px;border-radius:10px;font-size:13px;line-height:1.4;white-space:pre-wrap;'+
     (kush==='ai'
-      ? 'align-self:flex-start;background:#1c2230;color:#e6edf3;'
+      ? 'align-self:flex-start;background:#1c2230;color:var(--txt);'
       : 'align-self:flex-end;background:var(--acc);color:#fff;');
   b.textContent = teksti;
   if(ephemer) b.setAttribute('data-ephemer', '1');
@@ -93,7 +93,7 @@ async function krChatThirr(tekstiRiJetiRi){
   var input = document.getElementById('krChatInput');
   if(input) input.disabled = true;
   krChatHiqEphemeret();
-  krChatShtoBulle('ai', 'Duke shkruar…', true);
+  krChatShtoBulle('ai', 'Typing…', true);
 
   try{
     const r = await (await fetch('/api/kreative/chat', {
@@ -103,16 +103,16 @@ async function krChatThirr(tekstiRiJetiRi){
 
     krChatHiqEphemeret();
     if(r.error){
-      krChatShtoBulle('ai', 'Gabim: '+r.error);
+      krChatShtoBulle('ai', 'Error: '+r.error);
       if(input) input.disabled = false;
       return;
     }
     if(r.gati){
       _kcGati = true;
       _kcPershkrimFinal = r.pershkrim_anglisht;
-      krChatShtoBulle('ai', '📋 Kjo është kërkesa që do t\'i dërgohet gjeneruesit:\n\n'+r.pershkrim_anglisht);
-      krChatShtoBulle('ai', '✓ Gati! Kliko "✨ Gjenero me AI" poshtë kur të jesh gati.');
-      if(input){ input.disabled = true; input.placeholder = 'Biseda ka përfunduar.'; }
+      krChatShtoBulle('ai', '📋 This is the request that will be sent to the generator:\n\n'+r.pershkrim_anglisht);
+      krChatShtoBulle('ai', '✓ Ready! Click "✨ Generate with AI" below when you are ready.');
+      if(input){ input.disabled = true; input.placeholder = 'The conversation is complete.'; }
       return;
     }
     _kcHistoriku.push({ role:'assistant', content: r.pyetje });
@@ -120,7 +120,7 @@ async function krChatThirr(tekstiRiJetiRi){
     if(input){ input.disabled = false; input.focus(); }
   }catch(e){
     krChatHiqEphemeret();
-    krChatShtoBulle('ai', 'Gabim: '+e.message);
+    krChatShtoBulle('ai', 'Error: '+e.message);
     if(input) input.disabled = false;
   }
 }
@@ -134,12 +134,12 @@ function krChatShtoReferencaImazhi(emri){
   if(!wrap) return; // chat-i s'eshte hapur/render-uar ende (rast i rralle)
   var shenim = document.createElement('div');
   shenim.style.cssText = 'align-self:center;font-size:11px;color:var(--mut);background:#1c2230;padding:3px 10px;border-radius:20px;';
-  shenim.textContent = '📎 U shtua: ' + emri;
+  shenim.textContent = '📎 Added: ' + emri;
   wrap.appendChild(shenim);
   wrap.scrollTop = wrap.scrollHeight;
-  krChatThirr('[Klienti sapo shtoi një material referues, i identifikuar si "'+emri+'". '+
-    'Nëse është e rëndësishme të dish çfarë përfaqëson (p.sh. logo, produkt, sfond, video baze, kod ekzistues), '+
-    'pyete shkurt; përndryshe vazhdo normalisht.]');
+  krChatThirr('[The client just added a reference material, identified as "'+emri+'". '+
+    'If it matters to know what it represents (e.g. logo, product, background, base video, existing code), '+
+    'ask briefly; otherwise continue normally.]');
 }
 
 // Thirret nga krGjenero() ne app.js, ne vend te leximit te nje textarea — kthen
