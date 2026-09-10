@@ -51,6 +51,11 @@ function sistemiPrompt(lloji, pershkrimiBiznesit) {
     '\n\nAsk SHORT clarifying questions, ONE AT A TIME, about anything essential that is missing: ' +
     'what product/service, target audience, key message or offer, must-include text or call-to-action, ' +
     'preferred colors/style/mood, anything visual that matters. ' +
+    '\n\nIf the client seems UNSURE or explicitly says they don\'t know what headline/title text to use, ' +
+    'OR what background/design direction to go with, do NOT just ask again — instead OFFER 5 concrete, ' +
+    'numbered options for that specific thing (5 headline ideas, or 5 background/visual concepts, whichever ' +
+    'is undecided), each on its own line, so the client can simply reply with a number (or tell you which ' +
+    'ones they like) instead of having to invent it themselves from a blank page. ' +
     'Do not ask more than 4 questions total — once you have enough to work with, stop asking. ' +
     'When you have enough detail (usually after 2-4 exchanges), respond with ONLY a raw JSON object, ' +
     'nothing else, no markdown, no backticks, NO explanation before or after it — the ENTIRE response must ' +
