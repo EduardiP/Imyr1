@@ -62,11 +62,11 @@ module.exports = function (app, pool, iLoguar, deps) {
     const url = (req.query.url || '').trim();
     const bazaR2 = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '');
     if (!url || !bazaR2 || !url.startsWith(bazaR2)) {
-      return res.status(400).json({ error: 'URL e pavlefshme ose jashtë R2.' });
+      return res.status(400).json({ error: 'Invalid URL or outside R2.' });
     }
     try {
       const r = await fetch(url);
-      if (!r.ok) return res.status(r.status).json({ error: 'R2 ktheu ' + r.status });
+      if (!r.ok) return res.status(r.status).json({ error: 'R2 returned ' + r.status });
       const buf = Buffer.from(await r.arrayBuffer());
       res.set('Content-Type', r.headers.get('content-type') || 'application/octet-stream');
       res.send(buf);
