@@ -1580,7 +1580,7 @@ app.get('/api/reklamat', iLoguar, async (req, res) => {
     const params = logjikaFiltri ? [req.biznesId, logjikaFiltri] : [req.biznesId];
     const filtriSql = logjikaFiltri ? ' AND COALESCE(logjika_shperndarjes,\'ankand\')=$2' : '';
     const r = await pool.query(
-      'SELECT id, titulli, teksti, imazh_url, video_url, html5_url, pauzuar, logjika_shperndarjes, created_at FROM promovimet WHERE biznes_id=$1 AND aktiv=true' + filtriSql + ' ORDER BY id DESC',
+      'SELECT id, titulli, teksti, imazh_url, video_url, html5_url, link, pauzuar, logjika_shperndarjes, created_at FROM promovimet WHERE biznes_id=$1 AND aktiv=true' + filtriSql + ' ORDER BY id DESC',
       params);
     const st = await pool.query(
       `SELECT reklama_id,
@@ -1593,10 +1593,11 @@ app.get('/api/reklamat', iLoguar, async (req, res) => {
     st.rows.forEach(x => { m[x.reklama_id] = x; });
     const rows = r.rows.map(x => ({
       id: x.id,
-      emri: x.titulli || (x.teksti ? x.teksti.slice(0, 40) : 'Reklamë'),
+      emri: x.titulli || (x.teksti ? x.teksti.slice(0, 40) : 'Ad'),
       imazh_url: x.imazh_url || null,
       video_url: x.video_url || null,
       html5_url: x.html5_url || null,
+      link: x.link || null,
       teksti: x.teksti || null,
       pauzuar: x.pauzuar,
       logjika_shperndarjes: x.logjika_shperndarjes || 'ankand',
@@ -1605,6 +1606,23 @@ app.get('/api/reklamat', iLoguar, async (req, res) => {
       konvertime: (m[x.id] && m[x.id].konvertime) || 0
     }));
     res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- PERDITESO EMRIN + URL-NE E DESTINACIONIT PER NJE REKLAME ---
+app.patch('/api/reklamat/:id', iLoguar, async (req, res) => {
+  const b = req.body || {};
+  const titulli = (b.emri || b.titulli || '').trim();
+  let link = (b.link || '').trim();
+  if (!titulli) return res.status(400).json({ error: 'Name is required.' });
+  if (!link) return res.status(400).json({ error: 'Destination URL is required.' });
+  if (!/^https?:\/\//i.test(link)) link = 'https://' + link;
+  try {
+    const r = await pool.query(
+      'UPDATE promovimet SET titulli=$1, link=$2 WHERE id=$3 AND biznes_id=$4 RETURNING id',
+      [titulli, link, req.params.id, req.biznesId]);
+    if (!r.rows.length) return res.status(404).json({ error: 'Ad not found.' });
+    res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
