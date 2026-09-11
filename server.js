@@ -2967,11 +2967,28 @@ app.get('/api/admin/biznes/:id', iAdmin, async (req, res) => {
     const b = await pool.query(
       `SELECT id, emri, email, website, kategoria_kryesore, nenkategorite, permbledhje, pershkrimi,
               plani, celes, created_at, snippet_active, origjina, kandidat_url, first_seen_at, last_seen_at,
-              tipi, biznesi_auto
+              tipi, biznesi_auto, pershkrimi_auto, track_active
        FROM bizneset WHERE id=$1`, [id]);
     if(!b.rows.length) return res.status(404).json({ error: 'Nuk u gjet.' });
+    const row = b.rows[0];
     const statistika = await analytics.statistikaBiznesi(pool, id);
-    res.json({ biznes: b.rows[0], statistika });
+
+    // 5 PIKAT E PLOTESIMIT — njesoj si /api/progres (klienti), per pamjen admin.
+    const snLidhur = await pool.query('SELECT 1 FROM snippetet WHERE biznes_id=$1 AND snippet_active=true LIMIT 1', [id]);
+    const uLidhur = await pool.query('SELECT 1 FROM konvertimet WHERE biznes_id=$1 AND track_active=true LIMIT 1', [id]);
+    const zLidhur = await pool.query('SELECT 1 FROM zonat WHERE biznes_id=$1 AND track_active=true AND fshire=false LIMIT 1', [id]);
+    const rekManuale = await pool.query(`SELECT 1 FROM kreativitetet WHERE biznes_id=$1 AND auto_krijuar=false LIMIT 1`, [id]);
+    const rekAuto = await pool.query(`SELECT 1 FROM kreativitetet WHERE biznes_id=$1 AND auto_krijuar=true LIMIT 1`, [id]);
+    const konvertimIPlote = !!row.track_active && (uLidhur.rows.length > 0 || zLidhur.rows.length > 0);
+    const checklist = {
+      llogaria:   { plotesuar: !!(row.website && row.tipi), menyra: row.biznesi_auto ? 'automatik' : 'manual' },
+      pershkrimi: { plotesuar: !!(row.permbledhje || row.pershkrimi), menyra: row.pershkrimi_auto ? 'automatik' : 'manual' },
+      lidhja:     { plotesuar: snLidhur.rows.length > 0, menyra: 'manual' },
+      reklama:    { plotesuar: rekManuale.rows.length > 0 || rekAuto.rows.length > 0, menyra: rekAuto.rows.length > 0 ? 'automatik' : 'manual' },
+      konvertimi: { plotesuar: konvertimIPlote, menyra: 'manual' }
+    };
+
+    res.json({ biznes: row, statistika, checklist });
   } catch(e){ res.status(500).json({ error: e.message }); }
 });
 
