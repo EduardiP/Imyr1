@@ -2979,16 +2979,21 @@ app.get('/api/admin/biznes/:id', iAdmin, async (req, res) => {
     const zLidhur = await pool.query('SELECT 1 FROM zonat WHERE biznes_id=$1 AND track_active=true AND fshire=false LIMIT 1', [id]);
     const rekManuale = await pool.query(`SELECT 1 FROM kreativitetet WHERE biznes_id=$1 AND auto_krijuar=false LIMIT 1`, [id]);
     const rekAuto = await pool.query(`SELECT 1 FROM kreativitetet WHERE biznes_id=$1 AND auto_krijuar=true LIMIT 1`, [id]);
+    // Reklamat reale (emer, lloj), per t'i shfaqur ne detaje — jo vetem nje pointer te tab-i tjeter.
+    const reklamatListe = await pool.query(
+      `SELECT emri, lloji, auto_krijuar FROM kreativitetet WHERE biznes_id=$1 ORDER BY id DESC LIMIT 10`, [id]);
     const konvertimIPlote = !!row.track_active && (uLidhur.rows.length > 0 || zLidhur.rows.length > 0);
     const checklist = {
       llogaria:   { plotesuar: !!(row.website && row.tipi), menyra: row.biznesi_auto ? 'automatik' : 'manual' },
       pershkrimi: { plotesuar: !!(row.permbledhje || row.pershkrimi), menyra: row.pershkrimi_auto ? 'automatik' : 'manual' },
       lidhja:     { plotesuar: snLidhur.rows.length > 0, menyra: 'manual' },
-      reklama:    { plotesuar: rekManuale.rows.length > 0 || rekAuto.rows.length > 0, menyra: rekAuto.rows.length > 0 ? 'automatik' : 'manual' },
+      // RENDI I RENDESISHEM: manual kontrollohet PARA auto (njesoj si /api/progres per klientin) —
+      // nese ekzistojne te dyja llojet, konsiderohet "manual" (perputhje me pamjen e klientit).
+      reklama:    { plotesuar: rekManuale.rows.length > 0 || rekAuto.rows.length > 0, menyra: rekManuale.rows.length > 0 ? 'manual' : 'automatik' },
       konvertimi: { plotesuar: konvertimIPlote, menyra: 'manual' }
     };
 
-    res.json({ biznes: row, statistika, checklist });
+    res.json({ biznes: row, statistika, checklist, reklamat: reklamatListe.rows });
   } catch(e){ res.status(500).json({ error: e.message }); }
 });
 
