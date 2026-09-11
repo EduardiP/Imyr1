@@ -123,12 +123,12 @@ module.exports = function (pool) {
       FROM bizneset b
       LEFT JOIN (
         SELECT biznes_id, COUNT(*)::int AS n FROM ngjarjet
-        WHERE lloji='view' AND burimi='barazi' AND biznes_id = ANY($1::int[])
+        WHERE lloji='shikim' AND burimi='barazi' AND biznes_id = ANY($1::int[])
         GROUP BY biznes_id
       ) dhene ON dhene.biznes_id = b.id
       LEFT JOIN (
         SELECT reklamues_id, COUNT(*)::int AS n FROM ngjarjet
-        WHERE lloji='view' AND burimi='barazi' AND reklamues_id = ANY($1::int[])
+        WHERE lloji='shikim' AND burimi='barazi' AND reklamues_id = ANY($1::int[])
         GROUP BY reklamues_id
       ) marra ON marra.reklamues_id = b.id
       WHERE b.id = ANY($1::int[])`, [kandidatIds]);
