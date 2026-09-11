@@ -2756,6 +2756,7 @@ app.get('/api/admin/balancat', iAdmin, async (req, res) => {
     res.json(r.rows.map(x => ({
       id: x.id, emri: x.emri,
       dhene: x.dhene_shfaqje, marra: x.marra_shfaqje,
+      dhene_ngarkime: x.dhene_shfaqje_ngarkime, marra_ngarkime: x.marra_shfaqje_ngarkime,
       neto: x.marra_shfaqje - x.dhene_shfaqje
     })));
   } catch(e){ res.status(500).json({ error: e.message }); }
