@@ -124,24 +124,30 @@
     <div class="center" style="max-width:640px;margin:0 auto 40px;">
       <p class="eyebrow">Step 2B — if it falls to Balance</p>
       <h2>How the Balance model decides</h2>
-      <p class="mut">Unlike the Auction (weighted lottery), Balance doesn't use randomness — it's a deterministic decision, based on deficit.</p>
+      <p class="mut">Like the Auction, Balance is a weighted lottery — not a fixed ranking. The difference is what drives the weight: fairness (what you've given vs received), not raw performance.</p>
     </div>
     <div class="grid g3">
       <div class="tile">
         <div class="n">1</div>
-        <h3>Calculate the deficit</h3>
-        <p class="mut">For each candidate: <code>impressions given − impressions received</code> (from the Balance pool only). Whoever has given more than they've received has a positive deficit.</p>
+        <h3>Competitors are excluded first</h3>
+        <p class="mut">A candidate is removed from the running entirely if their AI matching score is <b>0 AND</b> they're the same business type as you (B2B↔B2B or B2C↔B2C). If the AI score is 0 but the types differ, they stay in — that's just a neutral match, not a competitor.</p>
       </div>
       <div class="tile">
         <div class="n">2</div>
-        <h3>The largest deficit wins</h3>
-        <p class="mut">If only <b>1</b> candidate has the maximum deficit, they win immediately — no further calculation. This is the most common case.</p>
+        <h3>Your deficit is calculated</h3>
+        <p class="mut">For each remaining candidate: <code>impressions you've given them − impressions you've received from them</code> (Balance pool only). A negative deficit means you've received more than you've given; positive means the opposite.</p>
       </div>
       <div class="tile">
         <div class="n">3</div>
-        <h3>Tie → AI score → random</h3>
-        <p class="mut">If 2+ candidates tie on deficit, the one with the higher AI (matching) score wins. If that also ties (rare), the choice is made randomly.</p>
+        <h3>The deficit becomes a bonus or a penalty</h3>
+        <p class="mut">A negative deficit (you've received more) adds a growing bonus to their AI score — the more negative, the bigger the bonus, uncapped. A positive deficit (you've given more) subtracts a growing penalty instead, floored at zero.</p>
       </div>
+    </div>
+    <div style="text-align:center;margin-top:20px;">
+      <p class="mut" style="font-family:monospace;font-size:13px;background:rgba(255,255,255,.05);display:inline-block;padding:10px 20px;border-radius:10px;">
+        Final score = max(0, AI score + deficit-based bonus/penalty)
+      </p>
+      <p class="mut" style="max-width:600px;margin:14px auto 0;font-size:14px;">Win probability = your final score ÷ the sum of final scores of <b>all</b> remaining candidates — a weighted lottery, same principle as the Auction. If only 1 candidate survives the competitor-exclusion step, they win directly with no further calculation.</p>
     </div>
   </div>
 </section>
