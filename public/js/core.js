@@ -58,40 +58,40 @@ function stateToUrl(s){
   if(s.v==='wizard') return '/start' + (s.step ? '/'+s.step : '');
   if(s.v==='home') return '/welcome';
   if(s.v==='analitika-full') return '/analytics';
-  if(s.v==='ekipi') return '/ekipi';
+  if(s.v==='ekipi') return '/team';
   if(s.v==='zgjedhja') return '/start/choose';
   if(s.v!=='profile') return '/';
 
   const n = s.nav || 'dashboard';
   if(n==='dashboard') return '/app/dashboard';
   if(n==='snippetet'){
-    if(s.sub==='detail' && s.id) return '/app/hapesira/'+s.id;
-    return '/app/hapesira';
+    if(s.sub==='detail' && s.id) return '/app/space/'+s.id;
+    return '/app/space';
   }
-  if(n==='snippetStats') return '/app/hapesira/statistikat';
+  if(n==='snippetStats') return '/app/space/stats';
   if(n==='kreative'){
-    if(s.tab==='krijo') return '/app/creative/krijo'+(s.lloji?'/'+s.lloji:'');
-    if(s.tab==='lista') return '/app/creative/krijimet';
+    if(s.tab==='krijo') return '/app/creative/create'+(s.lloji?'/'+s.lloji:'');
+    if(s.tab==='lista') return '/app/creative/list';
     return '/app/creative';
   }
   if(n==='reklamat'){
-    if(s.sub==='create') return '/app/reklamat/krijo'+(s.format?'/'+s.format:'');
-    if(s.sub==='detail' && s.id) return '/app/reklamat/'+s.id;
-    return '/app/reklamat';
+    if(s.sub==='create') return '/app/ads/create'+(s.format?'/'+s.format:'');
+    if(s.sub==='detail' && s.id) return '/app/ads/'+s.id;
+    return '/app/ads';
   }
-  if(n==='rekPerformanca') return '/app/reklamat/performanca';
-  if(n==='konvertimet' || n==='konvertimi') return '/app/konvertimet';
+  if(n==='rekPerformanca') return '/app/ads/performance';
+  if(n==='konvertimet' || n==='konvertimi') return '/app/conversions';
   if(n==='analytics') return '/app/analytics';
-  if(n==='insights') return '/app/vshtrime';
-  if(n==='biznesi') return '/app/biznesi';
-  if(n==='pershkrimi') return '/app/pershkrimi';
-  if(n==='lidhjaSnippet') return '/app/lidhja';
-  if(n==='profili') return '/app/profili'+(s.edit?'/edito':'');
-  if(n==='ekipi') return '/ekipi';
-  if(n==='plani') return '/app/plani';
-  if(n==='suport') return '/app/suport';
-  if(n==='njoftimet') return '/app/njoftimet';
-  if(n==='cilesimet') return '/app/cilesimet';
+  if(n==='insights') return '/app/insights';
+  if(n==='biznesi') return '/app/business';
+  if(n==='pershkrimi') return '/app/description';
+  if(n==='lidhjaSnippet') return '/app/connection';
+  if(n==='profili') return '/app/profile'+(s.edit?'/edit':'');
+  if(n==='ekipi') return '/team';
+  if(n==='plani') return '/app/plan';
+  if(n==='suport') return '/app/support';
+  if(n==='njoftimet') return '/app/notifications';
+  if(n==='cilesimet') return '/app/settings';
   return '/app/'+n;
 }
 
@@ -101,7 +101,7 @@ function urlToState(pathname){
   const p = pathname.replace(/\/+$/,'') || '/';
   if(p==='/'||p==='') return null;
   if(p==='/analytics') return {v:'analitika-full'};
-  if(p==='/ekipi') return {v:'ekipi'};
+  if(p==='/team'||p==='/ekipi') return {v:'ekipi'};
   if(p==='/welcome') return {v:'home'};
   if(p==='/start/choose') return {v:'zgjedhja'};
   if(p.indexOf('/start')===0){
@@ -113,33 +113,33 @@ function urlToState(pathname){
   const parts = p.slice(5).split('/').filter(Boolean);
   const n = parts[0];
   if(n==='dashboard') return {v:'profile', nav:'dashboard'};
-  if(n==='hapesira'){
-    if(parts[1]==='statistikat') return {v:'profile', nav:'snippetStats'};
+  if(n==='space'||n==='hapesira'){
+    if(parts[1]==='stats'||parts[1]==='statistikat') return {v:'profile', nav:'snippetStats'};
     if(parts[1]) return {v:'profile', nav:'snippetet', sub:'detail', id:parseInt(parts[1],10)};
     return {v:'profile', nav:'snippetet'};
   }
   if(n==='creative'){
-    if(parts[1]==='krijo') return {v:'profile', nav:'kreative', tab:'krijo', lloji:parts[2]||undefined};
-    if(parts[1]==='krijimet') return {v:'profile', nav:'kreative', tab:'lista'};
+    if(parts[1]==='create'||parts[1]==='krijo') return {v:'profile', nav:'kreative', tab:'krijo', lloji:parts[2]||undefined};
+    if(parts[1]==='list'||parts[1]==='krijimet') return {v:'profile', nav:'kreative', tab:'lista'};
     return {v:'profile', nav:'kreative'};
   }
-  if(n==='reklamat'){
-    if(parts[1]==='krijo') return {v:'profile', nav:'reklamat', sub:'create', format:parts[2]||undefined};
-    if(parts[1]==='performanca') return {v:'profile', nav:'rekPerformanca'};
+  if(n==='ads'||n==='reklamat'){
+    if(parts[1]==='create'||parts[1]==='krijo') return {v:'profile', nav:'reklamat', sub:'create', format:parts[2]||undefined};
+    if(parts[1]==='performance'||parts[1]==='performanca') return {v:'profile', nav:'rekPerformanca'};
     if(parts[1]) return {v:'profile', nav:'reklamat', sub:'detail', id:parseInt(parts[1],10)};
     return {v:'profile', nav:'reklamat'};
   }
-  if(n==='konvertimet') return {v:'profile', nav:'konvertimet'};
+  if(n==='conversions'||n==='konvertimet') return {v:'profile', nav:'konvertimet'};
   if(n==='analytics') return {v:'profile', nav:'analytics'};
-  if(n==='vshtrime') return {v:'profile', nav:'insights'};
-  if(n==='biznesi') return {v:'profile', nav:'biznesi'};
-  if(n==='pershkrimi') return {v:'profile', nav:'pershkrimi'};
-  if(n==='lidhja') return {v:'profile', nav:'lidhjaSnippet'};
-  if(n==='profili') return {v:'profile', nav:'profili', edit: parts[1]==='edito'};
-  if(n==='plani') return {v:'profile', nav:'plani'};
-  if(n==='suport') return {v:'profile', nav:'suport'};
-  if(n==='njoftimet') return {v:'profile', nav:'njoftimet'};
-  if(n==='cilesimet') return {v:'profile', nav:'cilesimet'};
+  if(n==='insights'||n==='vshtrime') return {v:'profile', nav:'insights'};
+  if(n==='business'||n==='biznesi') return {v:'profile', nav:'biznesi'};
+  if(n==='description'||n==='pershkrimi') return {v:'profile', nav:'pershkrimi'};
+  if(n==='connection'||n==='lidhja') return {v:'profile', nav:'lidhjaSnippet'};
+  if(n==='profile'||n==='profili') return {v:'profile', nav:'profili', edit: (parts[1]==='edit'||parts[1]==='edito')};
+  if(n==='plan'||n==='plani') return {v:'profile', nav:'plani'};
+  if(n==='support'||n==='suport') return {v:'profile', nav:'suport'};
+  if(n==='notifications'||n==='njoftimet') return {v:'profile', nav:'njoftimet'};
+  if(n==='settings'||n==='cilesimet') return {v:'profile', nav:'cilesimet'};
   return {v:'profile', nav:n};
 }
 
