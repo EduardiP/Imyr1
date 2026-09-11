@@ -29,6 +29,12 @@ ANKANDI (si renditet kush shfaqet ku):
 - Sa me te larta piket e profilit (nga shfaqjet qe jep + konvertimet qe sjell), aq me lart dhe me shpesh shfaqet reklama e atij biznesi.
 - Pra: jep me shume ekspozime + sjell me shume konvertime → me shume pike → fiton ankandin me shpesh → reklama jote shfaqet me shume.
 
+BALANCE (si vendoset kush fiton BRENDA pishines Balance — ndryshe nga Ankandi):
+- Konkurrentet perjashtohen fillimisht: nje kandidat hiqet plotesisht nese ka AI=0 (pershtatje zero me audiencen) DHE eshte i njejti tip biznesi (b2b me b2b, ose b2c me b2c). Nese AI=0 por tipet ndryshojne, mbetet ne gare (thjesht perputhje neutrale, jo konkurrent).
+- Per secilin qe mbetet, llogaritet "deficiti": shfaqje qe i ke dhene MINUS shfaqje qe ke marre prej tij (brenda Balance).
+- Deficit negativ (ke marre me shume se ke dhene) → shton bonus ne AI-ne e tij (sa me negativ, aq me i madh bonusi, pa kufi). Deficit pozitiv (ke dhene me shume) → zbret penalitet (floor ne zero).
+- Pika perfundimtare = max(0, AI + bonusi/penaliteti i deficitit). Fituesi zgjidhet me short te PESHUAR (jo deterministik — kush ka pike me te larta ka shanse me te larta, jo garanci absolute). Nese mbetet vetem 1 kandidat pas perjashtimit te konkurrenteve, fiton direkt.
+
 TRE GJERAT QE VENDOS BIZNESI:
 1. Hapesira e reklames — kodi qe shfaq reklamat e te tjereve (dhe keshtu ti shfaqesh tek ata).
 2. Konvertimet — mat kur nje vizitor kryen nje veprim me vlere (blerje/regjistrim). Rrisin piket.
