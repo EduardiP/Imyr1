@@ -20,8 +20,9 @@ KOMBINIMI (ne fillim, automatik):
 - Rezultati: te faqja e nje biznesi shfaqen VETEM biznese plotesuese, kurre konkurrenca.
 
 PIKET E PROFILIT:
-- Shfaqjet (ekspozimet) qe jep biznesi DHE konvertimet qe sjell → rrisin piket e profilit te tij.
-- Sa me shume shfaqje jep dhe sa me shume konvertime sjell, aq me te larta piket e tij.
+- Shfaqjet REALE (jo thjesht ngarkime — nje shfaqje reale kerkon te pakten 50% te reklames te dukshme per te pakten 1 sekonde) qe jep biznesi DHE konvertimet qe sjell → rrisin piket e profilit te tij.
+- Keto piket llogariten VETEM nga 30 DITET E FUNDIT (dritare rrotulluese) — jo gjithe-kohesh. Aktiviteti me i vjeter se 30 dite del automatikisht nga llogaritja, pa fshirje te te dhenave nga databaza.
+- Sa me shume shfaqje jep dhe sa me shume konvertime sjell BRENDA 30 DITEVE TE FUNDIT, aq me te larta piket e tij aktuale.
 
 ANKANDI (si renditet kush shfaqet ku):
 - Algoritmi i shfaqjes eshte nje ANKAND. Kur duhet vendosur cila reklame shfaqet ne nje hapesire, bizneset "konkurrojne" me piket e tyre te profilit.
