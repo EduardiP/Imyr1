@@ -848,7 +848,7 @@ h+='<div style="position:relative;height:'+LARTESIA+'px;border:1px solid var(--l
 lista.forEach(function(b,i){
 const ngjyra=BAL_NGJYRA[i%BAL_NGJYRA.length];
 const neto=b.neto;
-h+='<div title="'+esc(b.emri)+' ('+(neto>0?'+':'')+neto+')" style="display:flex;flex-direction:column;width:'+MADH+'px;flex:0 0 auto;">';
+h+='<div title="'+esc(b.emri)+' ('+(neto>0?'+':'')+neto+' real views · loads: '+b.dhene_ngarkime+' given / '+b.marra_ngarkime+' received)" style="display:flex;flex-direction:column;width:'+MADH+'px;flex:0 0 auto;">';
 for(let r=0; r<RRESHTA; r++){
 const niveli = BAL_QELIZA_PER_ANE - r;
 if(niveli===0){
@@ -879,7 +879,7 @@ el.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:10px;">'+lista.map(fun
 const ngjyra=BAL_NGJYRA[i%BAL_NGJYRA.length];
 return '<div style="display:flex;align-items:center;gap:6px;font-size:13px;">'+
 '<span style="width:12px;height:12px;border-radius:3px;background:'+ngjyra+';display:inline-block;flex:0 0 auto;"></span>'+
-esc(b.emri)+' <span class="mut">('+(b.neto>0?'+':'')+b.neto+')</span></div>';
+esc(b.emri)+' <span class="mut">('+(b.neto>0?'+':'')+b.neto+' views · loads '+b.dhene_ngarkime+'/'+b.marra_ngarkime+')</span></div>';
 }).join('')+'</div>';
 }
 
