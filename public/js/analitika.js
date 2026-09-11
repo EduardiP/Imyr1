@@ -541,6 +541,7 @@ async function anaDetRezBalanceKategori(el){
       '<div style="width:100%;height:2px;background:rgba(230,237,243,.4);margin:2px 0;"></div>'+
       '<div style="height:'+LARTESIA+'px;display:flex;flex-direction:column;justify-content:flex-start;width:100%;align-items:center;">'+brendaPoshte+'</div>'+
       '<div class="small" style="font-size:10px;margin-top:6px;text-align:center;color:'+(eshteVetja?ngjyra:'var(--mut)')+';font-weight:'+(eshteVetja?'700':'400')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:64px;">'+esc(k.kategoria)+(eshteVetja?' (ti)':'')+'</div>'+
+      '<div class="small" style="font-size:9px;margin-top:2px;color:var(--mut);text-align:center;">views '+k.dhene+'/'+k.marre+' · loads '+k.dhene_ngarkime+'/'+k.marre_ngarkime+'</div>'+
     '</div>';
   }).join('');
 }
@@ -828,8 +829,10 @@ async function ngarkoAnaAutomatik(){
   if(_anaAutomatikChart){ _anaAutomatikChart.destroy(); _anaAutomatikChart=null; }
   const ctx=canvas.getContext('2d');
   _anaAutomatikChart=new Chart(ctx,{type:'line',data:{labels,datasets:[
-    {label:'Auction', data:rows.map(r=>r.ankand), borderColor:'#f0883e', backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:'#f0883e'},
-    {label:'Balance', data:rows.map(r=>r.balance), borderColor:'#4a9eff', backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:'#4a9eff'}
+    {label:'Auction (loads)', data:rows.map(r=>r.ankand), borderColor:'#f0883e', backgroundColor:'transparent', tension:0, borderWidth:1.5, pointRadius:2, pointBackgroundColor:'#f0883e'},
+    {label:'Auction (real views)', data:rows.map(r=>r.ankand_shikime), borderColor:'#f0883e', backgroundColor:'transparent', tension:0, borderWidth:2, borderDash:[5,3], pointRadius:2, pointBackgroundColor:'#f0883e'},
+    {label:'Balance (loads)', data:rows.map(r=>r.balance), borderColor:'#4a9eff', backgroundColor:'transparent', tension:0, borderWidth:1.5, pointRadius:2, pointBackgroundColor:'#4a9eff'},
+    {label:'Balance (real views)', data:rows.map(r=>r.balance_shikime), borderColor:'#4a9eff', backgroundColor:'transparent', tension:0, borderWidth:2, borderDash:[5,3], pointRadius:2, pointBackgroundColor:'#4a9eff'}
   ]},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
       scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}}, y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
