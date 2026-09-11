@@ -38,7 +38,50 @@
       </div>
       <div class="tile" style="text-align:left;">
         <h3>Automatic Mode</h3>
-        <p class="mut">Let the platform decide for itself — based on which ratio (Auction/Balance) has historically brought the most conversions specifically for you, adjusting the ratio over time.</p>
+        <p class="mut">The platform decides for itself, per impression, which pool to use — based on a fairness mechanism that tracks a running balance between the two pools (details below), not a fixed ratio.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec dark">
+  <div class="container">
+    <div class="center" style="max-width:680px;margin:0 auto 30px;">
+      <p class="eyebrow">Automatic Mode — the exact mechanism</p>
+      <h2>How the platform decides, step by step</h2>
+    </div>
+    <div class="grid g3">
+      <div class="tile">
+        <div class="n">1</div>
+        <h3>A running global balance</h3>
+        <p class="mut">The platform tracks a single running number: how many impressions the Auction pool "owes" the Balance pool, or vice versa. This is separate from your own personal Balance deficit — it's a network-wide fairness counter between the two pools themselves.</p>
+      </div>
+      <div class="tile">
+        <div class="n">2</div>
+        <h3>The ±10 limit</h3>
+        <p class="mut">If this running balance reaches <b>10 in either direction</b>, the next impression is routed <b>directly</b> to whichever pool is owed — no further calculation, no randomness. This guarantees neither pool is ever starved for more than a handful of impressions in a row.</p>
+      </div>
+      <div class="tile">
+        <div class="n">3</div>
+        <h3>Paying the debt down, one step at a time</h3>
+        <p class="mut">Each time this direct routing happens, the running balance moves <b>1 step</b> back toward zero (e.g. 10 → 9) — not reset to zero all at once. After enough consecutive direct-routings, the balance falls back under the limit and normal weighted competition resumes.</p>
+      </div>
+    </div>
+    <div class="grid g3" style="margin-top:20px;">
+      <div class="tile">
+        <div class="n">4</div>
+        <h3>Below the limit: top 5 from each pool</h3>
+        <p class="mut">When the running balance is under the limit, the system pulls the <b>top 5 candidates</b> by weight from the Auction pool, and the top 5 from the Balance pool, separately.</p>
+      </div>
+      <div class="tile">
+        <div class="n">5</div>
+        <h3>A sharpening formula</h3>
+        <p class="mut">Each candidate's weight is passed through <code>(3/40000)x² − (3/200)x + 7/4</code> — a curve that widens the gap between strong and weak candidates (e.g. weight 100 → 1 point, weight 900 → 49 points) without ever reducing anyone to exactly zero.</p>
+      </div>
+      <div class="tile">
+        <div class="n">6</div>
+        <h3>Pool vs pool, not business vs business</h3>
+        <p class="mut">The 5 transformed scores from each pool are summed into one total per pool. The final choice — Auction or Balance — is a weighted lottery between these <b>two pool totals</b>, not between individual businesses directly.</p>
       </div>
     </div>
   </div>
