@@ -1,156 +1,250 @@
-// suporti.js — Asistent suporti i pergjithshem (FAQ) me nje model te lire.
-// Ndryshe nga asistenti.js (Claude Opus per kod), ky eshte per pyetje te pergjithshme.
-// Shfaqet para dhe pas login. Server.js: require('./suporti')(app, pool);
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How It Works — PhronexusAI</title>
+<meta name="description" content="How PhronexusAI works: distribution logic, exact auction formulas, the balance model, and why competitors never show.">
+<link rel="stylesheet" href="/css/site.css">
+<link rel="stylesheet" href="/css/style.css"></head><body>
 
-const MODEL = process.env.OPENAI_MODEL_SUPORT || 'gpt-4o-mini';
-const API_URL = 'https://api.openai.com/v1/chat/completions';
+<div class="nav"><div class="container row"><a class="brand" href="/">PhronexusAI</a><div class="links"><a href="/">Home</a><a class="btn cta" href="#" onclick="event.preventDefault();hapModal('reg');">Try Free</a></div></div></div>
 
-// Njohuria baze per PhronexusAI (FAQ). Kete e pasuron me kohe.
-const NJOHURIA = `
-PhronexusAI eshte nje rrjet cross-promocioni (jep-e-merr) ku bizneset PLOTESUESE promovojne njeri-tjetrin.
+<section class="sec dark">
+  <div class="container center">
+    <p class="eyebrow">How It Works</p>
+    <h1 style="font-size:38px;margin:0 0 14px;letter-spacing:-.02em;">The full mechanism, nothing hidden</h1>
+    <p class="lead mut" style="max-width:680px;margin:0 auto 28px;">PhronexusAI is a <b>cross-promotion network</b> — SaaS businesses within the network promote each other reciprocally, instead of paid ads. It exists for one purpose: to give your SaaS business real exposure to a warm, complementary audience — with no ad budget, and never exposing you to your own competitors. This page describes the exact mechanism, formulas, and logic — not general marketing talk.</p>
+    <a class="sbtn cta lg" href="#" onclick="event.preventDefault();hapModal('reg');">Try Free →</a>
+  </div>
+</section>
 
-PARIMI JEP-E-MERR (per hapesiren e reklames):
-- Per te shfaqur reklamat e te tjereve, biznesi vendos nje kod te faqja e vet.
-- DUKE lejuar qe te shfaqen reklamat e te tjereve te faqja e tij, ai fiton te drejten qe edhe reklama e TIJ te shfaqet te faqet e te tjereve.
-- Pra: lejon te tjeret te shfaqen tek ti → ti shfaqesh tek ata. Eshte i ndersjelle.
+<section class="sec light">
+  <div class="container center" style="max-width:760px;">
+    <div style="background:#eef4ff;border:1px solid #c7d9fb;border-radius:16px;padding:28px 32px;text-align:left;">
+      <h2 style="margin:0 0 10px;font-size:22px;">The core guarantee: never your competitors</h2>
+      <p class="mut" style="margin:0;">During signup, your business's category and subcategory are stored. Every time the system chooses who shows on your page, businesses in <b>your category</b> are automatically excluded — before any other calculation even begins. Plus, you have extra control: you can exclude <b>any</b> other category you're not interested in.</p>
+    </div>
+  </div>
+</section>
 
-KOMBINIMI (ne fillim, automatik):
-- Kur nje biznes regjistrohet, PhronexusAI ben automatikisht nje kombinim te tij me CDO biznes tjeter ne platforme.
-- Ky kombinim nxjerr sa PLOTESUES eshte secili biznes per tjetrin (jo konkurrent).
-- Rezultati: te faqja e nje biznesi shfaqen VETEM biznese plotesuese, kurre konkurrenca.
+<section class="sec dark">
+  <div class="container">
+    <div class="center" style="max-width:640px;margin:0 auto 40px;">
+      <p class="eyebrow">Step 1 — before anything else</p>
+      <h2>Which pool is used: Auction or Balance?</h2>
+      <p class="mut">This is the <b>first</b> decision, made <b>before</b> any other calculation. Every time someone visits your page, the system decides which of the 2 pools this specific impression falls into.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div class="tile" style="text-align:left;">
+        <h3>Manual Mode</h3>
+        <p class="mut">You set the ratio yourself (e.g. 70% Auction / 30% Balance) from your dashboard. The system follows that exact ratio, generation after generation.</p>
+      </div>
+      <div class="tile" style="text-align:left;">
+        <h3>Automatic Mode</h3>
+        <p class="mut">The platform decides for itself, per impression, which pool to use — based on a fairness mechanism that tracks a running balance between the two pools (details below), not a fixed ratio.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-PIKET E PROFILIT:
-- Shfaqjet REALE (jo thjesht ngarkime — nje shfaqje reale kerkon te pakten 50% te reklames te dukshme per te pakten 1 sekonde) qe jep biznesi DHE konvertimet qe sjell → rrisin piket e profilit te tij.
-- Keto piket llogariten VETEM nga 30 DITET E FUNDIT (dritare rrotulluese) — jo gjithe-kohesh. Aktiviteti me i vjeter se 30 dite del automatikisht nga llogaritja, pa fshirje te te dhenave nga databaza.
-- Sa me shume shfaqje jep dhe sa me shume konvertime sjell BRENDA 30 DITEVE TE FUNDIT, aq me te larta piket e tij aktuale.
+<section class="sec dark">
+  <div class="container">
+    <div class="center" style="max-width:680px;margin:0 auto 30px;">
+      <p class="eyebrow">Automatic Mode — the exact mechanism</p>
+      <h2>How the platform decides, step by step</h2>
+    </div>
+    <div class="grid g3">
+      <div class="tile">
+        <div class="n">1</div>
+        <h3>A running global balance</h3>
+        <p class="mut">The platform tracks a single running number: how many impressions the Auction pool "owes" the Balance pool, or vice versa. This is separate from your own personal Balance deficit — it's a network-wide fairness counter between the two pools themselves.</p>
+      </div>
+      <div class="tile">
+        <div class="n">2</div>
+        <h3>The ±10 limit</h3>
+        <p class="mut">If this running balance reaches <b>10 in either direction</b>, the next impression is routed <b>directly</b> to whichever pool is owed — no further calculation, no randomness. This guarantees neither pool is ever starved for more than a handful of impressions in a row.</p>
+      </div>
+      <div class="tile">
+        <div class="n">3</div>
+        <h3>Paying the debt down, one step at a time</h3>
+        <p class="mut">Each time this direct routing happens, the running balance moves <b>1 step</b> back toward zero (e.g. 10 → 9) — not reset to zero all at once. After enough consecutive direct-routings, the balance falls back under the limit and normal weighted competition resumes.</p>
+      </div>
+    </div>
+    <div class="grid g3" style="margin-top:20px;">
+      <div class="tile">
+        <div class="n">4</div>
+        <h3>Below the limit: top 5 from each pool</h3>
+        <p class="mut">When the running balance is under the limit, the system pulls the <b>top 5 candidates</b> by weight from the Auction pool, and the top 5 from the Balance pool, separately.</p>
+      </div>
+      <div class="tile">
+        <div class="n">5</div>
+        <h3>A sharpening formula</h3>
+        <p class="mut">Each candidate's weight is passed through <code>(3/40000)x² − (3/200)x + 7/4</code> — a curve that widens the gap between strong and weak candidates (e.g. weight 100 → 1 point, weight 900 → 49 points) without ever reducing anyone to exactly zero.</p>
+      </div>
+      <div class="tile">
+        <div class="n">6</div>
+        <h3>Pool vs pool, not business vs business</h3>
+        <p class="mut">The 5 transformed scores from each pool are summed into one total per pool. The final choice — Auction or Balance — is a weighted lottery between these <b>two pool totals</b>, not between individual businesses directly.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-ANKANDI (si renditet kush shfaqet ku):
-- Algoritmi i shfaqjes eshte nje ANKAND. Kur duhet vendosur cila reklame shfaqet ne nje hapesire, bizneset "konkurrojne" me piket e tyre te profilit.
-- Sa me te larta piket e profilit (nga shfaqjet qe jep + konvertimet qe sjell), aq me lart dhe me shpesh shfaqet reklama e atij biznesi.
-- Pra: jep me shume ekspozime + sjell me shume konvertime → me shume pike → fiton ankandin me shpesh → reklama jote shfaqet me shume.
+<section class="sec light" id="auction-details">
+  <div class="container">
+    <div class="center" style="max-width:640px;margin:0 auto 40px;">
+      <p class="eyebrow">Step 2A — if it falls to the Auction</p>
+      <h2>How the auction weight is calculated</h2>
+    </div>
+    <div class="grid g3">
+      <div class="tile">
+        <div class="n">1</div>
+        <h3>AI Score (matching)</h3>
+        <p class="mut">When you sign up, AI compares your business's description/category with every other business of the <b>same type</b> (B2B↔B2B, B2C↔B2C; B2B2C connects with everyone). For every pair, a numeric score is stored — how complementary the audiences are.</p>
+      </div>
+      <div class="tile">
+        <div class="n">2</div>
+        <h3>Profile Points</h3>
+        <p class="mut">Exact formula: <code>real views given ÷ RATE + conversions</code>, calculated from the <b>last 30 days only</b> (a rolling window — older activity naturally ages out). A "real view" requires at least 50% of the ad visible for 1+ second, not just a load. RATE varies by type — <b>175</b> for B2B, <b>320</b> for B2C, <b>248</b> for B2B2C. Every verified conversion adds 1 point directly.</p>
+      </div>
+      <div class="tile">
+        <div class="n">3</div>
+        <h3>New-business boost</h3>
+        <p class="mut">If you're among the <b>top 3 combinations</b> by AI score for an advertiser, you get an initial "boost" — only when AI points are between <b>20–320</b>. The boost is <b>subtracted</b> automatically from your profile points — the more active you become, the faster it fades on its own.</p>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:20px;">
+      <p class="mut" style="font-family:monospace;font-size:13px;background:#f1f5f9;display:inline-block;padding:10px 20px;border-radius:10px;">
+        Total weight = AI Score + Profile Points + Boost (if applicable)
+      </p>
+      <p class="mut" style="max-width:600px;margin:14px auto 0;font-size:14px;">Win probability = your weight ÷ the sum of weights of <b>all</b> qualifying candidates (weighted lottery, not a fixed ranking).</p>
+    </div>
+  </div>
+</section>
 
-BALANCE (si vendoset kush fiton BRENDA pishines Balance — ndryshe nga Ankandi):
-- Konkurrentet perjashtohen fillimisht: nje kandidat hiqet plotesisht nese ka AI=0 (pershtatje zero me audiencen) DHE eshte i njejti tip biznesi (b2b me b2b, ose b2c me b2c). Nese AI=0 por tipet ndryshojne, mbetet ne gare (thjesht perputhje neutrale, jo konkurrent).
-- Per secilin qe mbetet, llogaritet "deficiti": shfaqje qe i ke dhene MINUS shfaqje qe ke marre prej tij (brenda Balance).
-- Deficit negativ (ke marre me shume se ke dhene) → shton bonus ne AI-ne e tij (sa me negativ, aq me i madh bonusi, pa kufi). Deficit pozitiv (ke dhene me shume) → zbret penalitet (floor ne zero).
-- Pika perfundimtare = max(0, AI + bonusi/penaliteti i deficitit). Fituesi zgjidhet me short te PESHUAR (jo deterministik — kush ka pike me te larta ka shanse me te larta, jo garanci absolute). Nese mbetet vetem 1 kandidat pas perjashtimit te konkurrenteve, fiton direkt.
+<section class="sec dark" id="balance-details">
+  <div class="container">
+    <div class="center" style="max-width:640px;margin:0 auto 40px;">
+      <p class="eyebrow">Step 2B — if it falls to Balance</p>
+      <h2>How the Balance model decides</h2>
+      <p class="mut">Like the Auction, Balance is a weighted lottery — not a fixed ranking. The difference is what drives the weight: fairness (what you've given vs received), not raw performance.</p>
+    </div>
+    <div class="grid g3">
+      <div class="tile">
+        <div class="n">1</div>
+        <h3>Competitors are excluded first</h3>
+        <p class="mut">A candidate is removed from the running entirely if their AI matching score is <b>0 AND</b> they're the same business type as you (B2B↔B2B or B2C↔B2C). If the AI score is 0 but the types differ, they stay in — that's just a neutral match, not a competitor.</p>
+      </div>
+      <div class="tile">
+        <div class="n">2</div>
+        <h3>Your deficit is calculated</h3>
+        <p class="mut">For each remaining candidate: <code>real views you've given them − real views you've received from them</code> (Balance pool only, real views only — a view requires at least 50% of the ad visible for 1+ second, not just a load). A negative deficit means you've received more than you've given; positive means the opposite.</p>
+      </div>
+      <div class="tile">
+        <div class="n">3</div>
+        <h3>The deficit becomes a bonus or a penalty</h3>
+        <p class="mut">A negative deficit (you've received more) adds a growing bonus to their AI score — the more negative, the bigger the bonus, uncapped. A positive deficit (you've given more) subtracts a growing penalty instead, floored at zero.</p>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:20px;">
+      <p class="mut" style="font-family:monospace;font-size:13px;background:rgba(255,255,255,.05);display:inline-block;padding:10px 20px;border-radius:10px;">
+        Final score = max(0, AI score + deficit-based bonus/penalty)
+      </p>
+      <p class="mut" style="max-width:600px;margin:14px auto 0;font-size:14px;">Win probability = your final score ÷ the sum of final scores of <b>all</b> remaining candidates — a weighted lottery, same principle as the Auction. If only 1 candidate survives the competitor-exclusion step, they win directly with no further calculation.</p>
+    </div>
+  </div>
+</section>
 
-TRE GJERAT QE VENDOS BIZNESI:
-1. Hapesira e reklames — kodi qe shfaq reklamat e te tjereve (dhe keshtu ti shfaqesh tek ata).
-2. Konvertimet — mat kur nje vizitor kryen nje veprim me vlere (blerje/regjistrim). Rrisin piket.
-3. Reklama e vet (creatives) qe shfaqet te te tjeret.
+<section class="sec light">
+  <div class="container">
+    <div class="center" style="max-width:640px;margin:0 auto 40px;">
+      <p class="eyebrow">Step 3 — after the winning business</p>
+      <h2>Which specific ad shows</h2>
+      <p class="mut">Here's another, separate decision from Step 1 — once the winning business is determined (from either the Auction <b>or</b> Balance), if they have <b>2 or more</b> active ads, which one specifically to show must be decided.</p>
+    </div>
+    <div class="grid g3">
+      <div class="tile">
+        <div class="n">A</div>
+        <h3>New ad (&lt;5 views)</h3>
+        <p class="mut">Gets automatic rotating priority — every new ad goes through a "data collection" phase before real performance starts deciding.</p>
+      </div>
+      <div class="tile">
+        <div class="n">B</div>
+        <h3>2 ads, both with history</h3>
+        <p class="mut">Weighted lottery based on performance scores (views+conversions) of each — not a fixed 50/50, the higher-performing one has better odds, but no guarantee.</p>
+      </div>
+      <div class="tile">
+        <div class="n">C</div>
+        <h3>3+ active ads</h3>
+        <p class="mut">The same weighted-lottery logic extends across all ads at once — each participates proportionally to its own score, regardless of the total count. On top of this, the same visitor won't see the same ad twice in a row within one visit — each refresh or page shows a different one, cycling through all available ads before repeating.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-ROTACIONI I REKLAMAVE (per te njejtin vizitor):
-- Nese nje biznes ka disa reklama aktive, i njejti vizitor NUK sheh te njejten reklame perseri, cdo here qe rifreskon faqen ose lundron ne faqe te tjera te te njejtit sajt (brenda te njejtes vizite).
-- Sistemi i tregon reklama te ndryshme, njeren pas tjetres, derisa vizitori t'i kete pare te gjitha reklamat e mundshme njehere — pastaj cikli fillon perseri nga e para.
-- Kjo ndodh automatikisht, pa asnje konfigurim nga ana e biznesit.
+<section class="sec dark">
+  <div class="container">
+    <div class="grid g3" style="margin-top:0;">
+      <div class="tile">
+        <div class="n">4</div>
+        <h3>Snippet & real placement</h3>
+        <p class="mut">Add one line of code to your page. This does two things at once: enters your business into the auction pool, and opens the real space where an ad shows. Takes up zero space when there's no ad to display.</p>
+      </div>
+      <div class="tile">
+        <div class="n">5</div>
+        <h3>AI-created ad formats</h3>
+        <p class="mut">Three formats: image, video (YouTube link), or interactive HTML5. Upload your own, or let AI create it from scratch based on your business description.</p>
+      </div>
+      <div class="tile">
+        <div class="n">6</div>
+        <h3>Tracking & Analytics</h3>
+        <p class="mut">Set up conversion tracking (confirmation URL, button snippet, or global) and see everything on your dashboard: impressions given/received, per-ad performance, verified conversions.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-MENYRA "AUTOMATIK" — SI VENDOSET Ankand APO Balance PER SECILEN SHFAQJE (detaje teknike, nese klienti pyet thelle):
-- Platforma mban nje numer te vetem, global (jo per biznes individual): sa here Ankandi "i ka borxh" Balances, ose anasjelltas — nje kunder-peshim drejtesie mes 2 pishinave.
-- Nese ky borxh arrin 10 (ne cfaredo drejtimi), shfaqja e ardhshme shkon DIREKT te pishina qe i detyrohet — pa llogaritje shtese, pa rastesi. Kjo garanton qe asnjera pishine s'mbetet pas per me shume se disa shfaqje rradhazi.
-- Cdo here qe ndodh ky ridrejtim i detyruar, borxhi levize 1 hap drejt zeros (p.sh. 10→9) — jo direkt ne zero. Pas disa ridrejtimeve rradhazi, borxhi bie nen limit dhe konkurrenca normale rifillon.
-- Kur borxhi eshte nen limit: sistemi merr 5 kandidatet me te mire (sipas peshes) nga secila pishine, i kalon nepermjet nje formule qe thellon dallimin mes te fortëve dhe te dobëtve (pa eliminuar plotesisht asnjeri), i mbledh ne 2 shuma (1 per Ankand, 1 per Balance), dhe zgjedh mes ketyre 2 shumave me short te peshuar (jo mes bizneseve individuale drejtperdrejt).
-- Limiti (aktualisht fiks ne 10) mund te behet fleksibel ne te ardhmen (te rritet me numrin e bizneseve te regjistruara), por kjo eshte ende ne diskutim, jo e zbatuar.
+<section class="sec light">
+  <div class="container center">
+    <h2>That's it — no third parties, no ad budget</h2>
+    <p class="lead mut" style="max-width:560px;margin:0 auto 24px;">The more exposure/conversions you give, the higher you naturally rank in the auction — and your competitors never show, in either pool.</p>
+    <a class="sbtn cta lg" href="#" onclick="event.preventDefault();hapModal('reg');">Try Free →</a>
+  </div>
+</section>
 
-CMIMI: Bizneset paguajne nje plan mujor per te perdorur platformen.
+<footer><div class="container"><div class="fbottom"><span>© 2026 PhronexusAI. All rights reserved.</span><span><a href="/privacy" style="color:var(--mut)">Privacy</a> · <a href="/terms" style="color:var(--mut)">Terms</a> · <a href="/contact" style="color:var(--mut)">Contact</a></span></div></div></footer>
 
-Ky eshte nje mjet software (SaaS) — gjithcka ndodh automatikisht permes algoritmit, jo me pune manuale.
-`;
-
-function ndertoSystem(iLoguar) {
-  return `Ti je asistenti i suportit i PhronexusAI (phronexusai.com).
-Detyra: ndihmo perdoruesit me pyetje te pergjithshme per platformen — si funksionon, cmimet, si te regjistrohen, cfare eshte cross-promocioni.
-
-RREGULLA:
-- Pergjigju GJITHMONE ne gjuhen qe perdor perdoruesi.
-- Shkruaj tekst te thjeshte, PA Markdown (pa yje, pa # tituj).
-- Ji i shkurter dhe i qarte: 1-4 fjali zakonisht.
-- Referoju platformes GJITHMONE si "PhronexusAI".
-- Mos kerko te dhena te ndjeshme.
-- Nese s'e di pergjigjen ose eshte teknike (vendosje kodi), thuaj qe per ndihme teknike me kodin ka nje asistent te vecante te seksioni i hapesires se reklames ose konvertimeve.
-- KONTAKTI ME EKIPIN: Kur perdoruesi kerkon te flase me nje njeri/agjent human/ekipin, ose te dergoje ankese/problem tek ekipi, TI E LEJON dhe e ndihmon. Kjo eshte GJITHMONE e lejuar — mos refuzo kurre, mos thuaj "s'mund", mos e drejto diku tjeter.
-  HAPI 1: Pergjigju me nje pyetje te vetme, p.sh. "Sigurisht. Cfare deshiron t'i thuash ekipit?" NE KETE MESAZH TE PARE MOS SHKRUAJ ASNJE SHENJE ne fund.
-  HAPI 2: Prit pergjigjen. Vetem kur perdoruesi te ka SHKRUAR shqetesimin/mesazhin qe do te dergohet, konfirmo shkurt (p.sh. "Kerkesa po i shkon ekipit.") dhe shto ne fund, ne rresht te vecante, shenjen EKZAKTE: [[KONTAKTO_EKIPIN]]
-  RREGULL KRITIK: Mos e shkruaj shenjen ne HAPIN 1 (kur pyet). Shkruaje VETEM ne HAPIN 2 (kur ke marre shqetesimin). Mos e permend shenjen me fjale.
-
-NJOHURIA PER PLATFORMEN:
-${NJOHURIA}`;
-}
-
-async function pyet(apiKey, system, mesazhet) {
-  const resp = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 500,
-      messages: [{ role: 'system', content: system }, ...mesazhet]
-    })
-  });
-  if (!resp.ok) {
-    const t = await resp.text();
-    throw new Error('OpenAI ' + resp.status + ': ' + t.slice(0, 200));
-  }
-  const data = await resp.json();
-  return ((data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '').trim();
-}
-
-module.exports = function (app, pool) {
-  // Endpoint publik (para DHE pas login) — streaming fjale-per-fjale
-  app.post('/api/suport', async (req, res) => {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) return res.status(500).json({ error: 'AI s\'eshte konfiguruar.' });
-    const mesazhet = (req.body && req.body.mesazhet) || [];
-    if (!Array.isArray(mesazhet) || !mesazhet.length) return res.status(400).json({ error: 'Mungojne mesazhet.' });
-    const iLoguar = !!(req.cookies && req.cookies.imyr_session);
-    try {
-      const system = ndertoSystem(iLoguar);
-      const hist = mesazhet.slice(-10).map(m => ({
-        role: m.role === 'assistant' ? 'assistant' : 'user',
-        content: String(m.content || '').slice(0, 2000)
-      }));
-      // Kerko streaming nga OpenAI
-      const resp = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-        body: JSON.stringify({
-          model: MODEL, max_tokens: 500, stream: true,
-          messages: [{ role: 'system', content: system }, ...hist]
-        })
-      });
-      if (!resp.ok) {
-        const t = await resp.text();
-        return res.status(500).json({ error: 'OpenAI ' + resp.status + ': ' + t.slice(0, 200) });
-      }
-      // Dergo copezat te klienti si text/event-stream
-      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('X-Accel-Buffering', 'no');
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const rreshtat = buf.split('\n');
-        buf = rreshtat.pop();
-        for (const rr of rreshtat) {
-          const l = rr.trim();
-          if (!l.startsWith('data:')) continue;
-          const data = l.slice(5).trim();
-          if (data === '[DONE]') { res.end(); return; }
-          try {
-            const j = JSON.parse(data);
-            const copa = j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content;
-            if (copa) res.write(copa);
-          } catch (e) {}
-        }
-      }
-      res.end();
-    } catch (e) {
-      if (!res.headersSent) res.status(500).json({ error: e.message });
-      else res.end();
-    }
-  });
-};
+<style>
+#modal.backdrop{z-index:200 !important;}
+#modal.backdrop:not(.hide){overflow-y:auto;padding:24px 16px;}
+#modal .card.modal{max-height:88vh;overflow-y:auto;margin:auto;}
+</style>
+<div class="backdrop hide" id="modal">
+  <div class="card modal">
+    <button class="x" onclick="mbyllModal()">✕</button>
+    <button class="gbtn" onclick="hyrGoogle()">
+      <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"/></svg>
+      Continue with Google
+    </button>
+    <p class="kushte-mini">You'll be asked to accept the Terms after your first sign-in.</p>
+    <div class="ndaresi"><span>or</span></div>
+    <div class="tabs">
+      <div class="tab active" id="tabHyr" onclick="shfaq('hyr')">Log in</div>
+      <div class="tab" id="tabReg" onclick="shfaq('reg')">Sign up</div>
+    </div>
+    <div id="formHyr">
+      <label>Email</label><input id="h_email" type="email" placeholder="email@business.com">
+      <label>Password</label><input id="h_pass" type="password" placeholder="••••••">
+      <button class="primary" id="btnHyr" onclick="hyr()">Log in</button>
+    </div>
+    <div id="formReg" class="hide">
+      <label>Business name</label><input id="r_emri" placeholder="My Business">
+      <label>Email</label><input id="r_email" type="email" placeholder="email@business.com">
+      <label>Password (min 6)</label><input id="r_pass" type="password" placeholder="••••••">
+      <label class="kushte-check"><input type="checkbox" id="r_kushte"> I accept the <a href="/terms" target="_blank">Terms</a>, <a href="/privacy" target="_blank">Privacy Policy</a>, and data processing.</label>
+      <label class="kushte-check"><input type="checkbox" id="r_oferta"> I want to receive offers and news from PhronexusAI. <span class="mut">(optional)</span></label>
+      <button class="primary" id="btnReg" onclick="regjistrohu()">Create account</button>
+    </div>
+    <div class="msg" id="msg"></div>
+  </div>
+</div>
+<script src="/js/core.js"></script>
+<script src="/js/auth.js"></script>
+</body></html>
