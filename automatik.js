@@ -213,9 +213,9 @@ module.exports = function (pool) {
   // ══════════════════════════════════════════════════════════════════
   async function pikeProfili(bizId, tipi) {
     const r = await pool.query(
-      `SELECT COUNT(*) FILTER (WHERE lloji='view')::int      AS shfaqje,
+      `SELECT COUNT(*) FILTER (WHERE lloji='shikim')::int   AS shfaqje,
               COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
-       FROM ngjarjet WHERE biznes_id=$1`, [bizId]);
+       FROM ngjarjet WHERE biznes_id=$1 AND created_at >= now() - interval '30 days'`, [bizId]);
     const shfaqje = r.rows[0].shfaqje, konvertime = r.rows[0].konvertime;
     const rate = pesha.PARAM.RATE[tipi] || pesha.PARAM.RATE.b2c;
     return (shfaqje / rate) + konvertime;
@@ -253,9 +253,9 @@ module.exports = function (pool) {
     const r = await pool.query(`
       SELECT
         COALESCE((SELECT COUNT(*) FROM ngjarjet
-                  WHERE lloji='view' AND burimi='barazi' AND biznes_id=$1),0)::int AS dhene,
+                  WHERE lloji='shikim' AND burimi='barazi' AND biznes_id=$1),0)::int AS dhene,
         COALESCE((SELECT COUNT(*) FROM ngjarjet
-                  WHERE lloji='view' AND burimi='barazi' AND reklamues_id=$1),0)::int AS marra`,
+                  WHERE lloji='shikim' AND burimi='barazi' AND reklamues_id=$1),0)::int AS marra`,
       [bizId]);
     return r.rows[0].dhene - r.rows[0].marra;
   }
