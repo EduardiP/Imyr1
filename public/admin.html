@@ -1266,10 +1266,39 @@ m.innerHTML='<p class="small">Po ngarkoj…</p>';
 try{
 const r=await(await fetch('/api/admin/biznes/'+id)).json();
 if(r.error){ m.innerHTML='<button class="back" onclick="renderBizMain()">← Bizneset</button><p class="small">'+r.error+'</p>'; return; }
-const b=r.biznes, s=r.statistika;
+const b=r.biznes, s=r.statistika, ch=r.checklist||{};
+const CH_PIKAT=[
+  {k:'llogaria', label:'Business', detaje:()=>'Website: '+esc(b.website||'—')+'<br>Type: '+esc(b.tipi||'—')},
+  {k:'pershkrimi', label:'Description', detaje:()=>'Summary: '+esc(b.permbledhje||b.pershkrimi||'—')+'<br>Category: '+esc(b.kategoria_kryesore||'—')+'<br>Subcategories: '+esc(b.nenkategorite||'—')},
+  {k:'lidhja', label:'Snippet connection', detaje:()=>'Connected: '+(b.snippet_active?'Yes':'No')+'<br>URL: '+esc(b.origjina||b.kandidat_url||'—')},
+  {k:'reklama', label:'Ad created', detaje:()=>'See the "Reklamat" tab for full ad details.'},
+  {k:'konvertimi', label:'Conversion tracking', detaje:()=>'Tracking active: '+(b.track_active?'Yes':'No')}
+];
+function chPikaHTML(p){
+  const st=ch[p.k]||{plotesuar:false,menyra:'manual'};
+  const eshteAuto = st.plotesuar && st.menyra==='automatik';
+  const ngjyra = !st.plotesuar ? 'var(--mut,#8b949e)' : (eshteAuto ? '#4a9eff' : '#3fb950');
+  const shenja = !st.plotesuar ? '○' : (eshteAuto ? '●' : '✓');
+  const etiketaMenyra = !st.plotesuar ? 'Not completed' : (eshteAuto ? 'Completed automatically' : 'Completed manually');
+  return '<div class="chPika" style="border:1px solid #d0d4e0;border-radius:8px;margin-bottom:6px;overflow:hidden;">'+
+    '<div onclick="chToggle(this)" style="padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:10px;background:#fff;">'+
+      '<span style="color:'+ngjyra+';font-size:16px;">'+shenja+'</span>'+
+      '<span style="flex:1;font-size:13px;">'+esc(p.label)+'</span>'+
+      '<span style="font-size:11px;color:'+ngjyra+';">'+etiketaMenyra+'</span>'+
+    '</div>'+
+    '<div class="chDetaje hide" style="padding:10px 14px;font-size:12px;color:#556;background:#f8fafc;border-top:1px solid #e5e9f0;">'+p.detaje()+'</div>'+
+  '</div>';
+}
+window.chToggle=function(el){
+  const box=el.nextElementSibling;
+  if(box) box.classList.toggle('hide');
+};
 m.innerHTML=
 '<button class="back" onclick="renderBizMain()">← Bizneset</button>'+
 '<h2 class="h">'+esc(b.emri)+'</h2>'+
+'<div class="sect"><h3>Setup checklist</h3>'+
+CH_PIKAT.map(chPikaHTML).join('')+
+'</div>'+
 '<div class="sect"><h3>Statistika</h3><div class="stats">'+
 stat(s.reklama_krijuara,'Reklama të krijuara')+
 stat(s.shfaqje_te_reklamave_te_tij,'Shfaqje të reklamave të tij')+
