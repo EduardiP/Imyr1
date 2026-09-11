@@ -1162,18 +1162,21 @@ app.get('/api/analytics/balance-kategorite-katror', iLoguar, async (req, res) =>
 
     const r = await pool.query(`
       SELECT b.kategoria_kryesore AS kategoria,
-        COUNT(*) FILTER (WHERE e.biznes_id=$1)::int    AS dhene,
-        COUNT(*) FILTER (WHERE e.reklamues_id=$1)::int AS marre
+        COUNT(*) FILTER (WHERE e.biznes_id=$1 AND e.lloji='view')::int    AS dhene_ngarkime,
+        COUNT(*) FILTER (WHERE e.biznes_id=$1 AND e.lloji='shikim')::int  AS dhene,
+        COUNT(*) FILTER (WHERE e.reklamues_id=$1 AND e.lloji='view')::int   AS marre_ngarkime,
+        COUNT(*) FILTER (WHERE e.reklamues_id=$1 AND e.lloji='shikim')::int AS marre
       FROM ngjarjet e
       JOIN bizneset b ON b.id = (CASE WHEN e.biznes_id=$1 THEN e.reklamues_id ELSE e.biznes_id END)
-      WHERE (e.biznes_id=$1 OR e.reklamues_id=$1) AND e.lloji='view' AND e.burimi='barazi'
+      WHERE (e.biznes_id=$1 OR e.reklamues_id=$1) AND e.lloji IN ('view','shikim') AND e.burimi='barazi'
         AND e.created_at::date BETWEEN $2 AND $3
         AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''
       GROUP BY b.kategoria_kryesore
       ORDER BY b.kategoria_kryesore`, [req.biznesId, nga, deri]);
 
     res.json({ nga, deri, vetjaKat, kategorite: r.rows.map(x => ({
-      kategoria: x.kategoria, dhene: x.dhene, marre: x.marre, net: x.marre - x.dhene
+      kategoria: x.kategoria, dhene: x.dhene, marre: x.marre, net: x.marre - x.dhene,
+      dhene_ngarkime: x.dhene_ngarkime, marre_ngarkime: x.marre_ngarkime
     })) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -1197,16 +1200,21 @@ app.get('/api/analytics/automatik-ndarja', iLoguar, async (req, res) => {
     const r = await pool.query(`
       SELECT gs::date AS data,
         COALESCE(a.n,0)::int AS ankand,
+        COALESCE(asr.n,0)::int AS ankand_shikime,
         COALESCE(bl.n,0)::int AS balance,
+        COALESCE(blsr.n,0)::int AS balance_shikime,
         (av.dt IS NOT NULL) AS ishte_automatik
       FROM generate_series($2::date, $3::date, '1 day') AS gs
       LEFT JOIN (SELECT created_at::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1 AND lloji='view' AND burimi='ankand' GROUP BY dt) a  ON a.dt=gs
+      LEFT JOIN (SELECT created_at::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1 AND lloji='shikim' AND burimi='ankand' GROUP BY dt) asr ON asr.dt=gs
       LEFT JOIN (SELECT created_at::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1 AND lloji='view' AND burimi='barazi' GROUP BY dt) bl ON bl.dt=gs
+      LEFT JOIN (SELECT created_at::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1 AND lloji='shikim' AND burimi='barazi' GROUP BY dt) blsr ON blsr.dt=gs
       LEFT JOIN (SELECT DISTINCT created_at::date dt FROM automatik_vendime WHERE host_id=$1) av ON av.dt=gs
       ORDER BY gs`, [req.biznesId, nga, deri]);
 
     res.json({ nga, deri, hostingMode, baraziPerqindje, rows: r.rows.map(x => ({
-      data: x.data.toISOString().slice(0,10), ankand: x.ankand, balance: x.balance, automatik: x.ishte_automatik
+      data: x.data.toISOString().slice(0,10), ankand: x.ankand, balance: x.balance, automatik: x.ishte_automatik,
+      ankand_shikime: x.ankand_shikime, balance_shikime: x.balance_shikime
     })) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -1265,12 +1273,14 @@ app.get('/api/profili', iLoguar, async (req, res) => {
 app.get('/api/profili-balance', iLoguar, async (req, res) => {
   try {
     const dheneQ = await pool.query(
-      `SELECT COUNT(*) FILTER (WHERE lloji='view')::int      AS shfaqje,
+      `SELECT COUNT(*) FILTER (WHERE lloji='view')::int      AS ngarkime,
+              COUNT(*) FILTER (WHERE lloji='shikim')::int    AS shfaqje,
               COUNT(*) FILTER (WHERE lloji='click')::int     AS klikime,
               COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
        FROM ngjarjet WHERE biznes_id=$1 AND burimi='barazi'`, [req.biznesId]);
     const marraQ = await pool.query(
-      `SELECT COUNT(*) FILTER (WHERE lloji='view')::int      AS shfaqje,
+      `SELECT COUNT(*) FILTER (WHERE lloji='view')::int      AS ngarkime,
+              COUNT(*) FILTER (WHERE lloji='shikim')::int    AS shfaqje,
               COUNT(*) FILTER (WHERE lloji='click')::int     AS klikime,
               COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
        FROM ngjarjet WHERE reklamues_id=$1 AND burimi='barazi'`, [req.biznesId]);
@@ -2718,16 +2728,26 @@ app.get('/api/admin/balancat', iAdmin, async (req, res) => {
   try {
     const r = await pool.query(`
       SELECT b.id, b.emri,
+        COALESCE(dhene_ng.n,0)::int AS dhene_shfaqje_ngarkime,
         COALESCE(dhene.n,0)::int AS dhene_shfaqje,
+        COALESCE(marra_ng.n,0)::int AS marra_shfaqje_ngarkime,
         COALESCE(marra.n,0)::int AS marra_shfaqje
       FROM bizneset b
       LEFT JOIN (
         SELECT biznes_id, COUNT(*)::int AS n FROM ngjarjet
         WHERE lloji='view' AND burimi='barazi' GROUP BY biznes_id
+      ) dhene_ng ON dhene_ng.biznes_id = b.id
+      LEFT JOIN (
+        SELECT biznes_id, COUNT(*)::int AS n FROM ngjarjet
+        WHERE lloji='shikim' AND burimi='barazi' GROUP BY biznes_id
       ) dhene ON dhene.biznes_id = b.id
       LEFT JOIN (
         SELECT reklamues_id, COUNT(*)::int AS n FROM ngjarjet
         WHERE lloji='view' AND burimi='barazi' GROUP BY reklamues_id
+      ) marra_ng ON marra_ng.reklamues_id = b.id
+      LEFT JOIN (
+        SELECT reklamues_id, COUNT(*)::int AS n FROM ngjarjet
+        WHERE lloji='shikim' AND burimi='barazi' GROUP BY reklamues_id
       ) marra ON marra.reklamues_id = b.id
       WHERE b.logjika_shperndarjes='barazi'
          OR EXISTS (SELECT 1 FROM promovimet p
