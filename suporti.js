@@ -39,6 +39,13 @@ ROTACIONI I REKLAMAVE (per te njejtin vizitor):
 - Sistemi i tregon reklama te ndryshme, njeren pas tjetres, derisa vizitori t'i kete pare te gjitha reklamat e mundshme njehere — pastaj cikli fillon perseri nga e para.
 - Kjo ndodh automatikisht, pa asnje konfigurim nga ana e biznesit.
 
+MENYRA "AUTOMATIK" — SI VENDOSET Ankand APO Balance PER SECILEN SHFAQJE (detaje teknike, nese klienti pyet thelle):
+- Platforma mban nje numer te vetem, global (jo per biznes individual): sa here Ankandi "i ka borxh" Balances, ose anasjelltas — nje kunder-peshim drejtesie mes 2 pishinave.
+- Nese ky borxh arrin 10 (ne cfaredo drejtimi), shfaqja e ardhshme shkon DIREKT te pishina qe i detyrohet — pa llogaritje shtese, pa rastesi. Kjo garanton qe asnjera pishine s'mbetet pas per me shume se disa shfaqje rradhazi.
+- Cdo here qe ndodh ky ridrejtim i detyruar, borxhi levize 1 hap drejt zeros (p.sh. 10→9) — jo direkt ne zero. Pas disa ridrejtimeve rradhazi, borxhi bie nen limit dhe konkurrenca normale rifillon.
+- Kur borxhi eshte nen limit: sistemi merr 5 kandidatet me te mire (sipas peshes) nga secila pishine, i kalon nepermjet nje formule qe thellon dallimin mes te fortëve dhe te dobëtve (pa eliminuar plotesisht asnjeri), i mbledh ne 2 shuma (1 per Ankand, 1 per Balance), dhe zgjedh mes ketyre 2 shumave me short te peshuar (jo mes bizneseve individuale drejtperdrejt).
+- Limiti (aktualisht fiks ne 10) mund te behet fleksibel ne te ardhmen (te rritet me numrin e bizneseve te regjistruara), por kjo eshte ende ne diskutim, jo e zbatuar.
+
 CMIMI: Bizneset paguajne nje plan mujor per te perdorur platformen.
 
 Ky eshte nje mjet software (SaaS) — gjithcka ndodh automatikisht permes algoritmit, jo me pune manuale.
