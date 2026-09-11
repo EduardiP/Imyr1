@@ -338,19 +338,19 @@ module.exports = function (pool) {
   // }
   // ══════════════════════════════════════════════════════════════════
   async function vendosLogjikenDetajuar(hostId, hTipi) {
-    const bosh = { pishina: null, uKonkurrua: false, topAnkand: [], topBarazi: [] };
+    const bosh = { pishina: null, uKonkurrua: false, uDetyruaNgaLimiti: false, topAnkand: [], topBarazi: [] };
 
     const hostTipi = await tipiHostit(hostId);
 
     const bllokim = await kontrolloKufirin(hostTipi);
-    if (bllokim) return { pishina: bllokim, uKonkurrua: false, topAnkand: [], topBarazi: [] };
+    if (bllokim) return { pishina: bllokim, uKonkurrua: false, uDetyruaNgaLimiti: true, topAnkand: [], topBarazi: [] };
 
     const kandAnkand = await merrKandidatet(hostId, hTipi, 'ankand');
     const kandBarazi = await merrKandidatet(hostId, hTipi, 'barazi');
 
     if (!kandAnkand.length && !kandBarazi.length) return bosh;
-    if (!kandAnkand.length) return { pishina: 'barazi', uKonkurrua: false, topAnkand: [], topBarazi: [] };
-    if (!kandBarazi.length) return { pishina: 'ankand', uKonkurrua: false, topAnkand: [], topBarazi: [] };
+    if (!kandAnkand.length) return { pishina: 'barazi', uKonkurrua: false, uDetyruaNgaLimiti: false, topAnkand: [], topBarazi: [] };
+    if (!kandBarazi.length) return { pishina: 'ankand', uKonkurrua: false, uDetyruaNgaLimiti: false, topAnkand: [], topBarazi: [] };
 
     const peshatAnkand = [];
     for (const k of kandAnkand) {
@@ -455,8 +455,17 @@ module.exports = function (pool) {
   //   Ankandi fiton (ne konkurrence te vertete) → Balanca "humbi" mundesine
   //     → borxhi_neto +1  (Ankandi i detyrohet Balances)
   // ══════════════════════════════════════════════════════════════════
-  async function regjistroShfaqjen(uKonkurrua, fituesTipi) {
-    if (!uKonkurrua) return; // rruge direkte — s'ka konkurrence, s'ka borxh
+  async function regjistroShfaqjen(uKonkurrua, fituesTipi, uDetyruaNgaLimiti) {
+    if (uDetyruaNgaLimiti) {
+      // Ridrejtim i detyruar nga limiti (10): borxhi levize 1 hap DREJT zeros (jo zero direkt),
+      // qe pas mjaft ridrejtimesh te njepasnjeshme te bjere nen limit dhe konkurrenca normale
+      // te rifillojë. Nese u detyrua te 'barazi' (bn ishte >=+k), borxhi ulet (-1, drejt 9).
+      // Nese u detyrua te 'ankand' (bn ishte <=-k), borxhi rritet (+1, drejt -9).
+      if (fituesTipi === 'barazi') await ndryshoBorxhin(-1);
+      else if (fituesTipi === 'ankand') await ndryshoBorxhin(+1);
+      return;
+    }
+    if (!uKonkurrua) return; // rruge direkte (vetem 1 pishine kishte kandidate) — s'ka konkurrence, s'ka borxh
     if (fituesTipi === 'barazi') await ndryshoBorxhin(-1);
     else if (fituesTipi === 'ankand') await ndryshoBorxhin(+1);
   }
