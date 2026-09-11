@@ -118,15 +118,17 @@ async function mainProfiliBalance(m){
     '</div>'+
     '<h3 class="h" style="font-size:16px;margin:22px 0 4px;">Given (Balance)</h3>'+
     '<div style="display:flex;gap:10px;margin:8px 0 4px;flex-wrap:wrap;">'+
-      '<div class="miniStat"><div class="mv">'+bal.dhene.shfaqje+'</div><div class="small">impressions</div></div>'+
+      '<div class="miniStat"><div class="mv">'+bal.dhene.ngarkime+'</div><div class="small">loads</div></div>'+
+      '<div class="miniStat"><div class="mv">'+bal.dhene.shfaqje+'</div><div class="small">real views</div></div>'+
       '<div class="miniStat"><div class="mv">'+bal.dhene.klikime+'</div><div class="small">clicks</div></div>'+
       '<div class="miniStat"><div class="mv">'+bal.dhene.konvertime+'</div><div class="small">conversions</div></div>'+
     '</div>'+
     '<h3 class="h" style="font-size:16px;margin:22px 0 4px;">Received (Balance)</h3>'+
     '<div style="display:flex;gap:10px;margin:8px 0 4px;flex-wrap:wrap;">'+
-      '<div class="miniStat"><div class="mv">'+bal.marra.shfaqje+'</div><div class="small">impressions</div></div>'+
+      '<div class="miniStat"><div class="mv">'+bal.marra.ngarkime+'</div><div class="small">loads</div></div>'+
+      '<div class="miniStat"><div class="mv">'+bal.marra.shfaqje+'</div><div class="small">real views</div></div>'+
       '<div class="miniStat"><div class="mv">'+bal.marra.klikime+'</div><div class="small">clicks</div></div>'+
       '<div class="miniStat"><div class="mv">'+bal.marra.konvertime+'</div><div class="small">conversions</div></div>'+
     '</div>'+
-    '<p class="small mut" style="margin:10px 0 4px;">Balance aims for impression = impression: what you give is what you get. Numbers stay 0 until the Balance distribution mechanism starts.</p>';
+    '<p class="small mut" style="margin:10px 0 4px;">Balance is measured by real views (at least 50% visible for 1+ second), not mere loads. It aims for real view = real view: what you give is what you get. Numbers stay 0 until the Balance distribution mechanism starts.</p>';
 }
