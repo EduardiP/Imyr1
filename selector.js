@@ -18,9 +18,9 @@ function tipetPerputhen(rTipi, hTipi) {
 // Piket e profilit — nga shfaqjet/konvertimet qe biznesi OFRON si host. Gjithmone aktive.
 async function pikeProfiliBiznesi(pool, bizId, tipi) {
   const r = await pool.query(
-    `SELECT COUNT(*) FILTER (WHERE lloji='view')::int      AS shfaqje,
+    `SELECT COUNT(*) FILTER (WHERE lloji='shikim')::int   AS shfaqje,
             COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
-     FROM ngjarjet WHERE biznes_id=$1`, [bizId]);
+     FROM ngjarjet WHERE biznes_id=$1 AND created_at >= now() - interval '30 days'`, [bizId]);
   const shfaqje = r.rows[0].shfaqje, konvertime = r.rows[0].konvertime;
   const rate = pesha.PARAM.RATE[tipi] || pesha.PARAM.RATE.b2c;
   return (shfaqje / rate) + konvertime;
@@ -203,14 +203,24 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
   }
 
   // ANKANDI I DYTE: cila reklame e biznesit fitues shfaqet — FILTRUAR sipas te njejtes pishine.
-  // Weighted-random I PASTER sipas pikeve te reklamave (PA frequency capping), si me pare.
   const rekQ = await pool.query(
     `SELECT id FROM promovimet WHERE biznes_id=$1 AND aktiv=true AND COALESCE(pauzuar,false)=false
        AND COALESCE(logjika_shperndarjes,'ankand')=$2
        AND (teksti IS NOT NULL OR imazh_url IS NOT NULL OR video_url IS NOT NULL OR html5_url IS NOT NULL)`,
     [fituesBizId, logjikaKerkuar]);
-  const rekIds = rekQ.rows.map(r => r.id);
-  if (!rekIds.length) return null;
+  const rekIdsTeGjitha = rekQ.rows.map(r => r.id);
+  if (!rekIdsTeGjitha.length) return null;
+
+  // FREQUENCY CAPPING (i izoluar): heq nga kandidatet reklamat qe "pare" (nga vizitori,
+  // dergurar nga klienti) tregon si tashme te shfaqura. Nese kjo lë ZERO kandidatë (d.m.th.
+  // i ka pare TE GJITHA reklamat e mundshme te ketij biznesi), s'e kufizon fare per kete pick
+  // specifik (perdor listen e plote), dhe sinjalizon cikel_ri=true qe klienti ta fillojë ciklin
+  // e vet nga e para. Kjo eshte SHTESE, e izoluar — s'prek zgjedhjen e biznesit fitues sipër.
+  const pareSet = new Set((pare || []).map(String));
+  const rekIdsFiltruar = rekIdsTeGjitha.filter(id => !pareSet.has(String(id)));
+  const cikelRiSinjal = rekIdsFiltruar.length === 0;
+  const rekIds = cikelRiSinjal ? rekIdsTeGjitha : rekIdsFiltruar;
+
   const rekId = await zgjedhNgaLista(pool, fituesBizId, rekIds);
   if (!rekId) return null;
 
@@ -231,7 +241,7 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
     modAutomatik.regjistroVendimDetajuar(hostId, rezultatAutomatik, fituesBizId).catch(()=>{});
   }
 
-  return Object.assign({}, rd.rows[0], { cikel_ri: false, burimi: logjikaKerkuar });
+  return Object.assign({}, rd.rows[0], { cikel_ri: cikelRiSinjal, burimi: logjikaKerkuar });
 }
 
 // Ankandi i dyte i kufizuar ne nje nenlliste id-sh (per capping)
