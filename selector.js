@@ -234,7 +234,7 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
   // Regjistro efektin ne borxhin global — VETEM nese kishte konkurrence te vertete
   // mes te dyja pishinave (jo rruge direkte, jo tip host-i)
   if (modAutomatik && rezultatAutomatik) {
-    modAutomatik.regjistroShfaqjen(rezultatAutomatik.uKonkurrua, logjikaKerkuar).catch(()=>{});
+    modAutomatik.regjistroShfaqjen(rezultatAutomatik.uKonkurrua, logjikaKerkuar, rezultatAutomatik.uDetyruaNgaLimiti).catch(()=>{});
   }
   // Regjistro vendimin e plote (finalistet + fituesi) — per historikun ne admin panel
   if (modAutomatik && rezultatAutomatik) {
