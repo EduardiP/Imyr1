@@ -51,6 +51,7 @@ pool.query(`ALTER TABLE ngjarjet ADD COLUMN IF NOT EXISTS snippet_id INTEGER`).c
 // Migrim: logjika e shperndarjes (ankand | barazi) — parazgjedhje 'ankand' per te GJITHA (ekzistueset + te reja)
 pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS logjika_shperndarjes TEXT NOT NULL DEFAULT 'ankand'`).catch(e => console.error('migrim logjika_shperndarjes (bizneset):', e.message));
 pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS logjika_shperndarjes TEXT NOT NULL DEFAULT 'ankand'`).catch(e => console.error('migrim logjika_shperndarjes (promovimet):', e.message));
+pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS auto_krijuar BOOLEAN NOT NULL DEFAULT false`).catch(e => console.error('migrim auto_krijuar (promovimet):', e.message));
 
 // Migrim: gjurmimi i perdorimit te "Analizo me AI" (kufi 2/24 ore per biznes)
 pool.query(`CREATE TABLE IF NOT EXISTS analizo_perdorimi (
@@ -578,8 +579,8 @@ app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
            VALUES ($1,'imazh','Automatically created ad',$2,$3,'gati',true)`,
           [req.biznesId, perm || webTekst.slice(0,300), imgUrl]);
         await pool.query(
-          `INSERT INTO promovimet (biznes_id, titulli, imazh_url, link, aktiv, logjika_shperndarjes)
-           VALUES ($1,'Automatically created ad',$2,$3,true,'ankand')`,
+          `INSERT INTO promovimet (biznes_id, titulli, imazh_url, link, aktiv, logjika_shperndarjes, auto_krijuar)
+           VALUES ($1,'Automatically created ad',$2,$3,true,'ankand',true)`,
           [req.biznesId, imgUrl, url]);
       } catch (e) { console.error('Gjenerim automatik reklame (zgjedhja-automatike) deshtoi:', e.message); }
     })();
@@ -589,11 +590,17 @@ app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
 // A ka reklamë, dhe a është vetëm AUTOMATIKE apo edhe MANUALE (krijuar/miratuar nga klienti)
 app.get('/api/kreative/statusi-krijimit', iLoguar, async (req, res) => {
   try {
+    // Kontrollon REKLAMAT REALE (promovimet), FILTRUAR sipas pishines (Ankand/Balance) —
+    // JO 'kreativitetet' (asetet krijuese, qe s'kane fare pishine — nje aset mund te
+    // perdoret ne te dyja). Kjo garanton qe Ankand dhe Balance kane statuse TE NDARA.
+    const logjika = (req.query.logjika === 'barazi') ? 'barazi' : 'ankand';
     const manual = await pool.query(
-      `SELECT 1 FROM kreativitetet WHERE biznes_id=$1 AND auto_krijuar=false LIMIT 1`, [req.biznesId]);
+      `SELECT 1 FROM promovimet WHERE biznes_id=$1 AND aktiv=true
+         AND COALESCE(logjika_shperndarjes,'ankand')=$2 AND auto_krijuar=false LIMIT 1`, [req.biznesId, logjika]);
     if (manual.rows.length) return res.json({ gjendja: 'manual' });
     const auto = await pool.query(
-      `SELECT 1 FROM kreativitetet WHERE biznes_id=$1 AND auto_krijuar=true LIMIT 1`, [req.biznesId]);
+      `SELECT 1 FROM promovimet WHERE biznes_id=$1 AND aktiv=true
+         AND COALESCE(logjika_shperndarjes,'ankand')=$2 AND auto_krijuar=true LIMIT 1`, [req.biznesId, logjika]);
     if (auto.rows.length) return res.json({ gjendja: 'auto' });
     res.json({ gjendja: 'asnje' });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -2541,8 +2548,8 @@ app.post('/api/analizo', iLoguar, async (req, res) => {
           [req.biznesId, perm || pershkrimi, url]);
 
         await pool.query(
-          `INSERT INTO promovimet (biznes_id, titulli, imazh_url, link, aktiv, logjika_shperndarjes)
-           VALUES ($1,'Automatically created ad',$2,$3,true,$4)`,
+          `INSERT INTO promovimet (biznes_id, titulli, imazh_url, link, aktiv, logjika_shperndarjes, auto_krijuar)
+           VALUES ($1,'Automatically created ad',$2,$3,true,$4,true)`,
           [req.biznesId, url, link, logjika]);
       } catch (e) { console.error('Gjenerim automatik reklame deshtoi:', e.message); }
     })();
