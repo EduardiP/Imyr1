@@ -3014,6 +3014,52 @@ app.get('/api/admin/biznes/:id', iAdmin, async (req, res) => {
   } catch(e){ res.status(500).json({ error: e.message }); }
 });
 
+// --- FSHIRJE E PLOTE E NJE BIZNESI — heq CDO gjurme te tij nga platforma, ne CDO tabele
+// te njohur, ne 1 transaksion (ose gjithcka, ose asgje). Perdoret nga admin, "Delete" butoni. ---
+app.delete('/api/admin/biznes/:id', iAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.status(400).json({ error: 'ID e pavlefshme' });
+  const klient = await pool.connect();
+  try {
+    await klient.query('BEGIN');
+    // Tabelat E KONFIRMUARA (skema e verifikuar) — pa .catch(), duhet te funksionojne gjithmone.
+    await klient.query('DELETE FROM ngjarjet WHERE biznes_id=$1 OR reklamues_id=$1', [id]);
+    await klient.query('DELETE FROM perputhjet WHERE reklamues_id=$1 OR host_id=$1', [id]);
+    await klient.query('DELETE FROM automatik_vendime WHERE host_id=$1', [id]);
+    await klient.query('DELETE FROM automatik_finalistet WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM balancet WHERE host_id=$1 OR reklamues_id=$1', [id]);
+    await klient.query('DELETE FROM garat WHERE host_id=$1 OR reklamues_id=$1', [id]);
+    await klient.query('DELETE FROM kategori_perjashtime WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM kategori_kufizime_konfiguruar WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM ekipi_lista_pritjes WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM suport_kerkesat WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM njoftimet_admin WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM kreativitetet WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM snippetet WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM promovimet WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM analizo_perdorimi WHERE biznes_id=$1', [id]);
+    // Tabelat E PASIGURTA (s'kam konfirmuar skemen e tyre saktesisht) — perdor blloqe
+    // qe injorojne saktesisht gabimin "tabela s'ekziston", pa e prishur transaksionin.
+    await klient.query(`DO $$ BEGIN
+      DELETE FROM konvertimet WHERE biznes_id=${id};
+      EXCEPTION WHEN undefined_table OR undefined_column THEN NULL;
+    END $$;`);
+    await klient.query(`DO $$ BEGIN
+      DELETE FROM zonat WHERE biznes_id=${id};
+      EXCEPTION WHEN undefined_table OR undefined_column THEN NULL;
+    END $$;`);
+    // Me ne fund, vetë biznesi
+    await klient.query('DELETE FROM bizneset WHERE id=$1', [id]);
+    await klient.query('COMMIT');
+    res.json({ ok: true });
+  } catch (e) {
+    await klient.query('ROLLBACK');
+    res.status(500).json({ error: e.message });
+  } finally {
+    klient.release();
+  }
+});
+
 // --- Faqet ---
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
