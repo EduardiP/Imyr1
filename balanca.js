@@ -96,10 +96,16 @@ module.exports = function (pool) {
   }
 
   // Pika e deficitit — zgjedh formulen e duhur sipas shenjes; 0 nese deficit=0.
+  // RREGULLI I SAKTE (konfirmuar): deficit = dhene - marre.
+  // Deficit POZITIV (ke DHENE me shume shfaqje se ke marre) → BONUS (meriton te marresh prapa).
+  // Deficit NEGATIV (ke MARRE me shume shfaqje se ke dhene) → PENALITET (je "ne rregull", s'ke nevoje me shume).
+  // Pershendetjet: pikaNegative() eshte projektuar per input negativ (jep bonus qe rritet), pikaPozitive()
+  // per input pozitiv (jep penalitet qe zbret) — per te ruajtur shkallezimin origjinal te secilit,
+  // i kalojme -deficit (jo deficit), qe cdo formule te marre GJITHMONE input te shenjes qe pret.
   function pikaDeficitit(deficit) {
     if (deficit === 0) return 0;
-    if (deficit < 0) return pikaNegative(deficit);
-    return pikaPozitive(deficit);
+    if (deficit > 0) return pikaNegative(-deficit);   // dhene me shume → bonus (shkalla e pikaNegative)
+    return pikaPozitive(-deficit);                     // marre me shume → penalitet (shkalla e pikaPozitive)
   }
 
   // ══════════════════════════════════════════════════════════════════
