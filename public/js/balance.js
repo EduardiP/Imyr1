@@ -69,7 +69,7 @@ async function renderDashStatusBalance(){
   }catch(e){}
   let gjendjaKrijimi = 'asnje';
   try{
-    const r = await (await fetch('/api/kreative/statusi-krijimit')).json();
+    const r = await (await fetch('/api/kreative/statusi-krijimit?logjika=barazi')).json();
     gjendjaKrijimi = r.gjendja || 'asnje';
   }catch(e){}
   el.innerHTML='';
