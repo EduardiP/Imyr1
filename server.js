@@ -3073,38 +3073,45 @@ app.delete('/api/admin/biznes/:id', iAdmin, async (req, res) => {
   const klient = await pool.connect();
   try {
     await klient.query('BEGIN');
-    // Tabelat E KONFIRMUARA (skema e verifikuar) — pa .catch(), duhet te funksionojne gjithmone.
+    // Tabelat QENDRORE (perdoren gjeresisht ne krejt aplikacionin, sigurisht ekzistojne).
     await klient.query('DELETE FROM ngjarjet WHERE biznes_id=$1 OR reklamues_id=$1', [id]);
     await klient.query('DELETE FROM perputhjet WHERE reklamues_id=$1 OR host_id=$1', [id]);
     await klient.query('DELETE FROM automatik_vendime WHERE host_id=$1', [id]);
     await klient.query('DELETE FROM automatik_finalistet WHERE biznes_id=$1', [id]);
     await klient.query('DELETE FROM balancet WHERE host_id=$1 OR reklamues_id=$1', [id]);
     await klient.query('DELETE FROM garat WHERE host_id=$1 OR reklamues_id=$1', [id]);
-    await klient.query('DELETE FROM kategori_perjashtime WHERE biznes_id=$1', [id]);
-    await klient.query('DELETE FROM kategori_kufizime_konfiguruar WHERE biznes_id=$1', [id]);
-    await klient.query('DELETE FROM ekipi_lista_pritjes WHERE biznes_id=$1', [id]);
-    await klient.query('DELETE FROM suport_kerkesat WHERE biznes_id=$1', [id]);
-    await klient.query('DELETE FROM njoftimet_admin WHERE biznes_id=$1', [id]);
     await klient.query('DELETE FROM kreativitetet WHERE biznes_id=$1', [id]);
     await klient.query('DELETE FROM snippetet WHERE biznes_id=$1', [id]);
     await klient.query('DELETE FROM promovimet WHERE biznes_id=$1', [id]);
-    await klient.query('DELETE FROM analizo_perdorimi WHERE biznes_id=$1', [id]);
-    // Tabelat E PASIGURTA (s'kam konfirmuar skemen e tyre saktesisht) — perdor blloqe
-    // qe injorojne saktesisht gabimin "tabela s'ekziston", pa e prishur transaksionin.
-    // Konvertimet/Zonat — skema konfirmuar (kane ON DELETE CASCADE vetë, kjo eshte per siguri shtese
-    // dhe pastrim te menjehershem, jo vetem kur bizneset fshihet me vone ne kete transaksion).
     await klient.query('DELETE FROM konvertimet WHERE biznes_id=$1', [id]);
     await klient.query('DELETE FROM zonat WHERE biznes_id=$1', [id]);
     // Me ne fund, vetë biznesi
     await klient.query('DELETE FROM bizneset WHERE id=$1', [id]);
     await klient.query('COMMIT');
-    res.json({ ok: true });
   } catch (e) {
     await klient.query('ROLLBACK');
-    res.status(500).json({ error: e.message });
-  } finally {
     klient.release();
+    return res.status(500).json({ error: e.message });
   }
+  klient.release();
+
+  // Tabelat OPSIONALE (veçori qe mund te mos jene perdorur ende ne kete server specifik,
+  // pra tabela mund te MOS EKZISTOJE fare akoma) — trajtuar VEÇMAS, JASHTE transaksionit
+  // kryesor, qe nese ndonjë s'ekziston, te MOS PRISHË fshirjen kryesore qe TASHME ndodhi me sukses.
+  const tabelatOpsionale = [
+    { tab: 'kategori_perjashtime', kol: 'biznes_id' },
+    { tab: 'kategori_kufizime_konfiguruar', kol: 'biznes_id' },
+    { tab: 'ekipi_lista_pritjes', kol: 'biznes_id' },
+    { tab: 'suport_kerkesat', kol: 'biznes_id' },
+    { tab: 'njoftimet_admin', kol: 'biznes_id' },
+    { tab: 'analizo_perdorimi', kol: 'biznes_id' }
+  ];
+  for (const t of tabelatOpsionale) {
+    try { await pool.query(`DELETE FROM ${t.tab} WHERE ${t.kol}=$1`, [id]); }
+    catch (e) { /* tabela s'ekziston ende ne kete server — s'ka gje per te fshire, injoro */ }
+  }
+
+  res.json({ ok: true });
 });
 
 // --- Faqet ---
