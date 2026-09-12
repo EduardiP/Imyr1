@@ -981,6 +981,36 @@ await pzNgarkoListen();
 
 function pzRenderDetajet(r){
 const el=$('pzDetaje'); if(!el) return;
+function ndertoRreshtat(kandidatet, ngjyraFitor, lloji, fusha){
+  // fusha: 'mesatare' -> perdor pesha/pika_perzgjedhje/etj; 'fundit' -> perdor _fundit
+  const f = fusha==='fundit' ? '_fundit' : '';
+  const koloneShtese = lloji==='ankand'
+    ? '<span class="kc3">AI</span><span class="kc3">Profil</span><span class="kc3">Ndihma</span>'
+    : '<span class="kc3">AI</span><span class="kc3">Deficit</span><span class="kc3">Dhënë</span><span class="kc3">Marrë</span>';
+  const gridKolonat = lloji==='ankand'
+    ? 'grid-template-columns:2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 0.8fr;'
+    : 'grid-template-columns:2fr 1fr 1fr 0.8fr 0.8fr 0.7fr 0.7fr 0.8fr;';
+  let h='<div class="ktabela" style="overflow-x:auto;width:100%;">'+
+  '<div class="krow khead" style="'+gridKolonat+'min-width:640px;">'+
+    '<span class="kc1">Biznesi</span><span class="kc3">Peshë</span><span class="kc3">Pikë përzgj.</span>'+koloneShtese+'<span class="kc3">Fitoi</span></div>'+
+  kandidatet.map(function(k){
+    const fitoi = fusha==='fundit' ? k.fitore_fundit : (k.fitore>0);
+    const stilFitor = fitoi ? ('background:'+ngjyraFitor+';font-weight:600;') : '';
+    const shteseVlerat = lloji==='ankand'
+      ? '<span class="kc3">'+(k['ai_skori'+f]??'—')+'</span><span class="kc3">'+(k['pike_profili'+f]??'—')+'</span><span class="kc3">'+(k['ndihma'+f]??'—')+'</span>'
+      : '<span class="kc3">'+(k['ai_skori'+f]??'—')+'</span><span class="kc3">'+(k['deficit'+f]??'—')+'</span><span class="kc3">'+(k['dhene'+f]??'—')+'</span><span class="kc3">'+(k['marra'+f]??'—')+'</span>';
+    const fitoiTekst = fusha==='fundit' ? (fitoi?'Po':'—') : k.fitore;
+    return '<div class="krow" style="'+gridKolonat+'min-width:640px;padding:9px 10px;'+stilFitor+'">'+
+    '<span class="kc1" style="font-weight:600;">'+esc(k.emri||('#'+k.biznes_id))+'</span>'+
+    '<span class="kc3">'+k['pesha'+f]+'</span>'+
+    '<span class="kc3">'+k['pika_perzgjedhje'+f]+'</span>'+
+    shteseVlerat+
+    '<span class="kc3" style="color:var(--good);font-weight:700;">'+fitoiTekst+'</span>'+
+    '</div>';
+  }).join('')+
+  '</div>';
+  return h;
+}
 function tabela(titull, fitoreGjithsej, pikaTotaleFundit, kandidatet, ngjyraFitor, lloji){
 let h='<div style="margin-bottom:26px;">'+
 '<div style="font-weight:700;font-size:15px;margin-bottom:6px;">'+titull+'</div>'+
@@ -990,34 +1020,13 @@ if(!kandidatet.length){
 h+='<p class="small mut">Ende s\'ka të dhëna.</p></div>';
 return h;
 }
-const idToggle = 'pzExp_'+lloji;
-const koloneShtese = lloji==='ankand'
-  ? '<span class="kc3">AI</span><span class="kc3">Profil</span><span class="kc3">Ndihma</span>'
-  : '<span class="kc3">AI</span><span class="kc3">Deficit</span><span class="kc3">Dhënë</span><span class="kc3">Marrë</span>';
-const gridBaze = 'grid-template-columns:2fr 1fr 1fr 0.8fr;';
-const gridPlote = lloji==='ankand'
-  ? 'grid-template-columns:2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 0.8fr;'
-  : 'grid-template-columns:2fr 1fr 1fr 0.8fr 0.8fr 0.7fr 0.7fr 0.8fr;';
-h+='<button class="btn" style="font-size:12px;padding:5px 12px;margin-bottom:8px;" onclick="pzToggleDetaje(\''+idToggle+'\')">Shiko detajet e plota (AI/Profil/Ndihma ose Deficit)</button>';
-h+='<div class="ktabela" style="overflow-x:auto;width:100%;">'+
-'<div class="krow khead" id="'+idToggle+'_head" data-grid-plote="'+gridPlote+'" style="'+gridBaze+'min-width:520px;">'+
-  '<span class="kc1">Biznesi</span><span class="kc3">Peshë</span><span class="kc3">Pikë përzgj.</span><span class="kc3">Fitoi</span></div>'+
-kandidatet.map(function(k){
-const stilFitor = k.fitore ? ('background:'+ngjyraFitor+';font-weight:600;') : '';
-return '<div class="krow '+idToggle+'_row" style="'+gridBaze+'min-width:520px;padding:9px 10px;'+stilFitor+'">'+
-'<span class="kc1" style="font-weight:600;">'+esc(k.emri||('#'+k.biznes_id))+'</span>'+
-'<span class="kc3">'+k.pesha+'</span>'+
-'<span class="kc3">'+k.pika_perzgjedhje+'</span>'+
-'<span class="kc3" style="color:'+(k.fitore?'var(--good)':'var(--mut)')+';font-weight:700;">'+(k.fitore?'Po':'—')+'</span>'+
-'<span class="'+idToggle+'_extra hide" style="display:contents;">'+
-  '<span class="kc3">'+(k.ai_skori??'—')+'</span>'+
-  (lloji==='ankand'
-    ? '<span class="kc3">'+(k.pike_profili??'—')+'</span><span class="kc3">'+(k.ndihma??'—')+'</span>'
-    : '<span class="kc3">'+(k.deficit??'—')+'</span><span class="kc3">'+(k.dhene??'—')+'</span><span class="kc3">'+(k.marra??'—')+'</span>')+
-'</span>'+
-'</div>';
-}).join('')+
-'</div></div>';
+const idToggle = 'pzFundit_'+lloji;
+h+='<div class="small mut" style="margin:0 0 6px;">Mesatare historike:</div>';
+h+=ndertoRreshtat(kandidatet, ngjyraFitor, lloji, 'mesatare');
+h+='<button class="btn" style="font-size:12px;padding:5px 12px;margin:10px 0 8px;" onclick="pzToggleFundit(\''+idToggle+'\')">Shiko VETËM përzgjedhjen e fundit</button>';
+h+='<div id="'+idToggle+'" class="hide"><div class="small mut" style="margin:0 0 6px;">Vetëm përzgjedhja e fundit:</div>'+
+   ndertoRreshtat(kandidatet, ngjyraFitor, lloji, 'fundit')+'</div>';
+h+='</div>';
 return h;
 }
 let h='<div class="small mut" style="margin-bottom:14px;">Shfaqje totale të ofruara nga ky biznes: <b style="color:var(--txt);">'+r.shfaqje_totale+'</b></div>';
@@ -1025,33 +1034,11 @@ h+=tabela('Ankand', r.ankand.fitore_gjithsej, r.ankand.pika_totale_fundit, r.ank
 h+=tabela('Balancë', r.balance.fitore_gjithsej, r.balance.pika_totale_fundit, r.balance.kandidatet, 'rgba(239,68,68,0.15)', 'barazi');
 el.innerHTML=h;
 }
-function pzToggleDetaje(idToggle){
-const head=$(idToggle+'_head'); if(!head) return;
-const jashteHapur = head.getAttribute('data-hapur')==='1';
-const grid = head.getAttribute('data-grid-plote');
-if(!jashteHapur){
-  head.style.gridTemplateColumns = grid;
-  document.querySelectorAll('.'+idToggle+'_row').forEach(function(row){ row.style.gridTemplateColumns = grid; });
-  document.querySelectorAll('.'+idToggle+'_extra').forEach(function(sp){ sp.classList.remove('hide'); });
-  // shto etiketat e kolonave shtese te header-i, vetem 1 here
-  if(!head.querySelector('.pzExtraHead')){
-    const koloneShtese = idToggle.indexOf('ankand')>-1
-      ? '<span class="kc3 pzExtraHead">AI</span><span class="kc3 pzExtraHead">Profil</span><span class="kc3 pzExtraHead">Ndihma</span>'
-      : '<span class="kc3 pzExtraHead">AI</span><span class="kc3 pzExtraHead">Deficit</span><span class="kc3 pzExtraHead">Dhënë</span><span class="kc3 pzExtraHead">Marrë</span>';
-    head.insertAdjacentHTML('beforeend', koloneShtese);
-  } else {
-    head.querySelectorAll('.pzExtraHead').forEach(function(x){ x.classList.remove('hide'); });
-  }
-  head.setAttribute('data-hapur','1');
-} else {
-  const gridBaze='grid-template-columns:2fr 1fr 1fr 0.8fr;';
-  head.style.gridTemplateColumns = gridBaze;
-  document.querySelectorAll('.'+idToggle+'_row').forEach(function(row){ row.style.gridTemplateColumns = gridBaze; });
-  document.querySelectorAll('.'+idToggle+'_extra').forEach(function(sp){ sp.classList.add('hide'); });
-  head.querySelectorAll('.pzExtraHead').forEach(function(x){ x.classList.add('hide'); });
-  head.setAttribute('data-hapur','0');
+function pzToggleFundit(idToggle){
+const box=$(idToggle); if(!box) return;
+box.classList.toggle('hide');
 }
-}
+// (pzToggleDetaje u hoq — zevendesuar nga pzToggleFundit, me e thjeshte)
 
 
 // Ngarkohet NJE HERE (jo ne interval — qe hapja/mbyllja te ruhet)
