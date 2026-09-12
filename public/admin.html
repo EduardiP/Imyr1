@@ -979,7 +979,7 @@ await pzNgarkoListen();
 
 function pzRenderDetajet(r){
 const el=$('pzDetaje'); if(!el) return;
-function tabela(titull, fitoreGjithsej, pikaTotaleFundit, kandidatet, ngjyraFitor){
+function tabela(titull, fitoreGjithsej, pikaTotaleFundit, kandidatet, ngjyraFitor, lloji){
 let h='<div style="flex:1;min-width:0;">'+
 '<div style="font-weight:600;margin-bottom:4px;">'+titull+'</div>'+
 '<div class="small mut" style="margin-bottom:2px;">Ka fituar gjithsej: <b style="color:var(--txt);">'+fitoreGjithsej+'</b> herë</div>'+
@@ -988,14 +988,22 @@ if(!kandidatet.length){
 h+='<p class="small mut">Ende s\'ka të dhëna.</p></div>';
 return h;
 }
-h+='<div class="ktabela">'+
-'<div class="krow khead"><span class="kc1">Biznesi</span><span class="kc3">Peshë</span><span class="kc3">Pikë përzgj.</span><span class="kc3">Fitore</span></div>'+
+const koloneShtese = lloji==='ankand'
+  ? '<span class="kc3">AI</span><span class="kc3">Profil</span><span class="kc3">Ndihma</span>'
+  : '<span class="kc3">AI</span><span class="kc3">Deficit</span><span class="kc3">Dhënë/Marrë</span>';
+h+='<div class="ktabela" style="overflow-x:auto;">'+
+'<div class="krow khead" style="grid-template-columns:1.6fr 0.8fr 0.8fr 0.6fr 0.6fr 0.6fr 0.9fr;">'+
+  '<span class="kc1">Biznesi</span><span class="kc3">Peshë</span><span class="kc3">Pikë përzgj.</span>'+koloneShtese+'<span class="kc3">Fitore</span></div>'+
 kandidatet.map(function(k){
 const stilFitor = k.fitore>0 ? ('background:'+ngjyraFitor+';font-weight:600;') : '';
-return '<div class="krow" style="'+stilFitor+'">'+
+const shteseVlerat = lloji==='ankand'
+  ? '<span class="kc3">'+(k.ai_skori??'—')+'</span><span class="kc3">'+(k.pike_profili??'—')+'</span><span class="kc3">'+(k.ndihma??'—')+'</span>'
+  : '<span class="kc3">'+(k.ai_skori??'—')+'</span><span class="kc3">'+(k.deficit??'—')+'</span><span class="kc3">'+(k.dhene??'—')+'/'+(k.marra??'—')+'</span>';
+return '<div class="krow" style="grid-template-columns:1.6fr 0.8fr 0.8fr 0.6fr 0.6fr 0.6fr 0.9fr;'+stilFitor+'">'+
 '<span class="kc1">'+esc(k.emri||('#'+k.biznes_id))+'</span>'+
 '<span class="kc3">'+k.pesha+'</span>'+
 '<span class="kc3">'+k.pika_perzgjedhje+'</span>'+
+shteseVlerat+
 '<span class="kc3" style="color:var(--good);">'+k.fitore+'</span>'+
 '</div>';
 }).join('')+
@@ -1004,8 +1012,8 @@ return h;
 }
 let h='<div class="small mut" style="margin-bottom:14px;">Shfaqje totale të ofruara nga ky biznes: <b style="color:var(--txt);">'+r.shfaqje_totale+'</b></div>';
 h+='<div style="display:flex;gap:24px;flex-wrap:wrap;">';
-h+=tabela('Ankand', r.ankand.fitore_gjithsej, r.ankand.pika_totale_fundit, r.ankand.kandidatet, 'rgba(74,158,255,0.15)');
-h+=tabela('Balancë', r.balance.fitore_gjithsej, r.balance.pika_totale_fundit, r.balance.kandidatet, 'rgba(239,68,68,0.15)');
+h+=tabela('Ankand', r.ankand.fitore_gjithsej, r.ankand.pika_totale_fundit, r.ankand.kandidatet, 'rgba(74,158,255,0.15)', 'ankand');
+h+=tabela('Balancë', r.balance.fitore_gjithsej, r.balance.pika_totale_fundit, r.balance.kandidatet, 'rgba(239,68,68,0.15)', 'barazi');
 h+='</div>';
 el.innerHTML=h;
 }
