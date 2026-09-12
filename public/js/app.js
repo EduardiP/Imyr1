@@ -982,7 +982,7 @@ async function renderDashStatus(){
   const el=$('vstep'); if(!el) return; el.innerHTML='<p class="small mut">Checking…</p>';
   let gjendjaKrijimi = 'asnje';
   try{
-    const r = await (await fetch('/api/kreative/statusi-krijimit')).json();
+    const r = await (await fetch('/api/kreative/statusi-krijimit?logjika=ankand')).json();
     gjendjaKrijimi = r.gjendja || 'asnje';
   }catch(e){}
   el.innerHTML='';
