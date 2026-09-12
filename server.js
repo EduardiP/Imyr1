@@ -2874,7 +2874,7 @@ app.get('/api/admin/automatik/:id', iAdmin, async (req, res) => {
           row.deficit_fundit = d.deficit;
           row.dhene_fundit = d.dhene;
           row.marra_fundit = d.marra;
-          row.pesha_fundit = Math.max(0, aiTani + balancaModul.pikaDeficitit(d.deficit));
+          row.pesha_fundit = Math.round(Math.max(0, aiTani + balancaModul.pikaDeficitit(d.deficit)) * 100) / 100;
         } else {
           const rr = await pool.query(
             `SELECT COUNT(*) FILTER (WHERE lloji='shikim')::int AS shfaqje,
