@@ -453,14 +453,6 @@ module.exports = function (pool) {
         ai: x.ai, profil: x.profil, ndihma: x.ndihma, deficit: x.deficit, dhene: x.dhene, marra: x.marra
       }));
 
-      // PRUNING: fshi rreshtat E VJETER te finalisteve per KETE host+pishine, PARA se
-      // te shtojme te rinjte — mbajme VETEM përzgjedhjen e fundit, jo histori te pafund.
-      await pool.query(
-        `DELETE FROM automatik_finalistet f
-         USING automatik_vendime v
-         WHERE f.vendim_id = v.id AND v.host_id=$1 AND f.pishina=$2 AND v.id <> $3`,
-        [hostId, rezultat.pishina, vendimId]);
-
       for (const r of rreshta) {
         await pool.query(
           `INSERT INTO automatik_finalistet
