@@ -2826,24 +2826,18 @@ app.get('/api/admin/automatik/:id', iAdmin, async (req, res) => {
       const r = await pool.query(`
         SELECT f.biznes_id,
           (SELECT emri FROM bizneset WHERE id=f.biznes_id) AS emri,
-          AVG(f.pesha)::numeric(10,2) AS pesha,
-          AVG(f.pika_perzgjedhje)::numeric(10,2) AS pika_perzgjedhje,
-          (SELECT f2.pika_perzgjedhje FROM automatik_finalistet f2
-             JOIN automatik_vendime v2 ON v2.id=f2.vendim_id
-             WHERE f2.biznes_id=f.biznes_id AND v2.host_id=$1 AND f2.pishina=$2
-             ORDER BY v2.created_at DESC LIMIT 1) AS pika_perzgjedhje_fundit,
-          AVG(f.ai_skori)::numeric(10,2) AS ai_skori,
-          AVG(f.pike_profili)::numeric(10,2) AS pike_profili,
-          AVG(f.ndihma)::numeric(10,2) AS ndihma,
-          AVG(f.deficit)::numeric(10,2) AS deficit,
-          MAX(f.dhene)::int AS dhene,
-          MAX(f.marra)::int AS marra,
-          COUNT(*)::int AS pjesemarrje,
-          COUNT(*) FILTER (WHERE f.fitoi_biznesin=true)::int AS fitore
+          f.pesha,
+          f.pika_perzgjedhje,
+          f.ai_skori,
+          f.pike_profili,
+          f.ndihma,
+          f.deficit,
+          f.dhene,
+          f.marra,
+          f.fitoi_biznesin AS fitore
         FROM automatik_finalistet f
         JOIN automatik_vendime v ON v.id = f.vendim_id
         WHERE v.host_id=$1 AND f.pishina=$2
-        GROUP BY f.biznes_id
         ORDER BY fitore DESC, pesha DESC`, [id, pishina]);
       return r.rows;
     }
@@ -3040,14 +3034,10 @@ app.delete('/api/admin/biznes/:id', iAdmin, async (req, res) => {
     await klient.query('DELETE FROM analizo_perdorimi WHERE biznes_id=$1', [id]);
     // Tabelat E PASIGURTA (s'kam konfirmuar skemen e tyre saktesisht) — perdor blloqe
     // qe injorojne saktesisht gabimin "tabela s'ekziston", pa e prishur transaksionin.
-    await klient.query(`DO $$ BEGIN
-      DELETE FROM konvertimet WHERE biznes_id=${id};
-      EXCEPTION WHEN undefined_table OR undefined_column THEN NULL;
-    END $$;`);
-    await klient.query(`DO $$ BEGIN
-      DELETE FROM zonat WHERE biznes_id=${id};
-      EXCEPTION WHEN undefined_table OR undefined_column THEN NULL;
-    END $$;`);
+    // Konvertimet/Zonat — skema konfirmuar (kane ON DELETE CASCADE vetë, kjo eshte per siguri shtese
+    // dhe pastrim te menjehershem, jo vetem kur bizneset fshihet me vone ne kete transaksion).
+    await klient.query('DELETE FROM konvertimet WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM zonat WHERE biznes_id=$1', [id]);
     // Me ne fund, vetë biznesi
     await klient.query('DELETE FROM bizneset WHERE id=$1', [id]);
     await klient.query('COMMIT');
