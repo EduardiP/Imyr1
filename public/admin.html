@@ -896,14 +896,14 @@ var PZ_QELIZA = 10;  // 10 lart (Balance) + 10 posht (Ankand)
 var PZ_MADH = 14;    // madhesia e nje qelize (px)
 
 async function renderPerzgjedhjet(c){
-c.innerHTML='<div class="wrap">'+
+c.innerHTML='<div style="max-width:1100px;">'+
 '<h2 class="h">Përzgjedhjet</h2>'+
 '<p class="small" style="margin:4px 0 16px;">Historiku i Fazës 3 (sistemi Automatik): cila pishinë — Ankand apo Balancë — fiton hapësirën e ofruar, dhe cilët biznese konkurruan.</p>'+
-'<div style="display:flex;gap:22px;align-items:flex-start;">'+
-  '<div id="pzGrafiku" style="flex:0 0 100px;"></div>'+
-  '<div id="pzKarusel" style="flex:1;min-width:0;"></div>'+
+'<div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap;">'+
+  '<div id="pzGrafiku" style="flex:0 0 120px;"></div>'+
+  '<div id="pzKarusel" style="flex:1;min-width:340px;"></div>'+
 '</div>'+
-'<div id="pzDetaje" style="margin-top:30px;"><p class="small mut">Zgjidh një biznes nga lista për të parë detajet.</p></div>'+
+'<div id="pzDetaje" style="margin-top:34px;"><p class="small mut">Zgjidh një biznes nga lista për të parë detajet.</p></div>'+
 '</div>';
 await pzNgarkoBorxhin();
 await pzNgarkoListen();
@@ -955,12 +955,12 @@ pzRenderKaruselin(lista);
 function pzRenderKaruselin(lista){
 const el=$('pzKarusel'); if(!el) return;
 if(!lista.length){ el.innerHTML='<p class="small mut">S\'ka biznese.</p>'; return; }
-el.innerHTML='<div style="display:flex;flex-direction:column;gap:6px;max-height:318px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:8px;">'+
+el.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;max-height:340px;overflow-y:auto;padding:2px;">'+
 lista.map(function(b){
 const sel = (pzBizId===b.id);
-return '<div onclick="pzZgjidhBiznesin('+b.id+')" style="cursor:pointer;padding:9px 12px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;background:'+(sel?'rgba(59,130,246,0.12)':'transparent')+';border:1px solid '+(sel?'var(--acc)':'transparent')+';">'+
-'<span style="font-weight:'+(sel?'600':'400')+';">'+esc(b.emri||('#'+b.id))+'</span>'+
-'<span class="small mut">Shfaqje: '+b.shfaqje_totale+' &nbsp;·&nbsp; A:'+b.ankand_fitore+' B:'+b.balance_fitore+'</span>'+
+return '<div onclick="pzZgjidhBiznesin('+b.id+')" style="cursor:pointer;padding:11px 14px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;background:'+(sel?'rgba(59,130,246,0.12)':'transparent')+';border:1px solid '+(sel?'var(--acc)':'var(--line)')+';">'+
+'<span style="font-weight:'+(sel?'600':'400')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(b.emri||('#'+b.id))+'</span>'+
+'<span class="small mut" style="white-space:nowrap;flex:0 0 auto;">'+b.shfaqje_totale+' &nbsp;·&nbsp; A:'+b.ankand_fitore+' B:'+b.balance_fitore+'</span>'+
 '</div>';
 }).join('')+
 '</div>';
