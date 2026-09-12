@@ -106,21 +106,13 @@ module.exports = function (pool) {
   //   deficit  5  → 80.00
   //   deficit  6  → 100.00
   //   deficit 7+  → vazhdon rritjen (125, 156.25, ...)
-  function pikaBalance(deficit) {
-    return 100 * Math.pow(0.8, 6 - Math.abs(deficit));
-  }
-
-  // ══════════════════════════════════════════════════════════════════
-  // FORMULA 2: PIKA PERFUNDIMTARE BALANCE (AI ± pikë balance, min 0)
-  // ══════════════════════════════════════════════════════════════════
-  //   deficit > 0 → biznesi ka dhene me shume → shtohen piket AI
-  //   deficit < 0 → biznesi ka marre me shume → zbriten piket AI (min 0)
-  //   deficit = 0 → AI mbetet i njejte
+  // UNIFIKIM: ne vend te formules se vet (qe krijonte mospershtatje me balanca.js —
+  // pesha qe vendos fituesin e PISHINES duhet te jete E NJEJTA qe pastaj vendos
+  // fituesin BRENDA Balance-s, perndryshe 2 hapat s'jane konsistente me njeri-tjetrin).
+  // Perdor drejtperdrejt pikaDeficitit() te balanca.js — e njejta formule, kudo.
+  const balancaModul = require('./balanca')(pool);
   function pikaPerfundimtareBalance(aiSkori, deficit) {
-    const pika = pikaBalance(deficit);
-    if (deficit > 0) return aiSkori + pika;
-    if (deficit < 0) return Math.max(0, aiSkori - pika);
-    return aiSkori;
+    return Math.max(0, aiSkori + balancaModul.pikaDeficitit(deficit));
   }
 
   // ══════════════════════════════════════════════════════════════════
@@ -511,7 +503,6 @@ module.exports = function (pool) {
   return {
     init,
     // formulat
-    pikaBalance,
     pikaPerfundimtareBalance,
     pikaPerzgjedhjeje,
     // borxhi
