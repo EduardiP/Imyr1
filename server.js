@@ -2821,6 +2821,9 @@ app.get('/api/admin/automatik/:id', iAdmin, async (req, res) => {
       WHERE host_id=$1 AND u_konkurrua=true
       ORDER BY created_at DESC LIMIT 1`, [id]);
     const pikaFundit = fundQ.rows[0] || { pika_totale_ankand: null, pika_totale_barazi: null };
+    const hostTipiQ = await pool.query('SELECT tipi FROM bizneset WHERE id=$1', [id]);
+    const hostTipi = hostTipiQ.rows[0] && hostTipiQ.rows[0].tipi;
+    function pikaPerzgjedhjejeAdmin(x) { return (3/40000)*x*x - (3/200)*x + 7/4; }
 
     async function tabelaPerPishine(pishina) {
       const r = await pool.query(`
@@ -2842,27 +2845,57 @@ app.get('/api/admin/automatik/:id', iAdmin, async (req, res) => {
           GROUP BY f.biznes_id
         ),
         i_fundit AS (
-          SELECT DISTINCT ON (f.biznes_id) f.biznes_id,
-            f.pesha AS pesha_fundit,
-            f.pika_perzgjedhje AS pika_perzgjedhje_fundit,
-            f.ai_skori AS ai_skori_fundit,
-            f.pike_profili AS pike_profili_fundit,
-            f.ndihma AS ndihma_fundit,
-            f.deficit AS deficit_fundit,
-            f.dhene AS dhene_fundit,
-            f.marra AS marra_fundit,
-            f.fitoi_biznesin AS fitore_fundit
+          SELECT DISTINCT ON (f.biznes_id) f.biznes_id, f.fitoi_biznesin AS fitore_fundit
           FROM automatik_finalistet f
           JOIN automatik_vendime v ON v.id = f.vendim_id
           WHERE v.host_id=$1 AND f.pishina=$2
           ORDER BY f.biznes_id, v.created_at DESC
         )
         SELECT m.biznes_id, (SELECT emri FROM bizneset WHERE id=m.biznes_id) AS emri,
+          (SELECT tipi FROM bizneset WHERE id=m.biznes_id) AS tipi,
           m.pesha, m.pika_perzgjedhje, m.ai_skori, m.pike_profili, m.ndihma, m.deficit, m.dhene, m.marra, m.fitore,
-          i.pesha_fundit, i.pika_perzgjedhje_fundit, i.ai_skori_fundit, i.pike_profili_fundit,
-          i.ndihma_fundit, i.deficit_fundit, i.dhene_fundit, i.marra_fundit, i.fitore_fundit
+          i.fitore_fundit
         FROM mesatare m JOIN i_fundit i ON i.biznes_id = m.biznes_id
         ORDER BY m.fitore DESC, m.pesha DESC`, [id, pishina]);
+
+      // LIVE: per secilin kandidat, rillogarit AI+deficit/profil TANI (jo snapshot historik) —
+      // qe "pika e fundit" te reflektoje gjendjen REALE aktuale, njesoj si "Bizneset→Balance".
+      const balancaModul = require('./balanca')(pool);
+      for (const row of r.rows) {
+        let aiTani = 0;
+        try {
+          const s = await pool.query('SELECT skori FROM perputhjet WHERE reklamues_id=$1 AND host_id=$2', [row.biznes_id, id]);
+          if (s.rows.length && s.rows[0].skori != null) aiTani = s.rows[0].skori;
+        } catch (e) {}
+        row.ai_skori_fundit = aiTani;
+        if (pishina === 'barazi') {
+          const det = await balancaModul.merrDeficitet([row.biznes_id]);
+          const d = det[row.biznes_id] || { dhene: 0, marra: 0, deficit: 0 };
+          row.deficit_fundit = d.deficit;
+          row.dhene_fundit = d.dhene;
+          row.marra_fundit = d.marra;
+          row.pesha_fundit = Math.max(0, aiTani + balancaModul.pikaDeficitit(d.deficit));
+        } else {
+          const rr = await pool.query(
+            `SELECT COUNT(*) FILTER (WHERE lloji='shikim')::int AS shfaqje,
+                    COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
+             FROM ngjarjet WHERE biznes_id=$1 AND created_at >= now() - interval '30 days'`, [row.biznes_id]);
+          const rate = pesha.PARAM.RATE[row.tipi || hostTipi] || pesha.PARAM.RATE.b2c;
+          const pikeProf = (rr.rows[0].shfaqje / rate) + rr.rows[0].konvertime;
+          let nderTop3 = false;
+          try {
+            const t3 = await pool.query(
+              `SELECT host_id FROM perputhjet WHERE reklamues_id=$1 AND skori IS NOT NULL ORDER BY skori DESC LIMIT $2`,
+              [row.biznes_id, pesha.PARAM.TOP_KOMBINIME]);
+            nderTop3 = t3.rows.some(x => x.host_id === id);
+          } catch (e) {}
+          const ndihNeto = pesha.ndihmaNeto(aiTani, pikeProf, nderTop3);
+          row.pike_profili_fundit = Math.round(pikeProf * 100) / 100;
+          row.ndihma_fundit = Math.round(ndihNeto * 100) / 100;
+          row.pesha_fundit = Math.round((aiTani + pikeProf + ndihNeto) * 100) / 100;
+        }
+        row.pika_perzgjedhje_fundit = Math.round(pikaPerzgjedhjejeAdmin(row.pesha_fundit) * 100) / 100;
+      }
       return r.rows;
     }
 
