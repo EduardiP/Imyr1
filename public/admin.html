@@ -1356,8 +1356,26 @@ row2('Kategoria kryesore', b.kategoria_kryesore||'—')+
 row2('Nënkategoritë', b.nenkategorite||'—')+
 row2('Përshkrimi i dhënë', b.pershkrimi||'—')+
 row2('Përmbledhja', b.permbledhje||'—')+
+'</div>'+
+'<div class="sect" style="border:1px solid #f85149;background:rgba(248,81,73,.06);">'+
+  '<h3 style="color:#f85149;">Zonë e rrezikshme</h3>'+
+  '<p class="small mut" style="margin:4px 0 12px;">Fshin PËRGJITHMONË këtë biznes dhe çdo gjurmë të tij (shfaqje, klikime, konvertime, reklama, snippet-e, vendime automatik/balance, etj.) — pa mundësi rikthimi.</p>'+
+  '<button id="bizDelBtn" onclick="bizFshiKonfirmo('+b.id+',\''+esc((b.emri||'').replace(/\'/g,"\\\\'"))+'\')" style="background:#f85149;color:#fff;border:none;padding:9px 18px;border-radius:8px;cursor:pointer;font-weight:600;">Delete this business</button>'+
 '</div>';
 }catch(e){ m.innerHTML='<button class="back" onclick="renderBizMain()">← Bizneset</button><p class="small">Gabim: '+e.message+'</p>'; }
+}
+function bizFshiKonfirmo(id, emri){
+  if(!confirm('A je i sigurt? Kjo do te fshije PERGJITHMONE biznesin "'+emri+'" dhe çdo gjurme te tij. S\'mund te kthehet mbrapa.')) return;
+  bizFshi(id);
+}
+async function bizFshi(id){
+  const btn=$('bizDelBtn'); if(btn){ btn.disabled=true; btn.textContent='Duke fshirë…'; }
+  try{
+    const r=await(await fetch('/api/admin/biznes/'+id,{method:'DELETE'})).json();
+    if(r.error){ alert('Gabim: '+r.error); if(btn){ btn.disabled=false; btn.textContent='Delete this business'; } return; }
+    alert('Biznesi u fshi plotësisht.');
+    renderBizMain();
+  }catch(e){ alert('Gabim: '+e.message); if(btn){ btn.disabled=false; btn.textContent='Delete this business'; } }
 }
 function stat(v,l){ return '<div class="stat"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>'; }
 function graceStatus(b){
