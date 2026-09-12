@@ -928,9 +928,11 @@ h+='<div style="position:absolute;left:0;right:0;top:'+(PZ_QELIZA*PZ_MADH+PZ_MAD
 for(let r=0;r<RRESHTA;r++){
 const niveli = PZ_QELIZA - r; // +10 ... 0 ... -10
 let stil='background:transparent;';
-if(niveli>0){ // ana e siperme = Balance (e kuqe)
+// RREGULLI I SAKTE: VETEM njera ane mbushet, sipas SHENJES reale te borxhiNeto —
+// jo te dyja simetrikisht (magnituda vete s'ka shenje, Math.abs e ka fshire).
+if(borxhiNeto>0 && niveli>0){ // borxhiNeto POZITIV → Ankandi i detyrohet Balances → mbush VETEM siper (Balance)
   if(niveli<=magnituda) stil='background:#ef4444;';
-} else if(niveli<0){ // ana e poshtme = Ankand (blu)
+} else if(borxhiNeto<0 && niveli<0){ // borxhiNeto NEGATIV → Balanca i detyrohet Ankandit → mbush VETEM poshte (Ankand)
   if(Math.abs(niveli)<=magnituda) stil='background:#4a9eff;';
 }
 h+='<div style="width:'+PZ_MADH+'px;height:'+PZ_MADH+'px;box-sizing:border-box;border-bottom:1px solid rgba(255,255,255,.06);'+stil+'"></div>';
@@ -989,23 +991,24 @@ h+='<p class="small mut">Ende s\'ka të dhëna.</p></div>';
 return h;
 }
 const koloneShtese = lloji==='ankand'
-  ? '<span class="kc3">AI</span><span class="kc3">Profil</span><span class="kc3">Ndihma</span>'
-  : '<span class="kc3">AI</span><span class="kc3">Deficit</span><span class="kc3">Dhënë</span><span class="kc3">Marrë</span>';
+  ? '<span class="kc3">AI (mesatare)</span><span class="kc3">Profil (mesatare)</span><span class="kc3">Ndihma (mesatare)</span>'
+  : '<span class="kc3">AI (mesatare)</span><span class="kc3">Deficit (mesatare)</span><span class="kc3">Dhënë</span><span class="kc3">Marrë</span>';
 const gridKolonat = lloji==='ankand'
-  ? 'grid-template-columns:2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 0.8fr;'
-  : 'grid-template-columns:2fr 1fr 1fr 0.8fr 0.8fr 0.7fr 0.7fr 0.8fr;';
+  ? 'grid-template-columns:2fr 1fr 1fr 0.9fr 0.8fr 0.8fr 0.8fr 0.8fr;'
+  : 'grid-template-columns:2fr 1fr 1fr 0.9fr 0.8fr 0.8fr 0.7fr 0.7fr 0.8fr;';
 h+='<div class="ktabela" style="overflow-x:auto;width:100%;">'+
-'<div class="krow khead" style="'+gridKolonat+'min-width:640px;">'+
-  '<span class="kc1">Biznesi</span><span class="kc3">Peshë</span><span class="kc3">Pikë përzgj.</span>'+koloneShtese+'<span class="kc3">Fitore</span></div>'+
+'<div class="krow khead" style="'+gridKolonat+'min-width:700px;">'+
+  '<span class="kc1">Biznesi</span><span class="kc3">Peshë (mesatare)</span><span class="kc3">Pikë përzgj. (mesatare)</span><span class="kc3">Pikë përzgj. (e fundit)</span>'+koloneShtese+'<span class="kc3">Fitore</span></div>'+
 kandidatet.map(function(k){
 const stilFitor = k.fitore>0 ? ('background:'+ngjyraFitor+';font-weight:600;') : '';
 const shteseVlerat = lloji==='ankand'
   ? '<span class="kc3">'+(k.ai_skori??'—')+'</span><span class="kc3">'+(k.pike_profili??'—')+'</span><span class="kc3">'+(k.ndihma??'—')+'</span>'
   : '<span class="kc3">'+(k.ai_skori??'—')+'</span><span class="kc3">'+(k.deficit??'—')+'</span><span class="kc3">'+(k.dhene??'—')+'</span><span class="kc3">'+(k.marra??'—')+'</span>';
-return '<div class="krow" style="'+gridKolonat+'min-width:640px;padding:9px 10px;'+stilFitor+'">'+
+return '<div class="krow" style="'+gridKolonat+'min-width:700px;padding:9px 10px;'+stilFitor+'">'+
 '<span class="kc1" style="font-weight:600;">'+esc(k.emri||('#'+k.biznes_id))+'</span>'+
 '<span class="kc3">'+k.pesha+'</span>'+
 '<span class="kc3">'+k.pika_perzgjedhje+'</span>'+
+'<span class="kc3">'+(k.pika_perzgjedhje_fundit??'—')+'</span>'+
 shteseVlerat+
 '<span class="kc3" style="color:var(--good);font-weight:700;">'+k.fitore+'</span>'+
 '</div>';
