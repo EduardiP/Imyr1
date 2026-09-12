@@ -445,13 +445,22 @@ module.exports = function (pool) {
       // Regjistrohet VETEM pishina qe fitoi realisht — tjetra s'ka pse te shfaqet
       // ne historik si liste kandidatesh, edhe pse u llogarit internally per te
       // vendosur fituesin (shuma e saj totale mbetet e ruajtur me lart).
-      const listaFituese = (rezultat.pishina === 'ankand') ? rezultat.topAnkand : rezultat.topBarazi;
-      const rreshta = (listaFituese || []).map(x => ({
-        pishina: rezultat.pishina, biznes_id: x.biznes_id, pesha: x.pesha,
+      // RUAJ TE DYJA LISTAT (Ankand DHE Balance), jo vetem pishinen fituese — perndryshe
+      // "shuma" (ruajtur per te dyja pishinat, çdo here) del jashte sinkronizimit me
+      // listen e kandidateve (qe me pare ruhej vetem per fituesin, moment tjeter kohor).
+      const rreshtaAnkand = (rezultat.topAnkand || []).map(x => ({
+        pishina: 'ankand', biznes_id: x.biznes_id, pesha: x.pesha,
         pika: pikaPerzgjedhjeje(x.pesha),
-        fitoi: x.biznes_id === fituesBizId,
+        fitoi: (rezultat.pishina === 'ankand') && (x.biznes_id === fituesBizId),
         ai: x.ai, profil: x.profil, ndihma: x.ndihma, deficit: x.deficit, dhene: x.dhene, marra: x.marra
       }));
+      const rreshtaBarazi = (rezultat.topBarazi || []).map(x => ({
+        pishina: 'barazi', biznes_id: x.biznes_id, pesha: x.pesha,
+        pika: pikaPerzgjedhjeje(x.pesha),
+        fitoi: (rezultat.pishina === 'barazi') && (x.biznes_id === fituesBizId),
+        ai: x.ai, profil: x.profil, ndihma: x.ndihma, deficit: x.deficit, dhene: x.dhene, marra: x.marra
+      }));
+      const rreshta = rreshtaAnkand.concat(rreshtaBarazi);
 
       for (const r of rreshta) {
         await pool.query(
