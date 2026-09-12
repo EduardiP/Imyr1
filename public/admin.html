@@ -85,7 +85,12 @@
 @media (max-width:700px){
 .anav { overflow-x:auto; flex-wrap:nowrap; -webkit-overflow-scrolling:touch; }
 .anav button { flex:0 0 auto; white-space:nowrap; }
-#bizNav { display:flex; overflow-x:auto; gap:8px; -webkit-overflow-scrolling:touch; }
+/* style.css e fsheh .sidebar krejt ne celular (mendu per #mobDrawer te aplikacionit publik) —
+   admin-i s'ka #mobDrawer te vetin, prandaj e kthejme dukshmerine ketu, si rresht horizontal. */
+.sidebar{ display:block !important; width:100% !important; height:auto !important;
+  position:static !important; border-right:none !important; border-bottom:1px solid var(--line);
+  padding:8px !important; overflow:visible !important; }
+#bizNav, #njoftNav { display:flex; overflow-x:auto; gap:8px; -webkit-overflow-scrolling:touch; }
 .subnav { width:auto; white-space:nowrap; flex:0 0 auto; margin-bottom:0; }
 }
 .kfilter{ display:flex; gap:12px; }
@@ -116,6 +121,7 @@ border-radius:8px; color:#e6edf3; font-size:14px; font-family:inherit; margin-bo
 /* Admin: sidebar-i i dashboard-it publik kolapson ne hover (56px->220px) — ketu
    duhet gjithmone i hapur, pa u mbyllur, pavaresisht ku shkon mausi. */
 .sidebar{ width:220px !important; overflow-y:auto !important; }
+@media (max-width:700px){ .sidebar{ width:100% !important; height:auto !important; } }
 .sidebar .snItem .snLbl, .sidebar .snLbl{ opacity:1 !important; }
 </style>
 </head>
