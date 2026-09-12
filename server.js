@@ -2824,21 +2824,45 @@ app.get('/api/admin/automatik/:id', iAdmin, async (req, res) => {
 
     async function tabelaPerPishine(pishina) {
       const r = await pool.query(`
-        SELECT f.biznes_id,
-          (SELECT emri FROM bizneset WHERE id=f.biznes_id) AS emri,
-          f.pesha,
-          f.pika_perzgjedhje,
-          f.ai_skori,
-          f.pike_profili,
-          f.ndihma,
-          f.deficit,
-          f.dhene,
-          f.marra,
-          f.fitoi_biznesin AS fitore
-        FROM automatik_finalistet f
-        JOIN automatik_vendime v ON v.id = f.vendim_id
-        WHERE v.host_id=$1 AND f.pishina=$2
-        ORDER BY fitore DESC, pesha DESC`, [id, pishina]);
+        WITH mesatare AS (
+          SELECT f.biznes_id,
+            AVG(f.pesha)::numeric(10,2) AS pesha,
+            AVG(f.pika_perzgjedhje)::numeric(10,2) AS pika_perzgjedhje,
+            AVG(f.ai_skori)::numeric(10,2) AS ai_skori,
+            AVG(f.pike_profili)::numeric(10,2) AS pike_profili,
+            AVG(f.ndihma)::numeric(10,2) AS ndihma,
+            AVG(f.deficit)::numeric(10,2) AS deficit,
+            MAX(f.dhene)::int AS dhene,
+            MAX(f.marra)::int AS marra,
+            COUNT(*)::int AS pjesemarrje,
+            COUNT(*) FILTER (WHERE f.fitoi_biznesin=true)::int AS fitore
+          FROM automatik_finalistet f
+          JOIN automatik_vendime v ON v.id = f.vendim_id
+          WHERE v.host_id=$1 AND f.pishina=$2
+          GROUP BY f.biznes_id
+        ),
+        i_fundit AS (
+          SELECT DISTINCT ON (f.biznes_id) f.biznes_id,
+            f.pesha AS pesha_fundit,
+            f.pika_perzgjedhje AS pika_perzgjedhje_fundit,
+            f.ai_skori AS ai_skori_fundit,
+            f.pike_profili AS pike_profili_fundit,
+            f.ndihma AS ndihma_fundit,
+            f.deficit AS deficit_fundit,
+            f.dhene AS dhene_fundit,
+            f.marra AS marra_fundit,
+            f.fitoi_biznesin AS fitore_fundit
+          FROM automatik_finalistet f
+          JOIN automatik_vendime v ON v.id = f.vendim_id
+          WHERE v.host_id=$1 AND f.pishina=$2
+          ORDER BY f.biznes_id, v.created_at DESC
+        )
+        SELECT m.biznes_id, (SELECT emri FROM bizneset WHERE id=m.biznes_id) AS emri,
+          m.pesha, m.pika_perzgjedhje, m.ai_skori, m.pike_profili, m.ndihma, m.deficit, m.dhene, m.marra, m.fitore,
+          i.pesha_fundit, i.pika_perzgjedhje_fundit, i.ai_skori_fundit, i.pike_profili_fundit,
+          i.ndihma_fundit, i.deficit_fundit, i.dhene_fundit, i.marra_fundit, i.fitore_fundit
+        FROM mesatare m JOIN i_fundit i ON i.biznes_id = m.biznes_id
+        ORDER BY m.fitore DESC, m.pesha DESC`, [id, pishina]);
       return r.rows;
     }
 
