@@ -2828,6 +2828,10 @@ app.get('/api/admin/automatik/:id', iAdmin, async (req, res) => {
           (SELECT emri FROM bizneset WHERE id=f.biznes_id) AS emri,
           AVG(f.pesha)::numeric(10,2) AS pesha,
           AVG(f.pika_perzgjedhje)::numeric(10,2) AS pika_perzgjedhje,
+          (SELECT f2.pika_perzgjedhje FROM automatik_finalistet f2
+             JOIN automatik_vendime v2 ON v2.id=f2.vendim_id
+             WHERE f2.biznes_id=f.biznes_id AND v2.host_id=$1 AND f2.pishina=$2
+             ORDER BY v2.created_at DESC LIMIT 1) AS pika_perzgjedhje_fundit,
           AVG(f.ai_skori)::numeric(10,2) AS ai_skori,
           AVG(f.pike_profili)::numeric(10,2) AS pike_profili,
           AVG(f.ndihma)::numeric(10,2) AS ndihma,
