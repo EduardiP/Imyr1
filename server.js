@@ -2821,6 +2821,12 @@ app.get('/api/admin/automatik/:id', iAdmin, async (req, res) => {
           (SELECT emri FROM bizneset WHERE id=f.biznes_id) AS emri,
           AVG(f.pesha)::numeric(10,2) AS pesha,
           AVG(f.pika_perzgjedhje)::numeric(10,2) AS pika_perzgjedhje,
+          AVG(f.ai_skori)::numeric(10,2) AS ai_skori,
+          AVG(f.pike_profili)::numeric(10,2) AS pike_profili,
+          AVG(f.ndihma)::numeric(10,2) AS ndihma,
+          AVG(f.deficit)::numeric(10,2) AS deficit,
+          MAX(f.dhene)::int AS dhene,
+          MAX(f.marra)::int AS marra,
           COUNT(*)::int AS pjesemarrje,
           COUNT(*) FILTER (WHERE f.fitoi_biznesin=true)::int AS fitore
         FROM automatik_finalistet f
