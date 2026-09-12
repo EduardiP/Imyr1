@@ -72,8 +72,20 @@ module.exports = function (pool) {
         biznes_id        INTEGER NOT NULL,
         pesha            NUMERIC,         -- pesha Ankand OSE pika perfundimtare Balance (AI±deficit)
         pika_perzgjedhje NUMERIC,         -- rezultati i formules universale mbi 'pesha'
-        fitoi_biznesin   BOOLEAN DEFAULT false -- a ishte ky biznes fituesi FINAL (Faza 4)
+        fitoi_biznesin   BOOLEAN DEFAULT false, -- a ishte ky biznes fituesi FINAL (Faza 4)
+        ai_skori         NUMERIC,         -- AI i pastër (0-1000), per te dyja pishinat
+        pike_profili     NUMERIC,         -- VETEM per Ankand (null per Balance)
+        ndihma           NUMERIC,         -- VETEM per Ankand (null per Balance)
+        deficit          NUMERIC,         -- VETEM per Balance (null per Ankand)
+        dhene            INTEGER,         -- VETEM per Balance: shikime te dhena
+        marra            INTEGER          -- VETEM per Balance: shikime te marra
       )`);
+    await pool.query(`ALTER TABLE automatik_finalistet ADD COLUMN IF NOT EXISTS ai_skori NUMERIC`);
+    await pool.query(`ALTER TABLE automatik_finalistet ADD COLUMN IF NOT EXISTS pike_profili NUMERIC`);
+    await pool.query(`ALTER TABLE automatik_finalistet ADD COLUMN IF NOT EXISTS ndihma NUMERIC`);
+    await pool.query(`ALTER TABLE automatik_finalistet ADD COLUMN IF NOT EXISTS deficit NUMERIC`);
+    await pool.query(`ALTER TABLE automatik_finalistet ADD COLUMN IF NOT EXISTS dhene INTEGER`);
+    await pool.query(`ALTER TABLE automatik_finalistet ADD COLUMN IF NOT EXISTS marra INTEGER`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_automatik_finalistet_vendim ON automatik_finalistet(vendim_id)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_automatik_finalistet_biznes ON automatik_finalistet(biznes_id)`);
   }
@@ -241,7 +253,7 @@ module.exports = function (pool) {
     let nderTop3 = false;
     try { nderTop3 = await eshteNderTop3(kandidatBizId, hostId); } catch (e) {}
     const ndihNeto = pesha.ndihmaNeto(skorAI, pikeProf, nderTop3);
-    return skorAI + pikeProf + ndihNeto;
+    return { pesha: skorAI + pikeProf + ndihNeto, ai: skorAI, profil: pikeProf, ndihma: ndihNeto };
   }
 
   // ══════════════════════════════════════════════════════════════════
@@ -259,6 +271,19 @@ module.exports = function (pool) {
       [bizId]);
     return r.rows[0].dhene - r.rows[0].marra;
   }
+  // Njesoj si merrDeficitin, por kthen edhe numrat e papercaktuar (dhene/marre veçmas),
+  // per shfaqje admin, jo vetem neto-n.
+  async function merrDeficitinDetajuar(bizId) {
+    const r = await pool.query(`
+      SELECT
+        COALESCE((SELECT COUNT(*) FROM ngjarjet
+                  WHERE lloji='shikim' AND burimi='barazi' AND biznes_id=$1),0)::int AS dhene,
+        COALESCE((SELECT COUNT(*) FROM ngjarjet
+                  WHERE lloji='shikim' AND burimi='barazi' AND reklamues_id=$1),0)::int AS marra`,
+      [bizId]);
+    const dhene = r.rows[0].dhene, marra = r.rows[0].marra;
+    return { deficit: dhene - marra, dhene, marra };
+  }
 
   async function pikaPerfundimtareBalancePerBiznes(bizId, hostId) {
     let skorAI = 0;
@@ -268,8 +293,9 @@ module.exports = function (pool) {
         [bizId, hostId]);
       if (s.rows.length && s.rows[0].skori != null) skorAI = s.rows[0].skori;
     } catch (e) {}
-    const deficit = await merrDeficitin(bizId);
-    return pikaPerfundimtareBalance(skorAI, deficit);
+    const det = await merrDeficitinDetajuar(bizId);
+    const pikaFund = pikaPerfundimtareBalance(skorAI, det.deficit);
+    return { pesha: pikaFund, ai: skorAI, deficit: det.deficit, dhene: det.dhene, marra: det.marra };
   }
 
   // ══════════════════════════════════════════════════════════════════
@@ -300,12 +326,12 @@ module.exports = function (pool) {
     const peshatAnkand = [];
     for (const k of kandAnkand) {
       const p = await peshaAnkand(k.biznes_id, k.tipi, hostId, hTipi);
-      peshatAnkand.push({ biznes_id: k.biznes_id, pesha: p });
+      peshatAnkand.push({ biznes_id: k.biznes_id, pesha: p.pesha });
     }
     const peshatBarazi = [];
     for (const k of kandBarazi) {
       const p = await pikaPerfundimtareBalancePerBiznes(k.biznes_id, hostId);
-      peshatBarazi.push({ biznes_id: k.biznes_id, pesha: p });
+      peshatBarazi.push({ biznes_id: k.biznes_id, pesha: p.pesha });
     }
 
     // HAPI 6 — Top 5 nga secila, ekualizuar
@@ -355,12 +381,12 @@ module.exports = function (pool) {
     const peshatAnkand = [];
     for (const k of kandAnkand) {
       const p = await peshaAnkand(k.biznes_id, k.tipi, hostId, hTipi);
-      peshatAnkand.push({ biznes_id: k.biznes_id, pesha: p });
+      peshatAnkand.push({ biznes_id: k.biznes_id, pesha: p.pesha, ai: p.ai, profil: p.profil, ndihma: p.ndihma });
     }
     const peshatBarazi = [];
     for (const k of kandBarazi) {
       const p = await pikaPerfundimtareBalancePerBiznes(k.biznes_id, hostId);
-      peshatBarazi.push({ biznes_id: k.biznes_id, pesha: p });
+      peshatBarazi.push({ biznes_id: k.biznes_id, pesha: p.pesha, ai: p.ai, deficit: p.deficit, dhene: p.dhene, marra: p.marra });
     }
 
     peshatAnkand.sort((a, b) => b.pesha - a.pesha);
@@ -423,14 +449,17 @@ module.exports = function (pool) {
       const rreshta = (listaFituese || []).map(x => ({
         pishina: rezultat.pishina, biznes_id: x.biznes_id, pesha: x.pesha,
         pika: pikaPerzgjedhjeje(x.pesha),
-        fitoi: x.biznes_id === fituesBizId
+        fitoi: x.biznes_id === fituesBizId,
+        ai: x.ai, profil: x.profil, ndihma: x.ndihma, deficit: x.deficit, dhene: x.dhene, marra: x.marra
       }));
 
       for (const r of rreshta) {
         await pool.query(
-          `INSERT INTO automatik_finalistet (vendim_id, pishina, biznes_id, pesha, pika_perzgjedhje, fitoi_biznesin)
-           VALUES ($1,$2,$3,$4,$5,$6)`,
-          [vendimId, r.pishina, r.biznes_id, rr(r.pesha), rr(r.pika), r.fitoi]);
+          `INSERT INTO automatik_finalistet
+             (vendim_id, pishina, biznes_id, pesha, pika_perzgjedhje, fitoi_biznesin, ai_skori, pike_profili, ndihma, deficit, dhene, marra)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+          [vendimId, r.pishina, r.biznes_id, rr(r.pesha), rr(r.pika), r.fitoi,
+           rr(r.ai), rr(r.profil), rr(r.ndihma), rr(r.deficit), r.dhene ?? null, r.marra ?? null]);
       }
     } catch (e) { /* mos e ndal shfaqjen nese regjistrimi historik deshton */ }
   }
