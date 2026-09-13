@@ -2845,7 +2845,7 @@ async function zgjVazhdoAutomatik(){
   btn.disabled = true; msg.textContent='Analyzing your website…'; msg.className='msg';
   try{
     const r = await (await fetch('/api/zgjedhja-automatike',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({url, logjika: window.__preferuarModaliteti || 'ankand'})})).json();
+      body:JSON.stringify({url, logjika: sessionStorage.getItem('preferuarModaliteti') || 'ankand'})})).json();
     if(r.error){ msg.textContent=r.error; msg.className='msg err'; btn.disabled=false; return; }
     await refreshProg();
     nav({v:'profile',nav:'dashboard'});
@@ -3427,7 +3427,7 @@ function stepLlogaria(b){
         '</div>'+
         '<button class="primary" id="a_btn" onclick="wizPlotesoBizMeModalitet()">Continue →</button><div class="msg" id="a_msg"></div>';
       if(une.tipi){ const btn=document.querySelector('#a_tipi button[data-v="'+une.tipi+'"]'); if(btn) segPick(btn); }
-      const modPreferuar = window.__preferuarModaliteti || 'ankand';
+      const modPreferuar = sessionStorage.getItem('preferuarModaliteti') || 'ankand';
       const modBtn=document.querySelector('#a_logjika button[data-v="'+modPreferuar+'"]'); if(modBtn) segPick(modBtn);
       return;
     }
