@@ -91,7 +91,16 @@ async function konfirmoLlogarineTeRe(iRi){
   window.__llogariaModaliteti = iRi;
   if(window.une) window.une.logjika_shperndarjes = iRi;
   if(typeof renderUserMenu === 'function') renderUserMenu();
-  nav({v:'profile', nav:'kreative', tab:'krijo'});
+  // Nese nje reklame ishte para-krijuar (nga regjistrimi automatik i pares llogari) dhe
+  // sapo u aktivizua nga konfirmo-llogarine, kjo llogari e re ka TASHME reklame gati —
+  // kalo direkt te dashboard-i, jo te krijimi (perndryshe do te krijohej nje reklame E DYTE).
+  let kaReklameTashme = false;
+  try{
+    const st = await (await fetch('/api/kreative/statusi-krijimit?logjika='+encodeURIComponent(iRi))).json();
+    kaReklameTashme = !!(st.gjendja && st.gjendja !== 'asnje');
+  }catch(e){}
+  if(typeof refreshProg === 'function') await refreshProg();
+  nav(kaReklameTashme ? {v:'profile', nav:'dashboard'} : {v:'profile', nav:'kreative', tab:'krijo'});
 }
 
 // ================= DASHBOARD (Balance) =================
