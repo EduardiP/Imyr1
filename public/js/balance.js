@@ -36,24 +36,6 @@ function _sinkronizoModalitetin(){
 
 async function switchLlogaria(){
   var iRi = (window.__llogariaModaliteti==='barazi') ? 'ankand' : 'barazi';
-  // Kontrollo A ESHTE llogaria e RE tashme e konfirmuar (nga regjistrimi fillestar ose
-  // nje "Create account" i mepareshem) — nese JO, hap modalin paralajmerues ne vend te
-  // kalimit direkt (llogaria e re s'duhet te marre pjese ne asnje ankand/balance real
-  // pa konfirmim eksplicit).
-  var konfirmuar = false;
-  try{
-    var st = await (await fetch('/api/llogarite-konfirmuara')).json();
-    konfirmuar = iRi==='barazi' ? !!st.barazi : !!st.ankand;
-  }catch(e){ /* fail-open drejt modalit, per siguri */ }
-
-  if(!konfirmuar){
-    hapModalKonfirmoLlogarine(iRi);
-    return;
-  }
-  await bejKalimin(iRi);
-}
-
-async function bejKalimin(iRi){
   try{
     var r = await (await fetch('/api/logjika-shperndarjes',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({logjika_shperndarjes: iRi})})).json();
@@ -63,42 +45,6 @@ async function bejKalimin(iRi){
   if(window.une) window.une.logjika_shperndarjes = iRi;
   if(typeof renderUserMenu === 'function') renderUserMenu();
   nav({v:'profile', nav:'dashboard'});
-}
-
-// Modal paralajmerues — anglisht, shpjegon qe llogaria e re gjurmohet vecmas, ka
-// reklama vecmas, dhe logjike te ndare shperndarjeje nga llogaria aktuale.
-function hapModalKonfirmoLlogarine(iRi){
-  var emriModelit = (iRi==='barazi') ? 'Balance' : 'Auction';
-  var ankora = (iRi==='barazi') ? 'balance-details' : 'auction-details';
-  var el = document.createElement('div');
-  el.className = 'backdrop';
-  el.id = 'modalKonfirmoLlogarine';
-  el.innerHTML =
-    '<div class="card modal">'+
-      '<button class="x" onclick="mbyllModalKonfirmoLlogarine()">✕</button>'+
-      '<h2 class="h" style="font-size:19px;">Switch to the '+emriModelit+' account?</h2>'+
-      '<p class="small" style="margin:10px 0;">This is a separate account from the one you\'re in now — tracked independently, with its own ads and its own distribution logic. It won\'t show or receive impressions until you create it.</p>'+
-      '<p class="small mut" style="margin:0 0 16px;"><a href="/si-funksionon#'+ankora+'" target="_blank" style="color:var(--acc);">Learn how '+emriModelit+' works →</a></p>'+
-      '<button class="primary" onclick="konfirmoLlogarineTeRe(\''+iRi+'\')">Create '+emriModelit+' account</button>'+
-    '</div>';
-  document.body.appendChild(el);
-}
-function mbyllModalKonfirmoLlogarine(){
-  var el = $('modalKonfirmoLlogarine');
-  if(el) el.remove();
-}
-async function konfirmoLlogarineTeRe(iRi){
-  try{
-    var r = await (await fetch('/api/konfirmo-llogarine',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({logjika: iRi})})).json();
-    if(r.error){ alert('Error: '+r.error); return; }
-  }catch(e){ alert('Error: '+e.message); return; }
-  mbyllModalKonfirmoLlogarine();
-  window.__llogariaModaliteti = iRi;
-  if(window.une) window.une.logjika_shperndarjes = iRi;
-  if(typeof renderUserMenu === 'function') renderUserMenu();
-  // Con direkt te krijimi i reklames per llogarine e re, jo thjesht dashboard-i.
-  nav({v:'profile', nav:'kreative', tab:'krijo'});
 }
 
 // ================= DASHBOARD (Balance) =================
