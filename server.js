@@ -553,15 +553,16 @@ app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
     const emri = (p1.emri || '').trim().slice(0, 120) || 'Biznesi im';
     const tipi = ['b2b','b2c','b2b2c'].includes(p1.tipi) ? p1.tipi : 'b2b';
 
-    // HAPI 3 — ruaj emrin/tipin/website + logjika_shperndarjes sipas preferences se klientit
-    // (Ankand ose Balance, nga butoni qe klikoi te faqja publike — jo me hardcoded 'ankand').
-    const logjikaPreferuar = (req.body && req.body.logjika === 'barazi') ? 'barazi' : 'ankand';
-    const kolonaKonfirmimi = (logjikaPreferuar === 'barazi') ? 'balance_krijuar' : 'ankand_krijuar';
+    // HAPI 3 — ruaj emrin/tipin/website. "logjika_shperndarjes" DHE flamuri i konfirmimit
+    // (ankand_krijuar/balance_krijuar) JANE TASHME vendosur saktë nga hapi i mëparshëm i
+    // wizard-it (selektori "Distribution model", qe therret /api/logjika-shperndarjes PARA
+    // se te arrihet ketu) — MOS I MBISHKRUAJ ketu, perndryshe rrezikohet nje "ankand" fallback
+    // qe anulon preferencen e vertete qe klienti zgjodhi.
     await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS biznesi_auto BOOLEAN NOT NULL DEFAULT false`);
     await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pershkrimi_auto BOOLEAN NOT NULL DEFAULT false`);
     await pool.query(
-      `UPDATE bizneset SET emri=$2, tipi=$3, website=$4, logjika_shperndarjes=$5, biznesi_auto=true, ${kolonaKonfirmimi}=true WHERE id=$1`,
-      [req.biznesId, emri, tipi, url, logjikaPreferuar]);
+      'UPDATE bizneset SET emri=$2, tipi=$3, website=$4, biznesi_auto=true WHERE id=$1',
+      [req.biznesId, emri, tipi, url]);
 
     // HAPI 4 — THIRRJA E DYTE AI (VETEM pasi e para te ket perfunduar): kategoria + permbledhje,
     // e njejta logjike si /api/analizo, thjesht automatike, duke ripërdorur TE NJEJTIN webTekst.
