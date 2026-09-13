@@ -199,13 +199,11 @@ module.exports = function (pool) {
   // MERR KANDIDATET nga nje pishine specifike, filtruar sipas tipit
   // ══════════════════════════════════════════════════════════════════
   async function merrKandidatet(hostId, hTipi, logjika) {
-    const kolonaKonfirmimi = (logjika === 'barazi') ? 'balance_krijuar' : 'ankand_krijuar';
     const r = await pool.query(
       `SELECT DISTINCT b.id AS biznes_id, b.tipi
        FROM promovimet p JOIN bizneset b ON b.id = p.biznes_id
        WHERE p.biznes_id <> $1 AND p.aktiv = true AND COALESCE(p.pauzuar,false) = false
          AND COALESCE(p.logjika_shperndarjes,'ankand') = $2
-         AND COALESCE(b.${kolonaKonfirmimi},false) = true
          AND (p.teksti IS NOT NULL OR p.imazh_url IS NOT NULL OR p.video_url IS NOT NULL OR p.html5_url IS NOT NULL)
          AND EXISTS (SELECT 1 FROM snippetet s WHERE s.biznes_id = b.id
                      AND s.snippet_active = true AND COALESCE(s.pauzuar,false) = false)`,
