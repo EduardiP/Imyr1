@@ -69,7 +69,7 @@ function pxaThemeToggle(){
     </nav>
     <div class="pxa-navauth">
       <button class="pxa-btn-ghost" onclick="hapModal('hyr')">Log in</button>
-      <button class="pxa-btn-primary" onclick="hapModal('reg')">Sign Up Free</button>
+      <button class="pxa-btn-primary" onclick="sessionStorage.removeItem('preferuarModaliteti');hapModal('reg')">Sign Up Free</button>
     </div>
     <button class="pxa-navburger" onclick="document.getElementById('pxaMobileMenu').classList.toggle('hide')" aria-label="Menu">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -82,7 +82,7 @@ function pxaThemeToggle(){
     <a href="/contact" class="pxa-navlink" style="display:block;padding:10px 0;">Contact</a>
     <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08);margin-top:8px;">
       <button class="pxa-btn-ghost" style="border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px;" onclick="hapModal('hyr')">Log in</button>
-      <button class="pxa-btn-primary" onclick="hapModal('reg')">Sign Up Free</button>
+      <button class="pxa-btn-primary" onclick="sessionStorage.removeItem('preferuarModaliteti');hapModal('reg')">Sign Up Free</button>
     </div>
   </div>
 </header>
@@ -98,7 +98,7 @@ function pxaThemeToggle(){
       <p class="pxa-sub">Your competitors <b>never show up in your audience.</b></p>
       <p class="pxa-lead">PhronexusAI displays your ad within other SaaS businesses' websites, shown to their existing visitors — based on complementarity, not chance. Choose your model: <b>weighted auction</b> (maximizes conversions, recommended) or <b>impression balance</b> (get as much as you give). Change it anytime, anywhere.</p>
       <div class="pxa-ctas">
-        <a href="#" class="pxa-cta-main" onclick="event.preventDefault();startWizard();">
+        <a href="#" class="pxa-cta-main" onclick="event.preventDefault();sessionStorage.removeItem('preferuarModaliteti');startWizard();">
           Start free — 3 months, no cost
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </a>
@@ -282,7 +282,7 @@ function pxaThemeToggle(){
               <div class="pxa-bar-track" style="height:12px;margin-bottom:8px;"><div class="pxa-bar-fill" style="width:73%;"></div></div>
               <div style="display:flex;justify-content:space-between;font-size:10px;font-family:monospace;"><span style="color:var(--pxa-txt-dim);">Probability of winning auctions</span><span style="color:var(--pxa-txt);font-weight:600;">~73%</span></div>
             </div>
-            <a href="#" onclick="event.preventDefault();startWizard();" class="pxa-cta-main" style="width:100%;padding:14px 20px;">Try free with Weighted Auction
+            <a href="#" onclick="event.preventDefault();sessionStorage.removeItem('preferuarModaliteti');startWizard();" class="pxa-cta-main" style="width:100%;padding:14px 20px;">Try free with Weighted Auction
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </a>
           </div>
@@ -669,7 +669,7 @@ pxaSetBt('B2B');
           <span style="font-size:13px;color:var(--pxa-txt-dim);">/month, after 3 free months</span>
         </div>
       </div>
-      <a href="#" onclick="event.preventDefault();hapModal('reg');" class="pxa-cta-main" style="flex:0 0 auto;">Sign Up Free
+      <a href="#" onclick="event.preventDefault();sessionStorage.removeItem('preferuarModaliteti');hapModal('reg');" class="pxa-cta-main" style="flex:0 0 auto;">Sign Up Free
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </a>
     </div>
@@ -703,7 +703,7 @@ pxaSetBt('B2B');
     <h2 class="pxa-sec-h2">Ready to get started?</h2>
     <p>The first three months are free. Setup takes 15 minutes. Your business starts showing to the right audience today.</p>
     <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-bottom:24px;">
-      <a href="#" onclick="event.preventDefault();startWizard();" class="pxa-cta-main">Sign Up Free — 3 months
+      <a href="#" onclick="event.preventDefault();sessionStorage.removeItem('preferuarModaliteti');startWizard();" class="pxa-cta-main">Sign Up Free — 3 months
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </a>
       <a href="/contact" class="pxa-cta-second">Contact the team</a>
