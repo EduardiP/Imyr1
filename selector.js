@@ -117,7 +117,7 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
        AND (COALESCE(b.plani,'falas') = 'premium' OR b.created_at > now() - interval '3 months')
        AND (
          EXISTS (SELECT 1 FROM snippetet s WHERE s.biznes_id = b.id AND s.snippet_active = true AND COALESCE(s.pauzuar,false) = false)
-         OR (COALESCE(b.biznesi_auto,false) = true AND b.created_at > now() - interval '7 days')
+         OR (b.created_at > now() - interval '7 days')
        )`,
     [hostId, logjikaKerkuar]);
 
