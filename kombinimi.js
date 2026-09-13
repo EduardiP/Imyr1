@@ -127,7 +127,7 @@ async function biznesetPerKombinim(vetja) {
        AND (permbledhje IS NOT NULL OR pershkrimi IS NOT NULL)
        AND (
          snippet_active = true
-         OR (COALESCE(biznesi_auto,false) = true AND created_at > now() - interval '7 days')
+         OR (created_at > now() - interval '7 days')
        )`, [vetja.id]);
   return r.rows.filter(b => tipetPerputhen(vetja.tipi, b.tipi));
 }
