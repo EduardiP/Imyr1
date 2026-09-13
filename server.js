@@ -3094,6 +3094,8 @@ app.delete('/api/admin/biznes/:id', iAdmin, async (req, res) => {
     // ekipi_anetaret DHE ekipi_role_shabllonet — te dyja te konfirmuara nga gabimet e mepareshme.
     // Rendi eshte KRITIK: anetaret referojne rolet (rol_id), duhet fshirë ANETARET SE PARI.
     await klient.query('DELETE FROM ekipi_anetaret WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM ekipi_ftesat WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM ekipi_aktiviteti WHERE biznes_id=$1', [id]);
     await klient.query('DELETE FROM ekipi_role_shabllonet WHERE biznes_id=$1', [id]);
     await klient.query('DELETE FROM ngjarjet WHERE biznes_id=$1 OR reklamues_id=$1', [id]);
     await klient.query('DELETE FROM perputhjet WHERE reklamues_id=$1 OR host_id=$1', [id]);
@@ -3123,7 +3125,6 @@ app.delete('/api/admin/biznes/:id', iAdmin, async (req, res) => {
     { tab: 'kategori_perjashtime', kol: 'biznes_id' },
     { tab: 'kategori_kufizime_konfiguruar', kol: 'biznes_id' },
     { tab: 'ekipi_lista_pritjes', kol: 'biznes_id' },
-    { tab: 'ekipi_ftesat', kol: 'biznes_id' },
     { tab: 'suport_kerkesat', kol: 'biznes_id' },
     { tab: 'njoftimet_admin', kol: 'biznes_id' },
     { tab: 'analizo_perdorimi', kol: 'biznes_id' }
