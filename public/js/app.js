@@ -419,7 +419,7 @@ async function hapCreativetPerReklame(){
     const grid = r.kreative.map(k =>
       '<div class="krPick" onclick="zgjidhCreativePerReklame('+k.id+')">'+
         '<div class="krPickPrev">'+(k.output_url ? '<img src="'+k.output_url+'">' : '📄')+'</div>'+
-        '<div style="padding:8px;"><b>'+krEsc(k.emri)+'</b><div class="small mut">'+krEsc(k.lloji)+'</div></div>'+
+        '<div style="padding:8px;"><b>'+esc(k.emri)+'</b><div class="small mut">'+esc(k.lloji)+'</div></div>'+
       '</div>').join('');
     bd.innerHTML = '<div class="modal card" style="max-width:640px;"><button class="x" onclick="mbyllCrModal()">×</button>'+
       '<h3 style="margin:0 0 14px;">Choose from my Creatives</h3>'+
@@ -478,9 +478,9 @@ async function hapCreativeBallon(){
       return;
     }
     const grid=r.kreative.map(k=>
-      '<div class="krPick" onclick="zgjidhCreative('+k.id+',\''+encodeURIComponent(k.output_url||'')+'\',\''+krEsc(k.emri)+'\')">'+
+      '<div class="krPick" onclick="zgjidhCreative('+k.id+',\''+encodeURIComponent(k.output_url||'')+'\',\''+esc(k.emri)+'\')">'+
         '<div class="krPickPrev">'+(k.output_url?'<img src="'+k.output_url+'">':'📄')+'</div>'+
-        '<div style="padding:8px;"><b>'+krEsc(k.emri)+'</b><div class="small mut">'+krEsc(k.lloji)+'</div></div>'+
+        '<div style="padding:8px;"><b>'+esc(k.emri)+'</b><div class="small mut">'+esc(k.lloji)+'</div></div>'+
       '</div>').join('');
     bd.innerHTML='<div class="modal card" style="max-width:560px;"><button class="x" onclick="mbyllCreativeBallon()">×</button>'+
       '<h3 style="margin:0 0 14px;">From my Creatives</h3>'+
