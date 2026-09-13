@@ -59,22 +59,31 @@ async function mainDashboardBalance(m){
 
 async function renderDashStatusBalance(){
   const el=$('vstepBal'); if(!el) return; el.innerHTML='<p class="small mut">Checking…</p>';
-  let kaReklameBarazi=false;
-  try{
-    const rows=await(await fetch('/api/reklamat?logjika=barazi')).json();
-    kaReklameBarazi = Array.isArray(rows) && rows.length>0;
-  }catch(e){}
   let gjendjaKrijimi = 'asnje';
   try{
     const r = await (await fetch('/api/kreative/statusi-krijimit?logjika=barazi')).json();
     gjendjaKrijimi = r.gjendja || 'asnje';
   }catch(e){}
+  // Rifresko ziljen e njoftimeve — njesoj si versioni Ankand (app.js) — nese reklama
+  // sapo u krijua ne sfond (regjistrim automatik), njoftimi i vjeter duhet te zhduket
+  // menjehere, pa pritur rifreskim manual/rindezje browser-i.
+  if(gjendjaKrijimi !== 'asnje'){
+    try{ ngarkoNjoftimet(); }catch(e){}
+  } else if(!window.__dashStatusBalRiprovuar){
+    window.__dashStatusBalRiprovuar = true;
+    setTimeout(async ()=>{
+      try{
+        const r2 = await (await fetch('/api/kreative/statusi-krijimit?logjika=barazi')).json();
+        if(r2.gjendja && r2.gjendja !== 'asnje'){ try{ ngarkoNjoftimet(); }catch(e){} renderDashStatusBalance(); }
+      }catch(e){}
+    }, 6000);
+  }
   el.innerHTML='';
   const rreshtat=[
     { done: !!(prog && prog.llogaria), auto: !!(prog && prog.llogaria && prog.biznesiAuto), label:'Business', veprim:()=>nav({v:'profile',nav:'biznesi'}) },
     { done: !!(prog && prog.pershkrimi), auto: !!(prog && prog.pershkrimi && prog.pershkrimiAuto), label:'Description', veprim:()=>nav({v:'profile',nav:'pershkrimi'}) },
     { done: !!(prog && prog.lidhja),     label:'Snippet connection', veprim:()=>nav({v:'profile',nav:'lidhjaSnippet'}) },
-    { done: kaReklameBarazi || gjendjaKrijimi==='manual', auto: !kaReklameBarazi && gjendjaKrijimi==='auto', label:'Create an ad (Balance)', veprim:()=>nav({v:'profile',nav:'reklamat',sub:'create'}) },
+    { done: gjendjaKrijimi==='manual', auto: gjendjaKrijimi==='auto', label:'Create an ad (Balance)', veprim:()=>nav({v:'profile',nav:'reklamat',sub:'create'}) },
     { done: !!(prog && prog.konvertimi), label:'Connect conversions', veprim:()=>nav({v:'profile',nav:'konvertimet'}) }
   ];
   rreshtat.forEach(r=>{
