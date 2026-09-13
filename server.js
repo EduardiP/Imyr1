@@ -300,7 +300,7 @@ app.get('/api/google-pending', (req, res) => {
 // --- Perfundo krijimin e llogarise Google pas pranimit te kushteve ---
 app.post('/api/google-prano', async (req, res) => {
   const p = req.cookies.imyr_pending;
-  if (!p || !googlePending[p]) return res.status(400).json({ error: 'Seanca skadoi. Provo sërish.' });
+  if (!p || !googlePending[p]) return res.status(400).json({ error: 'Session expired. Please try again.' });
   if (!req.body.kushtet) return res.status(400).json({ error: 'Duhet të pranosh Kushtet dhe Privatësinë.' });
   const { email, emri } = googlePending[p];
   const oferta = !!req.body.oferta;
