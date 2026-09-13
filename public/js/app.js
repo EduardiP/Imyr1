@@ -985,6 +985,22 @@ async function renderDashStatus(){
     const r = await (await fetch('/api/kreative/statusi-krijimit?logjika=ankand')).json();
     gjendjaKrijimi = r.gjendja || 'asnje';
   }catch(e){}
+  // Rifresko ziljen e njoftimeve — reklama mund te jete krijuar sapo (ne sfond, gjate
+  // regjistrimit automatik), dhe njoftimi i vjeter "s'ke reklame" duhet te zhduket TANI,
+  // pa pritur rifreskim manual te faqes.
+  if(gjendjaKrijimi !== 'asnje'){
+    try{ ngarkoNjoftimet(); }catch(e){}
+  } else if(!window.__dashStatusRiprovuar){
+    // 1 rikontroll shtese, i vetem, pas pak sekondash — ne rast se krijimi automatik
+    // (fal.ai + Claude + R2) ende s'kishte perfunduar ne momentin e ngarkimit te pare.
+    window.__dashStatusRiprovuar = true;
+    setTimeout(async ()=>{
+      try{
+        const r2 = await (await fetch('/api/kreative/statusi-krijimit?logjika=ankand')).json();
+        if(r2.gjendja && r2.gjendja !== 'asnje'){ try{ ngarkoNjoftimet(); }catch(e){} renderDashStatus(); }
+      }catch(e){}
+    }, 6000);
+  }
   el.innerHTML='';
   const rreshtat=[
     { done: !!prog.llogaria,   auto: !!prog.llogaria && !!prog.biznesiAuto, label:'Business',             veprim:()=>nav({v:'profile',nav:'biznesi'}) },
@@ -2829,7 +2845,7 @@ async function zgjVazhdoAutomatik(){
   btn.disabled = true; msg.textContent='Analyzing your website…'; msg.className='msg';
   try{
     const r = await (await fetch('/api/zgjedhja-automatike',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({url})})).json();
+      body:JSON.stringify({url, logjika: window.__preferuarModaliteti || 'ankand'})})).json();
     if(r.error){ msg.textContent=r.error; msg.className='msg err'; btn.disabled=false; return; }
     await refreshProg();
     nav({v:'profile',nav:'dashboard'});
