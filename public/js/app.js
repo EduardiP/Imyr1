@@ -459,14 +459,23 @@ function ngarkoImazhUI(){
 
 async function hapCreativeBallon(){
   const bd=$('backdrop'); if(!bd) return;
+  bd.innerHTML='<div class="modal card"><button class="x" onclick="mbyllCreativeBallon()">×</button><p class="small mut">Loading…</p></div>';
+  bd.classList.remove('hide');
   try{
-    const r=await (await fetch('/api/kreative/gati')).json();
+    const resp = await fetch('/api/kreative/gati');
+    if(!resp.ok){
+      bd.innerHTML='<div class="modal card"><button class="x" onclick="mbyllCreativeBallon()">×</button>'+
+        '<h3 style="margin:0 0 10px;">Something went wrong</h3>'+
+        '<p class="small mut">Could not load your creatives (server error '+resp.status+'). Please try again.</p></div>';
+      return;
+    }
+    const r = await resp.json();
     if(!r.kreative || !r.kreative.length){
       bd.innerHTML='<div class="modal card"><button class="x" onclick="mbyllCreativeBallon()">×</button>'+
         '<h3 style="margin:0 0 10px;">You have no Creatives yet</h3>'+
         '<p class="small mut">Create an ad with AI, then you can use it here.</p>'+
         '<button class="btn cta" style="margin-top:12px;" onclick="mbyllCreativeBallon();nav({v:\'profile\',nav:\'kreative\'})">Create now</button></div>';
-      bd.classList.remove('hide'); return;
+      return;
     }
     const grid=r.kreative.map(k=>
       '<div class="krPick" onclick="zgjidhCreative('+k.id+',\''+encodeURIComponent(k.output_url||'')+'\',\''+krEsc(k.emri)+'\')">'+
@@ -476,8 +485,11 @@ async function hapCreativeBallon(){
     bd.innerHTML='<div class="modal card" style="max-width:560px;"><button class="x" onclick="mbyllCreativeBallon()">×</button>'+
       '<h3 style="margin:0 0 14px;">From my Creatives</h3>'+
       '<div class="krPickGrid">'+grid+'</div></div>';
-    bd.classList.remove('hide');
-  }catch(e){}
+  }catch(e){
+    bd.innerHTML='<div class="modal card"><button class="x" onclick="mbyllCreativeBallon()">×</button>'+
+      '<h3 style="margin:0 0 10px;">Connection error</h3>'+
+      '<p class="small mut">'+esc(e.message)+'</p></div>';
+  }
 }
 
 function zgjidhCreative(id, urlEnc, emri){
