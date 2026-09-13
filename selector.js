@@ -106,11 +106,13 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
   const shkoTeBarazi = (logjikaKerkuar === 'barazi');
 
   // ANKANDI KRYESOR: kandidatet jane BIZNESE (jo cdo reklame), FILTRUAR sipas pishines se zgjedhur.
+  const kolonaKonfirmimi = shkoTeBarazi ? 'balance_krijuar' : 'ankand_krijuar';
   const kand = await pool.query(
     `SELECT DISTINCT b.id AS biznes_id, b.tipi
      FROM promovimet p JOIN bizneset b ON b.id = p.biznes_id
      WHERE p.biznes_id <> $1 AND p.aktiv = true AND COALESCE(p.pauzuar,false) = false
        AND COALESCE(p.logjika_shperndarjes,'ankand') = $2
+       AND COALESCE(b.${kolonaKonfirmimi},false) = true
        AND (p.teksti IS NOT NULL OR p.imazh_url IS NOT NULL OR p.video_url IS NOT NULL OR p.html5_url IS NOT NULL)
        AND (COALESCE(b.plani,'falas') = 'premium' OR b.created_at > now() - interval '3 months')
        AND (
