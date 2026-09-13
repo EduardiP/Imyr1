@@ -51,6 +51,11 @@ pool.query(`ALTER TABLE ngjarjet ADD COLUMN IF NOT EXISTS snippet_id INTEGER`).c
 // Migrim: logjika e shperndarjes (ankand | barazi) — parazgjedhje 'ankand' per te GJITHA (ekzistueset + te reja)
 pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS logjika_shperndarjes TEXT NOT NULL DEFAULT 'ankand'`).catch(e => console.error('migrim logjika_shperndarjes (bizneset):', e.message));
 pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS logjika_shperndarjes TEXT NOT NULL DEFAULT 'ankand'`).catch(e => console.error('migrim logjika_shperndarjes (promovimet):', e.message));
+// Gjurmim i VEÇANTË: a e ka biznesi KONFIRMUAR REALISHT llogarine Ankand/Balance (jo thjesht
+// "logjika_shperndarjes" si preferencë e thjeshte) — deri sa te konfirmohet EKSPLICIT (butoni
+// "Create account"), llogaria tjeter NUK duhet te marre pjese ne asnje ankand/balance real.
+pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS ankand_krijuar BOOLEAN NOT NULL DEFAULT false`).catch(e => console.error('migrim ankand_krijuar:', e.message));
+pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS balance_krijuar BOOLEAN NOT NULL DEFAULT false`).catch(e => console.error('migrim balance_krijuar:', e.message));
 pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS auto_krijuar BOOLEAN NOT NULL DEFAULT false`).catch(e => console.error('migrim auto_krijuar (promovimet):', e.message));
 
 // Migrim: gjurmimi i perdorimit te "Analizo me AI" (kufi 2/24 ore per biznes)
@@ -350,8 +355,41 @@ app.post('/api/logjika-shperndarjes', iLoguar, async (req, res) => {
   const logjika = ['ankand','barazi'].includes(req.body.logjika_shperndarjes) ? req.body.logjika_shperndarjes : null;
   if (!logjika) return res.status(400).json({ error: 'Vlerë e pavlefshme.' });
   try {
-    await pool.query('UPDATE bizneset SET logjika_shperndarjes=$2 WHERE id=$1', [req.biznesId, logjika]);
+    // Nese ASNJE nga te dyja llogarite s'eshte konfirmuar ende (rasti i regjistrimit fillestar,
+    // wizard-i manual, HAPI 1), kjo thirrje E VETME e konfirmon menjehere llogarine e zgjedhur —
+    // NUK aplikohet nese biznesi TASHME ka nje llogari te konfirmuar (kjo do te ishte nje SWITCH,
+    // qe kerkon konfirmim eksplicit te ri, jashte ketij endpoint-i).
+    const gjendjaAktuale = await pool.query(
+      'SELECT ankand_krijuar, balance_krijuar FROM bizneset WHERE id=$1', [req.biznesId]);
+    const asnjeAkoma = gjendjaAktuale.rows.length &&
+      !gjendjaAktuale.rows[0].ankand_krijuar && !gjendjaAktuale.rows[0].balance_krijuar;
+    if (asnjeAkoma) {
+      const kol = (logjika === 'barazi') ? 'balance_krijuar' : 'ankand_krijuar';
+      await pool.query(`UPDATE bizneset SET logjika_shperndarjes=$2, ${kol}=true WHERE id=$1`, [req.biznesId, logjika]);
+    } else {
+      await pool.query('UPDATE bizneset SET logjika_shperndarjes=$2 WHERE id=$1', [req.biznesId, logjika]);
+    }
     res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- Konfirmon EKSPLICIT nje llogari te RE (Ankand ose Balance) — VETEM kur klienti klikon
+// butonin "Create account" te modali paralajmerues, JO thjesht kur ndryshon "logjika_shperndarjes".
+app.post('/api/konfirmo-llogarine', iLoguar, async (req, res) => {
+  const logjika = ['ankand','barazi'].includes(req.body.logjika) ? req.body.logjika : null;
+  if (!logjika) return res.status(400).json({ error: 'Vlerë e pavlefshme.' });
+  const kol = (logjika === 'barazi') ? 'balance_krijuar' : 'ankand_krijuar';
+  try {
+    await pool.query(`UPDATE bizneset SET logjika_shperndarjes=$2, ${kol}=true WHERE id=$1`, [req.biznesId, logjika]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- Lexon nese te dyja llogarite jane konfirmuar, per klientin (per modalin paralajmerues) ---
+app.get('/api/llogarite-konfirmuara', iLoguar, async (req, res) => {
+  try {
+    const r = await pool.query('SELECT ankand_krijuar, balance_krijuar FROM bizneset WHERE id=$1', [req.biznesId]);
+    res.json({ ankand: !!(r.rows[0] && r.rows[0].ankand_krijuar), barazi: !!(r.rows[0] && r.rows[0].balance_krijuar) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -518,10 +556,11 @@ app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
     // HAPI 3 — ruaj emrin/tipin/website + logjika_shperndarjes sipas preferences se klientit
     // (Ankand ose Balance, nga butoni qe klikoi te faqja publike — jo me hardcoded 'ankand').
     const logjikaPreferuar = (req.body && req.body.logjika === 'barazi') ? 'barazi' : 'ankand';
+    const kolonaKonfirmimi = (logjikaPreferuar === 'barazi') ? 'balance_krijuar' : 'ankand_krijuar';
     await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS biznesi_auto BOOLEAN NOT NULL DEFAULT false`);
     await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pershkrimi_auto BOOLEAN NOT NULL DEFAULT false`);
     await pool.query(
-      'UPDATE bizneset SET emri=$2, tipi=$3, website=$4, logjika_shperndarjes=$5, biznesi_auto=true WHERE id=$1',
+      `UPDATE bizneset SET emri=$2, tipi=$3, website=$4, logjika_shperndarjes=$5, biznesi_auto=true, ${kolonaKonfirmimi}=true WHERE id=$1`,
       [req.biznesId, emri, tipi, url, logjikaPreferuar]);
 
     // HAPI 4 — THIRRJA E DYTE AI (VETEM pasi e para te ket perfunduar): kategoria + permbledhje,
