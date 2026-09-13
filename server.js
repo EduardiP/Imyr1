@@ -586,8 +586,8 @@ app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
           [req.biznesId, perm || webTekst.slice(0,300), imgUrl]);
         await pool.query(
           `INSERT INTO promovimet (biznes_id, titulli, imazh_url, link, aktiv, logjika_shperndarjes, auto_krijuar)
-           VALUES ($1,'Automatically created ad',$2,$3,true,'ankand',true)`,
-          [req.biznesId, imgUrl, url]);
+           VALUES ($1,'Automatically created ad',$2,$3,true,$4,true)`,
+          [req.biznesId, imgUrl, url, logjikaPreferuar]);
       } catch (e) { console.error('Gjenerim automatik reklame (zgjedhja-automatike) deshtoi:', e.message); }
     })();
   } catch (e) { res.status(500).json({ error: e.message }); }
