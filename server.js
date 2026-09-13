@@ -1614,19 +1614,37 @@ app.post('/api/promovimi', iLoguar, async (req, res) => {
 
 // --- NGARKO SKEDAR (imazh/video/zip) te R2 dhe ruaj si reklame ---
 app.post('/api/ngarko', iLoguar, upload.single('file'), async (req, res) => {
-  if (!s3) return res.status(500).json({ error: "Ruajtja (R2) s'është konfiguruar te serveri." });
-  if (!req.file) return res.status(400).json({ error: "S'ka skedar." });
-  const ext = (req.file.originalname.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
-  const key = 'ads/' + req.biznesId + '_' + Date.now() + '.' + ext;
+  const creativeId = (req.body.creative_id || '').trim();
+  let url;
+  if (req.file) {
+    // Rruga normale: file i ngarkuar direkt
+    if (!s3) return res.status(500).json({ error: "Ruajtja (R2) s'është konfiguruar te serveri." });
+    const ext = (req.file.originalname.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const key = 'ads/' + req.biznesId + '_' + Date.now() + '.' + ext;
+    try {
+      await s3.send(new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET,
+        Key: key,
+        Body: req.file.buffer,
+        ContentType: req.file.mimetype
+      }));
+      const base = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '');
+      url = base + '/' + key;
+    } catch (e) { return res.status(500).json({ error: e.message }); }
+  } else if (creativeId) {
+    // Rruga "From my Creatives": perdor URL-ne EKZISTUESE, pa ngarkim te ri —
+    // asetii tashme ekziston ne R2 qe kur u gjenerua nga AI/u ngarkua fillimisht.
+    try {
+      const kr = await pool.query(
+        `SELECT output_url FROM kreativitetet WHERE id=$1 AND biznes_id=$2 AND status='gati'`,
+        [creativeId, req.biznesId]);
+      if (!kr.rows.length || !kr.rows[0].output_url) return res.status(400).json({ error: 'Creative not found.' });
+      url = kr.rows[0].output_url;
+    } catch (e) { return res.status(500).json({ error: e.message }); }
+  } else {
+    return res.status(400).json({ error: "S'ka skedar." });
+  }
   try {
-    await s3.send(new PutObjectCommand({
-      Bucket: process.env.R2_BUCKET,
-      Key: key,
-      Body: req.file.buffer,
-      ContentType: req.file.mimetype
-    }));
-    const base = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '');
-    const url = base + '/' + key;
     const titulli = (req.body.titulli || '').trim() || null;
     let link = (req.body.link || '').trim();
     if (!link) return res.status(400).json({ error: 'Fut linkun e destinacionit.' });
