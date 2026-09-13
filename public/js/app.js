@@ -2843,13 +2843,43 @@ async function zgjVazhdoAutomatik(){
   const msg = $('zgjAutoMsg'), btn = $('zgjAutoBtn');
   if(!url){ msg.textContent='Enter your business URL.'; msg.className='msg err'; return; }
   btn.disabled = true; msg.textContent='Analyzing your website…'; msg.className='msg';
+  const logjikaZgjedhur = sessionStorage.getItem('preferuarModaliteti') || 'ankand';
   try{
     const r = await (await fetch('/api/zgjedhja-automatike',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({url, logjika: sessionStorage.getItem('preferuarModaliteti') || 'ankand'})})).json();
+      body:JSON.stringify({url, logjika: logjikaZgjedhur})})).json();
     if(r.error){ msg.textContent=r.error; msg.className='msg err'; btn.disabled=false; return; }
     await refreshProg();
-    nav({v:'profile',nav:'dashboard'});
+    // MOS kalo direkt te dashboard-i — pergjigja e mesiperme kthehet PARA se krijimi i
+    // reklames (fal.ai + R2, fire-and-forget ne backend) te kete perfunduar. Shfaq nje
+    // ekran pritjeje qe kontrollon periodikisht derisa krijimi te jete VERTET gati,
+    // qe klienti te mos shohe nje gjendje te paperfunduar/te ngaterruar (p.sh. akoma
+    // "Ankand" ne dukje, kur ne fakt eshte zgjedhur "Balance").
+    zgjRenderPritje(logjikaZgjedhur);
   }catch(e){ msg.textContent='Error: '+e.message; msg.className='msg err'; btn.disabled=false; }
+}
+function zgjRenderPritje(logjikaZgjedhur){
+  const el = $('v-zgjedhja'); if(!el) return;
+  el.innerHTML =
+    '<div class="wrap" style="max-width:480px;margin:80px auto;text-align:center;">'+
+      '<div class="spin" style="width:34px;height:34px;border-width:3px;margin:0 auto 20px;"></div>'+
+      '<h2 class="h" style="font-size:19px;">Setting up your account automatically…</h2>'+
+      '<p class="small mut" style="margin-top:8px;">We\'re filling in your business details, description, category, and creating your first ad. This takes a few seconds.</p>'+
+    '</div>';
+  zgjPoloAutomatikun(logjikaZgjedhur, 0);
+}
+async function zgjPoloAutomatikun(logjikaZgjedhur, perpjekje){
+  if(perpjekje > 20){ nav({v:'profile',nav:'dashboard'}); return; } // siguri: mos prit pafund
+  try{
+    const r = await (await fetch('/api/kreative/statusi-krijimit?logjika='+encodeURIComponent(logjikaZgjedhur))).json();
+    if(r.gjendja && r.gjendja !== 'asnje'){
+      window.__llogariaModaliteti = logjikaZgjedhur;
+      if(window.une) window.une.logjika_shperndarjes = logjikaZgjedhur;
+      if(typeof renderUserMenu === 'function') renderUserMenu();
+      nav({v:'profile',nav:'dashboard'});
+      return;
+    }
+  }catch(e){}
+  setTimeout(()=>zgjPoloAutomatikun(logjikaZgjedhur, perpjekje+1), 1500);
 }
 function closeWizard(){
   if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
