@@ -2868,10 +2868,14 @@ function zgjRenderPritje(logjikaZgjedhur){
   zgjPoloAutomatikun(logjikaZgjedhur, 0);
 }
 async function zgjPoloAutomatikun(logjikaZgjedhur, perpjekje){
-  if(perpjekje > 20){ nav({v:'profile',nav:'dashboard'}); return; } // siguri: mos prit pafund
+  if(perpjekje > 20){ await loadMe(); nav({v:'profile',nav:'dashboard'}); return; } // siguri: mos prit pafund
   try{
     const r = await (await fetch('/api/kreative/statusi-krijimit?logjika='+encodeURIComponent(logjikaZgjedhur))).json();
     if(r.gjendja && r.gjendja !== 'asnje'){
+      // loadMe() rifreskon TE GJITHA fushat (emri, kategoria, etj — te nxjerra nga AI),
+      // jo vetem "prog" (refreshProg() e mesipërme s'e prek fare window.une.emri —
+      // ky ishte shkaku i emrit "te vjeter" qe mbetej i dukshem pas regjistrimit automatik).
+      await loadMe();
       window.__llogariaModaliteti = logjikaZgjedhur;
       if(window.une) window.une.logjika_shperndarjes = logjikaZgjedhur;
       if(typeof renderUserMenu === 'function') renderUserMenu();
