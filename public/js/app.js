@@ -2874,6 +2874,10 @@ function renderWizard(i){
   if(!une) i=0;
   if(i>STEPS.length) i=STEPS.length;
   curStep=i; showView('wizard'); renderHStep(); renderStepBody(i);
+  // Hapi 1 (Business) eshte i detyrueshem — s'ka kuptim "Save & exit" atje (do te linte
+  // llogarine ne nje gjendje bosh, pa asnje pike te plotesuar). Shfaqet vetem nga Hapi 2+.
+  const btnSaveExit = $('wizSaveExitBtn');
+  if(btnSaveExit) btnSaveExit.style.display = (i===0) ? 'none' : '';
 }
 function renderHStep(){
   const total = STEPS.length;
