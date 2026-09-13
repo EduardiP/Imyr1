@@ -2668,6 +2668,7 @@ app.post('/api/admin/email/dergo-manual', iAdmin, async (req, res) => {
   try {
     await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS njoftim_7dite_dergu BOOLEAN NOT NULL DEFAULT false`);
     await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS njoftim_3muaj_dergu BOOLEAN NOT NULL DEFAULT false`);
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS balance_reset_7dite BOOLEAN NOT NULL DEFAULT false`);
   } catch (e) { console.error('njoftime-email ALTER:', e.message); }
 })();
 
@@ -2684,6 +2685,22 @@ async function kontrolloDheDergoNjoftimet() {
       const rez = await emailModul.dergo({ te: b.email, subjekti: sh.subjekti, html: sh.html });
       if (rez.ok) await pool.query('UPDATE bizneset SET njoftim_7dite_dergu=true WHERE id=$1', [b.id]);
       else console.error('njoftim-7dite deshtoi per', b.id, ':', rez.error);
+    }
+    // RESET I HISTORIKUT TE BALANCE, pas 7 ditesh grace, NESE biznesi vetem ka MARRE (Balance)
+    // pa dhene fare (snippet ende joaktiv) — i pavarur nga suksesi i email-it siper (flamur i vecante),
+    // qe te garantohet SAKTESISHT 1 here, kurre me shume, edhe nese email-i deshton.
+    const rReset = await pool.query(`
+      SELECT id FROM bizneset
+      WHERE COALESCE(biznesi_auto,false)=true AND COALESCE(balance_reset_7dite,false)=false
+        AND created_at <= now() - interval '7 days'
+        AND NOT EXISTS (SELECT 1 FROM snippetet s WHERE s.biznes_id=bizneset.id AND s.snippet_active=true)`);
+    for (const b of rReset.rows) {
+      try {
+        // Fshi VETEM aktivitetin Balance (burimi='barazi') — si biznes_id (dhene) DHE reklamues_id
+        // (marre) — e kthen deficitin ne 0, sikur biznesi te ishte rregjistruar tani, pikerisht 1 here.
+        await pool.query("DELETE FROM ngjarjet WHERE burimi='barazi' AND (biznes_id=$1 OR reklamues_id=$1)", [b.id]);
+        await pool.query('UPDATE bizneset SET balance_reset_7dite=true WHERE id=$1', [b.id]);
+      } catch (e) { console.error('balance-reset-7dite deshtoi per', b.id, ':', e.message); }
     }
     // 3 muaj (plani ende falas)
     const r3 = await pool.query(`
