@@ -385,6 +385,11 @@ app.post('/api/konfirmo-llogarine', iLoguar, async (req, res) => {
   const kol = (logjika === 'barazi') ? 'balance_krijuar' : 'ankand_krijuar';
   try {
     await pool.query(`UPDATE bizneset SET logjika_shperndarjes=$2, ${kol}=true WHERE id=$1`, [req.biznesId, logjika]);
+    // Aktivizo reklamen automatike te para-krijuar (joaktive) per kete pishine, nese ekziston —
+    // ishte krijuar bashke me reklamen fillestare te pishines tjeter, gati per t'u aktivizuar.
+    await pool.query(
+      `UPDATE promovimet SET aktiv=true WHERE biznes_id=$1 AND logjika_shperndarjes=$2 AND auto_krijuar=true AND aktiv=false`,
+      [req.biznesId, logjika]);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -625,6 +630,15 @@ app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
           `INSERT INTO promovimet (biznes_id, titulli, imazh_url, link, aktiv, logjika_shperndarjes, auto_krijuar)
            VALUES ($1,'Automatically created ad',$2,$3,true,$4,true)`,
           [req.biznesId, imgUrl, url, logjikaPreferuar]);
+        // Krijo NJE KOPJE, JOAKTIVE, per pishinen TJETER — kur klienti me vone konfirmon
+        // llogarine tjeter (butoni "Create account"), reklama eshte TASHME gati, thjesht
+        // aktivizohet, ne vend qe te kerkohet nga e para. VETEM per reklamen automatike
+        // fillestare — s'prek reklama te tjera, te krijuara manualisht me vone.
+        const pishinaTjeter = (logjikaPreferuar === 'barazi') ? 'ankand' : 'barazi';
+        await pool.query(
+          `INSERT INTO promovimet (biznes_id, titulli, imazh_url, link, aktiv, logjika_shperndarjes, auto_krijuar)
+           VALUES ($1,'Automatically created ad',$2,$3,false,$4,true)`,
+          [req.biznesId, imgUrl, url, pishinaTjeter]);
       } catch (e) { console.error('Gjenerim automatik reklame (zgjedhja-automatike) deshtoi:', e.message); }
     })();
   } catch (e) { res.status(500).json({ error: e.message }); }
