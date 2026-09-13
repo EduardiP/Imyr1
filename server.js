@@ -355,41 +355,8 @@ app.post('/api/logjika-shperndarjes', iLoguar, async (req, res) => {
   const logjika = ['ankand','barazi'].includes(req.body.logjika_shperndarjes) ? req.body.logjika_shperndarjes : null;
   if (!logjika) return res.status(400).json({ error: 'Vlerë e pavlefshme.' });
   try {
-    // Nese ASNJE nga te dyja llogarite s'eshte konfirmuar ende (rasti i regjistrimit fillestar,
-    // wizard-i manual, HAPI 1), kjo thirrje E VETME e konfirmon menjehere llogarine e zgjedhur —
-    // NUK aplikohet nese biznesi TASHME ka nje llogari te konfirmuar (kjo do te ishte nje SWITCH,
-    // qe kerkon konfirmim eksplicit te ri, jashte ketij endpoint-i).
-    const gjendjaAktuale = await pool.query(
-      'SELECT ankand_krijuar, balance_krijuar FROM bizneset WHERE id=$1', [req.biznesId]);
-    const asnjeAkoma = gjendjaAktuale.rows.length &&
-      !gjendjaAktuale.rows[0].ankand_krijuar && !gjendjaAktuale.rows[0].balance_krijuar;
-    if (asnjeAkoma) {
-      const kol = (logjika === 'barazi') ? 'balance_krijuar' : 'ankand_krijuar';
-      await pool.query(`UPDATE bizneset SET logjika_shperndarjes=$2, ${kol}=true WHERE id=$1`, [req.biznesId, logjika]);
-    } else {
-      await pool.query('UPDATE bizneset SET logjika_shperndarjes=$2 WHERE id=$1', [req.biznesId, logjika]);
-    }
+    await pool.query('UPDATE bizneset SET logjika_shperndarjes=$2 WHERE id=$1', [req.biznesId, logjika]);
     res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// --- Konfirmon EKSPLICIT nje llogari te RE (Ankand ose Balance) — VETEM kur klienti klikon
-// butonin "Create account" te modali paralajmerues, JO thjesht kur ndryshon "logjika_shperndarjes".
-app.post('/api/konfirmo-llogarine', iLoguar, async (req, res) => {
-  const logjika = ['ankand','barazi'].includes(req.body.logjika) ? req.body.logjika : null;
-  if (!logjika) return res.status(400).json({ error: 'Vlerë e pavlefshme.' });
-  const kol = (logjika === 'barazi') ? 'balance_krijuar' : 'ankand_krijuar';
-  try {
-    await pool.query(`UPDATE bizneset SET logjika_shperndarjes=$2, ${kol}=true WHERE id=$1`, [req.biznesId, logjika]);
-    res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// --- Lexon nese te dyja llogarite jane konfirmuar, per klientin (per modalin paralajmerues) ---
-app.get('/api/llogarite-konfirmuara', iLoguar, async (req, res) => {
-  try {
-    const r = await pool.query('SELECT ankand_krijuar, balance_krijuar FROM bizneset WHERE id=$1', [req.biznesId]);
-    res.json({ ankand: !!(r.rows[0] && r.rows[0].ankand_krijuar), barazi: !!(r.rows[0] && r.rows[0].balance_krijuar) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -553,16 +520,12 @@ app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
     const emri = (p1.emri || '').trim().slice(0, 120) || 'Biznesi im';
     const tipi = ['b2b','b2c','b2b2c'].includes(p1.tipi) ? p1.tipi : 'b2b';
 
-    // HAPI 3 — ruaj emrin/tipin/website + logjika_shperndarjes sipas preferences se klientit.
-    // E RENDESISHME: rruga "Automatic" (nga renderZgjedhja) KURRE s'kalon nepermjet hapit
-    // "Distribution model" te wizard-it (ai hap ekziston VETEM per rrugen "Manual") — pra
-    // KETU eshte i VETMI vend qe mund ta vendosi kete fushe per rrugen automatike.
+    // HAPI 3 — ruaj emrin/tipin/website + logjika_shperndarjes (thjesht, pa asnje ndryshim tjeter)
     const logjikaPreferuar = (req.body && req.body.logjika === 'barazi') ? 'barazi' : 'ankand';
-    const kolonaKonfirmimi = (logjikaPreferuar === 'barazi') ? 'balance_krijuar' : 'ankand_krijuar';
     await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS biznesi_auto BOOLEAN NOT NULL DEFAULT false`);
     await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pershkrimi_auto BOOLEAN NOT NULL DEFAULT false`);
     await pool.query(
-      `UPDATE bizneset SET emri=$2, tipi=$3, website=$4, logjika_shperndarjes=$5, biznesi_auto=true, ${kolonaKonfirmimi}=true WHERE id=$1`,
+      'UPDATE bizneset SET emri=$2, tipi=$3, website=$4, logjika_shperndarjes=$5, biznesi_auto=true WHERE id=$1',
       [req.biznesId, emri, tipi, url, logjikaPreferuar]);
 
     // HAPI 4 — THIRRJA E DYTE AI (VETEM pasi e para te ket perfunduar): kategoria + permbledhje,
