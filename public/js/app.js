@@ -507,19 +507,23 @@ function mbyllCreativeBallon(){ const b=$('backdrop'); if(b){ b.classList.add('h
 
 async function ngarkoImazh(){
   const f=$('up_file').files[0];
-  if(!f){ $('up_msg').className='msg err'; $('up_msg').textContent='Zgjidh një imazh.'; return; }
+  const creativeId=($('up_creative_id') && $('up_creative_id').value || '').trim();
+  if(!f && !creativeId){ $('up_msg').className='msg err'; $('up_msg').textContent='Select an image.'; return; }
   let link=($('up_link').value||'').trim();
-  if(!link){ $('up_msg').className='msg err'; $('up_msg').textContent='Fut linkun e destinacionit.'; $('up_link').focus(); return; }
+  if(!link){ $('up_msg').className='msg err'; $('up_msg').textContent='Enter the destination link.'; $('up_link').focus(); return; }
   if(!/^https?:\/\//i.test(link)) link='https://'+link;
-  $('up_btn').disabled=true; $('up_msg').className='msg'; $('up_msg').innerHTML='<span class="spin"></span> Po ngarkoj…';
+  $('up_btn').disabled=true; $('up_msg').className='msg'; $('up_msg').innerHTML='<span class="spin"></span> Uploading…';
   try{
-    const fd=new FormData(); fd.append('file', f); fd.append('titulli', ($('up_title').value||'').trim()); fd.append('link', link); fd.append('logjika_shperndarjes', window.__llogariaModaliteti||'ankand');
+    const fd=new FormData();
+    if(f) fd.append('file', f);
+    if(creativeId) fd.append('creative_id', creativeId);
+    fd.append('titulli', ($('up_title').value||'').trim()); fd.append('link', link); fd.append('logjika_shperndarjes', window.__llogariaModaliteti||'ankand');
     const r=await(await fetch('/api/ngarko',{method:'POST',body:fd})).json();
     if(r.error){ $('up_msg').className='msg err'; $('up_msg').textContent=r.error; $('up_btn').disabled=false; return; }
     window.__reklamat=null;
     await refreshProg();
     nav({v:'profile',nav:'reklamat'});
-  }catch(e){ $('up_msg').className='msg err'; $('up_msg').textContent='Gabim: '+e.message; $('up_btn').disabled=false; }
+  }catch(e){ $('up_msg').className='msg err'; $('up_msg').textContent='Error: '+e.message; $('up_btn').disabled=false; }
 }
 
 // ---------- PROFILI / DASHBOARD ----------
@@ -1756,12 +1760,12 @@ async function krZgjidhImazh(){
   overlay.innerHTML =
     '<div style="width:min(560px,92vw);max-height:80vh;background:#12151b;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;border:1px solid var(--line);">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);">'+
-        '<span style="font-weight:600;">📁 Nga imazhet e mia</span>'+
+        '<span style="font-weight:600;">📁 From my images</span>'+
         '<button type="button" onclick="krZgjidhImazhMbyll()" style="background:none;border:none;color:var(--mut);cursor:pointer;font-size:16px;">✕</button>'+
       '</div>'+
       '<div id="krZgjedhModalGrid" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-wrap:wrap;gap:10px;"></div>'+
       '<div style="padding:12px 16px;border-top:1px solid var(--line);text-align:right;">'+
-        '<button type="button" class="btn primary" onclick="krZgjidhImazhKonfirmo()">Ngarko</button>'+
+        '<button type="button" class="btn primary" onclick="krZgjidhImazhKonfirmo()">Use image</button>'+
       '</div>'+
     '</div>';
   document.body.appendChild(overlay);
