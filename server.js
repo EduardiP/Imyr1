@@ -56,6 +56,16 @@ pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS logjika_shperndarjes
 // "Create account"), llogaria tjeter NUK duhet te marre pjese ne asnje ankand/balance real.
 pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS ankand_krijuar BOOLEAN NOT NULL DEFAULT false`).catch(e => console.error('migrim ankand_krijuar:', e.message));
 pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS balance_krijuar BOOLEAN NOT NULL DEFAULT false`).catch(e => console.error('migrim balance_krijuar:', e.message));
+// MIGRIM KRITIK: bizneset EKZISTUESE marrin automatikisht "krijuar=true" per pishinen
+// e tyre AKTUALE (sipas logjika_shperndarjes qe kane tani) — perndryshe FILTRI i
+// kandidateve (poshte, selector.js/automatik.js) do t'i perjashtonte TE GJITHE,
+// meqe kolonat e reja fillojne default false per çdo rresht ekzistues.
+setTimeout(() => {
+  pool.query(`UPDATE bizneset SET ankand_krijuar=true WHERE logjika_shperndarjes='ankand' AND ankand_krijuar=false`)
+    .catch(e => console.error('migrim retroaktiv ankand_krijuar:', e.message));
+  pool.query(`UPDATE bizneset SET balance_krijuar=true WHERE logjika_shperndarjes='barazi' AND balance_krijuar=false`)
+    .catch(e => console.error('migrim retroaktiv balance_krijuar:', e.message));
+}, 2000); // vonese e vogel, qe te sigurohemi se kolonat e sipërme jane shtuar tashme
 pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS auto_krijuar BOOLEAN NOT NULL DEFAULT false`).catch(e => console.error('migrim auto_krijuar (promovimet):', e.message));
 
 // Migrim: gjurmimi i perdorimit te "Analizo me AI" (kufi 2/24 ore per biznes)
@@ -355,8 +365,34 @@ app.post('/api/logjika-shperndarjes', iLoguar, async (req, res) => {
   const logjika = ['ankand','barazi'].includes(req.body.logjika_shperndarjes) ? req.body.logjika_shperndarjes : null;
   if (!logjika) return res.status(400).json({ error: 'Vlerë e pavlefshme.' });
   try {
-    await pool.query('UPDATE bizneset SET logjika_shperndarjes=$2 WHERE id=$1', [req.biznesId, logjika]);
+    const gjendjaAktuale = await pool.query(
+      'SELECT ankand_krijuar, balance_krijuar FROM bizneset WHERE id=$1', [req.biznesId]);
+    const asnjeAkoma = gjendjaAktuale.rows.length &&
+      !gjendjaAktuale.rows[0].ankand_krijuar && !gjendjaAktuale.rows[0].balance_krijuar;
+    if (asnjeAkoma) {
+      const kol = (logjika === 'barazi') ? 'balance_krijuar' : 'ankand_krijuar';
+      await pool.query(`UPDATE bizneset SET logjika_shperndarjes=$2, ${kol}=true WHERE id=$1`, [req.biznesId, logjika]);
+    } else {
+      await pool.query('UPDATE bizneset SET logjika_shperndarjes=$2 WHERE id=$1', [req.biznesId, logjika]);
+    }
     res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/konfirmo-llogarine', iLoguar, async (req, res) => {
+  const logjika = ['ankand','barazi'].includes(req.body.logjika) ? req.body.logjika : null;
+  if (!logjika) return res.status(400).json({ error: 'Vlerë e pavlefshme.' });
+  const kol = (logjika === 'barazi') ? 'balance_krijuar' : 'ankand_krijuar';
+  try {
+    await pool.query(`UPDATE bizneset SET logjika_shperndarjes=$2, ${kol}=true WHERE id=$1`, [req.biznesId, logjika]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/llogarite-konfirmuara', iLoguar, async (req, res) => {
+  try {
+    const r = await pool.query('SELECT ankand_krijuar, balance_krijuar FROM bizneset WHERE id=$1', [req.biznesId]);
+    res.json({ ankand: !!(r.rows[0] && r.rows[0].ankand_krijuar), barazi: !!(r.rows[0] && r.rows[0].balance_krijuar) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -520,12 +556,13 @@ app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
     const emri = (p1.emri || '').trim().slice(0, 120) || 'Biznesi im';
     const tipi = ['b2b','b2c','b2b2c'].includes(p1.tipi) ? p1.tipi : 'b2b';
 
-    // HAPI 3 — ruaj emrin/tipin/website + logjika_shperndarjes (thjesht, pa asnje ndryshim tjeter)
+    // HAPI 3 — ruaj emrin/tipin/website + logjika_shperndarjes + flamuri i konfirmimit
     const logjikaPreferuar = (req.body && req.body.logjika === 'barazi') ? 'barazi' : 'ankand';
+    const kolonaKonfirmimi = (logjikaPreferuar === 'barazi') ? 'balance_krijuar' : 'ankand_krijuar';
     await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS biznesi_auto BOOLEAN NOT NULL DEFAULT false`);
     await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pershkrimi_auto BOOLEAN NOT NULL DEFAULT false`);
     await pool.query(
-      'UPDATE bizneset SET emri=$2, tipi=$3, website=$4, logjika_shperndarjes=$5, biznesi_auto=true WHERE id=$1',
+      `UPDATE bizneset SET emri=$2, tipi=$3, website=$4, logjika_shperndarjes=$5, biznesi_auto=true, ${kolonaKonfirmimi}=true WHERE id=$1`,
       [req.biznesId, emri, tipi, url, logjikaPreferuar]);
 
     // HAPI 4 — THIRRJA E DYTE AI (VETEM pasi e para te ket perfunduar): kategoria + permbledhje,
