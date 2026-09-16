@@ -370,8 +370,24 @@ module.exports = function (pool) {
     const kandBarazi = await merrKandidatet(hostId, hTipi, 'barazi');
 
     if (!kandAnkand.length && !kandBarazi.length) return bosh;
-    if (!kandAnkand.length) return { pishina: 'barazi', uKonkurrua: false, uDetyruaNgaLimiti: false, topAnkand: [], topBarazi: [] };
-    if (!kandBarazi.length) return { pishina: 'ankand', uKonkurrua: false, uDetyruaNgaLimiti: false, topAnkand: [], topBarazi: [] };
+    if (!kandAnkand.length) {
+      const peshatBarazi = [];
+      for (const k of kandBarazi) {
+        const p = await pikaPerfundimtareBalancePerBiznes(k.biznes_id, hostId);
+        peshatBarazi.push({ biznes_id: k.biznes_id, pesha: p.pesha, ai: p.ai, deficit: p.deficit, dhene: p.dhene, marra: p.marra });
+      }
+      peshatBarazi.sort((a, b) => b.pesha - a.pesha);
+      return { pishina: 'barazi', uKonkurrua: false, uDetyruaNgaLimiti: false, topAnkand: [], topBarazi: peshatBarazi.slice(0, 5) };
+    }
+    if (!kandBarazi.length) {
+      const peshatAnkand = [];
+      for (const k of kandAnkand) {
+        const p = await peshaAnkand(k.biznes_id, k.tipi, hostId, hTipi);
+        peshatAnkand.push({ biznes_id: k.biznes_id, pesha: p.pesha, ai: p.ai, profil: p.profil, ndihma: p.ndihma });
+      }
+      peshatAnkand.sort((a, b) => b.pesha - a.pesha);
+      return { pishina: 'ankand', uKonkurrua: false, uDetyruaNgaLimiti: false, topAnkand: peshatAnkand.slice(0, 5), topBarazi: [] };
+    }
 
     const peshatAnkand = [];
     for (const k of kandAnkand) {
@@ -421,13 +437,12 @@ module.exports = function (pool) {
   // ══════════════════════════════════════════════════════════════════
   async function regjistroVendimDetajuar(hostId, rezultat, fituesBizId) {
     try {
-      // Shumat totale te pikeve te perzgjedhjes per te dyja pishinat (edhe humbesen) —
-      // ruhen ne vete rreshtin e vendimit, para se te hedhim poshte detajet e pishines humbese.
+      // Shumat totale te pikeve te perzgjedhjes per te dyja pishinat (edhe humbesen, kur ka konkurrence
+      // te vertete) — OSE per vete pishinen fituese (kur ishte rruge direkte, por AKOMA kishte kandidate
+      // reale brenda saj — p.sh. vetem Balance kishte kandidate, Ankandi asnje fare).
       let pikaTotaleAnkand = null, pikaTotaleBarazi = null;
-      if (rezultat.uKonkurrua) {
-        pikaTotaleAnkand = (rezultat.topAnkand || []).reduce((s, x) => s + pikaPerzgjedhjeje(x.pesha), 0);
-        pikaTotaleBarazi = (rezultat.topBarazi || []).reduce((s, x) => s + pikaPerzgjedhjeje(x.pesha), 0);
-      }
+      if ((rezultat.topAnkand || []).length) pikaTotaleAnkand = rezultat.topAnkand.reduce((s, x) => s + pikaPerzgjedhjeje(x.pesha), 0);
+      if ((rezultat.topBarazi || []).length) pikaTotaleBarazi = rezultat.topBarazi.reduce((s, x) => s + pikaPerzgjedhjeje(x.pesha), 0);
 
       const vRes = await pool.query(
         `INSERT INTO automatik_vendime (host_id, pishina_fituese, u_konkurrua, pika_totale_ankand, pika_totale_barazi)
@@ -435,7 +450,10 @@ module.exports = function (pool) {
         [hostId, rezultat.pishina, !!rezultat.uKonkurrua, rr(pikaTotaleAnkand), rr(pikaTotaleBarazi)]);
       const vendimId = vRes.rows[0].id;
 
-      if (!rezultat.uKonkurrua) return; // s'ka finalistë per te regjistruar (rruge direkte)
+      // Regjistro kandidatet nese ka NDONJE liste jo-bosh — jo vetem kur uKonkurrua=true. Rruga direkte
+      // (vetem 1 pishine kishte kandidate) TANI gjithashtu ka te dhena (rregulluar me lart), dhe DUHET
+      // te shfaqet te "Përzgjedhjet" — perndryshe fituesit e rrugës direkte "zhduken" pa gjurmë.
+      if (!(rezultat.topAnkand || []).length && !(rezultat.topBarazi || []).length) return;
 
       // Regjistrohet VETEM pishina qe fitoi realisht — tjetra s'ka pse te shfaqet
       // ne historik si liste kandidatesh, edhe pse u llogarit internally per te
