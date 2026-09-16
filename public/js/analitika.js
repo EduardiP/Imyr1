@@ -1402,7 +1402,7 @@ function anaRekThumbHTML(r){
   return '<div style="'+wrap+'"></div>';
 }
 async function ngarkoAnaAdsLista(){
-  try{ _anaRekAll=await(await fetch('/api/reklamat')).json(); }catch(e){ _anaRekAll=[]; }
+  try{ _anaRekAll=await(await fetch('/api/reklamat?logjika='+(window.__llogariaModaliteti||'ankand'))).json(); }catch(e){ _anaRekAll=[]; }
   anaRenderRekDropdown();
 }
 function anaRekRresht(innerHTML, checked, bold, onClickFn){
@@ -1619,7 +1619,7 @@ function anaRenderKategoriMetric(){
   });
 }
 async function ngarkoAnaKatAdsLista(){
-  try{ _anaKatRekAll = await(await fetch('/api/reklamat')).json(); }catch(e){ _anaKatRekAll=[]; }
+  try{ _anaKatRekAll = await(await fetch('/api/reklamat?logjika='+(window.__llogariaModaliteti||'ankand'))).json(); }catch(e){ _anaKatRekAll=[]; }
   anaRenderKatRekDropdown();
 }
 function anaRenderKatRekDropdown(){
@@ -1691,7 +1691,7 @@ async function ngarkoAnaKategorite(){
 var _anaListSelectedAd=null, _anaListRekAll=[], _anaListDropdownOpen=false;
 
 async function ngarkoAnaListRekamatLista(){
-  try{ _anaListRekAll = await(await fetch('/api/reklamat')).json(); }catch(e){ _anaListRekAll=[]; }
+  try{ _anaListRekAll = await(await fetch('/api/reklamat?logjika='+(window.__llogariaModaliteti||'ankand'))).json(); }catch(e){ _anaListRekAll=[]; }
   anaRenderListRekDropdown();
 }
 function anaRenderListRekDropdown(){
