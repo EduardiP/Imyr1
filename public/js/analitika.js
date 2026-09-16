@@ -546,30 +546,36 @@ async function anaDetRezBalanceKategori(el){
   }).join('');
 }
 
-// ── BALANCE — "Daily performance": nje vije e vetme (shfaqje), zero ne mes, +/- sipas
-// ditës — ripërdor endpoint-in ekzistues te Deficitt, vetem 1 metrike ──
+// ── BALANCE — "Daily performance": ndjek skeden AKTIVE (Received=marre, Given=dhene) —
+// jo me diferenca neto — dhe tregon TE 4 metrikat (ngarkime, shikime reale, klikime,
+// konvertime) si linja te veçanta, jo vetem 1 metrike te vetme.
 var _anaPerformanceDitoreChart=null;
 async function anaDetRezPerformanceDitore(el){
-  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 8px;">Daily performance (Received − Given, shfaqje)</h4><canvas id="anaPerformanceDitoreCanvas" height="100"></canvas>';
+  const eshteDhene = (_anaDetPerspektiv==='dhene');
+  const titulli = eshteDhene ? 'Daily performance — Given' : 'Daily performance — Received';
+  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 8px;">'+titulli+'</h4><canvas id="anaPerformanceDitoreCanvas" height="100"></canvas>';
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
   try{ d=await(await fetch('/api/analytics/deficiti?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika=barazi')).json(); }catch(e){ return; }
   const rows=d.rows||[];
   const labels=rows.map(r=>r.data);
+  const sufiks = eshteDhene ? '_dhene' : '_marre';
   const canvas=$('anaPerformanceDitoreCanvas'); if(!canvas||typeof Chart==='undefined') return;
   if(_anaPerformanceDitoreChart){ _anaPerformanceDitoreChart.destroy(); _anaPerformanceDitoreChart=null; }
-  let maksAbs=0; rows.forEach(r=>{ const a=Math.abs(r.shfaqje||0); if(a>maksAbs) maksAbs=a; });
-  const jastek = maksAbs>0 ? maksAbs*1.15 : 5;
   const ctx=canvas.getContext('2d');
-  _anaPerformanceDitoreChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Impressions (Received−Given)', data:rows.map(r=>r.shfaqje), borderColor:'#4a9eff', backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:'#4a9eff'}]},
+  _anaPerformanceDitoreChart=new Chart(ctx,{type:'line',data:{labels,datasets:[
+    {label:'Loads', data:rows.map(r=>r['shfaqje'+sufiks]), borderColor:'#8b949e', backgroundColor:'transparent', tension:0, borderWidth:1.5, borderDash:[4,3], pointRadius:1.5, pointBackgroundColor:'#8b949e'},
+    {label:'Real views', data:rows.map(r=>r['shikime'+sufiks]), borderColor:'#4a9eff', backgroundColor:'transparent', tension:0, borderWidth:2, pointRadius:2, pointBackgroundColor:'#4a9eff'},
+    {label:'Clicks', data:rows.map(r=>r['klikime'+sufiks]), borderColor:'#3fb950', backgroundColor:'transparent', tension:0, borderWidth:2, pointRadius:2, pointBackgroundColor:'#3fb950'},
+    {label:'Conversions', data:rows.map(r=>r['konvertime'+sufiks]), borderColor:'#e6a23c', backgroundColor:'transparent', tension:0, borderWidth:2, pointRadius:2, pointBackgroundColor:'#e6a23c'}
+  ]},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
       scales:{
         x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}},
-        y:{min:-jastek,max:jastek,ticks:{color:'#8b949e',precision:0},grid:{color:function(ctx){ return ctx.tick.value===0 ? 'rgba(230,237,243,.35)' : '#2a313c'; }}}
+        y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}
       },
-      plugins:{legend:{labels:{color:(document.body.classList.contains('pxa-light')?'#0f172a':'#e6edf3')}}}},
-    plugins:[anaMultiColorLinePluginDivergjent]
+      plugins:{legend:{labels:{color:(document.body.classList.contains('pxa-light')?'#0f172a':'#e6edf3')}}}}
   });
 }
 
