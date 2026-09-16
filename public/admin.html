@@ -1011,11 +1011,12 @@ function ndertoRreshtat(kandidatet, ngjyraFitor, lloji, fusha){
   '</div>';
   return h;
 }
-function tabela(titull, fitoreGjithsej, pikaTotaleFundit, kandidatet, ngjyraFitor, lloji){
+function tabela(titull, fitoreGjithsej, pikaTotaleFundit, kandidatet, ngjyraFitor, lloji, zbritje){
 let h='<div style="margin-bottom:26px;">'+
 '<div style="font-weight:700;font-size:15px;margin-bottom:6px;">'+titull+'</div>'+
 '<div class="small mut" style="margin-bottom:2px;">Ka fituar gjithsej: <b style="color:var(--txt);">'+fitoreGjithsej+'</b> herë</div>'+
-'<div class="small mut" style="margin-bottom:10px;">Shuma e pikëve (përzgjedhja e fundit): <b style="color:var(--txt);">'+(pikaTotaleFundit!=null?pikaTotaleFundit:'—')+'</b></div>';
+'<div class="small mut" style="margin-bottom:2px;">Shuma e pikëve (përzgjedhja e fundit): <b style="color:var(--txt);">'+(pikaTotaleFundit!=null?pikaTotaleFundit:'—')+'</b></div>'+
+(zbritje!=null ? '<div class="small mut" style="margin-bottom:10px;color:#f0883e;">− Zbritje kufiri fleksibel (borxh ndaj Balance): <b>'+zbritje+'</b> pikë</div>' : '<div style="margin-bottom:10px;"></div>');
 if(!kandidatet.length){
 h+='<p class="small mut">Ende s\'ka të dhëna.</p></div>';
 return h;
@@ -1030,7 +1031,7 @@ h+='</div>';
 return h;
 }
 let h='<div class="small mut" style="margin-bottom:14px;">Shfaqje totale të ofruara nga ky biznes: <b style="color:var(--txt);">'+r.shfaqje_totale+'</b></div>';
-h+=tabela('Ankand', r.ankand.fitore_gjithsej, r.ankand.pika_totale_fundit, r.ankand.kandidatet, 'rgba(74,158,255,0.15)', 'ankand');
+h+=tabela('Ankand', r.ankand.fitore_gjithsej, r.ankand.pika_totale_fundit, r.ankand.kandidatet, 'rgba(74,158,255,0.15)', 'ankand', r.ankand.zbritje_kufiri_fleksibel);
 h+=tabela('Balancë', r.balance.fitore_gjithsej, r.balance.pika_totale_fundit, r.balance.kandidatet, 'rgba(239,68,68,0.15)', 'barazi');
 el.innerHTML=h;
 }
