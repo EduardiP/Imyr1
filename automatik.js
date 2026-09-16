@@ -56,10 +56,12 @@ module.exports = function (pool) {
         u_konkurrua     BOOLEAN NOT NULL DEFAULT false, -- a u zbatua Faza 3 (te dyja pishinat kishin kandidate)
         pika_totale_ankand  NUMERIC,   -- shuma e pikeve te perzgjedhjes per Ankand ne kete vendim (vetem nese u_konkurrua)
         pika_totale_barazi  NUMERIC,   -- shuma e pikeve te perzgjedhjes per Balance ne kete vendim (vetem nese u_konkurrua)
+        zbritje_ankand      NUMERIC,   -- kufiri fleksibel: sa u zbrit nga shuma Ankand ne kete vendim (0 nese Balance s'i detyrohej)
         created_at      TIMESTAMPTZ DEFAULT now()
       )`);
     await pool.query(`ALTER TABLE automatik_vendime ADD COLUMN IF NOT EXISTS pika_totale_ankand NUMERIC`);
     await pool.query(`ALTER TABLE automatik_vendime ADD COLUMN IF NOT EXISTS pika_totale_barazi NUMERIC`);
+    await pool.query(`ALTER TABLE automatik_vendime ADD COLUMN IF NOT EXISTS zbritje_ankand NUMERIC`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_automatik_vendime_host ON automatik_vendime(host_id)`);
 
     // automatik_finalistet: nje rresht per secilin finalist (nga te 2 pishinat), VETEM per vendimet
@@ -126,6 +128,20 @@ module.exports = function (pool) {
   // plotesisht → askush s'monopolizon.
   function pikaPerzgjedhjeje(x) {
     return (3 / 40000) * x * x - (3 / 200) * x + 7 / 4;
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // KUFIRI FLEKSIBEL (zevendeson kufirin fiks ±10 — konfirmuar me shembuj):
+  // Kur Balance ka DHENE me shume shfaqje sesa ka MARRE nga Ankandi (d.m.th.
+  // Ankandi eshte "i favorizuar" strukturalisht, meqe bizneset Ankand marrin
+  // pjese pa iu zbritur asgje, vetem duke iu SHTUAR profil+ndihme) — ZBRITET
+  // gradualisht nga SHUMA e pikeve te perzgjedhjes se 5 reklamave me te mira
+  // te Ankandit, PARA short-it te peshuar mes 2 pishinave.
+  // x = |borxhi_neto| (VETEM kur borxhi_neto < 0, Balance ka dhene me shume).
+  // f(10)=50, f(20)=180 — konfirmuar me shembuj konkrete nga perdoruesi.
+  function zbritjaFleksibileAnkand(x) {
+    if (x <= 0) return 0;
+    return 0.4 * x * x + x;
   }
 
   // ══════════════════════════════════════════════════════════════════
@@ -406,8 +422,17 @@ module.exports = function (pool) {
     const topAnkand = peshatAnkand.slice(0, n);
     const topBarazi = peshatBarazi.slice(0, n);
 
-    const totaliAnkand = topAnkand.reduce((s, x) => s + pikaPerzgjedhjeje(x.pesha), 0);
+    const totaliAnkandPaZbritje = topAnkand.reduce((s, x) => s + pikaPerzgjedhjeje(x.pesha), 0);
     const totaliBarazi = topBarazi.reduce((s, x) => s + pikaPerzgjedhjeje(x.pesha), 0);
+
+    // Kufiri fleksibel: zbrit nga Ankandi VETEM nese Balance ka dhene me shume se ka marre
+    // (borxhi_neto < 0) — shume e madhe qe Ankandi "i detyrohet" mbrapa, formula rritet
+    // gjithnje e me shpejt (jo-lineare), floor te 0 (kurre negative).
+    const borxhiTani = await merrBorxhin();
+    const xBorxh = (borxhiTani.borxhi_neto < 0) ? Math.abs(borxhiTani.borxhi_neto) : 0;
+    const zbritjaAnkand = zbritjaFleksibileAnkand(xBorxh);
+    const totaliAnkand = Math.max(0, totaliAnkandPaZbritje - zbritjaAnkand);
+
     const shuma = totaliAnkand + totaliBarazi;
 
     let pishina;
@@ -417,7 +442,7 @@ module.exports = function (pool) {
       pishina = rand < totaliAnkand ? 'ankand' : 'barazi';
     }
 
-    return { pishina, uKonkurrua: true, topAnkand, topBarazi };
+    return { pishina, uKonkurrua: true, topAnkand, topBarazi, zbritjaAnkand: rr(zbritjaAnkand) };
   }
 
   // Wrapper per pajtueshmeri prapavajtese — kthen vetem stringun e pishines.
@@ -445,9 +470,9 @@ module.exports = function (pool) {
       if ((rezultat.topBarazi || []).length) pikaTotaleBarazi = rezultat.topBarazi.reduce((s, x) => s + pikaPerzgjedhjeje(x.pesha), 0);
 
       const vRes = await pool.query(
-        `INSERT INTO automatik_vendime (host_id, pishina_fituese, u_konkurrua, pika_totale_ankand, pika_totale_barazi)
-         VALUES ($1,$2,$3,$4,$5) RETURNING id`,
-        [hostId, rezultat.pishina, !!rezultat.uKonkurrua, rr(pikaTotaleAnkand), rr(pikaTotaleBarazi)]);
+        `INSERT INTO automatik_vendime (host_id, pishina_fituese, u_konkurrua, pika_totale_ankand, pika_totale_barazi, zbritje_ankand)
+         VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+        [hostId, rezultat.pishina, !!rezultat.uKonkurrua, rr(pikaTotaleAnkand), rr(pikaTotaleBarazi), rezultat.zbritjaAnkand ?? null]);
       const vendimId = vRes.rows[0].id;
 
       // Regjistro kandidatet nese ka NDONJE liste jo-bosh — jo vetem kur uKonkurrua=true. Rruga direkte
