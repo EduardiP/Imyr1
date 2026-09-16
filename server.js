@@ -2988,7 +2988,8 @@ app.get('/api/admin/automatik/:id', iAdmin, async (req, res) => {
         }
         row.pika_perzgjedhje_fundit = Math.round(pikaPerzgjedhjejeAdmin(row.pesha_fundit) * 100) / 100;
       }
-      return r.rows;
+      const shumaLiveFundit = r.rows.reduce((s, row) => s + (row.pika_perzgjedhje_fundit || 0), 0);
+      return { rows: r.rows, shumaLiveFundit: Math.round(shumaLiveFundit * 100) / 100 };
     }
 
     const ankandKand = await tabelaPerPishine('ankand');
@@ -2998,13 +2999,13 @@ app.get('/api/admin/automatik/:id', iAdmin, async (req, res) => {
       shfaqje_totale: totQ.rows[0].shfaqje_totale,
       ankand: {
         fitore_gjithsej: totQ.rows[0].ankand_fitore,
-        pika_totale_fundit: pikaFundit.pika_totale_ankand,
-        kandidatet: ankandKand
+        pika_totale_fundit: ankandKand.shumaLiveFundit,
+        kandidatet: ankandKand.rows
       },
       balance: {
         fitore_gjithsej: totQ.rows[0].balance_fitore,
-        pika_totale_fundit: pikaFundit.pika_totale_barazi,
-        kandidatet: balanceKand
+        pika_totale_fundit: balanceKand.shumaLiveFundit,
+        kandidatet: balanceKand.rows
       }
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
