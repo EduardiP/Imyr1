@@ -107,10 +107,79 @@ async function konfirmoLlogarineTeRe(iRi){
 async function mainDashboardBalance(m){
   m.innerHTML='<h2 class="h">Account status — Balance</h2>'+
     '<p class="small" style="margin:2px 0 18px;">Description, AI matching, snippets and conversion tracking are shared with the Auction account. All that is left is creating ads for Balance.</p>'+
-    '<div class="card" style="flex:0 0 auto;max-width:360px;">'+
-      '<div class="vstep" id="vstepBal" style="display:flex;flex-direction:column;"></div>'+
+    '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;">'+
+      '<div class="card" style="flex:0 0 auto;">'+
+        '<div class="vstep" id="vstepBal" style="display:flex;flex-direction:column;"></div>'+
+      '</div>'+
+      '<div class="card" id="dashAnalitikaBal" style="flex:1;min-width:280px;cursor:pointer;">'+
+        '<p class="small">Loading…</p>'+
+      '</div>'+
+    '</div>'+
+    '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
+      '<div class="card" id="dashReklamat" style="flex:1.6;min-width:300px;cursor:pointer;">'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 10px;">Ads (Balance)</h3>'+
+        '<div id="dashReklamatList"><p class="small">Loading…</p></div>'+
+      '</div>'+
+      '<div class="card" id="dashKategori" style="flex:1;min-width:220px;">'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 4px;">Business categories</h3>'+
+        '<p class="small mut" style="margin:0 0 10px;">Where your ads have been uploaded.</p>'+
+        '<div style="position:relative;margin-bottom:12px;">'+
+          '<button type="button" id="dashKatRekBtn" class="btn" style="width:100%;">Ads <span id="dashKatRekBtnCount"></span> ▾</button>'+
+          '<div id="dashKatRekDropdown" class="hide" style="position:absolute;top:110%;left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;max-height:220px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+        '</div>'+
+        '<div id="dashKategoriLista" style="max-height:140px;overflow-y:auto;padding-right:4px;"><p class="small">Loading…</p></div>'+
+        '<button class="btn" style="width:100%;margin-top:12px;" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'analytics\'})">See more →</button>'+
+      '</div>'+
+    '</div>'+
+    '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
+      '<div class="card" id="dashSnippetet2" style="flex:1;min-width:220px;cursor:pointer;">'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 10px;">Ad snippets</h3>'+
+        '<div id="dashSnippetet2List"><p class="small">Loading…</p></div>'+
+      '</div>'+
+      '<div class="card" id="dashKonvertimet" style="flex:1.6;min-width:300px;cursor:pointer;">'+
+        '<h3 class="h" style="font-size:15px;margin:0 0 10px;">Conversion tracking</h3>'+
+        '<div id="dashKonvertimetList"><p class="small">Loading…</p></div>'+
+      '</div>'+
     '</div>';
   await renderDashStatusBalance();
+  if(typeof ngarkoDashReklamat==='function') ngarkoDashReklamat();
+  if(typeof ngarkoDashKategori==='function') ngarkoDashKategori();
+  if(typeof ngarkoDashSnippetet==='function') ngarkoDashSnippetet();
+  if(typeof ngarkoDashKonvertimet==='function') ngarkoDashKonvertimet();
+  ngarkoDashAnalitikaBalance();
+}
+
+// Karta "Analytics" per Balance — perdor /api/profili-balance (tashme ekzistues,
+// shikime reale te ndara nga ngarkime) ne vend te /api/profili (i cili s'eshte
+// logjika-aware, eshte i lidhur specifikisht me te dhena Ankand-stil).
+async function ngarkoDashAnalitikaBalance(){
+  const card=$('dashAnalitikaBal'); if(!card) return;
+  card.onclick=()=>nav({v:'profile', nav:'profili'});
+  try{
+    const bal=await(await fetch('/api/profili-balance')).json();
+    const dhene=bal.dhene||{shfaqje:0,klikime:0,konvertime:0};
+    const marra=bal.marra||{shfaqje:0,klikime:0,konvertime:0};
+    card.innerHTML=
+      '<div style="display:flex;flex-direction:column;gap:16px;">'+
+        '<div style="font-weight:700;font-size:15px;">Balance activity</div>'+
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;">'+
+          '<div style="flex:1;min-width:130px;background:rgba(74,158,255,.12);border:1px solid var(--acc);border-radius:10px;padding:14px 16px;">'+
+            '<div style="font-size:28px;font-weight:800;color:var(--acc);line-height:1;">'+(marra.shfaqje||0)+'</div>'+
+            '<div class="small" style="margin-top:4px;">real views received</div></div>'+
+          '<div style="flex:1;min-width:130px;background:rgba(74,158,255,.12);border:1px solid var(--acc);border-radius:10px;padding:14px 16px;">'+
+            '<div style="font-size:28px;font-weight:800;color:var(--acc);line-height:1;">'+(dhene.shfaqje||0)+'</div>'+
+            '<div class="small" style="margin-top:4px;">real views given</div></div>'+
+        '</div>'+
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;">'+
+          '<div style="flex:1;min-width:100px;background:#0e1116;border:1px solid var(--line);border-radius:9px;padding:8px 12px;opacity:.75;">'+
+            '<div style="font-size:15px;font-weight:600;color:#e6edf3;">'+(marra.konvertime||0)+'</div>'+
+            '<div class="small" style="font-size:11px;color:#8b949e;">conversions received</div></div>'+
+          '<div style="flex:1;min-width:100px;background:#0e1116;border:1px solid var(--line);border-radius:9px;padding:8px 12px;opacity:.75;">'+
+            '<div style="font-size:15px;font-weight:600;color:#e6edf3;">'+(marra.klikime||0)+'</div>'+
+            '<div class="small" style="font-size:11px;color:#8b949e;">clicks received</div></div>'+
+        '</div>'+
+      '</div>';
+  }catch(e){ card.innerHTML='<p class="small">Error.</p>'; }
 }
 
 async function renderDashStatusBalance(){
