@@ -908,7 +908,7 @@ async function ngarkoDashKategori(){
     _dashKatDropdownOpen=!_dashKatDropdownOpen;
     dd.classList.toggle('hide', !_dashKatDropdownOpen);
   });
-  try{ _dashKatRekAll=await(await fetch('/api/reklamat')).json(); }catch(e){ _dashKatRekAll=[]; }
+  try{ _dashKatRekAll=await(await fetch('/api/reklamat?logjika='+(window.__llogariaModaliteti||'ankand'))).json(); }catch(e){ _dashKatRekAll=[]; }
   dashKatRenderDropdown();
   dashKatNgarkoListen();
 }
