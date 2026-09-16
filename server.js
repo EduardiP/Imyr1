@@ -2908,11 +2908,11 @@ app.get('/api/admin/automatik/:id', iAdmin, async (req, res) => {
 
     // Vendimi i fundit i konkurruar — shuma e pikeve te perzgjedhjes per te dyja pishinat
     const fundQ = await pool.query(`
-      SELECT pika_totale_ankand, pika_totale_barazi
+      SELECT pika_totale_ankand, pika_totale_barazi, zbritje_ankand
       FROM automatik_vendime
       WHERE host_id=$1 AND u_konkurrua=true
       ORDER BY created_at DESC LIMIT 1`, [id]);
-    const pikaFundit = fundQ.rows[0] || { pika_totale_ankand: null, pika_totale_barazi: null };
+    const pikaFundit = fundQ.rows[0] || { pika_totale_ankand: null, pika_totale_barazi: null, zbritje_ankand: null };
     const hostTipiQ = await pool.query('SELECT tipi FROM bizneset WHERE id=$1', [id]);
     const hostTipi = hostTipiQ.rows[0] && hostTipiQ.rows[0].tipi;
     function pikaPerzgjedhjejeAdmin(x) { return (3/40000)*x*x - (3/200)*x + 7/4; }
@@ -3000,6 +3000,7 @@ app.get('/api/admin/automatik/:id', iAdmin, async (req, res) => {
       ankand: {
         fitore_gjithsej: totQ.rows[0].ankand_fitore,
         pika_totale_fundit: ankandKand.shumaLiveFundit,
+        zbritje_kufiri_fleksibel: pikaFundit.zbritje_ankand,
         kandidatet: ankandKand.rows
       },
       balance: {
