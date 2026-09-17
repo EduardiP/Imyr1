@@ -516,48 +516,32 @@ function anaRenderDetRezultati(){
 // shume; kategoria e VET biznesit theksohet me ngjyre tjeter ──
 var _anaBilKatNjesia=20, _anaBilKatBoshllek=3, _anaBilKatMaksVizual=12;
 async function anaDetRezBalanceKategori(el){
-  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 4px;">Balance by category</h4>'+
-    '<p class="small mut" style="margin:0 0 12px;">For each category: squares above the midline if you received more impressions, below if you gave more. Your category is highlighted in a different color.</p>'+
-    '<div id="anaBilKatGrafiku" style="display:flex;gap:20px;align-items:flex-start;overflow-x:auto;padding:6px 4px 0;"></div>';
+  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 4px;">Category</h4>'+
+    '<p class="small mut" style="margin:0 0 12px;">For each category, how many impressions your ad has received from that category (businesses of the same category are combined into one column).</p>'+
+    '<div id="anaBilKatGrafiku" style="display:flex;gap:20px;align-items:flex-end;overflow-x:auto;padding:6px 4px 0;"></div>';
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
-  if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value){
-    el.innerHTML += '<p style="color:#f85149;">[DEBUG: date inputs missing — ngaEl='+(!!ngaEl)+' deriEl='+(!!deriEl)+' ngaVal='+(ngaEl&&ngaEl.value)+' deriVal='+(deriEl&&deriEl.value)+']</p>';
-    return;
-  }
+  if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
-  try{
-    const resp = await fetch('/api/analytics/balance-kategorite-katror?nga='+ngaEl.value+'&deri='+deriEl.value);
-    d=await resp.json();
-    if(d.error) el.innerHTML += '<p style="color:#f85149;">[DEBUG: server error: '+esc(d.error)+']</p>';
-  }catch(e){
-    el.innerHTML += '<p style="color:#f85149;">[DEBUG: fetch threw: '+esc(e.message)+']</p>';
-    return;
-  }
+  try{ d=await(await fetch('/api/analytics/balance-kategorite-katror?nga='+ngaEl.value+'&deri='+deriEl.value)).json(); }catch(e){ return; }
   const grafEl=$('anaBilKatGrafiku'); if(!grafEl) return;
-  const kategorite=d.kategorite||[];
-  if(!kategorite.length){ grafEl.innerHTML='<p class="small mut">No Balance participation in this period.</p>'; return; }
+  const kategorite=(d.kategorite||[]).filter(k=>k.dhene>0);
+  if(!kategorite.length){ grafEl.innerHTML='<p class="small mut">No category has received impressions from you in this period.</p>'; return; }
   const NJ=_anaBilKatNjesia, BOSH=_anaBilKatBoshllek, MAKS=_anaBilKatMaksVizual;
-  // Lartesia E DINAMIKE — bazuar te vlera maksimale REALE e |net| ne kete pergjigje,
-  // jo nje supozim fiks — keshtu s'mbetet hapesire boshe kur vlerat jane te vogla.
   let maksReal=1;
-  kategorite.forEach(function(k){ if(Math.abs(k.net)>maksReal) maksReal=Math.abs(k.net); });
+  kategorite.forEach(function(k){ if(k.dhene>maksReal) maksReal=k.dhene; });
   const numriPerAne = Math.min(maksReal, MAKS);
   const LARTESIA = numriPerAne*(NJ+BOSH) + 10;
   grafEl.innerHTML = kategorite.map(function(k,i){
-    const eshteVetja = (k.kategoria===d.vetjaKat);
-    const ngjyra = eshteVetja ? '#f0883e' : anaKatPaleta(i);
-    const nShfaq = Math.min(Math.abs(k.net), MAKS);
-    const teproj = Math.abs(k.net) > MAKS;
+    const ngjyra = anaKatPaleta(i);
+    const nShfaq = Math.min(k.dhene, MAKS);
+    const teproj = k.dhene > MAKS;
     const njeKatror = '<div style="width:'+NJ+'px;height:'+NJ+'px;background:'+ngjyra+';border-radius:3px;flex:0 0 auto;"></div>';
     const katroret = Array.from({length:nShfaq}).map(function(){ return njeKatror; }).join('<div style="height:'+BOSH+'px;"></div>');
-    const brendaLart = k.net>0 ? ('<div style="display:flex;flex-direction:column-reverse;align-items:center;">'+katroret+'</div>'+(teproj?'<div class="small" style="color:'+ngjyra+';font-size:10px;margin-top:2px;">+'+Math.abs(k.net)+'</div>':'')) : '';
-    const brendaPoshte = k.net<0 ? ('<div style="display:flex;flex-direction:column;align-items:center;">'+katroret+'</div>'+(teproj?'<div class="small" style="color:'+ngjyra+';font-size:10px;margin-bottom:2px;">−'+Math.abs(k.net)+'</div>':'')) : '';
     return '<div style="flex:0 0 auto;width:64px;display:flex;flex-direction:column;align-items:center;">'+
-      '<div style="height:'+LARTESIA+'px;display:flex;flex-direction:column;justify-content:flex-end;width:100%;align-items:center;">'+brendaLart+'</div>'+
-      '<div style="width:100%;height:2px;background:rgba(230,237,243,.4);margin:2px 0;"></div>'+
-      '<div style="height:'+LARTESIA+'px;display:flex;flex-direction:column;justify-content:flex-start;width:100%;align-items:center;">'+brendaPoshte+'</div>'+
-      '<div class="small" style="font-size:10px;margin-top:6px;text-align:center;color:'+(eshteVetja?ngjyra:'var(--mut)')+';font-weight:'+(eshteVetja?'700':'400')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:64px;">'+esc(k.kategoria)+(eshteVetja?' (ti)':'')+'</div>'+
-      '<div class="small" style="font-size:9px;margin-top:2px;color:var(--mut);text-align:center;">views '+k.dhene+'/'+k.marre+' · loads '+k.dhene_ngarkime+'/'+k.marre_ngarkime+'</div>'+
+      '<div style="height:'+LARTESIA+'px;display:flex;flex-direction:column-reverse;justify-content:flex-start;width:100%;align-items:center;">'+katroret+(teproj?'<div class="small" style="color:'+ngjyra+';font-size:10px;margin-bottom:2px;">+'+k.dhene+'</div>':'')+'</div>'+
+      '<div style="width:100%;height:2px;background:rgba(230,237,243,.4);margin:6px 0 4px;"></div>'+
+      '<div class="small" style="font-size:10px;text-align:center;color:var(--mut);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:64px;">'+esc(k.kategoria)+'</div>'+
+      '<div class="small" style="font-size:9px;margin-top:2px;color:var(--mut);text-align:center;">'+k.dhene+' views · '+k.dhene_ngarkime+' loads</div>'+
     '</div>';
   }).join('');
 }
