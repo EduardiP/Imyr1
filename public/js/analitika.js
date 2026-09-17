@@ -211,7 +211,7 @@ function mainAnaTrafiku(m){
         '<button class="btn" onclick="anaDetPreset(30)">Last 30 days</button>'+
         '<button class="btn" onclick="anaDetPreset(90)">Last 90 days</button>'+
         '<span style="flex:1"></span>'+
-        '<div style="position:relative;">'+
+        '<div id="anaDetRekBtnWrap" style="position:relative;">'+
           '<button type="button" id="anaDetRekBtn" class="btn" style="min-width:150px;">Ads <span id="anaDetRekBtnCount"></span> ▾</button>'+
           '<div id="anaDetRekDropdown" class="hide" style="position:absolute;top:110%;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:240px;max-height:280px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
         '</div>'+
@@ -319,7 +319,12 @@ function anaRenderDetKryesori(){
   const eshteDhene = (_anaDetPerspektiv==='dhene');
   // Position/Reklama s'kane kuptim ne "Dhene" (renditja/reklama ime specifike jane
   // koncepte qe vlejne vetem kur UNE konkurroj, jo kur te tjeret konkurrojne te hapesira ime)
-  if(!eshteDhene && (_anaDetAktiv==='pozicioni' || _anaDetAktiv==='reklama')) _anaDetAktiv='pesha';
+  if(eshteDhene && (_anaDetAktiv==='pozicioni' || _anaDetAktiv==='reklama')) _anaDetAktiv='pesha';
+  // "Ads ▾" (dropdown-i pranë kalendarit, i NDARË nga skeda "reklama" më sipër) —
+  // ky është filtër GLOBAL, ka kuptim VETEM te "Given" (cila reklamë IME fitoi diku tjeter) —
+  // e kunderta e skedes "reklama" (qe hiqet nga Given). Mos e prek logjiken e skedes se mesiperme.
+  const rekBtnWrap=$('anaDetRekBtnWrap');
+  if(rekBtnWrap) rekBtnWrap.style.display = eshteDhene ? '' : 'none';
   // "Balance" (pesha) brenda "Received" ZEVENDESOHET plotesisht nga "Deficit" (grafiku kub
   // me kubik, i ndare, poshte) — mbahet VETEM brenda "Given" (aty behet "Category").
   if(eshteBalance && !eshteDhene && _anaDetAktiv==='pesha') _anaDetAktiv=null;
@@ -329,7 +334,7 @@ function anaRenderDetKryesori(){
     {k:'reklama', aktiv: !!_anaDetReklamaId},
     {k:'kategoria', aktiv: !!_anaDetCategory}
   ].filter(function(x){
-    if(!eshteDhene && (x.k==='pozicioni' || x.k==='reklama')) return false;
+    if(eshteDhene && (x.k==='pozicioni' || x.k==='reklama')) return false;
     if(eshteBalance && !eshteDhene && x.k==='pesha') return false; // hequr nga Received, mbahet vetem "Deficit"
     return true;
   });
