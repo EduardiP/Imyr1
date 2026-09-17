@@ -1235,42 +1235,19 @@ app.get('/api/analytics/balance-kategorite-katror', iLoguar, async (req, res) =>
     const vetjaKat = vetja.rows.length ? vetja.rows[0].kategoria_kryesore : null;
 
     const r = await pool.query(`
-      SELECT kategoria,
-        SUM(dhene_ngarkime)::int AS dhene_ngarkime, SUM(dhene)::int AS dhene,
-        SUM(marre_ngarkime)::int AS marre_ngarkime, SUM(marre)::int AS marre
-      FROM (
-        -- Une jam HOST (biznes_id=une) — kategoria e ADVERTISUESIT (reklamues_id) —
-        -- "dhene" = un i kam DHENE shfaqje ATIJ
-        SELECT b.kategoria_kryesore AS kategoria,
-          COUNT(*) FILTER (WHERE e.lloji='view')::int AS dhene_ngarkime,
-          COUNT(*) FILTER (WHERE e.lloji='shikim')::int AS dhene,
-          0 AS marre_ngarkime, 0 AS marre
-        FROM ngjarjet e
-        JOIN bizneset b ON b.id = e.reklamues_id
-        WHERE e.biznes_id=$1 AND e.lloji IN ('view','shikim') AND e.burimi='barazi'
-          AND e.created_at::date BETWEEN $2 AND $3
-          AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''
-        GROUP BY b.kategoria_kryesore
-        UNION ALL
-        -- Une jam REKLAMUES (reklamues_id=une) — kategoria e HOST-it (biznes_id) —
-        -- "marre" = un KAM MARRE shfaqje NGA ai
-        SELECT b.kategoria_kryesore AS kategoria,
-          0 AS dhene_ngarkime, 0 AS dhene,
-          COUNT(*) FILTER (WHERE e.lloji='view')::int AS marre_ngarkime,
-          COUNT(*) FILTER (WHERE e.lloji='shikim')::int AS marre
-        FROM ngjarjet e
-        JOIN bizneset b ON b.id = e.biznes_id
-        WHERE e.reklamues_id=$1 AND e.lloji IN ('view','shikim') AND e.burimi='barazi'
-          AND e.created_at::date BETWEEN $2 AND $3
-          AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''
-        GROUP BY b.kategoria_kryesore
-      ) t
-      GROUP BY kategoria
-      ORDER BY kategoria`, [req.biznesId, nga, deri]);
+      SELECT b.kategoria_kryesore AS kategoria,
+        COUNT(*) FILTER (WHERE e.lloji='view')::int AS dhene_ngarkime,
+        COUNT(*) FILTER (WHERE e.lloji='shikim')::int AS dhene
+      FROM ngjarjet e
+      JOIN bizneset b ON b.id = e.reklamues_id
+      WHERE e.biznes_id=$1 AND e.lloji IN ('view','shikim') AND e.burimi='barazi'
+        AND e.created_at::date BETWEEN $2 AND $3
+        AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''
+      GROUP BY b.kategoria_kryesore
+      ORDER BY b.kategoria_kryesore`, [req.biznesId, nga, deri]);
 
     res.json({ nga, deri, vetjaKat, kategorite: r.rows.map(x => ({
-      kategoria: x.kategoria, dhene: x.dhene, marre: x.marre, net: x.marre - x.dhene,
-      dhene_ngarkime: x.dhene_ngarkime, marre_ngarkime: x.marre_ngarkime
+      kategoria: x.kategoria, dhene: x.dhene, dhene_ngarkime: x.dhene_ngarkime
     })) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
