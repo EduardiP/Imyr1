@@ -133,10 +133,12 @@ function urlToState(pathname){
     return {v:'profile', nav:'reklamat'};
   }
   if(n==='conversions'||n==='konvertimet') return {v:'profile', nav:'konvertimet'};
-  if(n==='analytics') return {v:'profile', nav:'analytics'};
-  if(n==='analytics/traffic') return {v:'profile', nav:'anaTrafiku'};
-  if(n==='analytics/pool-selections') return {v:'profile', nav:'anaAutomatik'};
-  if(n==='analytics/deficit') return {v:'profile', nav:'anaDeficiti'};
+  if(n==='analytics'){
+    if(parts[1]==='traffic') return {v:'profile', nav:'anaTrafiku'};
+    if(parts[1]==='pool-selections') return {v:'profile', nav:'anaAutomatik'};
+    if(parts[1]==='deficit') return {v:'profile', nav:'anaDeficiti'};
+    return {v:'profile', nav:'analytics'};
+  }
   if(n==='insights'||n==='vshtrime') return {v:'profile', nav:'insights'};
   if(n==='business'||n==='biznesi') return {v:'profile', nav:'biznesi'};
   if(n==='description'||n==='pershkrimi') return {v:'profile', nav:'pershkrimi'};
