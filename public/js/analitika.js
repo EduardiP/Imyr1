@@ -324,7 +324,7 @@ function anaRenderDetKryesori(){
   // ky është filtër GLOBAL, ka kuptim VETEM te "Given" (cila reklamë IME fitoi diku tjeter) —
   // e kunderta e skedes "reklama" (qe hiqet nga Given). Mos e prek logjiken e skedes se mesiperme.
   const rekBtnWrap=$('anaDetRekBtnWrap');
-  if(rekBtnWrap) rekBtnWrap.style.display = eshteDhene ? '' : 'none';
+  if(rekBtnWrap) rekBtnWrap.style.display = eshteDhene ? 'none' : '';
   // "Balance" (pesha) brenda "Received" ZEVENDESOHET plotesisht nga "Deficit" (grafiku kub
   // me kubik, i ndare, poshte) — mbahet VETEM brenda "Given" (aty behet "Category").
   if(eshteBalance && !eshteDhene && _anaDetAktiv==='pesha') _anaDetAktiv=null;
