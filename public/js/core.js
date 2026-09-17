@@ -82,6 +82,9 @@ function stateToUrl(s){
   if(n==='rekPerformanca') return '/app/ads/performance';
   if(n==='konvertimet' || n==='konvertimi') return '/app/conversions';
   if(n==='analytics') return '/app/analytics';
+  if(n==='anaTrafiku') return '/app/analytics/traffic';
+  if(n==='anaAutomatik') return '/app/analytics/pool-selections';
+  if(n==='anaDeficiti') return '/app/analytics/deficit';
   if(n==='insights') return '/app/insights';
   if(n==='biznesi') return '/app/business';
   if(n==='pershkrimi') return '/app/description';
@@ -131,6 +134,9 @@ function urlToState(pathname){
   }
   if(n==='conversions'||n==='konvertimet') return {v:'profile', nav:'konvertimet'};
   if(n==='analytics') return {v:'profile', nav:'analytics'};
+  if(n==='analytics/traffic') return {v:'profile', nav:'anaTrafiku'};
+  if(n==='analytics/pool-selections') return {v:'profile', nav:'anaAutomatik'};
+  if(n==='analytics/deficit') return {v:'profile', nav:'anaDeficiti'};
   if(n==='insights'||n==='vshtrime') return {v:'profile', nav:'insights'};
   if(n==='business'||n==='biznesi') return {v:'profile', nav:'biznesi'};
   if(n==='description'||n==='pershkrimi') return {v:'profile', nav:'pershkrimi'};
