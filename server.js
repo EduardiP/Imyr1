@@ -956,6 +956,19 @@ app.get('/api/analytics/deficiti', iLoguar, async (req, res) => {
       LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1    AND lloji='konvertim' AND burimi=$4 AND ($5::int IS NULL OR reklama_id=$5) GROUP BY dt) d4 ON d4.dt=gs
       ORDER BY gs`, params);
 
+    // Kategorite (dhene, per pishinen aktuale) — SHTUAR KETU (jo endpoint i ri i veçantë) —
+    // perdor te njejtin biznesId/nga/deri/logjika, tashme te verifikuar te punojne saktë.
+    const katR = await pool.query(`
+      SELECT COALESCE(NULLIF(b.kategoria_kryesore,''),'Uncategorized') AS kategoria,
+        COUNT(*) FILTER (WHERE e.lloji='view')::int AS dhene_ngarkime,
+        COUNT(*) FILTER (WHERE e.lloji='shikim')::int AS dhene
+      FROM ngjarjet e
+      LEFT JOIN bizneset b ON b.id = e.reklamues_id
+      WHERE e.biznes_id=$1 AND e.lloji IN ('view','shikim') AND e.burimi=$4
+        AND e.created_at::date BETWEEN $2 AND $3
+      GROUP BY 1
+      ORDER BY 1`, [req.biznesId, nga, deri, logjika]);
+
     res.json({ nga, deri, rows: r.rows.map(x => ({
       data: x.data.toISOString().slice(0,10),
       shfaqje: x.shfaqje, shikime: x.shikime, klikime: x.klikime, konvertime: x.konvertime,
@@ -963,7 +976,7 @@ app.get('/api/analytics/deficiti', iLoguar, async (req, res) => {
       shikime_dhene: x.shikime_dhene, shikime_marre: x.shikime_marre,
       klikime_dhene: x.klikime_dhene, klikime_marre: x.klikime_marre,
       konvertime_dhene: x.konvertime_dhene, konvertime_marre: x.konvertime_marre
-    })) });
+    })), kategorite: katR.rows.map(x => ({ kategoria: x.kategoria, dhene: x.dhene, dhene_ngarkime: x.dhene_ngarkime })) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
