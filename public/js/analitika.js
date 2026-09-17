@@ -522,7 +522,7 @@ async function anaDetRezBalanceKategori(el){
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
-  try{ d=await(await fetch('/api/analytics/balance-kategorite-katror?nga='+ngaEl.value+'&deri='+deriEl.value)).json(); }catch(e){ return; }
+  try{ d=await(await fetch('/api/analytics/deficiti?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand'))).json(); }catch(e){ return; }
   const grafEl=$('anaBilKatGrafiku'); if(!grafEl) return;
   const kategorite=(d.kategorite||[]).filter(k=>k.dhene>0);
   if(!kategorite.length){ grafEl.innerHTML='<p class="small mut">No category has received impressions from you in this period.</p>'; return; }
