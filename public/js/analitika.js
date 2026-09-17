@@ -307,10 +307,11 @@ function anaDetPreset(dite){
 function anaDetEmriFiltri(lloji){
   const eshteBalance = (window.__llogariaModaliteti==='barazi');
   const eshteDhene = (_anaDetPerspektiv==='dhene');
-  if(lloji==='pesha') return (eshteBalance && eshteDhene) ? 'Category' : (eshteBalance ? 'Balance' : (_anaDetWeightMode==='te_gjitha' ? 'Weight' : (_anaDetWeightMode==='fiks' ? 'Weight: '+_anaDetWeightFiks : 'Weight: '+_anaDetWeightMin+'–'+_anaDetWeightMax)));
+  const DBG = ' [dbg:'+(window.__llogariaModaliteti||'undefined')+']';
+  if(lloji==='pesha') return ((eshteBalance && eshteDhene) ? 'Category' : (eshteBalance ? 'Balance' : (_anaDetWeightMode==='te_gjitha' ? 'Weight' : (_anaDetWeightMode==='fiks' ? 'Weight: '+_anaDetWeightFiks : 'Weight: '+_anaDetWeightMin+'–'+_anaDetWeightMax)))) + DBG;
   if(lloji==='pozicioni') return eshteBalance ? 'Daily performance' : (_anaDetPosition==='te_gjitha' ? 'Position' : 'Position: #'+_anaDetPosition);
   if(lloji==='reklama') return _anaDetReklamaId ? 'Ad: '+((_anaDetAds.find(r=>r.id==_anaDetReklamaId)||{}).emri||'') : 'Ad';
-  if(lloji==='kategoria') return 'Metrics';
+  if(lloji==='kategoria') return 'Metrics'+DBG;
 }
 
 function anaRenderDetKryesori(){
@@ -516,7 +517,8 @@ function anaRenderDetRezultati(){
 // shume; kategoria e VET biznesit theksohet me ngjyre tjeter ──
 var _anaBilKatNjesia=20, _anaBilKatBoshllek=3, _anaBilKatMaksVizual=12;
 async function anaDetRezBalanceKategori(el){
-  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 4px;">Balance by category</h4>'+
+  el.innerHTML = '<div style="background:#f0883e;color:#000;padding:4px 8px;font-size:11px;font-weight:700;margin-bottom:6px;">[DEBUG: anaDetRezBalanceKategori — CUBES]</div>'+
+    '<h4 class="small" style="font-weight:600;margin:0 0 4px;">Balance by category</h4>'+
     '<p class="small mut" style="margin:0 0 12px;">For each category: squares above the midline if you received more impressions, below if you gave more. Your category is highlighted in a different color.</p>'+
     '<div id="anaBilKatGrafiku" style="display:flex;gap:20px;align-items:flex-start;overflow-x:auto;padding:6px 4px 0;"></div>';
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
@@ -703,7 +705,8 @@ async function anaDetNgarkoReklamaChart(){
 
 // ── Rasti "Category" — ripërdor grafikun "By category" (nje vije per kategori) ──
 async function anaDetRezCategory(el){
-  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 4px;">Metrics</h4>'+
+  el.innerHTML = '<div style="background:#4a9eff;color:#000;padding:4px 8px;font-size:11px;font-weight:700;margin-bottom:6px;">[DEBUG: anaDetRezCategory — METRICS]</div>'+
+    '<h4 class="small" style="font-weight:600;margin:0 0 4px;">Metrics</h4>'+
     '<p class="small mut" style="margin:0 0 12px;">Select one or more metrics to compare over time. These totals cover all ads this account has offered.</p>'+
     '<div id="anaDetKatMetricRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
     '<canvas id="anaDetCategoryCanvas" height="110"></canvas>';
