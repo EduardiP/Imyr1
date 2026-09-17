@@ -1235,16 +1235,15 @@ app.get('/api/analytics/balance-kategorite-katror', iLoguar, async (req, res) =>
     const vetjaKat = vetja.rows.length ? vetja.rows[0].kategoria_kryesore : null;
 
     const r = await pool.query(`
-      SELECT b.kategoria_kryesore AS kategoria,
+      SELECT COALESCE(NULLIF(b.kategoria_kryesore,''),'Uncategorized') AS kategoria,
         COUNT(*) FILTER (WHERE e.lloji='view')::int AS dhene_ngarkime,
         COUNT(*) FILTER (WHERE e.lloji='shikim')::int AS dhene
       FROM ngjarjet e
-      JOIN bizneset b ON b.id = e.reklamues_id
+      LEFT JOIN bizneset b ON b.id = e.reklamues_id
       WHERE e.biznes_id=$1 AND e.lloji IN ('view','shikim') AND e.burimi='barazi'
         AND e.created_at::date BETWEEN $2 AND $3
-        AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''
-      GROUP BY b.kategoria_kryesore
-      ORDER BY b.kategoria_kryesore`, [req.biznesId, nga, deri]);
+      GROUP BY 1
+      ORDER BY 1`, [req.biznesId, nga, deri]);
 
     res.json({ nga, deri, vetjaKat, kategorite: r.rows.map(x => ({
       kategoria: x.kategoria, dhene: x.dhene, dhene_ngarkime: x.dhene_ngarkime
