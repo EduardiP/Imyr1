@@ -118,7 +118,6 @@ function mainAnalytics(m){
         '<input type="date" id="anaDeriDeficit" style="display:none;">'+
       '</div>'+
       '<div id="anaDeficitMetricRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
-      '<div id="anaDeficitOwnSummary" class="small mut" style="margin-bottom:10px;"></div>'+
       '<canvas id="anaDeficitCanvas" height="110"></canvas>'+
     '</div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
@@ -307,24 +306,33 @@ function anaDetPreset(dite){
 
 function anaDetEmriFiltri(lloji){
   const eshteBalance = (window.__llogariaModaliteti==='barazi');
-  if(lloji==='pesha') return eshteBalance ? 'Balance' : (_anaDetWeightMode==='te_gjitha' ? 'Weight' : (_anaDetWeightMode==='fiks' ? 'Weight: '+_anaDetWeightFiks : 'Weight: '+_anaDetWeightMin+'–'+_anaDetWeightMax));
+  const eshteDhene = (_anaDetPerspektiv==='dhene');
+  if(lloji==='pesha') return (eshteBalance && eshteDhene) ? 'Category' : (eshteBalance ? 'Balance' : (_anaDetWeightMode==='te_gjitha' ? 'Weight' : (_anaDetWeightMode==='fiks' ? 'Weight: '+_anaDetWeightFiks : 'Weight: '+_anaDetWeightMin+'–'+_anaDetWeightMax)));
   if(lloji==='pozicioni') return eshteBalance ? 'Daily performance' : (_anaDetPosition==='te_gjitha' ? 'Position' : 'Position: #'+_anaDetPosition);
   if(lloji==='reklama') return _anaDetReklamaId ? 'Ad: '+((_anaDetAds.find(r=>r.id==_anaDetReklamaId)||{}).emri||'') : 'Ad';
-  if(lloji==='kategoria') return _anaDetCategory ? 'Category: '+_anaDetCategory : 'Category';
+  if(lloji==='kategoria') return 'Metrics';
 }
 
 function anaRenderDetKryesori(){
   const el=$('anaDetKryesoriRow'); if(!el) return;
+  const eshteBalance = (window.__llogariaModaliteti==='barazi');
   const eshteDhene = (_anaDetPerspektiv==='dhene');
   // Position/Reklama s'kane kuptim ne "Dhene" (renditja/reklama ime specifike jane
   // koncepte qe vlejne vetem kur UNE konkurroj, jo kur te tjeret konkurrojne te hapesira ime)
   if(eshteDhene && (_anaDetAktiv==='pozicioni' || _anaDetAktiv==='reklama')) _anaDetAktiv='pesha';
+  // "Balance" (pesha) brenda "Received" ZEVENDESOHET plotesisht nga "Deficit" (grafiku kub
+  // me kubik, i ndare, poshte) — mbahet VETEM brenda "Given" (aty behet "Category").
+  if(eshteBalance && !eshteDhene && _anaDetAktiv==='pesha') _anaDetAktiv=null;
   const llojet=[
     {k:'pesha', aktiv: _anaDetWeightMode!=='te_gjitha'},
     {k:'pozicioni', aktiv: _anaDetPosition!=='te_gjitha'},
     {k:'reklama', aktiv: !!_anaDetReklamaId},
     {k:'kategoria', aktiv: !!_anaDetCategory}
-  ].filter(function(x){ return !(eshteDhene && (x.k==='pozicioni' || x.k==='reklama')); });
+  ].filter(function(x){
+    if(eshteDhene && (x.k==='pozicioni' || x.k==='reklama')) return false;
+    if(eshteBalance && !eshteDhene && x.k==='pesha') return false; // hequr nga Received, mbahet vetem "Deficit"
+    return true;
+  });
   el.innerHTML='';
   llojet.forEach(function(x){
     const btn=document.createElement('button');
@@ -404,14 +412,6 @@ function anaRenderDetNenPanel(){
           return '<button type="button" onclick="anaDetReklamaSet('+r.id+')" style="'+(_anaDetReklamaId==r.id?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">'+esc(r.emri||('#'+r.id))+'</button>';
         }).join('') : '<span class="small mut">No ad has won yet in this period.</span>')+
       '</div>';
-  } else if(_anaDetAktiv==='kategoria'){
-    el.innerHTML =
-      '<div style="padding:12px;background:var(--card2);border:1px solid var(--line);border-radius:8px;display:flex;flex-wrap:wrap;gap:6px;">'+
-        '<button type="button" onclick="anaDetCategorySet(\'\')" style="'+(!_anaDetCategory?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">All</button>'+
-        (_anaDetKategorite.length ? _anaDetKategorite.map(function(k){
-          return '<button type="button" onclick="anaDetCategorySet(\''+esc(k)+'\')" style="'+(_anaDetCategory===k?'background:var(--acc);color:#06121f;':'background:transparent;color:var(--txt);')+'padding:6px 12px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-family:inherit;">'+esc(k)+'</button>';
-        }).join('') : '<span class="small mut">No category in this period.</span>')+
-      '</div>';
   }
 }
 
@@ -461,7 +461,7 @@ async function ngarkoAnaDetaje(){
 
   _anaDetKategorite = d.kategorite_disponueshme || [];
   _anaDetAds = d.reklamat_disponueshme || [];
-  if(_anaDetAktiv==='reklama' || _anaDetAktiv==='kategoria') anaRenderDetNenPanel();
+  if(_anaDetAktiv==='reklama') anaRenderDetNenPanel();
   anaDetRenderRekDropdown();
 
   const rreshtat = d.rreshtat || [];
@@ -698,29 +698,33 @@ async function anaDetNgarkoReklamaChart(){
 
 // ── Rasti "Category" — ripërdor grafikun "By category" (nje vije per kategori) ──
 async function anaDetRezCategory(el){
-  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 8px;">By business category</h4>'+
+  el.innerHTML = '<h4 class="small" style="font-weight:600;margin:0 0 4px;">Metrics</h4>'+
+    '<p class="small mut" style="margin:0 0 12px;">Select one or more metrics to compare over time. These totals cover all ads this account has offered.</p>'+
     '<div id="anaDetKatMetricRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>'+
-    '<div style="display:flex;gap:14px;align-items:stretch;">'+
-      '<div style="flex:1;min-width:0;"><canvas id="anaDetCategoryCanvas" height="100"></canvas></div>'+
-      '<div style="flex:0 0 150px;">'+
-        '<div id="anaDetKatLegend" style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;padding-right:2px;"></div>'+
-      '</div>'+
-    '</div>';
+    '<canvas id="anaDetCategoryCanvas" height="110"></canvas>';
   anaDetRenderKatMetric();
   await anaDetNgarkoCategoryChart();
 }
-var _anaDetKatMetricAktive='shikime';
+// Shume-zgjedhje (jo 1 e vetme) — klienti mund te shohi disa metrika njekohesisht, mbivendosur.
+var _anaDetKatMetrikaZgjedhura = ['shfaqje'];
 function anaDetRenderKatMetric(){
   const el=$('anaDetKatMetricRow'); if(!el) return;
   el.innerHTML='';
   ANA_METRIKA.forEach(x=>{
     const btn=document.createElement('button');
     btn.type='button'; btn.textContent=x.l;
-    const on=_anaDetKatMetricAktive===x.k;
+    const on=_anaDetKatMetrikaZgjedhura.includes(x.k);
     btn.style.cssText = on
       ? 'padding:6px 12px;border-radius:20px;border:1px solid var(--acc);background:var(--acc);color:#06121f;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;'
       : 'padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit;';
-    btn.addEventListener('click', function(){ _anaDetKatMetricAktive=x.k; anaDetRenderKatMetric(); anaDetNgarkoCategoryChart(); });
+    btn.addEventListener('click', function(){
+      if(on){
+        if(_anaDetKatMetrikaZgjedhura.length>1) _anaDetKatMetrikaZgjedhura=_anaDetKatMetrikaZgjedhura.filter(k=>k!==x.k);
+      } else {
+        _anaDetKatMetrikaZgjedhura=_anaDetKatMetrikaZgjedhura.concat([x.k]);
+      }
+      anaDetRenderKatMetric(); anaDetNgarkoCategoryChart();
+    });
     el.appendChild(btn);
   });
 }
@@ -728,29 +732,27 @@ var _anaDetCategoryChartRef=null;
 async function anaDetNgarkoCategoryChart(){
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
-  let url='/api/analytics/kategorite?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand');
+  const eshteDhene = (_anaDetPerspektiv==='dhene');
+  const sufiks = eshteDhene ? '_dhene' : '_marre';
+  let url='/api/analytics/deficiti?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand');
   let d;
   try{ d=await(await fetch(url)).json(); }catch(e){ return; }
-  const detKatMetricObj = ANA_METRIKA.find(x=>x.k===_anaDetKatMetricAktive) || {k:_anaDetKatMetricAktive};
-  const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>anaVlera(p,detKatMetricObj)>0));
-  const legEl=$('anaDetKatLegend');
-  if(legEl) legEl.innerHTML = !kategorite.length ? '<p class="small mut" style="margin:0;">No category.</p>' :
-    kategorite.map((k,i)=>'<div style="display:flex;align-items:center;gap:7px;font-size:12px;"><span style="width:10px;height:10px;border-radius:50%;background:'+anaKatPaleta(i)+';"></span>'+esc(k.emri)+'</div>').join('');
+  const rows=d.rows||[];
+  const labels=rows.map(r=>r.data);
   const canvas=$('anaDetCategoryCanvas'); if(!canvas||typeof Chart==='undefined') return;
   if(_anaDetCategoryChartRef){ _anaDetCategoryChartRef.destroy(); _anaDetCategoryChartRef=null; }
-  if(!kategorite.length){ const ctx0=canvas.getContext('2d'); ctx0.clearRect(0,0,canvas.width,canvas.height); return; }
-  const labels=kategorite[0].pikat.map(p=>p.data);
-  const datasets=kategorite.map((k,i)=>({label:k.emri, data:k.pikat.map(p=>anaVlera(p,detKatMetricObj)), borderColor:anaKatPaleta(i), backgroundColor:'transparent', tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:anaKatPaleta(i)}));
+  const zgjedhura = ANA_METRIKA.filter(x=>_anaDetKatMetrikaZgjedhura.includes(x.k));
+  const konvertoRow = r => ({shfaqje:r['shfaqje'+sufiks], shikime:r['shikime'+sufiks], klikime:r['klikime'+sufiks], konvertime:r['konvertime'+sufiks]});
+  const ndonjePerqindje = zgjedhura.some(m=>m.percentazh);
+  const datasets=zgjedhura.map((m)=>({label:m.l, data:rows.map(r=>anaVlera(konvertoRow(r),m)), borderColor:m.c, backgroundColor:'transparent', tension:0, borderWidth:2, pointRadius:2, pointBackgroundColor:m.c}));
   const ctx=canvas.getContext('2d');
-  const detKatEshtePerqindje = !!detKatMetricObj.percentazh;
   _anaDetCategoryChartRef=new Chart(ctx,{type:'line',data:{labels,datasets},
     options:{responsive:true,interaction:{mode:'index',intersect:false},
       scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}},
-        y: detKatEshtePerqindje
+        y: ndonjePerqindje
           ? {beginAtZero:true,max:100,ticks:{color:'#8b949e',callback:v=>v+'%'},grid:{color:'#2a313c'}}
           : {beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
-      plugins:{legend:{display:false}}},
-    plugins:[anaMultiColorLinePlugin]
+      plugins:{legend:{labels:{color:(document.body.classList.contains('pxa-light')?'#0f172a':'#e6edf3')}}}}
   });
 }
 
@@ -968,7 +970,6 @@ function mainAnaDeficiti(m){
         '<input type="date" id="anaDeriDeficit" style="display:none;">'+
       '</div>'+
       '<div id="anaDeficitMetricRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
-      '<div id="anaDeficitOwnSummary" class="small mut" style="margin-bottom:10px;"></div>'+
       '<canvas id="anaDeficitCanvas" height="110"></canvas>'+
     '</div>'+
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
@@ -1200,14 +1201,6 @@ async function ngarkoAnaDeficiti(){
   try{ d=await(await fetch(url)).json(); }catch(e){ return; }
   const rows=d.rows||[];
   const labels=rows.map(r=>r.data);
-  // Totali YT, per periudhen e zgjedhur — shfaqet gjithmone, pavaresisht kush eshte "biznesi tjeter"
-  // ne grafik — kjo eshte pika juaj e referencas (grafiku vete tregon vetem TE tjeret, individualisht).
-  const ownEl=$('anaDeficitOwnSummary');
-  if(ownEl){
-    const totMarre = rows.reduce((s,r)=>s+(r.shfaqje_marre||0),0);
-    const totDhene = rows.reduce((s,r)=>s+(r.shfaqje_dhene||0),0);
-    ownEl.innerHTML = 'Your totals for this period: <b style="color:var(--txt);">'+totMarre+'</b> received, <b style="color:var(--txt);">'+totDhene+'</b> given.';
-  }
   const canvas=$('anaDeficitCanvas'); if(!canvas||typeof Chart==='undefined') return;
   if(_anaDeficitChart){ _anaDeficitChart.destroy(); _anaDeficitChart=null; }
 
