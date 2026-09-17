@@ -455,7 +455,7 @@ function anaDetUpdateRekBtnLabel(){
 async function ngarkoAnaDetaje(){
   const ngaEl=$('anaNgaDet'), deriEl=$('anaDeriDet');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
-  let url='/api/analytics/ankand-detaje?nga='+ngaEl.value+'&deri='+deriEl.value+'&perspektiv='+_anaDetPerspektiv+'&pesha_mode='+_anaDetWeightMode;
+  let url='/api/analytics/ankand-detaje?nga='+ngaEl.value+'&deri='+deriEl.value+'&perspektiv='+_anaDetPerspektiv+'&pesha_mode='+_anaDetWeightMode+'&logjika='+(window.__llogariaModaliteti||'ankand');
   if(_anaDetWeightMode==='fiks' && _anaDetWeightFiks!=null) url+='&pesha_fiks='+_anaDetWeightFiks;
   if(_anaDetWeightMode==='interval' && _anaDetWeightMin!=null && _anaDetWeightMax!=null) url+='&pesha_min='+_anaDetWeightMin+'&pesha_max='+_anaDetWeightMax;
   if(_anaDetPosition!=='te_gjitha') url+='&pozicioni='+_anaDetPosition;
@@ -740,6 +740,7 @@ async function anaDetNgarkoCategoryChart(){
   const eshteDhene = (_anaDetPerspektiv==='dhene');
   const sufiks = eshteDhene ? '_dhene' : '_marre';
   let url='/api/analytics/deficiti?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand');
+  if(_anaDetReklamaId) url+='&reklama_id='+_anaDetReklamaId;
   let d;
   try{ d=await(await fetch(url)).json(); }catch(e){ return; }
   const rows=d.rows||[];
