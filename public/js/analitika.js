@@ -474,7 +474,7 @@ async function ngarkoAnaDetaje(){
           '<th style="text-align:left;padding:7px 8px;font-weight:600;">Category</th>'+
           '<th style="text-align:center;padding:7px 4px;font-weight:600;">Poz.</th>'+
           '<th style="text-align:right;padding:7px 8px;font-weight:600;">Weight</th>'+
-          '<th style="text-align:right;padding:7px 8px;font-weight:600;">Rezultati</th>'+
+          '<th style="text-align:right;padding:7px 8px;font-weight:600;">Result</th>'+
         '</tr></thead><tbody>'+
         rreshtat.map(function(r){
           return '<tr style="border-bottom:1px solid #20262f;">'+
