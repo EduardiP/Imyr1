@@ -319,7 +319,7 @@ function anaRenderDetKryesori(){
   const eshteDhene = (_anaDetPerspektiv==='dhene');
   // Position/Reklama s'kane kuptim ne "Dhene" (renditja/reklama ime specifike jane
   // koncepte qe vlejne vetem kur UNE konkurroj, jo kur te tjeret konkurrojne te hapesira ime)
-  if(eshteDhene && (_anaDetAktiv==='pozicioni' || _anaDetAktiv==='reklama')) _anaDetAktiv='pesha';
+  if(!eshteDhene && (_anaDetAktiv==='pozicioni' || _anaDetAktiv==='reklama')) _anaDetAktiv='pesha';
   // "Balance" (pesha) brenda "Received" ZEVENDESOHET plotesisht nga "Deficit" (grafiku kub
   // me kubik, i ndare, poshte) — mbahet VETEM brenda "Given" (aty behet "Category").
   if(eshteBalance && !eshteDhene && _anaDetAktiv==='pesha') _anaDetAktiv=null;
@@ -329,7 +329,7 @@ function anaRenderDetKryesori(){
     {k:'reklama', aktiv: !!_anaDetReklamaId},
     {k:'kategoria', aktiv: !!_anaDetCategory}
   ].filter(function(x){
-    if(eshteDhene && (x.k==='pozicioni' || x.k==='reklama')) return false;
+    if(!eshteDhene && (x.k==='pozicioni' || x.k==='reklama')) return false;
     if(eshteBalance && !eshteDhene && x.k==='pesha') return false; // hequr nga Received, mbahet vetem "Deficit"
     return true;
   });
