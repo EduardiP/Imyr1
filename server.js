@@ -572,15 +572,15 @@ app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
 
     // HAPI 4 — THIRRJA E DYTE AI (VETEM pasi e para te ket perfunduar): kategoria + permbledhje,
     // e njejta logjike si /api/analizo, thjesht automatike, duke ripërdorur TE NJEJTIN webTekst.
-    const sys2 = 'Je analist qe klasifikon biznese SaaS per nje rrjet cross-promotion. Kthe VETEM JSON, pa asnje tekst tjeter.';
+    const sys2 = 'You are an analyst who classifies SaaS businesses for a cross-promotion network. Respond ONLY with JSON, in English, no other text.';
     const user2 =
-      'Zgjidh SAKTESISHT nje kategori kryesore nga kjo liste: ' + KATEGORITE.join('; ') + '.\n\n' +
-      'Teksti i nxjerre nga faqja e biznesit:\n' + webTekst + '\n\n' +
-      'Detyra: shpjego QARTE cfare ofron ky biznes, me gjuhe te thjeshte e te kuptueshme.\n\n' +
-      'Kthe JSON me keto fusha:\n' +
-      '{"kategoria_kryesore": string (SAKTESISHT nje nga lista), ' +
-      '"nenkategorite": string[] (2-4 nenkategori specifike), ' +
-      '"permbledhje": string (2-4 fjali te qarta qe shpjegojne cfare ofron biznesi dhe kujt i sherben)}';
+      'Choose EXACTLY one main category from this list: ' + KATEGORITE.join('; ') + '.\n\n' +
+      'Text extracted from the business website:\n' + webTekst + '\n\n' +
+      'Task: explain CLEARLY what this business offers, in simple, easy-to-understand English.\n\n' +
+      'Return JSON with these fields (all text values in English):\n' +
+      '{"kategoria_kryesore": string (EXACTLY one from the list), ' +
+      '"nenkategorite": string[] (2-4 specific subcategories, in English), ' +
+      '"permbledhje": string (2-4 clear sentences, in English, explaining what the business offers and who it serves)}';
 
     const r2 = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
