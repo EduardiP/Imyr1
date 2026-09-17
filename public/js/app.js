@@ -74,7 +74,7 @@ function renderNav2(){
         const sb=document.createElement('button');
         sb.type='button';
         sb.className = (s.nav===curNav) ? 'active' : '';
-        sb.textContent=s.l;
+        sb.textContent = (s.nav==='anaDeficiti' && window.__llogariaModaliteti==='barazi') ? 'Balance' : s.l;
         sb.onclick=function(){
           if(s.akcion && typeof window[s.akcion]==='function'){ window[s.akcion](); return; }
           nav({v:'profile', nav:s.nav||n.k, tab:s.tab, sub:s.sub});
