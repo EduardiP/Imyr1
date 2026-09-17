@@ -118,6 +118,7 @@ function mainAnalytics(m){
         '<input type="date" id="anaDeriDeficit" style="display:none;">'+
       '</div>'+
       '<div id="anaDeficitMetricRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
+      '<div id="anaDeficitOwnSummary" class="small mut" style="margin-bottom:10px;"></div>'+
       '<canvas id="anaDeficitCanvas" height="110"></canvas>'+
     '</div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
@@ -967,6 +968,7 @@ function mainAnaDeficiti(m){
         '<input type="date" id="anaDeriDeficit" style="display:none;">'+
       '</div>'+
       '<div id="anaDeficitMetricRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>'+
+      '<div id="anaDeficitOwnSummary" class="small mut" style="margin-bottom:10px;"></div>'+
       '<canvas id="anaDeficitCanvas" height="110"></canvas>'+
     '</div>'+
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
@@ -1198,6 +1200,14 @@ async function ngarkoAnaDeficiti(){
   try{ d=await(await fetch(url)).json(); }catch(e){ return; }
   const rows=d.rows||[];
   const labels=rows.map(r=>r.data);
+  // Totali YT, per periudhen e zgjedhur — shfaqet gjithmone, pavaresisht kush eshte "biznesi tjeter"
+  // ne grafik — kjo eshte pika juaj e referencas (grafiku vete tregon vetem TE tjeret, individualisht).
+  const ownEl=$('anaDeficitOwnSummary');
+  if(ownEl){
+    const totMarre = rows.reduce((s,r)=>s+(r.shfaqje_marre||0),0);
+    const totDhene = rows.reduce((s,r)=>s+(r.shfaqje_dhene||0),0);
+    ownEl.innerHTML = 'Your totals for this period: <b style="color:var(--txt);">'+totMarre+'</b> received, <b style="color:var(--txt);">'+totDhene+'</b> given.';
+  }
   const canvas=$('anaDeficitCanvas'); if(!canvas||typeof Chart==='undefined') return;
   if(_anaDeficitChart){ _anaDeficitChart.destroy(); _anaDeficitChart=null; }
 
