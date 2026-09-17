@@ -482,7 +482,7 @@ async function ngarkoAnaDetaje(){
             '<td style="padding:7px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;">'+esc(r.kategoria||'—')+'</td>'+
             '<td style="text-align:center;padding:7px 4px;">'+(r.pozicioni!=null?r.pozicioni:'—')+'</td>'+
             '<td style="text-align:right;padding:7px 8px;">'+r.pesha+'</td>'+
-            '<td style="text-align:right;padding:7px 8px;font-weight:600;color:'+(r.fitoi?'var(--good)':'var(--mut)')+';">'+(r.fitoi?'Won':'Humbur')+'</td>'+
+            '<td style="text-align:right;padding:7px 8px;font-weight:600;color:'+(r.fitoi?'var(--good)':'var(--mut)')+';">'+(r.fitoi?'Won':'Lost')+'</td>'+
           '</tr>';
         }).join('')+
         '</tbody></table>';
