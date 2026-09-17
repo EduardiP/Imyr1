@@ -580,7 +580,8 @@ app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
       'Return JSON with these fields (all text values in English):\n' +
       '{"kategoria_kryesore": string (EXACTLY one from the list), ' +
       '"nenkategorite": string[] (2-4 specific subcategories, in English), ' +
-      '"permbledhje": string (2-4 clear sentences, in English, explaining what the business offers and who it serves)}';
+      '"permbledhje": string (2-4 clear sentences, in English, explaining what the business offers and who it serves)}\n\n' +
+      'IMPORTANT: write every text value in ENGLISH, even if the website text above is in another language. Translate as needed — never output Albanian or any other language.';
 
     const r2 = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
