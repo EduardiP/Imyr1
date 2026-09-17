@@ -429,7 +429,7 @@ function anaDetWeightIntervalChange(){
   anaRenderDetKryesori(); ngarkoAnaDetaje();
 }
 function anaDetPositionSet(p){ _anaDetPosition = (p==='te_gjitha'||isNaN(p)) ? 'te_gjitha' : p; anaRenderDetKryesori(); anaRenderDetNenPanel(); ngarkoAnaDetaje(); }
-function anaDetReklamaSet(id){ _anaDetReklamaId = id; anaRenderDetKryesori(); anaRenderDetNenPanel(); anaDetRenderRekDropdown(); ngarkoAnaDetaje(); }
+function anaDetReklamaSet(id){ _anaDetReklamaId = id; anaRenderDetKryesori(); anaRenderDetNenPanel(); anaDetRenderRekDropdown(); ngarkoAnaDetaje(); if(_anaDetAktiv==='kategoria') anaDetNgarkoCategoryChart(); }
 function anaDetCategorySet(kat){ _anaDetCategory = kat; anaRenderDetKryesori(); anaRenderDetNenPanel(); ngarkoAnaDetaje(); }
 
 // ═══ Dropdown UNIVERSAL i reklamave — punon PAVARESISHT cilën kategori (Weight/
