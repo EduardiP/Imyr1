@@ -62,7 +62,7 @@ async function skoroCiftin(a, b) {
   if (kaMbivendosjeKategorie(a, b)) return { ab: 0, ba: 0 };
 
   const key = process.env.OPENAI_API_KEY;
-  if (!key) return null;
+  if (!key) { console.error('DEBUG skoroCiftin: OPENAI_API_KEY MUNGON!'); return null; }
   const model = process.env.OPENAI_MODEL_SKORI || 'gpt-5.6-sol';
 
   const sys =
@@ -152,7 +152,10 @@ async function biznesetPerKombinim(vetja) {
      WHERE id <> $1
        AND tipi IS NOT NULL
        AND (permbledhje IS NOT NULL OR pershkrimi IS NOT NULL)
-       AND snippet_active = true`, [vetja.id]);
+       AND (
+         snippet_active = true
+         OR (created_at > now() - interval '7 days')
+       )`, [vetja.id]);
   return r.rows.filter(b => tipetPerputhen(vetja.tipi, b.tipi));
 }
 
@@ -180,19 +183,22 @@ async function ruajCiftin(aId, bId, ab, ba) {
 // --- FUNKSIONI KRYESOR: kombino nje biznes me pishinen e vet ---
 // Thirret kur biznesi kalon piken e 3-te. Punon ne sfond (pa e bllokuar pergjigjen).
 async function kombinoBiznesin(bizId) {
-  if (!_pool) return;
+  if (!_pool) { console.error('DEBUG kombino: _pool mungon fare'); return; }
   try {
     const vetja = await merrBiznesin(bizId);
-    if (!eshteGati(vetja)) return;
+    console.error('DEBUG kombino bizId='+bizId+' vetja='+JSON.stringify(vetja));
+    if (!eshteGati(vetja)) { console.error('DEBUG kombino: eshteGati=false, NDALOI KETU'); return; }
     const tetjeret = await biznesetPerKombinim(vetja);
-    if (!tetjeret.length) return;
+    console.error('DEBUG kombino: tetjeret gjetur='+tetjeret.length+' ids='+JSON.stringify(tetjeret.map(t=>t.id)));
+    if (!tetjeret.length) { console.error('DEBUG kombino: 0 kandidate, NDALOI KETU'); return; }
     for (const tjetri of tetjeret) {
-      if (await ekzistonCifti(vetja.id, tjetri.id)) continue;   // llogaritur tashme
+      if (await ekzistonCifti(vetja.id, tjetri.id)) { console.error('DEBUG kombino: cifti '+vetja.id+'-'+tjetri.id+' EKZISTON tashme, skip'); continue; }
       const skor = await skoroCiftin(vetja, tjetri);
+      console.error('DEBUG kombino: skor per '+vetja.id+'-'+tjetri.id+' = '+JSON.stringify(skor));
       if (skor) await ruajCiftin(vetja.id, tjetri.id, skor.ab, skor.ba);
     }
   } catch (e) {
-    console.error('kombinoBiznesin deshtoi:', e.message);
+    console.error('kombinoBiznesin deshtoi:', e.message, e.stack);
   }
 }
 
