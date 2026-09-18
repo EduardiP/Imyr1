@@ -586,7 +586,7 @@ app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
       'Task: explain CLEARLY what this business offers, in simple, easy-to-understand English.\n\n' +
       'Return JSON with these fields (all text values in English):\n' +
       '{"kategoria_kryesore": string (EXACTLY one from the list), ' +
-      '"kategori_dytesore": string[] (0-2 items — ONLY if this business genuinely offers a SEPARATE, DIFFERENT main service, also from the SAME list, e.g. a payroll tool that also does full HR/HRIS. Empty array if it only does ONE thing), ' +
+      '"kategori_dytesore": string[] (DEFAULT: empty array — most businesses do ONE thing well and should get NOTHING here. Only add an item if the business CLEARLY, OBVIOUSLY spans a genuinely SEPARATE market, e.g. a people-search tool used for BOTH "Recruiting/ATS Software" AND "Sales Intelligence" AND "Lead Generation Tools" — distinct use-cases, distinct buyers. Do NOT add a category just because it is CLOSELY RELATED or a natural feature of the main one — e.g. a subscription-billing tool doing "Payment Processing" is NORMAL, EXPECTED overlap, not a second category; a project-management tool having basic chat is NOT "Team Chat/Communication". When in doubt, leave this empty), ' +
       '"nenkategorite": string[] (2-4 specific subcategories, in English — these must be narrower DETAILS/ASPECTS OF "kategoria_kryesore" itself, NOT separate categories from the list — never repeat something that belongs in "kategori_dytesore" here), ' +
       '"permbledhje": string (2-4 clear sentences, in English, explaining what the business offers and who it serves)}\n\n' +
       'IMPORTANT: write every text value in ENGLISH, even if the website text above is in another language. Translate as needed — never output Albanian or any other language.';
@@ -2591,7 +2591,7 @@ app.post('/api/analizo', iLoguar, async (req, res) => {
       'Kombino pershkrimin e biznesit me tekstin e faqes (nese ka) per ta bere me te sakte.\n\n' +
       'Kthe JSON me keto fusha:\n' +
       '{"kategoria_kryesore": string (SAKTESISHT nje nga lista), ' +
-      '"kategori_dytesore": string[] (0-2 elementë — VETEM nese biznesi ofron REALISHT nje sherbim TJETER, te ndare, kryesor, gjithashtu nga E njejta liste, p.sh. nje mjet payroll qe ben edhe HR/HRIS te plote. Array bosh nese ben VETEM 1 gje), ' +
+      '"kategori_dytesore": string[] (PARAZGJEDHJE: array bosh — shumica e bizneseve bejne 1 gje mire, s\'duhet te marrin asgje ketu. Shto element VETEM nese biznesi QARTAZI, PA dyshim mbulon nje treg TE VEÇANTE, p.sh. nje mjet "people-search" i perdorur PER "Recruiting/ATS Software" DHE "Sales Intelligence" DHE "Lead Generation Tools" — perdorime te ndryshme, blerës te ndryshëm. MOS shto kategori vetem sepse eshte E LIDHUR ngushte ose funksion natyror i kategorise kryesore — p.sh. nje mjet subscription-BILLING qe ben edhe "Payment Processing" eshte mbivendosje NORMALE, e pritshme, JO kategori e dyte; nje mjet project-management me chat baze S\'ESHTE "Team Chat/Communication". Kur ke dyshim, leje bosh), ' +
       '"nenkategorite": string[] (2-4 nenkategori specifike — keto duhet te jene DETAJE me te ngushta te vete "kategoria_kryesore", JO kategori te veçanta nga lista — mos e perserit ketu dicka qe i takon "kategori_dytesore"), ' +
       '"permbledhje": string (2-4 fjali te qarta qe shpjegojne cfare ofron biznesi dhe kujt i sherben, ' +
       'me gjuhe te thjeshte, te shkruara ashtu qe nje algoritem te gjeje me cilat sherbime plotesuese mund te cohet. ' +
