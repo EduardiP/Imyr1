@@ -9,6 +9,7 @@ const pesha = require('./pesha');
 const pikeRekl = require('./pike-reklama');
 const balanca = require('./balanca');
 const automatik = require('./automatik');
+const kombinimi = require('./kombinimi');
 
 function tipetPerputhen(rTipi, hTipi) {
   if (rTipi === 'b2b2c' || hTipi === 'b2b2c') return true;
@@ -152,6 +153,30 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
         return true;
       });
     } catch (e) { /* nese kufizimet deshtojne, vazhdo pa filtrin — mos e ndal Ankand-in fare */ }
+  }
+
+  // ═══ PERJASHTIM I FORTE, AUTOMATIK (jo i konfigurueshem): nese HOST-i dhe kandidati
+  // ndajne TE PAKTEN 1 kategori (kryesore OSE dytesore, cilado kombinim), jane konkurrente
+  // direkt — s'shfaqet FARE, ne asnje pishine (jo vetem AI=0, siç ndodh ne kombinimi.js/
+  // balanca.js — ketu perjashtohet plotesisht si kandidat, para se te llogaritet pesha). ═══
+  if (kand.rows.length) {
+    try {
+      const hostFullQ = await pool.query(
+        'SELECT kategoria_kryesore, kategori_dytesore FROM bizneset WHERE id=$1', [hostId]);
+      const hostFull = hostFullQ.rows[0];
+      if (hostFull && (hostFull.kategoria_kryesore || hostFull.kategori_dytesore)) {
+        const kandIds2 = kand.rows.map(k => k.biznes_id);
+        const kandFullQ = await pool.query(
+          'SELECT id, kategoria_kryesore, kategori_dytesore FROM bizneset WHERE id = ANY($1)', [kandIds2]);
+        const kandFullMap = {};
+        kandFullQ.rows.forEach(r => { kandFullMap[r.id] = r; });
+        kand.rows = kand.rows.filter(k => {
+          const kf = kandFullMap[k.biznes_id];
+          if (!kf) return true;
+          return !kombinimi.kaMbivendosjeKategorie(hostFull, kf);
+        });
+      }
+    } catch (e) { /* nese kjo deshton, vazhdo pa filtrin — mos e ndal shperndarjen fare */ }
   }
 
   // Filtri i tipit — VETEM per Ankand (i paprekur). Per Balance, filtri i tipit
