@@ -3171,7 +3171,7 @@ app.get('/api/admin/biznes/:id', iAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   try {
     const b = await pool.query(
-      `SELECT id, emri, email, website, kategoria_kryesore, nenkategorite, permbledhje, pershkrimi,
+      `SELECT id, emri, email, website, kategoria_kryesore, kategori_dytesore, nenkategorite, permbledhje, pershkrimi,
               plani, celes, created_at, snippet_active, origjina, kandidat_url, first_seen_at, last_seen_at,
               tipi, biznesi_auto, pershkrimi_auto, track_active
        FROM bizneset WHERE id=$1`, [id]);
