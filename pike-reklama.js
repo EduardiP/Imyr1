@@ -1,20 +1,24 @@
 // pike-reklama.js — Ankandi i DYTE: kur nje biznes fiton ankandin kryesor dhe ka +2 reklama,
-// ky zgjedh CILA reklame e tij shfaqet. Piket llogariten LIVE nga ngjarjet e 30 diteve te fundit.
+// ky zgjedh CILA reklame e tij shfaqet.
 //
 // Formula e pikeve te nje reklame:
-//   Pike = 1000 + (klikime × 5) + (konvertime × 2) − ((shikime − klikime) / 14)
-//   ku "shikime" = shikime REALE (lloji='shikim'), jo ngarkime (lloji='view').
+//   Pike = 1000 + (klikime_30dite × 90) + (konvertime_30dite × 25) − 0.6746×(shikime_pa_klikim_qe_fundit)^1.9
 //
-// Faza fillestare (learning): secila reklame zgjidhet me radhe derisa te marre 1, pastaj 2,
-// pastaj 3 shikime reale. Pas kesaj → weighted-random sipas pikeve.
+// "shikime_pa_klikim_qe_fundit" = sa shikime REALE ka marre kjo reklame QE NGA KLIKIMI I FUNDIT
+// (ose gjithsej, nese s'ka pasur kurre klikim) — KY NUMER S'KA KUFI KOHOR (jo 30-dite) — RIFILLON
+// NE ZERO sapo ndodh nje klikim i ri (ajo shfaqje me klikim VETE s'zbret asgje). Klikimet/konvertimet
+// (per bonusin +90/+25) VAZHDOJNE te llogariten brenda dritares 30-ditore, te ndara plotesisht.
+//
+// Faza fillestare (learning): secila reklame zgjidhet me radhe derisa te marre 5 shikime reale.
+// Pas kesaj → weighted-random sipas pikeve.
 //
 // Server.js/selector.js e therret: const pr = require('./pike-reklama');
 //   const rekId = await pr.zgjedhReklamen(pool, bizId);
 
-const DITE = 30;            // dritarja e skadimit (te dhenat fshihen pas 30 ditesh)
+const DITE_BONUS = 30;      // dritarja per bonusin e klikimit/konvertimit (jo per zbritjen)
 const KLIKIM_PIKE = 90;     // 1 klikim = +90 pike
 const KONVERTIM_PIKE = 25;  // 1 konvertim = +25 pike
-const ZBRITJE_A = 0.6746;   // zbritja jo-lineare: A × (shikime_pa_klikim)^B
+const ZBRITJE_A = 0.6746;   // zbritja jo-lineare: A × (shikime_pa_klikim_qe_fundit)^B
 const ZBRITJE_B = 1.9;
 const BAZA = 1000;
 const SHIKIME_FAZA = 5;     // secila reklame merr deri 5 shikime para weighted-random
@@ -29,19 +33,35 @@ async function reklamatEBiznesit(pool, bizId) {
   return r.rows.map(x => x.id);
 }
 
-// Statistikat (shikime/klikime/konvertime) per cdo reklame, brenda 30 diteve
+// Statistikat per cdo reklame:
+//  - shikimePaKlikimQeFundit: QE NGA klikimi i fundit (ose gjithsej nese s'ka pasur kurre) — PA kufi kohor
+//  - klikime/konvertime: brenda 30-diteve (per bonusin +90/+25, i pandryshuar)
 async function statPerReklama(pool, rekIds) {
   if (!rekIds.length) return {};
   const r = await pool.query(
-    `SELECT reklama_id,
-            COUNT(*) FILTER (WHERE lloji='shikim')::int    AS shikime,
-            COUNT(*) FILTER (WHERE lloji='click')::int     AS klikime,
-            COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
-     FROM ngjarjet
-     WHERE reklama_id = ANY($1)
-       AND created_at >= now() - ($2 || ' days')::interval
-     GROUP BY reklama_id`,
-    [rekIds, String(DITE)]);
+    `WITH klikimi_fundit AS (
+       SELECT reklama_id, MAX(created_at) AS koha
+       FROM ngjarjet WHERE reklama_id = ANY($1) AND lloji='click'
+       GROUP BY reklama_id
+     )
+     SELECT e.reklama_id,
+       COUNT(*) FILTER (
+         WHERE e.lloji='shikim' AND e.created_at > COALESCE(kf.koha, 'epoch'::timestamptz)
+       )::int AS shikime_pa_klikim_qe_fundit,
+       COUNT(*) FILTER (
+         WHERE e.lloji='shikim' AND e.created_at >= now() - interval '30 days'
+       )::int AS shikime,
+       COUNT(*) FILTER (
+         WHERE e.lloji='click' AND e.created_at >= now() - interval '30 days'
+       )::int AS klikime,
+       COUNT(*) FILTER (
+         WHERE e.lloji='konvertim' AND e.created_at >= now() - interval '30 days'
+       )::int AS konvertime
+     FROM ngjarjet e
+     LEFT JOIN klikimi_fundit kf ON kf.reklama_id = e.reklama_id
+     WHERE e.reklama_id = ANY($1)
+     GROUP BY e.reklama_id`,
+    [rekIds]);
   const m = {};
   r.rows.forEach(x => { m[x.reklama_id] = x; });
   return m;
@@ -49,12 +69,11 @@ async function statPerReklama(pool, rekIds) {
 
 // Pikët e nje reklame nga statistikat e saj
 function pikeReklame(st) {
-  const shikime    = (st && st.shikime)    || 0;
-  const klikime    = (st && st.klikime)    || 0;
-  const konvertime = (st && st.konvertime) || 0;
-  const paKlikim = Math.max(0, shikime - klikime);
-  // Zbritja jo-lineare: A × (shikime_pa_klikim)^B. Kurre s'kalon ne shtim (gjithmone >=0).
-  const zbritje = ZBRITJE_A * Math.pow(paKlikim, ZBRITJE_B);
+  const paKlikimQeFundit = (st && st.shikime_pa_klikim_qe_fundit) || 0;
+  const klikime          = (st && st.klikime)    || 0;
+  const konvertime       = (st && st.konvertime) || 0;
+  // Zbritja jo-lineare, mbi shikimet QE NGA KLIKIMI I FUNDIT — rifillon ne zero pas cdo klikimi.
+  const zbritje = ZBRITJE_A * Math.pow(paKlikimQeFundit, ZBRITJE_B);
   return BAZA + (klikime * KLIKIM_PIKE) + (konvertime * KONVERTIM_PIKE) - zbritje;
 }
 
