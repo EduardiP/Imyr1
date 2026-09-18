@@ -34,7 +34,33 @@ function tipetPerputhen(a, b) {
 }
 
 // --- Thirrja te AI per nje cift: kthen {ab, ba} ose null nese deshton ---
+// --- Nxjerr NJE Set me TE GJITHA kategorite KRYESORE te nje biznesi (kategoria_kryesore +
+// kategori_dytesore, TEKST i ndare me presje) — jo nenkategorite, qe jane detaje BRENDA
+// kategorise, jo kategori te veçanta. Te gjitha lowercase, trim, per krahasim te sakte ---
+function kategoriteKryesoreESetit(b) {
+  const bruto = [b.kategoria_kryesore, b.kategori_dytesore].filter(Boolean).join(',');
+  return new Set(
+    bruto.split(',').map(x => x.trim().toLowerCase()).filter(Boolean)
+  );
+}
+
+// --- A kane TE PAKTEN 1 kategori (kryesore OSE dytesore, cilado kombinim) TE PERBASHKET
+// 2 bizneset — nese biznesi A ka [X,Y] dhe B ka [Y,Z], kane "Y" te perbashket → konkurrente,
+// PAVARESISHT se X/Z mund te jene plotesuese ---
+function kaMbivendosjeKategorie(a, b) {
+  const setA = kategoriteKryesoreESetit(a);
+  if (!setA.size) return false;
+  const setB = kategoriteKryesoreESetit(b);
+  for (const x of setA) { if (setB.has(x)) return true; }
+  return false;
+}
+
 async function skoroCiftin(a, b) {
+  // RREGULL I FORTE (para thirrjes AI, kursen edhe koston e API-t): nese kane TE NJEJTEN
+  // kategori kryesore, jane konkurrente direkt — 0 menjehere, te dyja
+  // drejtimet, pa i lene gjykimit "te bute" te AI-se (qe mund te gabonte rrallë).
+  if (kaMbivendosjeKategorie(a, b)) return { ab: 0, ba: 0 };
+
   const key = process.env.OPENAI_API_KEY;
   if (!key) return null;
   const model = process.env.OPENAI_MODEL_SKORI || 'gpt-5.6-sol';
@@ -98,15 +124,16 @@ function pershkrimBiznesi(b) {
                  : b.tipi === 'b2c' ? 'Individe (klientet jane konsumatore/individe)'
                  : b.tipi === 'b2b2c' ? 'Te dyja (biznese dhe individe)'
                  : '(e papercaktuar)';
-  const kat = b.kategoria_kryesore ? ('\nKategoria: ' + b.kategoria_kryesore) : '';
+  const kat = b.kategoria_kryesore ? ('\nKategoria kryesore: ' + b.kategoria_kryesore) : '';
+  const kd = b.kategori_dytesore ? ('\nKategori te tjera qe ofron: ' + b.kategori_dytesore) : '';
   const nk = b.nenkategorite ? ('\nNenkategorite: ' + b.nenkategorite) : '';
-  return p + '\nAudienca/klientet: ' + audienca + kat + nk;
+  return p + '\nAudienca/klientet: ' + audienca + kat + kd + nk;
 }
 
 // --- Merr te dhenat e nevojshme te nje biznesi ---
 async function merrBiznesin(id) {
   const r = await _pool.query(
-    `SELECT id, emri, tipi, permbledhje, pershkrimi, kategoria_kryesore, nenkategorite
+    `SELECT id, emri, tipi, permbledhje, pershkrimi, kategoria_kryesore, kategori_dytesore, nenkategorite
      FROM bizneset WHERE id=$1`, [id]);
   return r.rows[0] || null;
 }
@@ -120,15 +147,12 @@ function eshteGati(b) {
 // --- Bizneset e tjera gati te po asaj pishine (per t'u kombinuar) ---
 async function biznesetPerKombinim(vetja) {
   const r = await _pool.query(
-    `SELECT id, emri, tipi, permbledhje, pershkrimi, kategoria_kryesore, nenkategorite
+    `SELECT id, emri, tipi, permbledhje, pershkrimi, kategoria_kryesore, kategori_dytesore, nenkategorite
      FROM bizneset
      WHERE id <> $1
        AND tipi IS NOT NULL
        AND (permbledhje IS NOT NULL OR pershkrimi IS NOT NULL)
-       AND (
-         snippet_active = true
-         OR (created_at > now() - interval '7 days')
-       )`, [vetja.id]);
+       AND snippet_active = true`, [vetja.id]);
   return r.rows.filter(b => tipetPerputhen(vetja.tipi, b.tipi));
 }
 
@@ -198,4 +222,4 @@ async function rikombinoBiznesin(bizId) {
   }
 }
 
-module.exports = { init, kombinoBiznesin, rikombinoBiznesin, tipetPerputhen };
+module.exports = { init, kombinoBiznesin, rikombinoBiznesin, tipetPerputhen, kaMbivendosjeKategorie };
