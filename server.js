@@ -1705,29 +1705,31 @@ app.get('/api/reklamat', iLoguar, async (req, res) => {
     const r = await pool.query(
       'SELECT id, titulli, teksti, imazh_url, video_url, html5_url, link, pauzuar, logjika_shperndarjes, created_at FROM promovimet WHERE biznes_id=$1 AND aktiv=true' + filtriSql + ' ORDER BY id DESC',
       params);
-    const st = await pool.query(
-      `SELECT reklama_id,
-              COUNT(*) FILTER (WHERE lloji='view')::int      AS shikime,
-              COUNT(*) FILTER (WHERE lloji='click')::int     AS klikime,
-              COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
-       FROM ngjarjet WHERE reklamues_id=$1 AND reklama_id IS NOT NULL
-       GROUP BY reklama_id`, [req.biznesId]);
-    const m = {};
-    st.rows.forEach(x => { m[x.reklama_id] = x; });
-    const rows = r.rows.map(x => ({
-      id: x.id,
-      emri: x.titulli || (x.teksti ? x.teksti.slice(0, 40) : 'Ad'),
-      imazh_url: x.imazh_url || null,
-      video_url: x.video_url || null,
-      html5_url: x.html5_url || null,
-      link: x.link || null,
-      teksti: x.teksti || null,
-      pauzuar: x.pauzuar,
-      logjika_shperndarjes: x.logjika_shperndarjes || 'ankand',
-      shikime:    (m[x.id] && m[x.id].shikime)    || 0,
-      klikime:    (m[x.id] && m[x.id].klikime)    || 0,
-      konvertime: (m[x.id] && m[x.id].konvertime) || 0
-    }));
+    const idet = r.rows.map(x => x.id);
+    const m = await pikeReklamaModul.statPerReklama(pool, idet);
+    const rows = r.rows.map(x => {
+      const st = m[x.id] || {};
+      const shikime = st.shikime || 0;
+      const nePergatitje = shikime < pikeReklamaModul.SHIKIME_FAZA;
+      const pike = Math.round(Math.max(0, pikeReklamaModul.pikeReklame(st)));
+      return {
+        id: x.id,
+        emri: x.titulli || (x.teksti ? x.teksti.slice(0, 40) : 'Ad'),
+        imazh_url: x.imazh_url || null,
+        video_url: x.video_url || null,
+        html5_url: x.html5_url || null,
+        link: x.link || null,
+        teksti: x.teksti || null,
+        pauzuar: x.pauzuar,
+        logjika_shperndarjes: x.logjika_shperndarjes || 'ankand',
+        shikime: shikime,
+        klikime: st.klikime || 0,
+        konvertime: st.konvertime || 0,
+        pike: pike,
+        ne_pergatitje: nePergatitje,        // ne fazen "mbledh 5 shikimet"
+        deshtuar: !nePergatitje && pike <= 0 // pikët arritën 0 (kurre negative)
+      };
+    });
     res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -2812,7 +2814,8 @@ async function kontrolloDheDergoNjoftimet() {
 setInterval(kontrolloDheDergoNjoftimet, 60 * 60 * 1000); // çdo orë
 setTimeout(kontrolloDheDergoNjoftimet, 15000); // + 1 kontroll i shpejtë ne nisje (pas 15s)
 
-require('./pike-reklama').rregjistroRoutet(app, pool, iAdmin);
+const pikeReklamaModul = require('./pike-reklama');
+pikeReklamaModul.rregjistroRoutet(app, pool, iAdmin);
 
 require('./suport-human')(app, pool, iLoguar, iAdmin);
 
