@@ -379,9 +379,6 @@ module.exports = function (pool) {
 
     const hostTipi = await tipiHostit(hostId);
 
-    const bllokim = await kontrolloKufirin(hostTipi);
-    if (bllokim) return { pishina: bllokim, uKonkurrua: false, uDetyruaNgaLimiti: true, topAnkand: [], topBarazi: [] };
-
     const kandAnkand = await merrKandidatet(hostId, hTipi, 'ankand');
     const kandBarazi = await merrKandidatet(hostId, hTipi, 'barazi');
 
