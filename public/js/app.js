@@ -2391,12 +2391,20 @@ async function loadReklamat(){
     el.innerHTML=h;
   }catch(e){ el.innerHTML='<p class="small">Loading error.</p>'; }
 }
-// Kthen ngjyren nderteruar linearisht mes te kuqes flake (pike=0) dhe te gjelbertes (pike>=1000)
+// Gradient 3-pikesh: 0→e zeze, 1→e kuqe absolute, 1000→e gjelberte, >1000→mbetet e gjelberte (kufizuar)
 function rekPikeNgjyra(pike){
-  const p = Math.max(0, Math.min(1000, pike)) / 1000;
-  const r = Math.round(255 - p*215);   // 255(#ff)→40(#28)
-  const g = Math.round(40 + p*175);    // 40(#28)→215(#d7)
-  return 'rgb('+r+','+g+',40)';
+  const p = Math.max(0, Math.min(1000, pike));
+  if(p <= 1){
+    // 0 (zi, #000000) → 1 (kuqe absolute, #ff0000) — kalim shume i shkurter, per vete piken 0
+    const t = p; // 0..1
+    const r = Math.round(t*255), g = 0, b = 0;
+    return 'rgb('+r+','+g+','+b+')';
+  }
+  // 1 (kuqe, #ff0000) → 1000 (gjelber, #00d700) — kalim gradual, linear
+  const t = (p-1)/999; // 0..1
+  const r = Math.round(255 - t*255);
+  const g = Math.round(t*215);
+  return 'rgb('+r+','+g+',0)';
 }
 function rekHealthBadge(r){
   if(r.ne_pergatitje){
