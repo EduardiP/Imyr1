@@ -2490,13 +2490,18 @@ pool.query(`CREATE TABLE IF NOT EXISTS kategori_kufizime_konfiguruar (biznes_id 
 
 app.get('/api/kategori-kufizimet', iLoguar, async (req, res) => {
   try {
-    const vetja = await pool.query('SELECT kategoria_kryesore FROM bizneset WHERE id=$1', [req.biznesId]);
+    const vetja = await pool.query('SELECT kategoria_kryesore, kategori_dytesore FROM bizneset WHERE id=$1', [req.biznesId]);
     let vetjaKat = vetja.rows.length ? vetja.rows[0].kategoria_kryesore : null;
+    const kd = vetja.rows.length ? vetja.rows[0].kategori_dytesore : null;
+    // TE GJITHA kategorite E VETA (kryesore + dytesore), jo vetem 1 — nese biznesi ofron
+    // me shume se 1 sherbim, secili prej tyre eshte "konkurrence e njohur" per veten e vet.
+    const vetjaKategorite = [vetjaKat].concat(kd ? kd.split(',').map(x => x.trim()) : []).filter(Boolean);
     // Kontrollo qe kategoria e ruajtur EKZISTON REALISHT ne listen aktuale (72) — nese
     // biznesi eshte analizuar PARA ketij perditesimi (nen sistemin e vjeter, 12 kategori),
     // vlera e ruajtur s'perputhet me asnje nga 72-shja, dhe sinjalizojme kete qartazi
     // (jo vetem heshtazi s'e shenojme si perjashtim parazgjedhje).
     const vetjaKatVlefshme = vetjaKat && KATEGORITE.includes(vetjaKat);
+    const vetjaKategoriteVlefshme = vetjaKategorite.filter(k => KATEGORITE.includes(k));
     const uKonfigurua = await pool.query('SELECT 1 FROM kategori_kufizime_konfiguruar WHERE biznes_id=$1', [req.biznesId]);
     let perjashtuar;
     if (uKonfigurua.rows.length) {
@@ -2504,12 +2509,12 @@ app.get('/api/kategori-kufizimet', iLoguar, async (req, res) => {
       const r = await pool.query('SELECT kategoria FROM kategori_perjashtime WHERE biznes_id=$1', [req.biznesId]);
       perjashtuar = r.rows.map(x => x.kategoria);
     } else {
-      // Hera e pare — parazgjedhje: vetem kategoria e vet (konkurrenca e njohur),
-      // VETEM nese ajo vlere ekziston realisht ne listen aktuale.
-      perjashtuar = vetjaKatVlefshme ? [vetjaKat] : [];
+      // Hera e pare — parazgjedhje: TE GJITHA kategorite e veta (kryesore + dytesore,
+      // konkurrenca e njohur), VETEM ato vlera qe ekzistojne realisht ne listen aktuale.
+      perjashtuar = vetjaKategoriteVlefshme;
     }
     res.json({
-      kategorite: KATEGORITE, vetjaKat, perjashtuar,
+      kategorite: KATEGORITE, vetjaKat, vetjaKategorite: vetjaKategoriteVlefshme, perjashtuar,
       vetjaKatVjeteruar: !!(vetjaKat && !vetjaKatVlefshme) // true = biznesi duhet te rianalizohet
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
