@@ -2436,7 +2436,7 @@ function pastroHtml(html) {
 const KATEGORITE = [
   // Marketing
   'Email Marketing', 'SEO Tools', 'Social Media Management', 'Content Marketing Platforms',
-  'Marketing Automation', 'Affiliate Marketing Software', 'PPC/Ad Management', 'Landing Page Builders',
+  'Marketing Automation', 'Affiliate Marketing Software', 'Referral Program Software', 'PPC/Ad Management', 'Landing Page Builders',
   // Sales & CRM
   'CRM Software', 'Sales Engagement/Enablement', 'Lead Generation Tools', 'Sales Intelligence',
   'Proposal & Contract Software', 'Sales Forecasting',
@@ -2448,10 +2448,10 @@ const KATEGORITE = [
   'Learning & Development (LMS)', 'Employee Engagement',
   // Produktivitet
   'Project Management', 'Task Management', 'Note-Taking Apps', 'Document Management',
-  'Team Chat/Communication', 'Video Conferencing', 'Cloud File Storage', 'Calendar & Scheduling',
+  'E-signature/Document Signing', 'Team Chat/Communication', 'Video Conferencing', 'Cloud File Storage', 'Calendar & Scheduling',
   // Dev Tools
   'API Management', 'CI/CD Tools', 'Cloud Infrastructure/Hosting', 'Monitoring & Observability',
-  'Database Tools', 'No-Code/Low-Code Platforms', 'Version Control',
+  'Database Tools', 'No-Code/Low-Code Platforms', 'Version Control', 'Software Testing/QA Automation', 'Localization/Translation Software',
   // Design
   'Graphic Design Tools', 'UI/UX Design Tools', 'Video Editing Software', 'Website Builders',
   'Prototyping Tools',
@@ -2460,7 +2460,7 @@ const KATEGORITE = [
   'Customer Feedback/Survey Tools', 'Call Center Software',
   // Analitike
   'Business Intelligence', 'Web Analytics', 'Product Analytics', 'Data Visualization',
-  'A/B Testing Tools',
+  'A/B Testing Tools', 'Site Search Tools',
   // E-commerce
   'E-commerce Platforms', 'Inventory Management', 'Dropshipping Tools', 'Shipping & Fulfillment',
   'Subscription Management', 'Point of Sale (POS)',
