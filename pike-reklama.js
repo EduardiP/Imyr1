@@ -138,4 +138,4 @@ function rregjistroRoutet(app, pool, iAdmin) {
   });
 }
 
-module.exports = { zgjedhReklamen, pikeReklame, reklamatEBiznesit, statPerReklama, reklamatMePike, rregjistroRoutet };
+module.exports = { zgjedhReklamen, pikeReklame, reklamatEBiznesit, statPerReklama, reklamatMePike, rregjistroRoutet, SHIKIME_FAZA };
