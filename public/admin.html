@@ -1319,7 +1319,7 @@ const reklamatHTML = reklamat.length
   : 'No ads created yet.';
 const CH_PIKAT=[
   {k:'llogaria', label:'Business', detaje:()=>'Website: '+esc(b.website||'—')+'<br>Type: '+esc(b.tipi||'—')},
-  {k:'pershkrimi', label:'Description', detaje:()=>'Summary: '+esc(b.permbledhje||b.pershkrimi||'—')+'<br>Category: '+esc(b.kategoria_kryesore||'—')+'<br>Subcategories: '+esc(b.nenkategorite||'—')},
+  {k:'pershkrimi', label:'Description', detaje:()=>'Summary: '+esc(b.permbledhje||b.pershkrimi||'—')+'<br>Category: '+esc(b.kategoria_kryesore||'—')+'<br>Other categories: '+esc(b.kategori_dytesore||'—')+'<br>Subcategories: '+esc(b.nenkategorite||'—')},
   {k:'lidhja', label:'Snippet connection', detaje:()=>'Connected: '+(b.snippet_active?'Yes':'No')+'<br>URL: '+esc(b.origjina||b.kandidat_url||'—')},
   {k:'reklama', label:'Ad created', detaje:()=>reklamatHTML},
   {k:'konvertimi', label:'Conversion tracking', detaje:()=>'Tracking active: '+(b.track_active?'Yes':'No')}
@@ -1376,6 +1376,7 @@ row2('Çelësi', b.celes||'—')+
 '</div>'+
 '<div class="sect"><h3>Analiza (AI)</h3>'+
 row2('Kategoria kryesore', b.kategoria_kryesore||'—')+
+row2('Kategori të tjera', b.kategori_dytesore||'—')+
 row2('Nënkategoritë', b.nenkategorite||'—')+
 row2('Përshkrimi i dhënë', b.pershkrimi||'—')+
 row2('Përmbledhja', b.permbledhje||'—')+
