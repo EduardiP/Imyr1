@@ -576,6 +576,12 @@ app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
     const sys2 = 'You are an analyst who classifies SaaS businesses for a cross-promotion network. Respond ONLY with JSON, in English, no other text.';
     const user2 =
       'Choose EXACTLY one main category from this list: ' + KATEGORITE.join('; ') + '.\n\n' +
+      'A few easily-confused pairs — pick based on what the tool actually DOES, not just its topic:\n' +
+      '- SEO Tools (ranks a site HIGHER in Google) vs Site Search Tools (search box INSIDE a site/app).\n' +
+      '- Affiliate Marketing Software (pays outside partners/influencers per sale) vs Referral Program Software (rewards a customer for referring another customer).\n' +
+      '- A/B Testing Tools (marketing experiments on a live site) vs Software Testing/QA Automation (testing code before release).\n' +
+      '- Document Management (storing/organizing files) vs E-signature/Document Signing (legally signing a document).\n' +
+      '- Localization/Translation Software (translates a product/app into other languages) — not the same as general Content Marketing.\n\n' +
       'Text extracted from the business website:\n' + webTekst + '\n\n' +
       'Task: explain CLEARLY what this business offers, in simple, easy-to-understand English.\n\n' +
       'Return JSON with these fields (all text values in English):\n' +
@@ -2571,6 +2577,12 @@ app.post('/api/analizo', iLoguar, async (req, res) => {
     const sys = 'Je analist qe klasifikon biznese SaaS per nje rrjet cross-promotion. Kthe VETEM JSON, pa asnje tekst tjeter.';
     const user =
       'Zgjidh SAKTESISHT nje kategori kryesore nga kjo liste: ' + KATEGORITE.join('; ') + '.\n\n' +
+      'Disa çifte lehte per t\'u ngatërruar — zgjidh sipas ÇFARE bën mjeti realisht, jo vetem temes:\n' +
+      '- SEO Tools (rendit nje faqe ME LART ne Google) vs Site Search Tools (kutia e kerkimit BRENDA nje faqeje/app).\n' +
+      '- Affiliate Marketing Software (paguan partnere/influencera te JASHTEM per shitje) vs Referral Program Software (shperblen nje klient qe referon nje klient tjeter).\n' +
+      '- A/B Testing Tools (eksperimente marketingu ne nje faqe live) vs Software Testing/QA Automation (testim kodi PARA lansimit).\n' +
+      '- Document Management (ruajtje/organizim skedarësh) vs E-signature/Document Signing (nenshkrim ligjerisht i vlefshem).\n' +
+      '- Localization/Translation Software (perkthen nje produkt/app ne gjuhe te tjera) — jo e njejta gje si Content Marketing.\n\n' +
       'Pershkrimi i dhene nga biznesi: ' + (pershkrimi || '(pa pershkrim)') + '\n\n' +
       (webTekst ? ('Teksti i nxjerre nga faqja e biznesit:\n' + webTekst + '\n\n') : '') +
       'Detyra: shpjego QARTE cfare ofron ky biznes. Shpjegoje mire dhe plotesisht, pa e zgjatur kot, ' +
