@@ -11,9 +11,10 @@
 // 2) PERJASHTIMI I KONKURRENTEVE: nje kandidat perjashtohet plotesisht nga
 //    gara nese PLOTESON TE DYJA keto kushte njekohesisht:
 //      a) AI (reklamues→host) === 0
-//      b) eshte "e njejta kategori" sipas rregullit ekzistues tipetPerputhen
-//         (b2b me b2b, b2c me b2c, ose njeri prej tyre eshte b2b2c)
-//    Nese AI=0 por kategorite jane te ndryshme (b2b me b2c, pa b2b2c) →
+//      b) ndan TE PAKTEN 1 kategori/nenkategori te perbashket me host-in
+//         (kaMbivendosjeKategorie, nga kombinimi.js — jo tipetPerputhen/tipi,
+//         qe eshte koncept i ndryshem, b2b/b2c/b2b2c)
+//    Nese AI=0 por kategorite s'mbivendosen fare →
 //    NUK perjashtohet, konsiderohet thjesht nje AI=0 normal (jo konkurrent).
 //
 // 3) PIKA E DEFICITIT: per secilin kandidat qe mbijetoi filtrin, llogaritet
@@ -51,6 +52,8 @@
 //   const balanca = require('./balanca')(pool);
 //   await balanca.init();
 //   balanca.zgjidhFituesinBalance([id1, id2, ...], hostId, snippetId) → ID fituese
+
+const kombinimiModul = require('./kombinimi');
 
 module.exports = function (pool) {
 
@@ -113,10 +116,9 @@ module.exports = function (pool) {
   // (selector.js / pesha.js): b2b2c konsiderohet "e njejta kategori" me
   // gjithcka; perndryshe duhet perputhje e sakte b2b=b2b ose b2c=b2c.
   // ══════════════════════════════════════════════════════════════════
-  function eshteENjejtaKategori(tipiKandidat, tipiHost) {
-    if (!tipiKandidat || !tipiHost) return false;
-    if (tipiKandidat === 'b2b2c' || tipiHost === 'b2b2c') return true;
-    return tipiKandidat === tipiHost;
+  function eshteENjejtaKategori(bizKandidat, bizHost) {
+    if (!bizKandidat || !bizHost) return false;
+    return kombinimiModul.kaMbivendosjeKategorie(bizKandidat, bizHost);
   }
 
   // Deficitet (dhene - marre, burimi='barazi') per nje liste bizneshesh (i paprekur)
@@ -160,9 +162,9 @@ module.exports = function (pool) {
   async function merrTipet(idListe) {
     if (!idListe || !idListe.length) return {};
     const r = await pool.query(
-      `SELECT id, tipi FROM bizneset WHERE id = ANY($1::int[])`, [idListe]);
+      `SELECT id, tipi, kategoria_kryesore, kategori_dytesore, nenkategorite FROM bizneset WHERE id = ANY($1::int[])`, [idListe]);
     const rez = {};
-    r.rows.forEach(x => { rez[x.id] = x.tipi; });
+    r.rows.forEach(x => { rez[x.id] = x; });
     return rez;
   }
 
@@ -179,7 +181,7 @@ module.exports = function (pool) {
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
           [vendimId, hostId, id, deficit, aiSkori, id === fituesId, meBarazim, snippetId || null]);
       }
-    } catch (e) { /* mos e ndal vendimin nese regjistrimi deshton */ }
+    } catch (e) { console.error('balanca.js regjistroVendim DESHTOI:', e.message); }
   }
 
   // ══════════════════════════════════════════════════════════════════
