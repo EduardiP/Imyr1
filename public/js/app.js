@@ -3005,6 +3005,7 @@ async function mainKufizimetKategori(m){
     // = BLLOKUAR (eshte ne "perjashtuar"). _kufKatZgjedhur mban gjithmone kategorite E
     // BLLOKUARA (njesoj si backend-i), thjesht checkbox-i i shfaqet TI PERMBYSUR.
     _kufKatZgjedhur = new Set(r.perjashtuar||[]);
+    const vetjaKategoriteSet = new Set(r.vetjaKategorite||(r.vetjaKat?[r.vetjaKat]:[]));
     if(r.vetjaKatVjeteruar){
       m.innerHTML = '<div style="padding:12px 16px;background:#3a2f14;border:1px solid #a38333;border-radius:8px;margin-bottom:16px;color:#ffcf80;">'+
         '⚠️ Your current category ("'+esc(r.vetjaKat)+'") is from the old system and doesn\'t match the new list — so it wasn\'t automatically treated as competition. '+
@@ -3015,7 +3016,7 @@ async function mainKufizimetKategori(m){
     el.innerHTML=(r.kategorite||[]).map(function(k){
       const eshteBllokuar=_kufKatZgjedhur.has(k);
       const eshteLejuar=!eshteBllokuar;   // checkbox i SHENUAR = lejuar
-      const eshteVetja=(k===r.vetjaKat);
+      const eshteVetja=vetjaKategoriteSet.has(k);
       return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;">'+
         '<input type="checkbox" '+(eshteLejuar?'checked':'')+
           ' style="width:15px;height:15px;min-width:15px;flex:0 0 15px;margin:0;cursor:pointer;" '+
