@@ -55,6 +55,7 @@ pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS logjika_shperndarjes
 // "logjika_shperndarjes" si preferencë e thjeshte) — deri sa te konfirmohet EKSPLICIT (butoni
 // "Create account"), llogaria tjeter NUK duhet te marre pjese ne asnje ankand/balance real.
 pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS ankand_krijuar BOOLEAN NOT NULL DEFAULT false`).catch(e => console.error('migrim ankand_krijuar:', e.message));
+pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS kategori_dytesore TEXT`).catch(e => console.error('migrim kategori_dytesore:', e.message));
 pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS balance_krijuar BOOLEAN NOT NULL DEFAULT false`).catch(e => console.error('migrim balance_krijuar:', e.message));
 // MIGRIM KRITIK: bizneset EKZISTUESE marrin automatikisht "krijuar=true" per pishinen
 // e tyre AKTUALE (sipas logjika_shperndarjes qe kane tani) — perndryshe FILTRI i
@@ -579,7 +580,8 @@ app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
       'Task: explain CLEARLY what this business offers, in simple, easy-to-understand English.\n\n' +
       'Return JSON with these fields (all text values in English):\n' +
       '{"kategoria_kryesore": string (EXACTLY one from the list), ' +
-      '"nenkategorite": string[] (2-4 specific subcategories, in English), ' +
+      '"kategori_dytesore": string[] (0-2 items — ONLY if this business genuinely offers a SEPARATE, DIFFERENT main service, also from the SAME list, e.g. a payroll tool that also does full HR/HRIS. Empty array if it only does ONE thing), ' +
+      '"nenkategorite": string[] (2-4 specific subcategories, in English — these must be narrower DETAILS/ASPECTS OF "kategoria_kryesore" itself, NOT separate categories from the list — never repeat something that belongs in "kategori_dytesore" here), ' +
       '"permbledhje": string (2-4 clear sentences, in English, explaining what the business offers and who it serves)}\n\n' +
       'IMPORTANT: write every text value in ENGLISH, even if the website text above is in another language. Translate as needed — never output Albanian or any other language.';
 
@@ -594,12 +596,13 @@ app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
     const p2 = JSON.parse(d2.choices[0].message.content);
     const kk = p2.kategoria_kryesore && KATEGORITE.find(k => k.toLowerCase() === p2.kategoria_kryesore.toLowerCase()) || null;
     const nk = Array.isArray(p2.nenkategorite) ? p2.nenkategorite.join(', ') : (p2.nenkategorite || null);
+    const kd = Array.isArray(p2.kategori_dytesore) ? p2.kategori_dytesore.join(', ') : (p2.kategori_dytesore || null);
     const perm = p2.permbledhje || null;
 
     // HAPI 5 — ruaj pershkrimin (vetem PASI hapi 4 te kete perfunduar plotesisht)
     await pool.query(
-      'UPDATE bizneset SET kategoria_kryesore=$2, nenkategorite=$3, permbledhje=$4, kategoria=$2, pershkrimi_auto=true WHERE id=$1',
-      [req.biznesId, kk, nk, perm]);
+      'UPDATE bizneset SET kategoria_kryesore=$2, kategori_dytesore=$3, nenkategorite=$4, permbledhje=$5, kategoria=$2, pershkrimi_auto=true WHERE id=$1',
+      [req.biznesId, kk, kd, nk, perm]);
 
     res.json({ ok: true, emri, tipi, kategoria_kryesore: kk, permbledhje: perm });
 
@@ -2571,7 +2574,8 @@ app.post('/api/analizo', iLoguar, async (req, res) => {
       'Kombino pershkrimin e biznesit me tekstin e faqes (nese ka) per ta bere me te sakte.\n\n' +
       'Kthe JSON me keto fusha:\n' +
       '{"kategoria_kryesore": string (SAKTESISHT nje nga lista), ' +
-      '"nenkategorite": string[] (2-4 nenkategori specifike), ' +
+      '"kategori_dytesore": string[] (0-2 elementë — VETEM nese biznesi ofron REALISHT nje sherbim TJETER, te ndare, kryesor, gjithashtu nga E njejta liste, p.sh. nje mjet payroll qe ben edhe HR/HRIS te plote. Array bosh nese ben VETEM 1 gje), ' +
+      '"nenkategorite": string[] (2-4 nenkategori specifike — keto duhet te jene DETAJE me te ngushta te vete "kategoria_kryesore", JO kategori te veçanta nga lista — mos e perserit ketu dicka qe i takon "kategori_dytesore"), ' +
       '"permbledhje": string (2-4 fjali te qarta qe shpjegojne cfare ofron biznesi dhe kujt i sherben, ' +
       'me gjuhe te thjeshte, te shkruara ashtu qe nje algoritem te gjeje me cilat sherbime plotesuese mund te cohet. ' +
       'SHKRUAJE fushen "permbledhje" GJITHMONE NE ANGLISHT, PAVARESISHT nga gjuha e pershkrimit/tekstit te dhene si input.)}';
@@ -2600,13 +2604,14 @@ app.post('/api/analizo', iLoguar, async (req, res) => {
     const kkRaw = parsed.kategoria_kryesore || null;
     const kk = kkRaw ? (KATEGORITE.find(k => k.toLowerCase() === kkRaw.toLowerCase()) || null) : null;
     const nk = Array.isArray(parsed.nenkategorite) ? parsed.nenkategorite.join(', ') : (parsed.nenkategorite || null);
+    const kd = Array.isArray(parsed.kategori_dytesore) ? parsed.kategori_dytesore.join(', ') : (parsed.kategori_dytesore || null);
     const perm = parsed.permbledhje || null;
 
     await pool.query(
-      'UPDATE bizneset SET kategoria_kryesore=$2, nenkategorite=$3, permbledhje=$4, kategoria=$2 WHERE id=$1',
-      [req.biznesId, kk, nk, perm]);
+      'UPDATE bizneset SET kategoria_kryesore=$2, kategori_dytesore=$3, nenkategorite=$4, permbledhje=$5, kategoria=$2 WHERE id=$1',
+      [req.biznesId, kk, kd, nk, perm]);
 
-    res.json({ ok: true, ai: true, kategoria_kryesore: kk, nenkategorite: nk, permbledhje: perm });
+    res.json({ ok: true, ai: true, kategoria_kryesore: kk, kategori_dytesore: kd, nenkategorite: nk, permbledhje: perm });
 
     // Nis kombinimin AI MENJEHERE pas pershkrimit — jo me pas snippet-it, siç ishte
     // me pare — kjo lejon ekspozim te hershem (biznese te tjera, qe kane snippet aktiv,
