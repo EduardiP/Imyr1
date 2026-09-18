@@ -13,10 +13,7 @@ module.exports = function (app, pool, iAdmin, kombinimi) {
          FROM bizneset
          WHERE website IS NOT NULL AND tipi IS NOT NULL
            AND (permbledhje IS NOT NULL OR pershkrimi IS NOT NULL)
-           AND (
-             snippet_active = true
-             OR EXISTS (SELECT 1 FROM perputhjet p WHERE p.reklamues_id = bizneset.id OR p.host_id = bizneset.id)
-           )
+           AND (snippet_active = true OR created_at > now() - interval '7 days')
          ORDER BY emri ASC`);
       res.json(r.rows);
     } catch (e) { res.status(500).json({ error: e.message }); }
@@ -60,7 +57,7 @@ module.exports = function (app, pool, iAdmin, kombinimi) {
     try {
       const r = await pool.query(
         `SELECT id FROM bizneset
-         WHERE tipi IS NOT NULL AND snippet_active = true
+         WHERE tipi IS NOT NULL AND (snippet_active = true OR created_at > now() - interval '7 days')
            AND (permbledhje IS NOT NULL OR pershkrimi IS NOT NULL)`);
       res.json({ ok: true, nisur: r.rows.length });
       (async () => {
@@ -141,31 +138,6 @@ module.exports = function (app, pool, iAdmin, kombinimi) {
         pergjithshem: { kerkesa: kerkGjith.rows[0].n, kandidatet: kandGjith.rows },
         snippetet: snippetet
       });
-    } catch (e) { res.status(500).json({ error: e.message }); }
-  });
-
-  // --- Lista e pritjes per "Teams & Roles" (regjistrimet e interesit) ---
-  app.get('/api/admin/suport-kerkesat', iAdmin, async (req, res) => {
-    const r = await pool.query(`
-      SELECT sk.id, sk.subjekti, sk.mesazhi, sk.statusi, sk.created_at,
-        b.emri AS biznes_emri, b.email AS biznes_email
-      FROM suport_kerkesat sk JOIN bizneset b ON b.id = sk.biznes_id
-      ORDER BY sk.created_at DESC LIMIT 200`);
-    res.json({ kerkesat: r.rows });
-  });
-  app.post('/api/admin/suport-kerkesat/:id/lexuar', iAdmin, async (req, res) => {
-    await pool.query("UPDATE suport_kerkesat SET statusi='lexuar' WHERE id=$1", [req.params.id]);
-    res.json({ ok:true });
-  });
-
-  app.get('/api/admin/lista-pritjes', iAdmin, async (req, res) => {
-    try {
-      const r = await pool.query(
-        `SELECT lp.id, lp.email, lp.krijuar_at, b.emri AS biznesi, b.logo_url
-         FROM ekipi_lista_pritjes lp
-         LEFT JOIN bizneset b ON b.id = lp.biznes_id
-         ORDER BY lp.krijuar_at DESC`);
-      res.json(r.rows);
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
