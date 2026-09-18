@@ -29,6 +29,7 @@
 //   pikaPerzgjedhjeje(x)              = (3/40000)x² − (3/200)x + 7/4
 
 const pesha = require('./pesha');
+const kombinimi = require('./kombinimi');
 
 module.exports = function (pool) {
 
@@ -216,7 +217,7 @@ module.exports = function (pool) {
   // ══════════════════════════════════════════════════════════════════
   async function merrKandidatet(hostId, hTipi, logjika) {
     const r = await pool.query(
-      `SELECT DISTINCT b.id AS biznes_id, b.tipi
+      `SELECT DISTINCT b.id AS biznes_id, b.tipi, b.kategoria_kryesore, b.kategori_dytesore
        FROM promovimet p JOIN bizneset b ON b.id = p.biznes_id
        WHERE p.biznes_id <> $1 AND p.aktiv = true AND COALESCE(p.pauzuar,false) = false
          AND COALESCE(p.logjika_shperndarjes,'ankand') = $2
@@ -227,7 +228,21 @@ module.exports = function (pool) {
            OR (b.created_at > now() - interval '7 days')
          )`,
       [hostId, logjika]);
-    return r.rows.filter(k => !(hTipi && k.tipi && !tipetPerputhen(k.tipi, hTipi)));
+    let rreshta = r.rows.filter(k => !(hTipi && k.tipi && !tipetPerputhen(k.tipi, hTipi)));
+
+    // PERJASHTIM I FORTE, AUTOMATIK: nese host-i dhe kandidati ndajne TE PAKTEN 1 kategori
+    // (kryesore ose dytesore), jane konkurrente — s'kualifikohet fare per zgjedhjen e pishines.
+    if (rreshta.length) {
+      try {
+        const hostFullQ = await pool.query(
+          'SELECT kategoria_kryesore, kategori_dytesore FROM bizneset WHERE id=$1', [hostId]);
+        const hostFull = hostFullQ.rows[0];
+        if (hostFull && (hostFull.kategoria_kryesore || hostFull.kategori_dytesore)) {
+          rreshta = rreshta.filter(k => !kombinimi.kaMbivendosjeKategorie(hostFull, k));
+        }
+      } catch (e) { /* nese deshton, vazhdo pa filtrin */ }
+    }
+    return rreshta;
   }
 
   // ══════════════════════════════════════════════════════════════════
