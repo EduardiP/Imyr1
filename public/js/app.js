@@ -2375,19 +2375,40 @@ async function loadReklamat(){
     const rows=await(await fetch('/api/reklamat?logjika='+(window.__llogariaModaliteti||'ankand'))).json();
     window.__reklamat = rows;
     if(!rows.length){ el.innerHTML='<div class="card" style="text-align:center;padding:40px 20px;"><p class="small">You haven\'t created any ads yet. Click "+ Create".</p></div>'; return; }
-    let h='<div class="rektbl"><div class="rekhead"><span>Ad</span><span>Views</span><span>Clicks</span><span>Conversions</span><span></span><span></span></div>';
+    let h='<div class="rektbl"><div class="rekhead"><span>Ad</span><span>Views</span><span>Clicks</span><span>Conversions</span><span>Health</span><span></span><span></span></div>';
     rows.forEach(r=>{
       const thumb = r.imazh_url ? '<span class="rekthumb"><img src="'+esc(r.imazh_url)+'"></span>' : '<span class="rekthumb">▦</span>';
       const tgl = '<label class="tgl" title="'+(r.pauzuar?'Paused':'Active')+'" onclick="event.stopPropagation()"><input type="checkbox" '+(r.pauzuar?'':'checked')+' onchange="reklamaPauza('+r.id+',this.checked)"><span class="slider"></span></label>';
       const xbtn = '<button class="btn" style="padding:4px 9px;" title="Delete" onclick="event.stopPropagation();reklamaKonfirmoFshi('+r.id+',\''+esc((r.emri||'').replace(/\x27/g,""))+'\')">✕</button>';
+      const health = rekHealthBadge(r);
       h+='<div class="rekrow" onclick="nav({v:\'profile\',nav:\'reklamat\',sub:\'detail\',id:'+r.id+'})">'+
          '<span class="rekname">'+thumb+'<span class="nm">'+esc(r.emri)+'</span></span>'+
          '<span>'+r.shikime+'</span><span>'+r.klikime+'</span><span>'+r.konvertime+'</span>'+
+         '<span>'+health+'</span>'+
          '<span>'+tgl+'</span><span>'+xbtn+'</span></div>';
     });
     h+='</div>';
     el.innerHTML=h;
   }catch(e){ el.innerHTML='<p class="small">Loading error.</p>'; }
+}
+// Kthen ngjyren nderteruar linearisht mes te kuqes flake (pike=0) dhe te gjelbertes (pike>=1000)
+function rekPikeNgjyra(pike){
+  const p = Math.max(0, Math.min(1000, pike)) / 1000;
+  const r = Math.round(255 - p*215);   // 255(#ff)→40(#28)
+  const g = Math.round(40 + p*175);    // 40(#28)→215(#d7)
+  return 'rgb('+r+','+g+',40)';
+}
+function rekHealthBadge(r){
+  if(r.ne_pergatitje){
+    return '<span title="Still gathering its first 5 real views — not yet scored." style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--mut);background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:3px 9px;">'+
+      '<span class="spin" style="width:8px;height:8px;border-width:2px;"></span>Learning</span>';
+  }
+  if(r.deshtuar){
+    return '<span title="Score has hit 0 — too many views without a click. A single click resets this immediately." style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#ff6b6b;background:rgba(255,60,60,.12);border:1px solid #ff6b6b;border-radius:20px;padding:3px 9px;font-weight:600;">⚠ Failed</span>';
+  }
+  const kk = rekPikeNgjyra(r.pike);
+  return '<span title="Current score: '+r.pike+' (out of a healthy ~1000+). Color reflects how close it is to failing (red) or thriving (green)." style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--mut);">'+
+    '<span style="width:12px;height:12px;border-radius:3px;background:'+kk+';flex:0 0 auto;"></span>'+r.pike+'</span>';
 }
 
 function reklamaKonfirmoFshi(id, emri){
