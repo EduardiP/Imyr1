@@ -28,7 +28,7 @@ app.use((req, res, next) => {
   if (primar && req.headers.host && req.headers.host !== primar) {
     // Mos ridrejto: snippet-et/endpoint-et (klientet i kane vendosur me URL-en e vjeter),
     // dhe admin/api (qe login-i e cookie-t te mos prishen mes domain-eve).
-    const perjashto = ['/imyr.js','/phronexusai.js','/imyr-track.js','/tag.js','/lidh','/track-lidh','/ad','/cil','/track','/klik','/konvertim','/konvertim-verifiko','/diag','/diag-zonat','/admin','/api'];
+    const perjashto = ['/imyr.js','/phronexusai.js','/imyr-track.js','/phronexus-track.js','/tag.js','/lidh','/track-lidh','/ad','/cil','/track','/klik','/konvertim','/konvertim-verifiko','/diag','/diag-zonat','/admin','/api'];
     if (!perjashto.some(p => req.path.startsWith(p))) {
       return res.redirect(302, 'https://' + primar + req.originalUrl);
     }
@@ -2214,7 +2214,9 @@ app.get('/cil', async (req, res) => {
 });
 
 // --- IMYR-TRACK.JS (vetem gjurmim: vendoset ne CDO faqe, s'shfaq asgje) ---
-app.get('/imyr-track.js', (req, res) => {
+// Sherbehet nga 2 rruge: /imyr-track.js (e vjeter, per instalimet ekzistuese) dhe
+// /phronexus-track.js (emri i ri, per klientet qe kopjojne kodin qe sot e tutje).
+function imyrTrackJsHandler(req, res) {
   res.type('application/javascript');
   res.send(`(function(){
   var s = document.currentScript;
@@ -2301,7 +2303,9 @@ app.get('/imyr-track.js', (req, res) => {
     })
     .catch(function(){});
 })();`);
-});
+}
+app.get('/imyr-track.js', imyrTrackJsHandler);
+app.get('/phronexus-track.js', imyrTrackJsHandler);
 
 // --- WIDGET.JS (snippet-i qe vendoset te dyqani) ---
 app.get('/widget.js', (req, res) => {
