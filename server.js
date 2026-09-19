@@ -28,7 +28,7 @@ app.use((req, res, next) => {
   if (primar && req.headers.host && req.headers.host !== primar) {
     // Mos ridrejto: snippet-et/endpoint-et (klientet i kane vendosur me URL-en e vjeter),
     // dhe admin/api (qe login-i e cookie-t te mos prishen mes domain-eve).
-    const perjashto = ['/imyr.js','/imyr-track.js','/tag.js','/lidh','/track-lidh','/ad','/cil','/track','/klik','/konvertim','/konvertim-verifiko','/diag','/diag-zonat','/admin','/api'];
+    const perjashto = ['/imyr.js','/phronexusai.js','/imyr-track.js','/tag.js','/lidh','/track-lidh','/ad','/cil','/track','/klik','/konvertim','/konvertim-verifiko','/diag','/diag-zonat','/admin','/api'];
     if (!perjashto.some(p => req.path.startsWith(p))) {
       return res.redirect(302, 'https://' + primar + req.originalUrl);
     }
@@ -224,7 +224,7 @@ async function kontrolloSnippetet24h() {
         clearTimeout(t);
         const html = await resp.text();
         arritur = true;
-        if (html.indexOf('imyr.js') !== -1 && html.indexOf(s.celes) !== -1) gjendet = true;
+        if ((html.indexOf('imyr.js') !== -1 || html.indexOf('phronexusai.js') !== -1) && html.indexOf(s.celes) !== -1) gjendet = true;
       } catch (e) { arritur = false; }
       // Vendos statusin AKTUAL: nese e arritEm faqen, statusi pasqyron gjendjen reale.
       // (NEse s'e arritEm faqen, s'e prekim — mund tE jetE bllokim i pErkohshEm.)
@@ -1987,7 +1987,10 @@ app.all('/lidh', async (req, res) => {
 });
 
 // --- IMYR.JS (gjithcka ne nje rresht: lidhje + hapesire + reklame + gjurmim) ---
-app.get('/imyr.js', (req, res) => {
+// E emruar si funksion i vecante qe te sherbehet nga 2 rruge: /imyr.js (e vjeter, per
+// instalimet EKZISTUESE qe e kane tashme kete kod te ngjitur — s'duhet te thyhet KURRE)
+// dhe /phronexusai.js (emri i ri, per klientet e RINJ qe kopjojne kodin qe sot e tutje).
+function imyrJsHandler(req, res) {
   res.type('application/javascript');
   res.set('Cache-Control', 'no-cache, must-revalidate');
   res.send(`(function(){
@@ -2161,7 +2164,9 @@ app.get('/imyr.js', (req, res) => {
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
   else run();
 })();`);
-});
+}
+app.get('/imyr.js', imyrJsHandler);
+app.get('/phronexusai.js', imyrJsHandler);
 
 // --- KODI GJURMUES U NGARKUA (konfirmimi i lidhjes) ---
 app.all('/track-lidh', async (req, res) => {
