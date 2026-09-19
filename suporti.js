@@ -29,6 +29,12 @@ ANKANDI (si renditet kush shfaqet ku):
 - Sa me te larta piket e profilit (nga shfaqjet qe jep + konvertimet qe sjell), aq me lart dhe me shpesh shfaqet reklama e atij biznesi.
 - Pra: jep me shume ekspozime + sjell me shume konvertime → me shume pike → fiton ankandin me shpesh → reklama jote shfaqet me shume.
 
+ANKANDI I DYTE (nese ke ME SHUME se 1 reklame aktive te njekohesisht):
+- Kur biznesi yt fiton hapesiren, dhe ke +2 reklama aktive, sistemi vendos VETE cilen prej reklamave te tua te shfaqe — jo ti manualisht.
+- Faza fillestare: secila reklame merr radhe deri sa te ket 5 shikime REALE — pastaj fillon vleresimi.
+- Formula: 1000 + (klikime×90) + (konvertime×25) − 0.6746×(shikime_pa_klikim)^1.9 [klikime/konvertime brenda 30-ditesh; shikimet_pa_klikim jane VETEM QE NGA klikimi i fundit i saj — PA kufi kohor, RIFILLON NE ZERO menjehere pas cdo klikim te ri].
+- Praktikisht: nese nje reklame e jote shihet shume por s'klikohet asnjehere, pikët e saj bien gradualisht (jo-lineare, gjithnje e me shpejt) — por sapo merr edhe 1 klikim te vetem, kjo zbritje fshihet plotesisht, fillon nga zero.
+
 BALANCE (si vendoset kush fiton BRENDA pishines Balance — ndryshe nga Ankandi):
 - Konkurrentet perjashtohen fillimisht: nje kandidat hiqet plotesisht nese ka AI=0 (pershtatje zero me audiencen) DHE eshte i njejti tip biznesi (b2b me b2b, ose b2c me b2c). Nese AI=0 por tipet ndryshojne, mbetet ne gare (thjesht perputhje neutrale, jo konkurrent).
 - Per secilin qe mbetet, llogaritet "deficiti": shikime REALE (jo ngarkime — kerkon te pakten 50% te reklames te dukshme per 1+ sekonde) qe i ke dhene MINUS shikime reale qe ke marre prej tij (brenda Balance).
@@ -96,6 +102,9 @@ async function pyet(apiKey, system, mesazhet) {
   return ((data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '').trim();
 }
 
+const kreativeModul = require('./kreative');
+const MESAZHE_FALAS_MUAJ = 20;
+
 module.exports = function (app, pool) {
   // Endpoint publik (para DHE pas login) — streaming fjale-per-fjale
   app.post('/api/suport', async (req, res) => {
@@ -103,7 +112,47 @@ module.exports = function (app, pool) {
     if (!apiKey) return res.status(500).json({ error: 'AI s\'eshte konfiguruar.' });
     const mesazhet = (req.body && req.body.mesazhet) || [];
     if (!Array.isArray(mesazhet) || !mesazhet.length) return res.status(400).json({ error: 'Mungojne mesazhet.' });
-    const iLoguar = !!(req.cookies && req.cookies.imyr_session);
+
+    // Resolvo biznesId nga sesioni, NESE eshte i loguar — VIZITORET PUBLIK (pa cookie)
+    // MBETEN GJITHMONE pa limit fare (vlere e madhe, e njohur per konvertim klientesh te rinj).
+    let biznesId = null;
+    const token = req.cookies && req.cookies.imyr_session;
+    if (token) {
+      try {
+        const r = await pool.query('SELECT biznes_id FROM seancat WHERE token=$1', [token]);
+        if (r.rows.length) {
+          const idLogimi = r.rows[0].biznes_id;
+          const bizR = await pool.query(
+            'SELECT pronari_biznes_id, eshte_anetar_ekipi FROM bizneset WHERE id=$1', [idLogimi]);
+          const eshteAnetar = bizR.rows.length && bizR.rows[0].eshte_anetar_ekipi && bizR.rows[0].pronari_biznes_id;
+          biznesId = eshteAnetar ? bizR.rows[0].pronari_biznes_id : idLogimi;
+        }
+      } catch (e) {}
+    }
+    const iLoguar = !!biznesId;
+
+    // Limiti (VETEM per te loguarit, jo publikun) — nese arrihet, kthe automatikisht
+    // nje mesazh "upgrade" ne vend te thirrjes OpenAI (kursen edhe koston e API-t).
+    if (biznesId) {
+      try {
+        await pool.query(`CREATE TABLE IF NOT EXISTS chat_perdorimi (
+          id SERIAL PRIMARY KEY, biznes_id INTEGER NOT NULL REFERENCES bizneset(id),
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
+        const premium = await kreativeModul.eshtePremium(pool, biznesId);
+        if (!premium) {
+          const rr = await pool.query(
+            `SELECT COUNT(*)::int AS n FROM chat_perdorimi
+             WHERE biznes_id=$1 AND created_at > now() - interval '30 days'`, [biznesId]);
+          if (rr.rows[0].n >= MESAZHE_FALAS_MUAJ) {
+            res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+            res.write("You've reached this month's free support-chat limit. Upgrade to Premium for unlimited AI support — go to Billing & Plan in your profile menu, or visit phronexusai.com/app/plan");
+            return res.end();
+          }
+          await pool.query('INSERT INTO chat_perdorimi (biznes_id) VALUES ($1)', [biznesId]);
+        }
+      } catch (e) { /* nese kontrolli deshton, vazhdo normalisht — mos e ndal shërbimin */ }
+    }
+
     try {
       const system = ndertoSystem(iLoguar);
       const hist = mesazhet.slice(-10).map(m => ({
