@@ -143,8 +143,8 @@ module.exports = function (app, pool, iLoguar, beCeles) {
         clearTimeout(t);
         const html = await resp.text();
         arritur = true;
-        // TE DYJA: imyr.js DHE celesi i sakte
-        if (html.indexOf('imyr.js') !== -1 && html.indexOf(celes) !== -1) gjendet = true;
+        // TE DYJA: imyr.js (ose phronexusai.js) DHE celesi i sakte
+        if ((html.indexOf('imyr.js') !== -1 || html.indexOf('phronexusai.js') !== -1) && html.indexOf(celes) !== -1) gjendet = true;
       } catch (e) { arritur = false; }
       res.json({ gjendet, arritur });
     } catch (e) { res.status(500).json({ error: e.message }); }
