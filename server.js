@@ -106,7 +106,7 @@ const { initDB } = require('./db');
 
 // --- Ndihmes: krijo nje celes unik ---
 function beCeles() {
-  return 'imyr_' + crypto.randomBytes(12).toString('hex');
+  return 'phronexus_' + crypto.randomBytes(12).toString('hex');
 }
 
 // --- Ndihmes: CORS per endpoint-et publike (thirren nga dyqane te tjera) ---
