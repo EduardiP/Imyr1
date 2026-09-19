@@ -36,6 +36,50 @@ app.use((req, res, next) => {
   next();
 });
 
+// ═══ PADDLE WEBHOOK — DUHET te vije PARA express.json() global, meqe ka nevoje
+// per RAW body (jo te parsuar) per verifikimin e nenshkrimit. ═══
+app.post('/api/paddle-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  try {
+    const sig = req.headers['paddle-signature'] || '';
+    const raw = req.body.toString();
+    const secret = process.env.PADDLE_WEBHOOK_SECRET;
+    if (!secret) { console.error('PADDLE_WEBHOOK_SECRET mungon'); return res.status(500).end(); }
+
+    const parts = Object.fromEntries(sig.split(';').map(p => p.split('=')));
+    const ts = parts.ts, h1 = parts.h1;
+    if (!ts || !h1) return res.status(400).end();
+    const pritur = crypto.createHmac('sha256', secret).update(ts + ':' + raw).digest('hex');
+    const eVlefshem = h1.length === pritur.length &&
+      crypto.timingSafeEqual(Buffer.from(h1), Buffer.from(pritur));
+    if (!eVlefshem) { console.error('Paddle webhook: nenshkrim i pavlefshem'); return res.status(401).end(); }
+
+    const event = JSON.parse(raw);
+    const lloji = event.event_type;
+    const data = event.data || {};
+
+    if (lloji === 'transaction.completed' || lloji === 'subscription.activated') {
+      const bizId = data.custom_data && data.custom_data.biznes_id;
+      const subId = data.subscription_id || (data.id && lloji === 'subscription.activated' ? data.id : null);
+      const custId = data.customer_id;
+      if (bizId) {
+        await pool.query(
+          `UPDATE bizneset SET plani='premium', paddle_subscription_id=COALESCE($2,paddle_subscription_id),
+           paddle_customer_id=COALESCE($3,paddle_customer_id) WHERE id=$1`,
+          [bizId, subId, custId]);
+      }
+    } else if (lloji === 'subscription.canceled' || lloji === 'subscription.past_due') {
+      const subId = data.id;
+      if (subId) {
+        await pool.query(`UPDATE bizneset SET plani='falas' WHERE paddle_subscription_id=$1`, [subId]);
+      }
+    }
+    res.status(200).json({ received: true });
+  } catch (e) {
+    console.error('Paddle webhook deshtoi:', e.message);
+    res.status(500).end();
+  }
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -56,6 +100,8 @@ pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS logjika_shperndarjes
 // "Create account"), llogaria tjeter NUK duhet te marre pjese ne asnje ankand/balance real.
 pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS ankand_krijuar BOOLEAN NOT NULL DEFAULT false`).catch(e => console.error('migrim ankand_krijuar:', e.message));
 pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS kategori_dytesore TEXT`).catch(e => console.error('migrim kategori_dytesore:', e.message));
+pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS paddle_subscription_id TEXT`).catch(e => console.error('migrim paddle_subscription_id:', e.message));
+pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS paddle_customer_id TEXT`).catch(e => console.error('migrim paddle_customer_id:', e.message));
 pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS balance_krijuar BOOLEAN NOT NULL DEFAULT false`).catch(e => console.error('migrim balance_krijuar:', e.message));
 // MIGRIM KRITIK: bizneset EKZISTUESE marrin automatikisht "krijuar=true" per pishinen
 // e tyre AKTUALE (sipas logjika_shperndarjes qe kane tani) — perndryshe FILTRI i
@@ -479,9 +525,18 @@ app.post('/api/promovim-platforme', iLoguar, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.post('/api/plani', iLoguar, async (req, res) => {
-  const plani = (req.body && req.body.plani) === 'premium' ? 'premium' : 'falas';
-  await pool.query('UPDATE bizneset SET plani=$1 WHERE id=$2', [plani, req.biznesId]);
-  res.json({ ok:true, plani });
+  // SIGURI: kjo rruge lejon VETEM anulimin (kthim te 'falas') — 'premium' vendoset
+  // VETEM nga webhook-u i Paddle-it, pasi pagesa te jete verifikuar realisht.
+  await pool.query('UPDATE bizneset SET plani=$1 WHERE id=$2', ['falas', req.biznesId]);
+  res.json({ ok:true, plani: 'falas' });
+});
+
+app.get('/api/paddle-config', iLoguar, (req, res) => {
+  res.json({
+    token: process.env.PADDLE_CLIENT_TOKEN || null,
+    priceId: process.env.PADDLE_PRICE_ID || null,
+    sandbox: process.env.PADDLE_SANDBOX === 'true'
+  });
 });
 
 app.get('/api/une', iLoguar, async (req, res) => {
