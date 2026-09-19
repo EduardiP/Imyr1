@@ -2,7 +2,7 @@
 // Tani: snippet fleksibël (auto). Formati fiks do të kthehet kur të shtohet imazh/video/.zip.
 
 function snippetKod(){
-  return '<script src="'+location.origin+'/imyr.js" data-key="'+((une&&une.celes)||'')+'"></'+'script>';
+  return '<script src="'+location.origin+'/phronexusai.js" data-key="'+((une&&une.celes)||'')+'"></'+'script>';
 }
 
 function connectUI(el){
