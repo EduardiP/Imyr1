@@ -3618,7 +3618,15 @@ async function wizAnalizo(){
   try{
     const r=await(await fetch('/api/analizo',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({pershkrimi,lejo})})).json();
-    if(r.error){ $('d_msg').className='msg err'; $('d_msg').textContent=r.error; $('d_btn').disabled=false; return; }
+    if(r.error){
+      $('d_msg').className='msg err';
+      if(r.kufiri_arritur){
+        $('d_msg').innerHTML=esc(r.error)+' <a href="'+(r.plani_url||'/app/plan')+'" style="color:inherit;text-decoration:underline;font-weight:600;">Upgrade to Premium →</a>';
+      } else {
+        $('d_msg').textContent=r.error;
+      }
+      $('d_btn').disabled=false; return;
+    }
     $('d_msg').textContent = r.ai ? '' : (r.note||'');
     $('e_perm').value = r.permbledhje || pershkrimi;
     $('d_res').classList.remove('hide');
