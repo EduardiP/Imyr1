@@ -2801,11 +2801,12 @@ async function paddleSigurohu(){
 }
 async function planiZgjidh(plani){
   if(plani==='falas'){
+    if(!confirm('Kjo anulon abonimin tënd Premium. Do të mbash akses deri në fund të periudhës aktuale të faturimit — pas asaj, kthehesh te plani Falas. Vazhdo?')) return;
     try{
-      await fetch('/api/plani',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plani})});
-      if(une) une.plani = plani;
-    }catch(e){}
-    renderMain({nav:'plani'});
+      const r=await(await fetch('/api/plani',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plani})})).json();
+      if(r.error){ alert(r.error); return; }
+      alert('Anulimi u konfirmua — do të mbash akses Premium deri në fund të periudhës aktuale të faturimit.');
+    }catch(e){ alert('Anulimi dështoi. Provo sërish.'); return; }
     return;
   }
   const gati = await paddleSigurohu();
