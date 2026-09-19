@@ -2546,10 +2546,35 @@ app.get('/api/analizo/mbetur', iLoguar, async (req, res) => {
 app.post('/api/analizo', iLoguar, async (req, res) => {
   const pershkrimi = (req.body.pershkrimi || '').trim();
   const lejo = !!req.body.lejo;
+  const PERSHKRIM_RISHKRIME_FALAS = 5;
   try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS pershkrim_rishkrime (
+      id SERIAL PRIMARY KEY, biznes_id INTEGER NOT NULL REFERENCES bizneset(id),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
+    // A eshte kjo RISHKRIM (biznesi TASHME ka permbledhje/pershkrim te ruajtur — jo hera e pare
+    // gjate wizard-it te regjistrimit) — VETEM rishkrimet numerohen kunder limitit.
+    const eGjendjes = await pool.query('SELECT permbledhje FROM bizneset WHERE id=$1', [req.biznesId]);
+    const eshteRishkrim = !!(eGjendjes.rows[0] && eGjendjes.rows[0].permbledhje);
+    if (eshteRishkrim) {
+      const premium = await kreativeModul.eshtePremium(pool, req.biznesId);
+      if (!premium) {
+        const rr = await pool.query(
+          `SELECT COUNT(*)::int AS n FROM pershkrim_rishkrime
+           WHERE biznes_id=$1 AND created_at > now() - interval '30 days'`, [req.biznesId]);
+        if (rr.rows[0].n >= PERSHKRIM_RISHKRIME_FALAS) {
+          return res.status(429).json({
+            error: 'Ke arritur kufirin mujor (' + PERSHKRIM_RISHKRIME_FALAS + ') të rishkrimeve të përshkrimit. Kalo te Premium për rishkrime të pakufizuara.',
+            kufiri_arritur: true, plani_url: '/app/plan'
+          });
+        }
+      }
+    }
     await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pershkrimi_auto BOOLEAN NOT NULL DEFAULT false`);
     await pool.query('UPDATE bizneset SET pershkrimi=$2, lejo_analize=$3, pershkrimi_auto=false WHERE id=$1',
       [req.biznesId, pershkrimi || null, lejo]);
+    if (eshteRishkrim) {
+      await pool.query('INSERT INTO pershkrim_rishkrime (biznes_id) VALUES ($1)', [req.biznesId]);
+    }
 
     // nese lejohet, merr tekstin e faqes se biznesit
     let webTekst = '';
@@ -2728,7 +2753,8 @@ require('./asistenti')(app, pool, iLoguar);
 require('./suporti')(app, pool);
 
 // Kreative — krijimi i reklamave me AI (imazh/video/HTML5)
-require('./kreative')(app, pool, iLoguar, { upload, s3, PutObjectCommand });
+const kreativeModul = require('./kreative');
+kreativeModul(app, pool, iLoguar, { upload, s3, PutObjectCommand });
 
 require('./kreative-chat')(app, pool, iLoguar);
 
