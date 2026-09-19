@@ -1275,7 +1275,7 @@ async function snipDetaje(m, id){
   }catch(e){ b.innerHTML='<p class="small err">Error.</p>'; }
 }
 function snipKodi(celes){
-  return '<script src="'+location.origin+'/imyr.js" data-key="'+celes+'"></scr'+'ipt>';
+  return '<script src="'+location.origin+'/phronexusai.js" data-key="'+celes+'"></scr'+'ipt>';
 }
 function snipKopjo(){
   const t=$('snipKod'); if(!t) return;
@@ -3162,15 +3162,15 @@ function vizatoKonvertimet(){
   let h='';
   _konvUrls.forEach((u,i)=>{
     const status = u.id ? (u.track_active
-        ? '<span style="color:var(--good);font-size:12px;white-space:nowrap;">✓ Connected</span>'
+        ? '<span style="color:var(--good);font-size:12px;white-space:nowrap;">✓ E lidhur</span>'
         : '<span style="color:var(--mut);font-size:12px;white-space:nowrap;">○ Not connected</span>')
-      : '<span style="color:var(--mut);font-size:12px;white-space:nowrap;">Not saved</span>';
+      : '<span style="color:var(--mut);font-size:12px;white-space:nowrap;">Pa ruajtur</span>';
     h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">'+
-       '<input value="'+esc(u.url)+'" placeholder="https://your-site.com/welcome" oninput="konvNdrysho('+i+',this.value)" style="flex:1;min-width:140px;">'+
-       '<button class="btn" style="padding:7px 12px;" onclick="verifikoNje('+i+')">Verify</button>'+
+       '<input value="'+esc(u.url)+'" placeholder="https://faqja-ime.com/welcome" oninput="konvNdrysho('+i+',this.value)" style="flex:1;min-width:140px;">'+
+       '<button class="btn" style="padding:7px 12px;" onclick="verifikoNje('+i+')">Verifiko</button>'+
        (_konvUrls.length>1 ? '<button class="btn" style="padding:7px 10px;" onclick="konvKonfirmoFshi('+i+')">✕</button>' : '')+
        '<span style="min-width:74px;text-align:right;">'+status+'</span>'+
-       (u.id ? '<label class="tgl" title="'+(u.pauzuar?'Paused':'Active')+'"><input type="checkbox" '+(u.pauzuar?'':'checked')+' onchange="konvPauza('+i+',this.checked)"><span class="slider"></span></label>' : '')+
+       (u.id ? '<label class="tgl" title="'+(u.pauzuar?'I pauzuar':'Aktiv')+'"><input type="checkbox" '+(u.pauzuar?'':'checked')+' onchange="konvPauza('+i+',this.checked)"><span class="slider"></span></label>' : '')+
        '</div>';
   });
   c.innerHTML=h;
@@ -3226,12 +3226,12 @@ function trackKod(){
 function mbushTrack(){ const el=$('k_kod'); if(el) el.textContent=trackKod(); kStatus(); }
 function kopjoTrack(){
   navigator.clipboard.writeText(trackKod()).then(()=>{
-    const m=$('k_msg'); if(m){ m.className='msg ok'; m.textContent='Copied.'; setTimeout(()=>{m.textContent='';},2000); }
+    const m=$('k_msg'); if(m){ m.className='msg ok'; m.textContent='U kopjua.'; setTimeout(()=>{m.textContent='';},2000); }
   }).catch(()=>{});
 }
 function kopjoKodKonv(){
   navigator.clipboard.writeText('imyr.konvertim();').then(()=>{
-    const m=$('k_msg'); if(m){ m.className='msg ok'; m.textContent='Copied.'; setTimeout(()=>{m.textContent='';},2000); }
+    const m=$('k_msg'); if(m){ m.className='msg ok'; m.textContent='U kopjua.'; setTimeout(()=>{m.textContent='';},2000); }
   }).catch(()=>{});
 }
 // ── Zonat e konvertimit me kod ──
@@ -3285,20 +3285,20 @@ function vizatoZonat(){
   let h='';
   _konvZona.forEach((z,i)=>{
     const status = z.id ? (z.track_active
-        ? '<span style="color:var(--good);font-size:12px;">✓ Connected</span>'
+        ? '<span style="color:var(--good);font-size:12px;">✓ E lidhur</span>'
         : '<span style="color:var(--mut);font-size:12px;">○ Not connected</span>')
-      : '<span style="color:var(--mut);font-size:12px;">Not saved</span>';
+      : '<span style="color:var(--mut);font-size:12px;">Pa ruajtur</span>';
     h+='<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;">'+
        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'+
-         '<input value="'+esc(z.emri)+'" placeholder="type name (e.g. purchase) — or leave blank" oninput="zonaNdrysho('+i+',this.value)" style="flex:1;">'+
+         '<input value="'+esc(z.emri)+'" placeholder="emri i llojit (p.sh. blerje) — ose lëre bosh" oninput="zonaNdrysho('+i+',this.value)" style="flex:1;">'+
          (_konvZona.length>1 ? '<button class="btn" style="padding:7px 10px;" onclick="zonaKonfirmoFshi('+i+')">✕</button>' : '')+
        '</div>'+
        '<div class="kodbox" id="k_zonaKod'+i+'">'+esc(kodiZones(z.emri))+'</div>'+
        '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;">'+
-         '<button class="btn" onclick="zonaKopjo('+i+')">Copy</button>'+
-         '<button class="btn" onclick="zonaVerifiko('+i+')">Verify</button>'+
+         '<button class="btn" onclick="zonaKopjo('+i+')">Kopjo</button>'+
+         '<button class="btn" onclick="zonaVerifiko('+i+')">Verifiko</button>'+
          '<span style="margin-left:auto;">'+status+'</span>'+
-         (z.id ? '<label class="tgl" title="'+(z.pauzuar?'Paused':'Active')+'"><input type="checkbox" '+(z.pauzuar?'':'checked')+' onchange="zonaPauza('+i+',this.checked)"><span class="slider"></span></label>' : '')+
+         (z.id ? '<label class="tgl" title="'+(z.pauzuar?'I pauzuar':'Aktiv')+'"><input type="checkbox" '+(z.pauzuar?'':'checked')+' onchange="zonaPauza('+i+',this.checked)"><span class="slider"></span></label>' : '')+
        '</div>'+
        '</div>';
   });
@@ -3323,7 +3323,7 @@ async function zonaFshi(i){
 function zonaKopjo(i){
   const z=_konvZona[i]; if(!z) return;
   navigator.clipboard.writeText(kodiZones(z.emri)).then(()=>{
-    const m=$('k_msg'); if(m){ m.className='msg ok'; m.textContent='Copied.'; setTimeout(()=>{m.textContent='';},2000); }
+    const m=$('k_msg'); if(m){ m.className='msg ok'; m.textContent='U kopjua.'; setTimeout(()=>{m.textContent='';},2000); }
   }).catch(()=>{});
 }
 
@@ -3369,7 +3369,7 @@ async function zonaVerifiko(i){
       window.open(faqja + sep + 'imyr=' + encodeURIComponent(r.kod), '_blank', 'noopener');
     }
   }catch(e){}
-  const m=$('k_msg'); if(m){ m.className='msg'; m.innerHTML='<span class="spin"></span> We opened your page. Go to where you placed the code and complete the action (click the button) — this test doesn\'t count as a conversion.'; }
+  const m=$('k_msg'); if(m){ m.className='msg'; m.innerHTML='<span class="spin"></span> Hapëm faqen tënde. Shko te vendi ku vendose kodin dhe kryej veprimin (kliko butonin) — kjo provë s\'numërohet si konvertim.'; }
   vizatoZonat();
   if(_zonaTimer){ clearInterval(_zonaTimer); }
   let here=0;
@@ -3384,7 +3384,7 @@ async function zonaStatus(){
     _konvZona.forEach(z=>{ const g=nga.find(x=>x.id===z.id); if(g){ z.track_active=g.track_active; if(g.track_active) ndonje=true; } });
     vizatoZonat();
     if(ndonje){
-      const m=$('k_msg'); if(m){ m.className='msg ok'; m.textContent='Code connected.'; setTimeout(()=>{m.textContent='';},3000); }
+      const m=$('k_msg'); if(m){ m.className='msg ok'; m.textContent='Kodi u lidh.'; setTimeout(()=>{m.textContent='';},3000); }
       // Ruaj implementimin e kodit nese pati bisedE me asistentin
       try{
         if(_claudeHist && _claudeHist['Konv'] && _claudeHist['Konv'].length){
@@ -3423,7 +3423,7 @@ async function kStatus(){
       if(typeof renderDashStatus==='function' && document.getElementById('vstep')){ try{ renderDashStatus(); }catch(e){} }
     }
     if(st){
-      if(ka && teGjitha){ st.innerHTML='<span style="color:var(--good)">✓ All addresses connected.</span>';
+      if(ka && teGjitha){ st.innerHTML='<span style="color:var(--good)">✓ Të gjitha adresat u lidhën.</span>';
         try{
           if(_claudeHist && _claudeHist['Konv'] && _claudeHist['Konv'].length){
             fetch('/api/asistenti/ruaj-vendin',{method:'POST',headers:{'Content-Type':'application/json'},
@@ -3431,8 +3431,8 @@ async function kStatus(){
           }
         }catch(e){}
         if(kTimer){ clearInterval(kTimer); kTimer=null; } return true; }
-      else if(ndonjeLidhur){ st.innerHTML='<span class="mut">Some connected, others not yet. Open each page and wait…</span>'; }
-      else { st.innerHTML='<span class="mut">Not seen yet. Place the code on your site and open each address.</span>'; }
+      else if(ndonjeLidhur){ st.innerHTML='<span class="mut">Disa u lidhën, të tjerat jo ende. Hap secilën faqe dhe prit…</span>'; }
+      else { st.innerHTML='<span class="mut">Ende s\'i kemi parë. Vendos kodin te faqja jote dhe hap secilën adresë.</span>'; }
     }
     return (ka && teGjitha);
   }catch(e){}
@@ -3441,7 +3441,7 @@ async function kStatus(){
 let kTimer=null;
 async function verifikoNje(i){
   const st=$('k_stat');
-  const u=_konvUrls[i]; if(!u || !u.url.trim()){ if(st){ st.innerHTML='<span style="color:var(--err)">Enter the address.</span>'; } return; }
+  const u=_konvUrls[i]; if(!u || !u.url.trim()){ if(st){ st.innerHTML='<span style="color:var(--err)">Shkruaj adresën.</span>'; } return; }
   // Ruaj kete URL nese s'eshte ruajtur ende
   if(!u.id){
     try{
