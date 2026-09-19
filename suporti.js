@@ -103,7 +103,7 @@ async function pyet(apiKey, system, mesazhet) {
 }
 
 const kreativeModul = require('./kreative');
-const MESAZHE_FALAS_MUAJ = 20;
+const MESAZHE_FALAS_MUAJ = 70;
 
 module.exports = function (app, pool) {
   // Endpoint publik (para DHE pas login) — streaming fjale-per-fjale
