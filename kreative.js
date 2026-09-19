@@ -380,3 +380,4 @@ module.exports = function (app, pool, iLoguar, deps) {
 };
 
 module.exports.init = init;
+module.exports.eshtePremium = eshtePremium;
