@@ -67,7 +67,7 @@ app.post('/api/paddle-webhook', express.raw({ type: 'application/json' }), async
            paddle_customer_id=COALESCE($3,paddle_customer_id) WHERE id=$1`,
           [bizId, subId, custId]);
       }
-    } else if (lloji === 'subscription.canceled' || lloji === 'subscription.past_due') {
+    } else if (lloji === 'subscription.canceled' || lloji === 'subscription.past_due' || lloji === 'subscription.paused') {
       const subId = data.id;
       if (subId) {
         await pool.query(`UPDATE bizneset SET plani='falas' WHERE paddle_subscription_id=$1`, [subId]);
@@ -525,10 +525,34 @@ app.post('/api/promovim-platforme', iLoguar, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.post('/api/plani', iLoguar, async (req, res) => {
-  // SIGURI: kjo rruge lejon VETEM anulimin (kthim te 'falas') — 'premium' vendoset
-  // VETEM nga webhook-u i Paddle-it, pasi pagesa te jete verifikuar realisht.
-  await pool.query('UPDATE bizneset SET plani=$1 WHERE id=$2', ['falas', req.biznesId]);
-  res.json({ ok:true, plani: 'falas' });
+  // SIGURI: kjo rruge lejon VETEM anulimin — 'premium' vendoset VETEM nga
+  // webhook-u i Paddle-it, pasi pagesa te jete verifikuar realisht.
+  // ANULIMI thërret VETË API-në e Paddle-it (jo vetëm ndryshim lokal) — subscription-i
+  // anulohet NE FUND te periudhes se faturuar (klienti mban aksesin deri atëherë,
+  // meqë e ka paguar tashmë) — plani='falas' vendoset VETEM kur webhook-u
+  // 'subscription.canceled' konfirmon qe anulimi ka marre fund realisht.
+  try {
+    const b = await pool.query('SELECT paddle_subscription_id FROM bizneset WHERE id=$1', [req.biznesId]);
+    const subId = b.rows[0] && b.rows[0].paddle_subscription_id;
+    const key = process.env.PADDLE_API_KEY;
+    const baseUrl = process.env.PADDLE_SANDBOX === 'true' ? 'https://sandbox-api.paddle.com' : 'https://api.paddle.com';
+    if (subId && key) {
+      const r = await fetch(baseUrl + '/subscriptions/' + subId + '/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify({})  // pa effective_from → anulohet ne fund te periudhes se faturuar
+      });
+      if (!r.ok) {
+        const errTxt = await r.text();
+        console.error('Paddle cancel deshtoi:', r.status, errTxt);
+        return res.status(500).json({ error: 'Anulimi dështoi. Provo sërish, ose kontakto suportin.' });
+      }
+    }
+    res.json({ ok:true, menjehere:false });
+  } catch (e) {
+    console.error('Anulimi deshtoi:', e.message);
+    res.status(500).json({ error: 'Anulimi dështoi.' });
+  }
 });
 
 app.get('/api/paddle-config', iLoguar, (req, res) => {
