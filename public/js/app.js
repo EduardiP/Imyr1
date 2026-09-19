@@ -2776,15 +2776,46 @@ async function mainPlani(m){
   }
   m.innerHTML = header + permbajtja;
 }
+let _paddleGati = false;
+async function paddleSigurohu(){
+  if(_paddleGati) return true;
+  if(typeof Paddle === 'undefined'){ return false; }
+  let cfg = {};
+  try{ cfg = await (await fetch('/api/paddle-config')).json(); }catch(e){ return false; }
+  if(!cfg.token || !cfg.priceId) return false;
+  if(cfg.sandbox) Paddle.Environment.set('sandbox');
+  Paddle.Initialize({
+    token: cfg.token,
+    eventCallback: function(data){
+      if(data && data.name === 'checkout.completed'){
+        setTimeout(function(){
+          const m=$('main'); if(m){ m.innerHTML='<div class="card" style="max-width:460px;"><p class="small"><span class="spin"></span> Konfirmimi po përpunohet…</p></div>'; }
+          setTimeout(function(){ renderMain({nav:'plani'}); }, 4000);
+        }, 800);
+      }
+    }
+  });
+  _paddleGati = true;
+  window.__paddlePriceId = cfg.priceId;
+  return true;
+}
 async function planiZgjidh(plani){
-  try{
-    await fetch('/api/plani',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plani})});
-    if(une) une.plani = plani;
-  }catch(e){}
-  renderMain({nav:'plani'});
-  if(plani==='premium'){
-    setTimeout(function(){ alert('Do të jetë e disponueshme së shpejti — jemi duke e përgatitur checkout-in.'); }, 150);
+  if(plani==='falas'){
+    try{
+      await fetch('/api/plani',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plani})});
+      if(une) une.plani = plani;
+    }catch(e){}
+    renderMain({nav:'plani'});
+    return;
   }
+  const gati = await paddleSigurohu();
+  if(!gati){ alert('Checkout-i s\'u ngarkua dot. Provo sërish pas pak.'); return; }
+  Paddle.Checkout.open({
+    items: [{ priceId: window.__paddlePriceId, quantity: 1 }],
+    customData: { biznes_id: une && une.id },
+    customer: une && une.email ? { email: une.email } : undefined,
+    settings: { displayMode: 'overlay', theme: 'dark' }
+  });
 }
 function mainSuport(m){
   m.innerHTML=
