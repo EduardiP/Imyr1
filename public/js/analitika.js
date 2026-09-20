@@ -2160,7 +2160,7 @@ function snStatVendosMenyren(m){
 }
 function snStatVizatoPishinaRow(){
   const el=$('snStatPishinaRow'); if(!el) return;
-  const opsionet=[{k:'ankand',l:'Ankand'},{k:'barazi',l:'Balance'}];
+  const opsionet=[{k:'ankand',l:'Auction'},{k:'barazi',l:'Balance'}];
   el.innerHTML=opsionet.map(function(o){
     const aktiv=o.k===_snStatPishina;
     const stil = aktiv
