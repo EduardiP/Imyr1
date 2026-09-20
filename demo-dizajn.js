@@ -13,13 +13,13 @@
 //    ta analizoje vete kete pershkrim.
 // 2. Kategoria kryesore duhet te dale "Payroll Software" automatikisht.
 // 3. Per secilen hapesire (snippet) qe krijon te platforma, kopjo kodin e saj dhe zevendeso nje nga
-//    6 vendet e shenuara me "<!-- SNIPPET X: ngjit KETU -->" me poshte — te renditura ne grid, ne krye te faqes.
+//    18 vendet e shenuara me "<!-- SNIPPET X: ngjit KETU -->" me poshte — 3 rreshta x 6, si grid.
 
 const CSS = `
   body{ margin:0; font:16px/1.6 system-ui,Segoe UI,Roboto,sans-serif; color:#1a1a2e; background:#f6f7fb; }
   header{ background:#1a7a4c; color:#fff; padding:16px 24px; display:flex; justify-content:space-between; align-items:center; }
   header .lg{ font-weight:700; letter-spacing:.04em; }
-  .wrap{ max-width:1400px; margin:0 auto; padding:44px 24px; }
+  .wrap{ max-width:1800px; margin:0 auto; padding:44px 24px; }
   h1{ font-size:32px; margin:0 0 10px; }
   h2{ font-size:20px; margin:32px 0 10px; }
   p.lead{ color:#555; font-size:18px; margin:0 0 24px; }
@@ -30,10 +30,11 @@ const CSS = `
   .rreth h2{ margin-top:0; }
   .kv{ margin:10px 0; }
   .kv b{ color:#1a7a4c; }
-  .adGrid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:14px; margin:14px 0 10px; }
-  .slotBox{ background:#fff; border:1px dashed #c8ccdb; border-radius:10px; padding:14px 16px; min-height:90px; display:flex; flex-direction:column; }
-  .slotBox .lbl{ font-size:11px; color:#889; text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px; font-weight:600; }
-  footer{ max-width:1400px; margin:0 auto; padding:24px; color:#889; font-size:13px; border-top:1px solid #e6e8f0; }
+  .adGrid{ display:grid; grid-template-columns:repeat(6, 1fr); gap:10px; margin:14px 0 10px; width:100%; }
+  .slotBox{ min-height:80px; display:flex; align-items:center; justify-content:center; }
+  footer{ max-width:1800px; margin:0 auto; padding:24px; color:#889; font-size:13px; border-top:1px solid #e6e8f0; }
+  @media (max-width:900px){ .adGrid{ grid-template-columns:repeat(3, 1fr); } }
+  @media (max-width:520px){ .adGrid{ grid-template-columns:repeat(2, 1fr); } }
 `;
 
 function layout(){
@@ -63,12 +64,24 @@ function layout(){
 <div class="wrap">
   <h2 style="margin-top:0;">Ad spaces</h2>
   <div class="adGrid">
-    <div class="slotBox"><div class="lbl">Slot 1</div><!-- SNIPPET 1: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="phronexus_79526ab5e9e6527af1a80520"></script><!-- deri ketu --></div>
-    <div class="slotBox"><div class="lbl">Slot 2</div><!-- SNIPPET 2: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="phronexus_79526ab5e9e6527af1a80520"></script><!-- deri ketu --></div>
-    <div class="slotBox"><div class="lbl">Slot 3</div><!-- SNIPPET 3: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
-    <div class="slotBox"><div class="lbl">Slot 4</div><!-- SNIPPET 4: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
-    <div class="slotBox"><div class="lbl">Slot 5</div><!-- SNIPPET 5: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
-    <div class="slotBox"><div class="lbl">Slot 6</div><!-- SNIPPET 6: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><!-- SNIPPET 1: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><!-- SNIPPET 2: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><!-- SNIPPET 3: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><!-- SNIPPET 4: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><!-- SNIPPET 5: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><!-- SNIPPET 6: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><!-- SNIPPET 7: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><!-- SNIPPET 8: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><!-- SNIPPET 9: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><!-- SNIPPET 10: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><!-- SNIPPET 11: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><!-- SNIPPET 12: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><!-- SNIPPET 13: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><!-- SNIPPET 14: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><!-- SNIPPET 15: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><!-- SNIPPET 16: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><!-- SNIPPET 17: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><!-- SNIPPET 18: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
   </div>
 
   <h1>PayFlow HR</h1>
