@@ -75,22 +75,21 @@ function layout(){
   <div class="slotBox">
     <div class="lbl">Slot 1 — Header</div>
     <!-- SNIPPET 1: ngjit KETU -->
-    
+    <script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script>
     <!-- deri ketu -->
   </div>
 
   <div class="slotBox">
     <div class="lbl">Slot 2 — Mid-page</div>
     <!-- SNIPPET 2: ngjit KETU -->
-
-    
+    <script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script>
     <!-- deri ketu -->
   </div>
 
   <div class="slotBox">
     <div class="lbl">Slot 3 — Footer</div>
     <!-- SNIPPET 3: ngjit KETU -->
-    
+    <script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script>
     <!-- deri ketu -->
   </div>
 
