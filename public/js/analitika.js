@@ -2058,11 +2058,20 @@ var _snStatMetrikaShumeZgj={shfaqje:true,shikime:true,klikime:true,konvertime:tr
 var _snStatKategoriteCache=[]; // cache i fundit i kategorive (per dropdown-in e Menyres A)
 var _snStatSnippetAktiv='__all__'; // ID e snippet-it te zgjedhur, ose '__all__' (te gjitha, te mbledhura)
 var _snStatSnippetetCache=[]; // {id, emri} — snippet-et e biznesit
+// Pishina PER TE CILEN po shohim te dhenat — E PAVARUR nga llogaria aktuale (window.__llogariaModaliteti):
+// hapesira e reklames mund te kete dhene shfaqje nga TE 2 pishinat, edhe nese klienti ka
+// llogari VETEM ne njerën. Parazgjedhje: pishina qe po shikon TANI, por e ndryshueshme lirisht.
+var _snStatPishina = window.__llogariaModaliteti || 'ankand';
 
 function mainSnippetStatistikat(m){
   window.__pamjeVecante=true;
+  _snStatPishina = window.__llogariaModaliteti || 'ankand'; // parazgjedhje: llogaria aktuale, e ndryshueshme lirisht
   m.innerHTML='<h2 class="h">Stats — Ad space</h2>'+
     '<p class="small" style="margin:2px 0 16px;">Impressions, views, clicks and conversions you\'ve given other businesses through your spaces, by their category.</p>'+
+    '<div class="card" style="margin-bottom:16px;">'+
+      '<div class="small mut" style="font-weight:600;margin-bottom:8px;">Pool</div>'+
+      '<div id="snStatPishinaRow" style="display:flex;gap:8px;"></div>'+
+    '</div>'+
     '<div class="card" style="margin-bottom:16px;">'+
       '<div class="small mut" style="font-weight:600;margin-bottom:8px;">Space</div>'+
       '<div id="snStatSnipList" style="display:flex;flex-wrap:wrap;gap:8px;"><p class="small mut">Loading…</p></div>'+
@@ -2089,6 +2098,7 @@ function mainSnippetStatistikat(m){
     '</div>';
 
   snStatStiliModeve();
+  snStatVizatoPishinaRow();
 
   const sot=new Date(), fill=new Date(); fill.setDate(fill.getDate()-29);
   const fmt=d=>{ const y=d.getFullYear(), mo=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0'); return y+'-'+mo+'-'+dd; };
@@ -2108,7 +2118,7 @@ function mainSnippetStatistikat(m){
 async function snStatNgarkoListenSnip(){
   const el=$('snStatSnipList'); if(!el) return;
   let d;
-  try{ d=await(await fetch('/api/analytics/snippetet-dhene?nga='+$('snStatNga').value+'&deri='+$('snStatDeri').value+'&logjika='+(window.__llogariaModaliteti||'ankand'))).json(); }
+  try{ d=await(await fetch('/api/analytics/snippetet-dhene?nga='+$('snStatNga').value+'&deri='+$('snStatDeri').value+'&logjika='+_snStatPishina)).json(); }
   catch(e){ el.innerHTML='<p class="small mut">Error.</p>'; return; }
   _snStatSnippetetCache=(d.snippetet||[]).map(s=>({id:s.id, emri:s.emri||('Space '+s.id)}));
   snStatVizatoListenSnip();
@@ -2147,6 +2157,22 @@ function snStatVendosMenyren(m){
   snStatStiliModeve();
   snStatVizatoKontrollet();
   ngarkoSnStatistikat();
+}
+function snStatVizatoPishinaRow(){
+  const el=$('snStatPishinaRow'); if(!el) return;
+  const opsionet=[{k:'ankand',l:'Ankand'},{k:'barazi',l:'Balance'}];
+  el.innerHTML=opsionet.map(function(o){
+    const aktiv=o.k===_snStatPishina;
+    const stil = aktiv
+      ? 'flex:1;padding:9px;border-radius:8px;border:1px solid var(--acc);background:rgba(74,158,255,.15);color:var(--acc);font-weight:600;cursor:pointer;font-family:inherit;'
+      : 'flex:1;padding:9px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--mut);cursor:pointer;font-family:inherit;';
+    return '<button type="button" onclick="snStatZgjidhPishina(\''+o.k+'\')" style="'+stil+'">'+o.l+'</button>';
+  }).join('');
+}
+function snStatZgjidhPishina(p){
+  _snStatPishina=p;
+  snStatVizatoPishinaRow();
+  snStatNgarkoListenSnip();
 }
 
 function snStatVizatoKontrollet(){
@@ -2248,7 +2274,7 @@ async function ngarkoSnStatistikat(){
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
   const snipQ = (_snStatSnippetAktiv!=='__all__') ? ('&snippet_id='+encodeURIComponent(_snStatSnippetAktiv)) : '';
-  try{ d=await(await fetch('/api/analytics/kategorite-dhene?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand')+snipQ)).json(); }catch(e){ return; }
+  try{ d=await(await fetch('/api/analytics/kategorite-dhene?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+_snStatPishina+snipQ)).json(); }catch(e){ return; }
   const kategoriteGjitha=d.kategorite||[];
   _snStatKategoriteCache=kategoriteGjitha;
   if(_snStatMenyra==='kategori'){
