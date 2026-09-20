@@ -225,12 +225,12 @@ function mainAnaTrafiku(m){
       '<div id="anaDetNenPanel" style="margin-bottom:14px;"></div>'+
       '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:4px;">'+
         '<div id="anaDetRezultati" style="flex:2;min-width:280px;"></div>'+
-        '<div style="flex:1;min-width:200px;max-width:280px;">'+
+        '<div id="anaDetTabela1Wrap" style="flex:1;min-width:200px;max-width:280px;">'+
           '<div id="anaDetTabela1" style="max-height:330px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;"><p class="small" style="padding:10px;">Loading…</p></div>'+
         '</div>'+
       '</div>'+
     '</div>'+
-    '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
+    '<div id="anaDetOrePlusAuctionWrap" style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:16px;">'+
       '<div class="card" style="flex:2;min-width:340px;">'+
         '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px;">'+
           '<h3 class="h" style="font-size:15px;margin:0;">By hour of day</h3>'+
@@ -256,6 +256,14 @@ function mainAnaTrafiku(m){
     '</div>';
   const sot=new Date(), nga=new Date(); nga.setDate(sot.getDate()-29);
   window.__anaKalendaret = window.__anaKalendaret || {};
+
+  // Keto 2 seksione jane STRUKTURALISHT Ankand-specifike (nga "garat", endpoint "ankand-detaje")
+  // — s'kane ekuivalent Balance fare. Per llogari Balance, i fshehim teresisht — mbeten VETEM
+  // skedat (Category/Metrics), qe kane burimin e vet, te sakte, per Balance.
+  if(window.__llogariaModaliteti==='barazi'){
+    const t1w=$('anaDetTabela1Wrap'); if(t1w) t1w.style.display='none';
+    const oreW=$('anaDetOrePlusAuctionWrap'); if(oreW) oreW.style.display='none';
+  }
 
   // ─── Hour of day + Auction (rreshti i ri, poshtë grafikut kryesor) ───
   $('anaNgaOre').value=anaFmt(nga); $('anaDeriOre').value=anaFmt(sot);
@@ -2038,10 +2046,15 @@ function mainRekPerformanca(m){
 }
 
 // ================= FAQE E VEÇANTË: "Statistikat" per "Hapësira e reklamave" =================
-// Ripërdor TE NJEJTIN endpoint (kategorite-dhene) dhe TE NJEJTIN pattern grafiku si paneli
-// "Given" brenda Analytics — thjesht si faqe e vetme, e pavarur (sipas kategorise se
-// bizneseve qe kane marre pjese, JO emer biznesi/reklame specifike).
+// Ripërdor TE NJEJTIN endpoint (kategorite-dhene) — 2 menyra pamjeje mbi te njejtat te dhena:
+// Menyra A ("By category"): 1 kategori e zgjedhur (ose "All", te mbledhura) — te 4 metrikat
+// bashke, shume-zgjedhje, si linja te veçanta. Menyra B ("By metric"): 1 metrike e zgjedhur —
+// TE GJITHA kategorite, si linja te veçanta (krahasim mes kategorive per ate metrike).
+var _snStatMenyra='kategori'; // 'kategori' (A) | 'metrike' (B)
 var _snStatMetricAktive='shfaqje', _snStatChart=null;
+var _snStatKatAktive='__all__';
+var _snStatMetrikaShumeZgj={shfaqje:true,shikime:true,klikime:true,konvertime:true};
+var _snStatKategoriteCache=[]; // cache i fundit i kategorive (per dropdown-in e Menyres A)
 
 function mainSnippetStatistikat(m){
   window.__pamjeVecante=true;
@@ -2060,17 +2073,15 @@ function mainSnippetStatistikat(m){
         '<input type="date" id="snStatNga" style="display:none;">'+
         '<input type="date" id="snStatDeri" style="display:none;">'+
       '</div>'+
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:14px;">'+
-        '<div id="snStatMetricRow" style="display:flex;gap:6px;flex-wrap:wrap;"></div>'+
-        '<div style="flex:0 0 200px;">'+
-          '<div class="small mut" style="font-weight:600;margin-bottom:6px;">Categories that participated.</div>'+
-          '<div id="snStatLegend" style="display:flex;flex-direction:column;gap:6px;max-height:120px;overflow-y:auto;padding-right:4px;"></div>'+
-        '</div>'+
+      '<div style="display:flex;gap:8px;margin-bottom:14px;">'+
+        '<button type="button" id="snStatModeKatBtn" class="btn" onclick="snStatVendosMenyren(\'kategori\')" style="flex:1;">By category</button>'+
+        '<button type="button" id="snStatModeMetBtn" class="btn" onclick="snStatVendosMenyren(\'metrike\')" style="flex:1;">By metric</button>'+
       '</div>'+
+      '<div id="snStatKontrollet"></div>'+
       '<canvas id="snStatCanvas" height="110"></canvas>'+
     '</div>';
 
-  anaRenderSnStatMetric();
+  snStatStiliModeve();
 
   const sot=new Date(), fill=new Date(); fill.setDate(fill.getDate()-29);
   const fmt=d=>{ const y=d.getFullYear(), mo=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0'); return y+'-'+mo+'-'+dd; };
@@ -2083,7 +2094,89 @@ function mainSnippetStatistikat(m){
     setNga:v=>{ $('snStatNga').value=v; }, setDeri:v=>{ $('snStatDeri').value=v; },
     onRuaj: ngarkoSnStatistikat
   });
+  snStatVizatoKontrollet();
   ngarkoSnStatistikat();
+}
+
+function snStatStiliModeve(){
+  const a=$('snStatModeKatBtn'), b=$('snStatModeMetBtn'); if(!a||!b) return;
+  const onStil='border-color:var(--acc);background:rgba(74,158,255,.15);color:var(--acc);font-weight:600;';
+  const offStil='background:transparent;color:var(--mut);';
+  a.style.cssText='flex:1;'+(_snStatMenyra==='kategori'?onStil:offStil);
+  b.style.cssText='flex:1;'+(_snStatMenyra==='metrike'?onStil:offStil);
+}
+function snStatVendosMenyren(m){
+  _snStatMenyra=m;
+  snStatStiliModeve();
+  snStatVizatoKontrollet();
+  ngarkoSnStatistikat();
+}
+
+function snStatVizatoKontrollet(){
+  const el=$('snStatKontrollet'); if(!el) return;
+  if(_snStatMenyra==='metrike'){
+    el.innerHTML=
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:14px;">'+
+        '<div id="snStatMetricRow" style="display:flex;gap:6px;flex-wrap:wrap;"></div>'+
+        '<div style="flex:0 0 200px;">'+
+          '<div class="small mut" style="font-weight:600;margin-bottom:6px;">Categories that participated.</div>'+
+          '<div id="snStatLegend" style="display:flex;flex-direction:column;gap:6px;max-height:120px;overflow-y:auto;padding-right:4px;"></div>'+
+        '</div>'+
+      '</div>';
+    anaRenderSnStatMetric();
+  } else {
+    el.innerHTML=
+      '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:14px;">'+
+        '<div style="position:relative;flex:0 0 220px;">'+
+          '<button type="button" id="snStatKatBtn" class="btn" style="width:100%;text-align:left;"></button>'+
+          '<div id="snStatKatDropdown" class="hide" style="position:absolute;top:110%;left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;max-height:220px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);"></div>'+
+        '</div>'+
+        '<div id="snStatMetricMultiRow" style="display:flex;gap:6px;flex-wrap:wrap;"></div>'+
+      '</div>';
+    snStatVizatoKategoriDropdown();
+    snStatRenderMetrikaMultiZgj();
+  }
+}
+function snStatVizatoKategoriDropdown(){
+  const btn=$('snStatKatBtn'); if(!btn) return;
+  const emri = _snStatKatAktive==='__all__' ? 'All categories ▾' : (esc(_snStatKatAktive)+' ▾');
+  btn.textContent = emri;
+  btn.onclick = function(e){ e.stopPropagation(); const dd=$('snStatKatDropdown'); if(dd) dd.classList.toggle('hide'); };
+  const dd=$('snStatKatDropdown'); if(!dd) return;
+  const opsionet = ['__all__'].concat(_snStatKategoriteCache.map(k=>k.emri));
+  dd.innerHTML = opsionet.map(function(k){
+    const aktiv = k===_snStatKatAktive;
+    const lbl = k==='__all__' ? 'All categories' : esc(k);
+    return '<div onclick="snStatZgjidhKategorine(\''+esc(k).replace(/'/g,"\\'")+'\')" style="padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px;'+(aktiv?'background:rgba(74,158,255,.15);color:var(--acc);font-weight:600;':'color:var(--txt);')+'">'+lbl+'</div>';
+  }).join('');
+}
+function snStatZgjidhKategorine(k){
+  _snStatKatAktive=k;
+  const dd=$('snStatKatDropdown'); if(dd) dd.classList.add('hide');
+  snStatVizatoKategoriDropdown();
+  ngarkoSnStatistikat();
+}
+document.addEventListener('click', function(e){
+  const dd=$('snStatKatDropdown'), btn=$('snStatKatBtn');
+  if(dd && !dd.classList.contains('hide') && !dd.contains(e.target) && e.target!==btn){ dd.classList.add('hide'); }
+});
+function snStatRenderMetrikaMultiZgj(){
+  const el=$('snStatMetricMultiRow'); if(!el) return;
+  el.innerHTML='';
+  ANA_METRIKA_BAZE.forEach(x=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.textContent=x.l;
+    const on=_snStatMetrikaShumeZgj[x.k];
+    btn.style.cssText = on
+      ? 'padding:7px 14px;border-radius:20px;border:1px solid var(--acc);background:rgba(74,158,255,.15);color:var(--acc);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;'
+      : 'padding:7px 14px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:13px;cursor:pointer;font-family:inherit;';
+    btn.addEventListener('click', function(){
+      _snStatMetrikaShumeZgj[x.k]=!_snStatMetrikaShumeZgj[x.k];
+      snStatRenderMetrikaMultiZgj();
+      ngarkoSnStatistikat();
+    });
+    el.appendChild(btn);
+  });
 }
 
 function snStatPreset(dite){
@@ -2118,8 +2211,58 @@ async function ngarkoSnStatistikat(){
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
   try{ d=await(await fetch('/api/analytics/kategorite-dhene?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand'))).json(); }catch(e){ return; }
+  const kategoriteGjitha=d.kategorite||[];
+  _snStatKategoriteCache=kategoriteGjitha;
+  if(_snStatMenyra==='kategori'){
+    if(_snStatKatAktive!=='__all__' && !kategoriteGjitha.some(k=>k.emri===_snStatKatAktive)) _snStatKatAktive='__all__';
+    snStatVizatoKategoriDropdown();
+    snStatVizatoMenyraKategori(kategoriteGjitha);
+  } else {
+    snStatVizatoMenyraMetrike(kategoriteGjitha);
+  }
+}
+// Menyra A: 1 kategori (ose "All", te mbledhura) — te gjitha metrikat e zgjedhura, si linja te veçanta
+function snStatVizatoMenyraKategori(kategoriteGjitha){
+  const canvas=$('snStatCanvas'); if(!canvas||typeof Chart==='undefined') return;
+  if(_snStatChart){ _snStatChart.destroy(); _snStatChart=null; }
+  if(!kategoriteGjitha.length){
+    const ctx0=canvas.getContext('2d'); ctx0.clearRect(0,0,canvas.width,canvas.height);
+    return;
+  }
+  let pikat;
+  if(_snStatKatAktive==='__all__'){
+    const dita0=kategoriteGjitha[0].pikat;
+    pikat = dita0.map((_,i)=>({
+      data: dita0[i].data,
+      shfaqje: kategoriteGjitha.reduce((s,k)=>s+(k.pikat[i]?k.pikat[i].shfaqje:0),0),
+      shikime: kategoriteGjitha.reduce((s,k)=>s+(k.pikat[i]?k.pikat[i].shikime:0),0),
+      klikime: kategoriteGjitha.reduce((s,k)=>s+(k.pikat[i]?k.pikat[i].klikime:0),0),
+      konvertime: kategoriteGjitha.reduce((s,k)=>s+(k.pikat[i]?k.pikat[i].konvertime:0),0)
+    }));
+  } else {
+    const kat=kategoriteGjitha.find(k=>k.emri===_snStatKatAktive);
+    pikat = kat ? kat.pikat : [];
+  }
+  const metrikaZgjedhura=ANA_METRIKA_BAZE.filter(x=>_snStatMetrikaShumeZgj[x.k]);
+  const labels=pikat.map(p=>p.data);
+  const datasets=metrikaZgjedhura.map(x=>({
+    label:x.l, data:pikat.map(p=>p[x.k]),
+    borderColor:x.c, backgroundColor:'transparent',
+    tension:0, borderWidth:0, pointRadius:2, pointBackgroundColor:x.c
+  }));
+  const ctx=canvas.getContext('2d');
+  _snStatChart=new Chart(ctx,{type:'line',data:{labels,datasets},
+    options:{responsive:true,interaction:{mode:'index',intersect:false},
+      scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}},
+        y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
+      plugins:{legend:{display:datasets.length>1,labels:{color:'#8b949e'}}}},
+    plugins:[anaMultiColorLinePlugin]
+  });
+}
+// Menyra B: 1 metrike — TE GJITHA kategorite, si linja te veçanta
+function snStatVizatoMenyraMetrike(kategoriteGjitha){
   const snStatMetricObj = ANA_METRIKA.find(x=>x.k===_snStatMetricAktive) || {k:_snStatMetricAktive};
-  const kategorite=(d.kategorite||[]).filter(k=>k.pikat.some(p=>anaVlera(p,snStatMetricObj)>0));
+  const kategorite=kategoriteGjitha.filter(k=>k.pikat.some(p=>anaVlera(p,snStatMetricObj)>0));
   const legEl=$('snStatLegend');
   if(legEl){
     legEl.innerHTML = !kategorite.length
