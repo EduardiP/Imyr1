@@ -2771,7 +2771,7 @@ async function mainPlani(m){
         '<div class="pill" style="position:absolute;top:-11px;right:26px;background:var(--good);color:#04240f;font-weight:700;display:flex;align-items:center;gap:5px;">'+
           '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#04240f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Active</div>'+
         '<div style="text-align:center;padding:6px 0 2px;">'+
-          '<div style="font-family:var(--f-head);font-size:32px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;font-size:14px;">/muaj</span></div>'+
+          '<div style="font-family:var(--f-head);font-size:32px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;font-size:14px;">/mo</span></div>'+
           '<p class="small mut" style="margin:4px 0 0;">Billing continues automatically every month.</p>'+
         '</div>'+
         listaVeqorish(VECORITE_PREMIUM_SPEC, true)+
@@ -2782,7 +2782,7 @@ async function mainPlani(m){
       '<div class="card" style="max-width:460px;position:relative;">'+
         '<div class="pill" style="position:absolute;top:-11px;left:20px;background:#f59e0b;color:#1a1200;font-weight:700;">Premium</div>'+
         '<p class="small" style="color:var(--err);font-weight:600;margin:6px 0 10px;">Your free period (the first 3 months) has ended — your ads have been paused.</p>'+
-        '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
+        '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/mo</span></div>'+
         '<p class="small" style="margin:6px 0 0;">Activate to restore the service immediately.</p>'+
         listaVeqorish(VECORITE_PREMIUM_SPEC, true)+
         '<button class="btn cta" style="width:100%;" onclick="planiZgjidh(\'premium\')">Activate now →</button>'+
@@ -2800,7 +2800,7 @@ async function mainPlani(m){
         '</div>'+
         '<div class="card" style="flex:1 1 300px;position:relative;">'+
           '<div class="pill" style="position:absolute;top:-11px;left:20px;background:#f59e0b;color:#1a1200;font-weight:700;">Premium</div>'+
-          '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
+          '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/mo</span></div>'+
           '<p class="small" style="margin:6px 0 0;">Krijim dhe asistencë AI <b style="color:var(--txt);">pa asnjë kufi</b> — çdo gjë tjetër njësoj si Falas.</p>'+
           listaVeqorish(VECORITE_PREMIUM_SPEC, true)+
           '<button class="btn" style="width:100%;" onclick="planiZgjidh(\'premium\')">Activate now (optional)</button>'+
