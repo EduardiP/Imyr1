@@ -57,9 +57,9 @@ app.post('/api/paddle-webhook', express.raw({ type: 'application/json' }), async
     const lloji = event.event_type;
     const data = event.data || {};
 
-    if (lloji === 'transaction.completed' || lloji === 'subscription.activated') {
+    if (lloji === 'transaction.completed' || lloji === 'subscription.activated' || lloji === 'subscription.created') {
       const bizId = data.custom_data && data.custom_data.biznes_id;
-      const subId = data.subscription_id || (data.id && lloji === 'subscription.activated' ? data.id : null);
+      const subId = data.subscription_id || (lloji !== 'transaction.completed' ? data.id : null);
       const custId = data.customer_id;
       if (bizId) {
         await pool.query(
@@ -553,6 +553,73 @@ app.post('/api/plani', iLoguar, async (req, res) => {
     console.error('Anulimi deshtoi:', e.message);
     res.status(500).json({ error: 'Anulimi dështoi.' });
   }
+});
+
+app.post('/api/asistenti', iLoguar, async (req, res) => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'AI s\'eshte konfiguruar.' });
+  const mesazhet = (req.body && req.body.mesazhet) || [];
+  const konteksti = (req.body && req.body.konteksti) === 'konvertim' ? 'konvertim' : 'reklama';
+  if (!Array.isArray(mesazhet) || !mesazhet.length) return res.status(400).json({ error: 'Mungojne mesazhet.' });
+
+  const bazaTeknike = `
+Ti je nje asistent TEKNIK, i specializuar, qe ndihmon perdorues (zakonisht pronare biznesesh, jo domosdo zhvillues) te vendosin kod (snippet) ne faqen e tyre te internetit.
+
+RREGULLA:
+- Pergjigju NE GJUHEN e mesazhit te fundit te perdoruesit.
+- Shkruaj tekst te thjeshte, PA Markdown (pa **, pa # tituj, pa backticks per kod — thjesht shkruaje kodin direkt ne tekst te thjeshte, ne rresht te vet).
+- Ji konkret dhe praktik: kerko platformen (Shopify, WordPress, Webflow, React/Next, HTML statike, etj.) nese s'e di ende, dhe jep udhezime te sakta per ATE platforme specifike.
+- Nese perdoruesi s'e di platformen e vet, ndihmoje ta identifikoje (p.sh. "kontrollo URL-ne e admin panelit tend" ose "shiko footer-in e faqes per emrin e platformes").
+- Jep GJITHMONE hapa konkrete, te numeruar kur eshte e mundur.`;
+
+  const snippetiReklame = `
+KONTEKSTI: KOD PER HAPESIREN E REKLAMES (jep-e-merr reklamash).
+Kodi qe duhet vendosur duket keshtu: <script src="https://phronexusai.com/phronexusai.js" data-key="CELESI_UNIK_I_BIZNESIT"></script>
+- Vendoset PARA </body>, ne skedarin KRYESOR qe ngarkohet ne CDO faqe te sajtit (jo vetem 1 faqe).
+- Per Shopify: te theme.liquid. Per WordPress: te footer.php (ose permes plugin si "Insert Headers and Footers"). Per Webflow: te "Custom code" → "Footer code" (Project Settings). Per React/Next: te _app.js/App.jsx/layout.js, ose te index.html publik. Per HTML statik: direkt para </body> ne cdo skedar .html (ose ne nje "include" te perbashket nese ka).
+- Kodi VETE e shfaq reklamen automatikisht — perdoruesi s'ka pune tjeter pas vendosjes.
+- Per te verifikuar, klienti perdor butonin "Verify connection" te platforma, i cili rihap faqen dhe rikontrollon.`;
+
+  const snippetiKonvertim = `
+KONTEKSTI: GJURMIMI I KONVERTIMEVE.
+Kodi (i njejti, gjithmone): <script src="https://phronexusai.com/phronexus-track.js" data-key="CELESI_UNIK_I_BIZNESIT"></script>
+- Vendoset PARA </body>, ne skedarin KRYESOR qe ngarkohet ne CDO faqe (njesoj si me siper — theme.liquid/footer.php/Custom code/_app.js/HTML statik, sipas platformes).
+- Ky kod VETE S'SHFAQ asgje — vetem gjurmon. Ka 2 menyra te percaktoj CFARE numerohet si konvertim (klienti zgjedh 1 ose te dyja, te platforme, jo ketu):
+  1. PER URL: kur vizitori arrin nje URL specifike (p.sh. domeni.com/faleminderit) — automatik, s'kerkon kod shtese, vetem vendos URL-ne te platforma.
+  2. PER KOD/buton: nje pjese e vogel kodi shtese duhet vendosur DIREKT te elementi (buton/link) qe do gjurmohet — jep shembull konkret nese perdoruesi pyet per kete specifikisht (p.sh. nje onclick handler qe therret nje funksion global qe platforma e injekton vetvetiu pasi snippet-i kryesor eshte i ngarkuar).
+- Per te verifikuar snippet-in kryesor, klienti perdor butonin "Verify connection" te platforma.`;
+
+  const system = bazaTeknike + (konteksti === 'konvertim' ? snippetiKonvertim : snippetiReklame);
+
+  try {
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model: process.env.OPENAI_MODEL_SUPORT || 'gpt-4o-mini',
+        max_tokens: 500,
+        messages: [{ role: 'system', content: system }, ...mesazhet]
+      })
+    });
+    if (!r.ok) { const t = await r.text(); return res.status(500).json({ error: 'AI ' + r.status + ': ' + t.slice(0, 200) }); }
+    const data = await r.json();
+    const pergjigje = ((data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '').trim();
+    res.json({ pergjigje });
+  } catch (e) {
+    res.status(500).json({ error: 'Gabim ne lidhje me AI.' });
+  }
+});
+
+app.post('/api/asistenti/ruaj-vendin', iLoguar, async (req, res) => {
+  // Ruajtje e thjeshte, opsionale — s'e ndal pergjigjen kryesore nese deshton.
+  res.json({ ok: true });
+});
+
+app.get('/api/track-fresket', iLoguar, async (req, res) => {
+  try {
+    const r = await pool.query('SELECT track_active FROM bizneset WHERE id=$1', [req.biznesId]);
+    res.json({ aktiv: !!(r.rows[0] && r.rows[0].track_active) });
+  } catch (e) { res.json({ aktiv: false }); }
 });
 
 app.get('/api/paddle-config', iLoguar, (req, res) => {
