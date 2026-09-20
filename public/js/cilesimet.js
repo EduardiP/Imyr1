@@ -78,10 +78,10 @@ function cilAccount(body){
     '<div class="card" style="margin-top:16px;">'+
       '<h3 class="h" style="font-size:15px;margin:0 0 6px;">Platform promotion</h3>'+
       '<p class="small mut" style="margin:0 0 12px;">Allow PhronexusAI to also show its own promotion in your ad space, alongside other participating businesses. This is optional and you can change it anytime.</p>'+
-      '<label class="tgl" style="display:inline-flex;align-items:center;gap:10px;">'+
-        '<input type="checkbox" id="cl_promovim" onchange="cilPromovimNdrysho(this.checked)"><span class="slider"></span>'+
+      '<div style="display:flex;align-items:center;gap:10px;">'+
+        '<label class="tgl"><input type="checkbox" id="cl_promovim" onchange="cilPromovimNdrysho(this.checked)"><span class="slider"></span></label>'+
         '<span class="small" id="cl_promovim_lbl">Loading…</span>'+
-      '</label>'+
+      '</div>'+
     '</div>';
   stepPershkrimi($('cl_pershkrimi_wrap'));
   cilPromovimNgarko();
