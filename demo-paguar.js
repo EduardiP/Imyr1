@@ -58,6 +58,7 @@ ${trupi}
 
 <!-- ═══ NGJIT KETU rreshtin e Imyr-it (copy-paste nga wizard-i) — vlen per TE GJITHA faqet e PaguarFlow -->
 <script src="https://phronexusai.com/phronexus-track.js" data-key="phronexus_7d495407a96cbab8d472e194"></script>
+<script src="https://phronexusai.com/phronexusai.js" data-key="phronexus_94770dfb9679921f6d2c8b7e"></script>
 <!-- ═══ deri ketu ═══ -->
 </body>
 </html>`;
