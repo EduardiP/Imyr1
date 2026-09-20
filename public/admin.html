@@ -1303,13 +1303,25 @@ d.onclick=()=>loadBizDetail(b.id, m);
 el.appendChild(d);
 });
 }
-async function loadBizDetail(id, m){
+async function loadBizDetail(id, m, logjika){
+logjika = logjika || 'ankand';
 m.innerHTML='<p class="small">Po ngarkoj…</p>';
 try{
-const r=await(await fetch('/api/admin/biznes/'+id)).json();
+const r=await(await fetch('/api/admin/biznes/'+id+'?logjika='+logjika)).json();
 if(r.error){ m.innerHTML='<button class="back" onclick="renderBizMain()">← Bizneset</button><p class="small">'+r.error+'</p>'; return; }
 const b=r.biznes, s=r.statistika, ch=r.checklist||{};
 const reklamat = r.reklamat||[];
+const toggleHtml =
+  '<div style="display:flex;gap:8px;margin:14px 0 18px;">'+
+    '<button onclick="loadBizDetail('+id+',document.getElementById(\'bizMain\'),\'ankand\')" style="flex:1;padding:10px;border-radius:8px;cursor:pointer;font-weight:600;border:1px solid '+(b.ankand_krijuar?'#3fb950':'#f85149')+';background:'+(logjika==='ankand'?(b.ankand_krijuar?'rgba(63,185,80,.15)':'rgba(248,81,73,.15)'):'transparent')+';color:'+(b.ankand_krijuar?'#3fb950':'#f85149')+';">Ankand'+(b.ankand_krijuar?' ✓':' ✕')+'</button>'+
+    '<button onclick="loadBizDetail('+id+',document.getElementById(\'bizMain\'),\'barazi\')" style="flex:1;padding:10px;border-radius:8px;cursor:pointer;font-weight:600;border:1px solid '+(b.balance_krijuar?'#3fb950':'#f85149')+';background:'+(logjika==='barazi'?(b.balance_krijuar?'rgba(63,185,80,.15)':'rgba(248,81,73,.15)'):'transparent')+';color:'+(b.balance_krijuar?'#3fb950':'#f85149')+';">Balance'+(b.balance_krijuar?' ✓':' ✕')+'</button>'+
+  '</div>';
+if(!r.eKetijPishina){
+  m.innerHTML='<button class="back" onclick="renderBizMain()">← Bizneset</button>'+
+    '<h2 class="h">'+esc(b.emri)+'</h2>'+toggleHtml+
+    '<div class="sect"><p class="small mut">No '+(logjika==='ankand'?'Ankand':'Balance')+' account for this business.</p></div>';
+  return;
+}
 const reklamatHTML = reklamat.length
   ? '<table style="width:100%;border-collapse:collapse;">'+reklamat.map(function(rk){
       return '<tr><td style="padding:3px 8px 3px 0;color:#e6edf3;">'+esc(rk.emri||'(no name)')+'</td>'+
@@ -1343,12 +1355,39 @@ window.chToggle=function(el){
   const box=el.nextElementSibling;
   if(box) box.classList.toggle('hide');
 };
+const promovimetHTML = (r.promovimet||[]).length
+  ? '<table style="width:100%;border-collapse:collapse;">'+r.promovimet.map(function(p){
+      return '<tr><td style="padding:3px 8px 3px 0;color:#e6edf3;">'+esc((p.teksti||'(no text)').slice(0,40))+'</td>'+
+        '<td style="padding:3px 0;color:'+(p.aktiv&&!p.pauzuar?'#3fb950':'#8b949e')+';font-size:11px;">'+(p.aktiv&&!p.pauzuar?'active':(p.pauzuar?'paused':'inactive'))+'</td>'+
+        '<td style="padding:3px 0 3px 8px;color:'+(p.auto_krijuar?'#4a9eff':'#3fb950')+';font-size:11px;">'+(p.auto_krijuar?'automatic':'manual')+'</td></tr>';
+    }).join('')+'</table>'
+  : 'No ads created yet for this pool.';
+const snippetetHTML = (r.snippetet||[]).length
+  ? '<table style="width:100%;border-collapse:collapse;">'+r.snippetet.map(function(sn){
+      return '<tr><td style="padding:3px 8px 3px 0;color:#e6edf3;">'+esc(sn.emri||('Space '+sn.id))+'</td>'+
+        '<td style="padding:3px 0;color:'+(sn.snippet_active&&!sn.pauzuar?'#3fb950':'#8b949e')+';font-size:11px;">'+(sn.snippet_active&&!sn.pauzuar?'connected':(sn.pauzuar?'paused':'not connected'))+'</td></tr>';
+    }).join('')+'</table>'
+  : 'No spaces created yet.';
+const sp = r.statPool||{};
 m.innerHTML=
 '<button class="back" onclick="renderBizMain()">← Bizneset</button>'+
 '<h2 class="h">'+esc(b.emri)+'</h2>'+
+toggleHtml+
 '<div class="sect"><h3>Setup checklist</h3>'+
 CH_PIKAT.map(chPikaHTML).join('')+
 '</div>'+
+'<div class="sect"><h3>Spaces ('+(r.snippetet||[]).length+')</h3>'+snippetetHTML+'</div>'+
+'<div class="sect"><h3>Ads created — '+(logjika==='ankand'?'Ankand':'Balance')+' ('+(r.promovimet||[]).length+')</h3>'+promovimetHTML+'</div>'+
+'<div class="sect"><h3>Analytics — '+(logjika==='ankand'?'Ankand':'Balance')+' (last 30 days)</h3><div class="stats">'+
+stat(sp.dhene_shfaqje||0,'Given — Impressions')+
+stat(sp.dhene_shikime||0,'Given — Real views')+
+stat(sp.dhene_klikime||0,'Given — Clicks')+
+stat(sp.dhene_konvertime||0,'Given — Conversions')+
+stat(sp.marre_shfaqje||0,'Received — Impressions')+
+stat(sp.marre_shikime||0,'Received — Real views')+
+stat(sp.marre_klikime||0,'Received — Clicks')+
+stat(sp.marre_konvertime||0,'Received — Conversions')+
+'</div></div>'+
 '<div class="sect"><h3>Statistika</h3><div class="stats">'+
 stat(s.reklama_krijuara,'Reklama të krijuara')+
 stat(s.shfaqje_te_reklamave_te_tij,'Shfaqje të reklamave të tij')+
