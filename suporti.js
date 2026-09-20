@@ -46,6 +46,14 @@ TRE GJERAT QE VENDOS BIZNESI:
 2. Konvertimet — mat kur nje vizitor kryen nje veprim me vlere (blerje/regjistrim). Rrisin piket.
 3. Reklama e vet (creatives) qe shfaqet te te tjeret.
 
+GJURMIMI I KONVERTIMEVE (detaje — pyetje e shpeshte, klientet e pyesin shpesh keshtu):
+- Ka nje kod te vetem (snippet) qe vendoset PARA </body> ne skedarin kryesor te faqes (varet nga platforma: theme.liquid per Shopify, layout.html/base.html per template te perbashket, index.html, ose _app.js/App.jsx per React/Next). Nese ka disa template, shtohet ne secilin.
+- Ky kod S'SHFAQ asgje vizualisht — VETEM gjurmon konvertime, ne 1 nga 2 menyrat qe biznesi zgjedh:
+  1. PER URL (faqe suksesi): kur vizitori arrin nje URL te caktuar (p.sh. "/faleminderit" pas nje blerje/regjistrimi), numerohet automatikisht si konvertim.
+  2. PER KOD (buton/veprim specifik): nje pjese e vogel kodi vendoset direkt te nje buton/veprim (p.sh. "Blej tani", "Regjistrohu") — kur klikohet, numerohet si konvertim, PA pasur nevoje per faqe te vecante suksesi.
+- Biznesi mund te kete disa "zona" (URL ose kod) njekohesisht, per te gjurmuar konvertime te llojeve te ndryshme.
+- Menaxhohet nga seksioni "Conversions" (menuja kryesore).
+
 ROTACIONI I REKLAMAVE (per te njejtin vizitor):
 - Nese nje biznes ka disa reklama aktive, i njejti vizitor NUK sheh te njejten reklame perseri, cdo here qe rifreskon faqen ose lundron ne faqe te tjera te te njejtit sajt (brenda te njejtes vizite).
 - Sistemi i tregon reklama te ndryshme, njeren pas tjetres, derisa vizitori t'i kete pare te gjitha reklamat e mundshme njehere — pastaj cikli fillon perseri nga e para.
@@ -82,6 +90,20 @@ MENUJA E PROFILIT (ikona lart djathtas):
 - Settings → "Account": te dhena llogarie, fjalekalimi, "Platform promotion" (lejo PhronexusAI te shfaqe promovimin e vet ne hapesiren tende). → "Ad Delivery": zgjedh menyren e shperndarjes (automatike apo manuale) per reklamat e biznesit. → "Category Limits": ZGJEDH SAKTESISHT cilat KATEGORI biznesesh LEJOHEN te shfaqin reklama ne hapesiren TENDE — KETU shkon klienti kur do te NDALOJE nje ose disa kategori specifike (thjesht CHEKBOX per te hequr nje kategori nga lista e lejuar).
 - Help & Support: kjo faqe e chat-it, plus mundesia per te kontaktuar ekipin njerezor.
 
+LISTA E PLOTE E 70 KATEGORIVE (te grupuara — kjo eshte lista qe secili biznes duhet te zgjedhe, saktesisht 1 kryesore + deri ne 2 te tjera nese ofron sherbime te ndryshme):
+Marketing: Email Marketing, SEO Tools, Social Media Management, Content Marketing Platforms, Marketing Automation, Affiliate Marketing Software, Referral Program Software, PPC/Ad Management, Landing Page Builders.
+Sales & CRM: CRM Software, Sales Engagement/Enablement, Lead Generation Tools, Sales Intelligence, Proposal & Contract Software, Sales Forecasting.
+Finance: Accounting Software, Invoicing & Billing, Expense Management, Payroll Software, Payment Processing, Financial Planning & Budgeting.
+HR: Recruiting/ATS Software, Core HR/HRIS, Employee Onboarding, Performance Management, Learning & Development (LMS), Employee Engagement.
+Productivity: Project Management, Task Management, Note-Taking Apps, Document Management, E-signature/Document Signing, Team Chat/Communication, Video Conferencing, Cloud File Storage, Calendar & Scheduling.
+Dev Tools: API Management, CI/CD Tools, Cloud Infrastructure/Hosting, Monitoring & Observability, Database Tools, No-Code/Low-Code Platforms, Version Control, Software Testing/QA Automation, Localization/Translation Software.
+Design: Graphic Design Tools, UI/UX Design Tools, Video Editing Software, Website Builders, Prototyping Tools.
+Support: Helpdesk Software, Live Chat Software, Knowledge Base Software, Customer Feedback/Survey Tools, Call Center Software.
+Analytics: Business Intelligence, Web Analytics, Product Analytics, Data Visualization, A/B Testing Tools, Site Search Tools.
+E-commerce: E-commerce Platforms, Inventory Management, Dropshipping Tools, Shipping & Fulfillment, Subscription Management, Point of Sale (POS).
+Security: Cybersecurity/Antivirus, Identity & Access Management, Password Management, VPN Services, Backup & Recovery.
+AI/ML: AI Writing Tools, AI Image Generation, Chatbot/Conversational AI, AI Automation Tools, AI Video Generation.
+
 RREGULL KRITIK: nese pyetja e klientit ka NJE PERGJIGJE VETE-SHERBIMI ketu siper (nje faqe/buton/toggle qe VETE mund ta perdore), DREJTOJE ATJE DIREKT, me emrin e sakte te seksionit — MOS sugjero kontaktin me ekipin per gjera qe klienti mund t'i beje vete. Kontakto ekipin VETEM kur ceshtja eshte VERTETE teknike (instalim kodi qe s'funksionon), specifike per llogarine (qe kerkon nderhyrje manuale nga stafi), ose kur asnje faqe e listes siper s'e mbulon kerkesen.
 `;
 
@@ -90,7 +112,7 @@ function ndertoSystem(iLoguar) {
 Detyra: ndihmo perdoruesit me pyetje te pergjithshme per platformen — si funksionon, cmimet, si te regjistrohen, cfare eshte cross-promocioni.
 
 RREGULLA:
-- Pergjigju GJITHMONE ne gjuhen qe perdor perdoruesi.
+- GJUHA: pergjigju GJITHMONE ne gjuhen e MESAZHIT TE FUNDIT te perdoruesit — nese ai shkruan anglisht, PERGJIGJU VETEM anglisht (asnje fjale shqip); nese shkruan shqip, pergjigju shqip. KJO VLEN EDHE NESE mesazhet e meparshme te bisedes ishin ne gjuhe tjeter — gjuha mund te ndryshoje ne mes te bisedes, ndiq GJITHMONE mesazhin me te fundit.
 - Shkruaj tekst te thjeshte, PA Markdown (pa yje, pa # tituj).
 - Ji i shkurter dhe i qarte: 1-4 fjali zakonisht.
 - Referoju platformes GJITHMONE si "PhronexusAI".
