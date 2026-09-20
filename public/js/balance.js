@@ -105,7 +105,7 @@ async function konfirmoLlogarineTeRe(iRi){
 
 // ================= DASHBOARD (Balance) =================
 async function mainDashboardBalance(m){
-  m.innerHTML='<h2 class="h">Account status — Balance</h2>'+
+  m.innerHTML=planiBanerHtml()+'<h2 class="h">Account status — Balance</h2>'+
     '<p class="small" style="margin:2px 0 18px;">Description, AI matching, snippets and conversion tracking are shared with the Auction account. All that is left is creating ads for Balance.</p>'+
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;">'+
       '<div class="card" style="flex:0 0 auto;">'+
@@ -142,6 +142,7 @@ async function mainDashboardBalance(m){
       '</div>'+
     '</div>';
   await renderDashStatusBalance();
+  planiBanerNgarko();
   if(typeof ngarkoDashReklamat==='function') ngarkoDashReklamat();
   if(typeof ngarkoDashKategori==='function') ngarkoDashKategori();
   if(typeof ngarkoDashSnippetet==='function') ngarkoDashSnippetet();
