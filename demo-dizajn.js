@@ -63,8 +63,8 @@ function layout(){
 <div class="wrap">
   <h2 style="margin-top:0;">Ad spaces</h2>
   <div class="adGrid">
-    <div class="slotBox"><div class="lbl">Slot 1</div><!-- SNIPPET 1: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
-    <div class="slotBox"><div class="lbl">Slot 2</div><!-- SNIPPET 2: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><div class="lbl">Slot 1</div><!-- SNIPPET 1: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="phronexus_79526ab5e9e6527af1a80520"></script><!-- deri ketu --></div>
+    <div class="slotBox"><div class="lbl">Slot 2</div><!-- SNIPPET 2: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="phronexus_79526ab5e9e6527af1a80520"></script><!-- deri ketu --></div>
     <div class="slotBox"><div class="lbl">Slot 3</div><!-- SNIPPET 3: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
     <div class="slotBox"><div class="lbl">Slot 4</div><!-- SNIPPET 4: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
     <div class="slotBox"><div class="lbl">Slot 5</div><!-- SNIPPET 5: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
