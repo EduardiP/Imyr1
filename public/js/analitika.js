@@ -2046,7 +2046,8 @@ function mainRekPerformanca(m){
 }
 
 // ================= FAQE E VEÇANTË: "Statistikat" per "Hapësira e reklamave" =================
-// Ripërdor TE NJEJTIN endpoint (kategorite-dhene) — 2 menyra pamjeje mbi te njejtat te dhena:
+// Ripërdor TE NJEJTIN endpoint (kategorite-dhene, tani me filtër opsional snippet_id) — 2 menyra
+// pamjeje mbi te njejtat te dhena, TE FILTRUARA nga snippet-i i zgjedhur ne krye:
 // Menyra A ("By category"): 1 kategori e zgjedhur (ose "All", te mbledhura) — te 4 metrikat
 // bashke, shume-zgjedhje, si linja te veçanta. Menyra B ("By metric"): 1 metrike e zgjedhur —
 // TE GJITHA kategorite, si linja te veçanta (krahasim mes kategorive per ate metrike).
@@ -2055,11 +2056,17 @@ var _snStatMetricAktive='shfaqje', _snStatChart=null;
 var _snStatKatAktive='__all__';
 var _snStatMetrikaShumeZgj={shfaqje:true,shikime:true,klikime:true,konvertime:true};
 var _snStatKategoriteCache=[]; // cache i fundit i kategorive (per dropdown-in e Menyres A)
+var _snStatSnippetAktiv='__all__'; // ID e snippet-it te zgjedhur, ose '__all__' (te gjitha, te mbledhura)
+var _snStatSnippetetCache=[]; // {id, emri} — snippet-et e biznesit
 
 function mainSnippetStatistikat(m){
   window.__pamjeVecante=true;
   m.innerHTML='<h2 class="h">Stats — Ad space</h2>'+
     '<p class="small" style="margin:2px 0 16px;">Impressions, views, clicks and conversions you\'ve given other businesses through your spaces, by their category.</p>'+
+    '<div class="card" style="margin-bottom:16px;">'+
+      '<div class="small mut" style="font-weight:600;margin-bottom:8px;">Space</div>'+
+      '<div id="snStatSnipList" style="display:flex;flex-wrap:wrap;gap:8px;"><p class="small mut">Loading…</p></div>'+
+    '</div>'+
     '<div class="card">'+
       '<div class="presetRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
         '<button class="btn" onclick="snStatPreset(7)">Last 7 days</button>'+
@@ -2095,6 +2102,36 @@ function mainSnippetStatistikat(m){
     onRuaj: ngarkoSnStatistikat
   });
   snStatVizatoKontrollet();
+  snStatNgarkoListenSnip();
+}
+
+async function snStatNgarkoListenSnip(){
+  const el=$('snStatSnipList'); if(!el) return;
+  let d;
+  try{ d=await(await fetch('/api/analytics/snippetet-dhene?nga='+$('snStatNga').value+'&deri='+$('snStatDeri').value+'&logjika='+(window.__llogariaModaliteti||'ankand'))).json(); }
+  catch(e){ el.innerHTML='<p class="small mut">Error.</p>'; return; }
+  _snStatSnippetetCache=(d.snippetet||[]).map(s=>({id:s.id, emri:s.emri||('Space '+s.id)}));
+  snStatVizatoListenSnip();
+  ngarkoSnStatistikat();
+}
+function snStatVizatoListenSnip(){
+  const el=$('snStatSnipList'); if(!el) return;
+  if(!_snStatSnippetetCache.length){
+    el.innerHTML='<button class="btn cta" onclick="event.stopPropagation();nav({v:\'profile\',nav:\'lidhjaSnippet\'})">Connect a snippet →</button>';
+    return;
+  }
+  const opsionet=[{id:'__all__', emri:'All spaces'}].concat(_snStatSnippetetCache);
+  el.innerHTML = opsionet.map(function(s){
+    const aktiv = String(s.id)===String(_snStatSnippetAktiv);
+    const stil = aktiv
+      ? 'padding:8px 14px;border-radius:20px;border:1px solid var(--acc);background:rgba(74,158,255,.15);color:var(--acc);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;'
+      : 'padding:8px 14px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:13px;cursor:pointer;font-family:inherit;';
+    return '<button type="button" onclick="snStatZgjidhSnip(\''+s.id+'\')" style="'+stil+'">'+esc(s.emri)+'</button>';
+  }).join('');
+}
+function snStatZgjidhSnip(id){
+  _snStatSnippetAktiv=id;
+  snStatVizatoListenSnip();
   ngarkoSnStatistikat();
 }
 
@@ -2210,7 +2247,8 @@ async function ngarkoSnStatistikat(){
   const ngaEl=$('snStatNga'), deriEl=$('snStatDeri');
   if(!ngaEl||!deriEl||!ngaEl.value||!deriEl.value) return;
   let d;
-  try{ d=await(await fetch('/api/analytics/kategorite-dhene?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand'))).json(); }catch(e){ return; }
+  const snipQ = (_snStatSnippetAktiv!=='__all__') ? ('&snippet_id='+encodeURIComponent(_snStatSnippetAktiv)) : '';
+  try{ d=await(await fetch('/api/analytics/kategorite-dhene?nga='+ngaEl.value+'&deri='+deriEl.value+'&logjika='+(window.__llogariaModaliteti||'ankand')+snipQ)).json(); }catch(e){ return; }
   const kategoriteGjitha=d.kategorite||[];
   _snStatKategoriteCache=kategoriteGjitha;
   if(_snStatMenyra==='kategori'){
