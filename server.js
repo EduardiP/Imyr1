@@ -3356,23 +3356,26 @@ app.get('/api/admin/balancet/:id', iAdmin, async (req, res) => {
 // Detajet e nje biznesi + statistika
 app.get('/api/admin/biznes/:id', iAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);
+  const logjika = ['ankand','barazi'].includes(req.query.logjika) ? req.query.logjika : 'ankand';
   try {
     const b = await pool.query(
       `SELECT id, emri, email, website, kategoria_kryesore, kategori_dytesore, nenkategorite, permbledhje, pershkrimi,
               plani, celes, created_at, snippet_active, origjina, kandidat_url, first_seen_at, last_seen_at,
-              tipi, biznesi_auto, pershkrimi_auto, track_active
+              tipi, biznesi_auto, pershkrimi_auto, track_active, ankand_krijuar, balance_krijuar
        FROM bizneset WHERE id=$1`, [id]);
     if(!b.rows.length) return res.status(404).json({ error: 'Nuk u gjet.' });
     const row = b.rows[0];
     const statistika = await analytics.statistikaBiznesi(pool, id);
 
-    // 5 PIKAT E PLOTESIMIT — njesoj si /api/progres (klienti), per pamjen admin.
+    // A ekziston fare llogaria per kete pishine (ankand/balance) — per butonat e toggle-it.
+    const eKetijPishina = logjika==='ankand' ? row.ankand_krijuar : row.balance_krijuar;
+
+    // 5 PIKAT E PLOTESIMIT (te perbashketa, jo pool-specifike — jane hapa te nivelit te biznesit).
     const snLidhur = await pool.query('SELECT 1 FROM snippetet WHERE biznes_id=$1 AND snippet_active=true LIMIT 1', [id]);
     const uLidhur = await pool.query('SELECT 1 FROM konvertimet WHERE biznes_id=$1 AND track_active=true LIMIT 1', [id]);
     const zLidhur = await pool.query('SELECT 1 FROM zonat WHERE biznes_id=$1 AND track_active=true AND fshire=false LIMIT 1', [id]);
     const rekManuale = await pool.query(`SELECT 1 FROM kreativitetet WHERE biznes_id=$1 AND auto_krijuar=false LIMIT 1`, [id]);
     const rekAuto = await pool.query(`SELECT 1 FROM kreativitetet WHERE biznes_id=$1 AND auto_krijuar=true LIMIT 1`, [id]);
-    // Reklamat reale (emer, lloj), per t'i shfaqur ne detaje — jo vetem nje pointer te tab-i tjeter.
     const reklamatListe = await pool.query(
       `SELECT emri, lloji, auto_krijuar FROM kreativitetet WHERE biznes_id=$1 ORDER BY id DESC LIMIT 10`, [id]);
     const konvertimIPlote = !!row.track_active && (uLidhur.rows.length > 0 || zLidhur.rows.length > 0);
@@ -3380,13 +3383,43 @@ app.get('/api/admin/biznes/:id', iAdmin, async (req, res) => {
       llogaria:   { plotesuar: !!(row.website && row.tipi), menyra: row.biznesi_auto ? 'automatik' : 'manual' },
       pershkrimi: { plotesuar: !!(row.permbledhje || row.pershkrimi), menyra: row.pershkrimi_auto ? 'automatik' : 'manual' },
       lidhja:     { plotesuar: snLidhur.rows.length > 0, menyra: 'manual' },
-      // RENDI I RENDESISHEM: manual kontrollohet PARA auto (njesoj si /api/progres per klientin) —
-      // nese ekzistojne te dyja llojet, konsiderohet "manual" (perputhje me pamjen e klientit).
       reklama:    { plotesuar: rekManuale.rows.length > 0 || rekAuto.rows.length > 0, menyra: rekManuale.rows.length > 0 ? 'manual' : 'automatik' },
       konvertimi: { plotesuar: konvertimIPlote, menyra: 'manual' }
     };
 
-    res.json({ biznes: row, statistika, checklist, reklamat: reklamatListe.rows });
+    // SNIPPET-ET DHE CREATIVET jane te perbashketa (jo pool-specifike) — vetem numri i tyre.
+    const snippetetListe = await pool.query(
+      `SELECT id, emri, snippet_active, pauzuar FROM snippetet WHERE biznes_id=$1 ORDER BY id DESC`, [id]);
+
+    // REKLAMAT (promovimet) — POOL-SPECIFIKE, filtruar sipas logjika_shperndarjes.
+    const promovimetListe = await pool.query(
+      `SELECT id, teksti, aktiv, pauzuar, auto_krijuar, created_at FROM promovimet
+       WHERE biznes_id=$1 AND COALESCE(logjika_shperndarjes,'ankand')=$2 ORDER BY id DESC LIMIT 20`, [id, logjika]);
+
+    // ANALITIKA (dhene + marre) — POOL-SPECIFIKE, filtruar sipas burimit te ngjarjeve (30 dite).
+    const statPoolQ = await pool.query(
+      `SELECT
+        (SELECT COUNT(*) FROM ngjarjet e JOIN promovimet p ON p.id=e.reklama_id
+           WHERE p.biznes_id=$1 AND e.lloji='view' AND e.burimi=$2 AND e.created_at > now()-interval '30 days')::int AS dhene_shfaqje,
+        (SELECT COUNT(*) FROM ngjarjet e JOIN promovimet p ON p.id=e.reklama_id
+           WHERE p.biznes_id=$1 AND e.lloji='shikim' AND e.burimi=$2 AND e.created_at > now()-interval '30 days')::int AS dhene_shikime,
+        (SELECT COUNT(*) FROM ngjarjet e JOIN promovimet p ON p.id=e.reklama_id
+           WHERE p.biznes_id=$1 AND e.lloji='click' AND e.burimi=$2 AND e.created_at > now()-interval '30 days')::int AS dhene_klikime,
+        (SELECT COUNT(*) FROM ngjarjet e JOIN promovimet p ON p.id=e.reklama_id
+           WHERE p.biznes_id=$1 AND e.lloji='konvertim' AND e.burimi=$2 AND e.created_at > now()-interval '30 days')::int AS dhene_konvertime,
+        (SELECT COUNT(*) FROM ngjarjet e WHERE e.biznes_id=$1 AND e.lloji='view' AND e.burimi=$2 AND e.created_at > now()-interval '30 days')::int AS marre_shfaqje,
+        (SELECT COUNT(*) FROM ngjarjet e WHERE e.biznes_id=$1 AND e.lloji='shikim' AND e.burimi=$2 AND e.created_at > now()-interval '30 days')::int AS marre_shikime,
+        (SELECT COUNT(*) FROM ngjarjet e WHERE e.biznes_id=$1 AND e.lloji='click' AND e.burimi=$2 AND e.created_at > now()-interval '30 days')::int AS marre_klikime,
+        (SELECT COUNT(*) FROM ngjarjet e WHERE e.biznes_id=$1 AND e.lloji='konvertim' AND e.burimi=$2 AND e.created_at > now()-interval '30 days')::int AS marre_konvertime`,
+      [id, logjika]);
+
+    res.json({
+      biznes: row, statistika, checklist, reklamat: reklamatListe.rows,
+      logjika, eKetijPishina,
+      snippetet: snippetetListe.rows,
+      promovimet: promovimetListe.rows,
+      statPool: statPoolQ.rows[0]
+    });
   } catch(e){ res.status(500).json({ error: e.message }); }
 });
 
