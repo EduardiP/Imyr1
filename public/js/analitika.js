@@ -2289,8 +2289,10 @@ async function ngarkoSnStatistikat(){
 function snStatVizatoMenyraKategori(kategoriteGjitha){
   const canvas=$('snStatCanvas'); if(!canvas||typeof Chart==='undefined') return;
   if(_snStatChart){ _snStatChart.destroy(); _snStatChart=null; }
+  snStatVizatoBosh(false);
   if(!kategoriteGjitha.length){
     const ctx0=canvas.getContext('2d'); ctx0.clearRect(0,0,canvas.width,canvas.height);
+    snStatVizatoBosh(true, 'No data yet for this space in the selected period.');
     return;
   }
   let pikat;
@@ -2319,9 +2321,23 @@ function snStatVizatoMenyraKategori(kategoriteGjitha){
     options:{responsive:true,interaction:{mode:'index',intersect:false},
       scales:{x:{ticks:{color:'#8b949e'},grid:{color:'#2a313c'}},
         y:{beginAtZero:true,ticks:{color:'#8b949e',precision:0},grid:{color:'#2a313c'}}},
-      plugins:{legend:{display:datasets.length>1,labels:{color:'#8b949e'}}}},
+      plugins:{legend:{display:datasets.length>1,labels:{color:'#8b949e',usePointStyle:true,pointStyle:'circle'}}}},
     plugins:[anaMultiColorLinePlugin]
   });
+}
+// Mesazh "s'ka te dhena", mbivendosur mbi canvas-in — shfaqet/fshihet pa e prishur strukturen.
+function snStatVizatoBosh(shfaq, tekst){
+  let el=$('snStatBosh');
+  const canvas=$('snStatCanvas'); if(!canvas) return;
+  if(!el){
+    el=document.createElement('p');
+    el.id='snStatBosh';
+    el.className='small mut';
+    el.style.cssText='text-align:center;padding:30px 10px;margin:0;';
+    canvas.parentNode.insertBefore(el, canvas);
+  }
+  if(shfaq){ el.textContent=tekst||'No data.'; el.style.display='block'; canvas.style.display='none'; }
+  else { el.style.display='none'; canvas.style.display='block'; }
 }
 // Menyra B: 1 metrike — TE GJITHA kategorite, si linja te veçanta
 function snStatVizatoMenyraMetrike(kategoriteGjitha){
@@ -2340,8 +2356,10 @@ function snStatVizatoMenyraMetrike(kategoriteGjitha){
   }
   const canvas=$('snStatCanvas'); if(!canvas||typeof Chart==='undefined') return;
   if(_snStatChart){ _snStatChart.destroy(); _snStatChart=null; }
+  snStatVizatoBosh(false);
   if(!kategorite.length){
     const ctx0=canvas.getContext('2d'); ctx0.clearRect(0,0,canvas.width,canvas.height);
+    snStatVizatoBosh(true, 'No data yet for this space in the selected period.');
     return;
   }
   const labels=kategorite[0].pikat.map(p=>p.data);
