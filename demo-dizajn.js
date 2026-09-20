@@ -13,26 +13,27 @@
 //    ta analizoje vete kete pershkrim.
 // 2. Kategoria kryesore duhet te dale "Payroll Software" automatikisht.
 // 3. Per secilen hapesire (snippet) qe krijon te platforma, kopjo kodin e saj dhe zevendeso nje nga
-//    3 vendet e shenuara me "<!-- SNIPPET X: ngjit KETU -->" me poshte.
+//    6 vendet e shenuara me "<!-- SNIPPET X: ngjit KETU -->" me poshte — te renditura ne grid, ne krye te faqes.
 
 const CSS = `
   body{ margin:0; font:16px/1.6 system-ui,Segoe UI,Roboto,sans-serif; color:#1a1a2e; background:#f6f7fb; }
   header{ background:#1a7a4c; color:#fff; padding:16px 24px; display:flex; justify-content:space-between; align-items:center; }
   header .lg{ font-weight:700; letter-spacing:.04em; }
-  .wrap{ max-width:800px; margin:0 auto; padding:44px 24px; }
+  .wrap{ max-width:1400px; margin:0 auto; padding:44px 24px; }
   h1{ font-size:32px; margin:0 0 10px; }
   h2{ font-size:20px; margin:32px 0 10px; }
   p.lead{ color:#555; font-size:18px; margin:0 0 24px; }
   .feats{ display:flex; gap:14px; flex-wrap:wrap; margin:18px 0; }
   .feat{ flex:1; min-width:210px; background:#fff; border:1px solid #e6e8f0; border-radius:12px; padding:16px 18px; }
   .feat b{ color:#1a7a4c; }
-  .rreth{ background:#fff; border:1px solid #e6e8f0; border-left:4px solid #1a7a4c; border-radius:10px; padding:20px 22px; margin:8px 0; }
+  .rreth{ background:#fff; border:1px solid #e6e8f0; border-left:4px solid #1a7a4c; border-radius:10px; padding:20px 22px; margin:8px 0; max-width:800px; }
   .rreth h2{ margin-top:0; }
   .kv{ margin:10px 0; }
   .kv b{ color:#1a7a4c; }
-  .slotBox{ background:#fff; border:1px dashed #c8ccdb; border-radius:10px; padding:16px 18px; margin:14px 0; }
-  .slotBox .lbl{ font-size:12px; color:#889; text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px; font-weight:600; }
-  footer{ max-width:800px; margin:0 auto; padding:24px; color:#889; font-size:13px; border-top:1px solid #e6e8f0; }
+  .adGrid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:14px; margin:14px 0 10px; }
+  .slotBox{ background:#fff; border:1px dashed #c8ccdb; border-radius:10px; padding:14px 16px; min-height:90px; display:flex; flex-direction:column; }
+  .slotBox .lbl{ font-size:11px; color:#889; text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px; font-weight:600; }
+  footer{ max-width:1400px; margin:0 auto; padding:24px; color:#889; font-size:13px; border-top:1px solid #e6e8f0; }
 `;
 
 function layout(){
@@ -60,6 +61,16 @@ function layout(){
 </header>
 
 <div class="wrap">
+  <h2 style="margin-top:0;">Ad spaces</h2>
+  <div class="adGrid">
+    <div class="slotBox"><div class="lbl">Slot 1</div><!-- SNIPPET 1: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><div class="lbl">Slot 2</div><!-- SNIPPET 2: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><div class="lbl">Slot 3</div><!-- SNIPPET 3: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><div class="lbl">Slot 4</div><!-- SNIPPET 4: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><div class="lbl">Slot 5</div><!-- SNIPPET 5: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+    <div class="slotBox"><div class="lbl">Slot 6</div><!-- SNIPPET 6: ngjit KETU --><script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script><!-- deri ketu --></div>
+  </div>
+
   <h1>PayFlow HR</h1>
   <p class="lead">Payroll software for small and mid-sized teams.</p>
 
@@ -76,30 +87,6 @@ function layout(){
     <div class="feat"><b>&#10003;</b> Tax calculation &amp; filing built in</div>
     <div class="feat"><b>&#10003;</b> Direct deposit for employees &amp; contractors</div>
     <div class="feat"><b>&#10003;</b> Digital pay stubs, always on time</div>
-  </div>
-
-  <h2>Ad spaces (test)</h2>
-  <p class="lead" style="font-size:15px;">Each box below is an independent ad space — paste one snippet per box to test multiple placements at once.</p>
-
-  <div class="slotBox">
-    <div class="lbl">Slot 1 — Header</div>
-    <!-- SNIPPET 1: ngjit KETU -->
-    <script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script>
-    <!-- deri ketu -->
-  </div>
-
-  <div class="slotBox">
-    <div class="lbl">Slot 2 — Mid-page</div>
-    <!-- SNIPPET 2: ngjit KETU -->
-    <script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script>
-    <!-- deri ketu -->
-  </div>
-
-  <div class="slotBox">
-    <div class="lbl">Slot 3 — Footer</div>
-    <!-- SNIPPET 3: ngjit KETU -->
-    <script src="https://phronexusai.com/phronexusai.js" data-key="REPLACE_WITH_YOUR_KEY"></script>
-    <!-- deri ketu -->
   </div>
 
 </div>
