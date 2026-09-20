@@ -1035,6 +1035,11 @@ app.get('/api/analytics/kategorite-dhene', iLoguar, async (req, res) => {
     const ngaD=new Date(nga), deriD=new Date(deri);
     if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
     const logjika = ['ankand','barazi'].includes(req.query.logjika) ? req.query.logjika : 'ankand';
+    // Filtri OPSIONAL sipas nje snippet-i te caktuar (nese s'jepet, mblidhen te GJITHA snippet-et e biznesit).
+    const snipRaw = parseInt(req.query.snippet_id, 10);
+    const snipFiltri = (snipRaw > 0) ? snipRaw : null;
+    const snipCond = snipFiltri ? ' AND e.snippet_id=$6' : '';
+    const snipParam = snipFiltri ? [snipFiltri] : [];
 
     const vetja = await pool.query('SELECT kategoria_kryesore FROM bizneset WHERE id=$1', [req.biznesId]);
     const vetjaKat = vetja.rows.length ? vetja.rows[0].kategoria_kryesore : null;
@@ -1044,7 +1049,8 @@ app.get('/api/analytics/kategorite-dhene', iLoguar, async (req, res) => {
       FROM ngjarjet e JOIN bizneset b ON b.id = e.reklamues_id
       WHERE e.biznes_id=$1 AND e.created_at::date BETWEEN $2 AND $3
         AND e.lloji IN ('view','shikim','click','konvertim') AND e.burimi=$4
-        AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''`, [req.biznesId, nga, deri, logjika]);
+        AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''${snipCond}`,
+      [req.biznesId, nga, deri, logjika, ...snipParam]);
     let kategorite = katQ.rows.map(r => r.kategoria);
     if (vetjaKat) kategorite = kategorite.filter(k => k !== vetjaKat);
 
@@ -1057,11 +1063,11 @@ app.get('/api/analytics/kategorite-dhene', iLoguar, async (req, res) => {
           COALESCE(k.n,0)::int  AS klikime,
           COALESCE(kv.n,0)::int AS konvertime
         FROM generate_series($2::date, $3::date, '1 day') AS gs
-        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='view'      AND e.burimi=$4 AND b.kategoria_kryesore=$5 GROUP BY d) v  ON v.d=gs
-        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='shikim'    AND e.burimi=$4 AND b.kategoria_kryesore=$5 GROUP BY d) sh ON sh.d=gs
-        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='click'     AND e.burimi=$4 AND b.kategoria_kryesore=$5 GROUP BY d) k  ON k.d=gs
-        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='konvertim' AND e.burimi=$4 AND b.kategoria_kryesore=$5 GROUP BY d) kv ON kv.d=gs
-        ORDER BY gs`, [req.biznesId, nga, deri, logjika, kat]);
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='view'      AND e.burimi=$4 AND b.kategoria_kryesore=$5${snipCond} GROUP BY d) v  ON v.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='shikim'    AND e.burimi=$4 AND b.kategoria_kryesore=$5${snipCond} GROUP BY d) sh ON sh.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='click'     AND e.burimi=$4 AND b.kategoria_kryesore=$5${snipCond} GROUP BY d) k  ON k.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='konvertim' AND e.burimi=$4 AND b.kategoria_kryesore=$5${snipCond} GROUP BY d) kv ON kv.d=gs
+        ORDER BY gs`, [req.biznesId, nga, deri, logjika, kat, ...snipParam]);
       rezultat.push({ emri: kat, pikat: r.rows.map(x => ({
         data: x.data.toISOString().slice(0,10),
         shfaqje: x.shfaqje, shikime: x.shikime, klikime: x.klikime, konvertime: x.konvertime
