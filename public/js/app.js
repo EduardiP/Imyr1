@@ -766,9 +766,39 @@ const DASH_QUICK_ACTIONS = [
     icon:'<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
     onclick:"nav({v:'profile',nav:'plani'})" }
 ];
+function planiBanerHtml(){
+  return '<div id="planiBaner" style="margin-bottom:16px;"></div>';
+}
+async function planiBanerNgarko(){
+  const el=$('planiBaner'); if(!el) return;
+  try{
+    const pr=await(await fetch('/api/progres')).json();
+    if(pr.plani==='premium'){ el.innerHTML=''; return; }
+    const ditet = pr.ditet||0;
+    const mbetura = Math.max(0, 90-ditet);
+    const graceMbetur = Math.max(0, 7-ditet);
+    let h='';
+    if(pr.planiSkaduar){
+      h='<div class="card" style="border-color:var(--err);background:rgba(248,81,73,.06);display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">'+
+        '<p class="small" style="margin:0;color:var(--err);font-weight:600;">Your free period has ended — your ads are paused.</p>'+
+        '<button class="btn cta" onclick="nav({v:\'profile\',nav:\'plani\'})" style="white-space:nowrap;">Upgrade to Premium →</button>'+
+      '</div>';
+    } else {
+      h='<div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">'+
+        '<div>'+
+          '<p class="small" style="margin:0;"><b>'+mbetura+' days left</b> in your free period.'+
+          (graceMbetur>0 ? ' <span class="mut">New ads also get priority matching for their first 7 days ('+graceMbetur+' left).</span>' : '')+
+          '</p>'+
+        '</div>'+
+        '<button class="btn" onclick="nav({v:\'profile\',nav:\'plani\'})" style="white-space:nowrap;">See plan</button>'+
+      '</div>';
+    }
+    el.innerHTML=h;
+  }catch(e){}
+}
 function mainDashboard(m){
   if(window.__llogariaModaliteti==='barazi') return mainDashboardBalance(m);
-  m.innerHTML='<h2 class="h">Account status</h2>'+
+  m.innerHTML=planiBanerHtml()+'<h2 class="h">Account status</h2>'+
     '<p class="small" style="margin:2px 0 18px;">These show what\'s ready and what isn\'t. Click a row to complete it.</p>'+
     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;">'+
       '<div class="card" style="flex:0 0 auto;">'+
@@ -818,6 +848,7 @@ function mainDashboard(m){
       }).join('')+
     '</div>';
   renderDashStatus();
+  planiBanerNgarko();
   ngarkoDashAnalitika();
   ngarkoDashReklamat();
   ngarkoDashSnippetet();
