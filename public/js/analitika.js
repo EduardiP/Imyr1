@@ -2227,7 +2227,7 @@ function snStatPreset(dite){
 function anaRenderSnStatMetric(){
   const el=$('snStatMetricRow'); if(!el) return;
   el.innerHTML='';
-  ANA_METRIKA.forEach(x=>{
+  ANA_METRIKA_BAZE.forEach(x=>{
     const btn=document.createElement('button');
     btn.type='button'; btn.textContent=x.l;
     const on=_snStatMetricAktive===x.k;
