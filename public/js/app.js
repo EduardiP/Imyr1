@@ -2735,14 +2735,16 @@ async function mainPlani(m){
   let permbajtja;
   if(ePremium){
     permbajtja =
-      '<div class="card" style="max-width:460px;position:relative;border-color:var(--good);">'+
-        '<div class="pill" style="position:absolute;top:-11px;left:20px;background:#f59e0b;color:#1a1200;font-weight:700;">Premium</div>'+
-        '<div class="pill" style="position:absolute;top:-11px;right:20px;background:var(--good);color:#04240f;font-weight:700;display:flex;align-items:center;gap:5px;">'+
+      '<div class="card" style="max-width:460px;margin:12px auto 0;position:relative;border-color:var(--good);box-shadow:0 8px 28px rgba(63,185,80,.12);padding:28px 26px;">'+
+        '<div class="pill" style="position:absolute;top:-11px;left:26px;background:#f59e0b;color:#1a1200;font-weight:700;">Premium</div>'+
+        '<div class="pill" style="position:absolute;top:-11px;right:26px;background:var(--good);color:#04240f;font-weight:700;display:flex;align-items:center;gap:5px;">'+
           '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#04240f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Aktiv</div>'+
-        '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
-        '<p class="small" style="margin:6px 0 0;">Faturimi vazhdon automatikisht çdo muaj.</p>'+
+        '<div style="text-align:center;padding:6px 0 2px;">'+
+          '<div style="font-family:var(--f-head);font-size:32px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;font-size:14px;">/muaj</span></div>'+
+          '<p class="small mut" style="margin:4px 0 0;">Faturimi vazhdon automatikisht çdo muaj.</p>'+
+        '</div>'+
         listaVeqorish(VECORITE_PREMIUM_SPEC, true)+
-        '<button class="btn" style="width:100%;" onclick="planiZgjidh(\'falas\')">Anulo (kthehu te periudha falas, nëse ende ke ditë të mbetura)</button>'+
+        '<button class="btn" style="width:100%;margin-top:6px;" onclick="planiZgjidh(\'falas\')">Anulo (kthehu te periudha falas, nëse ende ke ditë të mbetura)</button>'+
       '</div>';
   } else if(eSkaduar){
     permbajtja =
@@ -2788,10 +2790,12 @@ async function paddleSigurohu(){
     token: cfg.token,
     eventCallback: function(data){
       if(data && data.name === 'checkout.completed'){
-        setTimeout(function(){
-          const m=$('main'); if(m){ m.innerHTML='<div class="card" style="max-width:460px;"><p class="small"><span class="spin"></span> Konfirmimi po përpunohet…</p></div>'; }
-          setTimeout(function(){ renderMain({nav:'plani'}); }, 4000);
-        }, 800);
+        window.__paddleSukses = true;
+      }
+      if(data && data.name === 'checkout.closed' && window.__paddleSukses){
+        window.__paddleSukses = false;
+        const m=$('main'); if(m){ m.innerHTML='<div class="card" style="max-width:460px;"><p class="small"><span class="spin"></span> Konfirmimi po përpunohet…</p></div>'; }
+        setTimeout(function(){ renderMain({nav:'plani'}); }, 5000);
       }
     }
   });
