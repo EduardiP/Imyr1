@@ -1390,7 +1390,7 @@ function krThumbHTML(k){
 }
 async function ngarkoKreativetGati(){
   const wrap=$('krGatiWrap'), el=$('krGatiLista'); if(!wrap||!el) return;
-  el.innerHTML='<p class="small mut">Po ngarkoj…</p>';
+  el.innerHTML='<p class="small mut">Loading…</p>';
   try{
     const r=await(await fetch('/api/kreative')).json();
     const rows=r.kreative||[];
@@ -1984,7 +1984,7 @@ var _madNjeSnip = { w:210, h:261, MAXW:260, MAXH:290, MINW:134, MINH:155,
 async function ndertoMadhesineNjeSnip(cont, snipId, snipData){
   if(!cont) return;
   _madNjeSnip.snipId = snipId;
-  cont.innerHTML='<p class="small">Po ngarkoj…</p>';
+  cont.innerHTML='<p class="small">Loading…</p>';
   try{
     const r=await(await fetch('/api/madhesia')).json();
     _madNjeSnip.MAXW=r.max_w||260; _madNjeSnip.MAXH=r.max_h||290; _madNjeSnip.MINW=r.min_w||134; _madNjeSnip.MINH=r.min_h||155;
@@ -2152,7 +2152,7 @@ function madhToggleSnip(id, checked){
 async function ndertoMadhesine(cont, ruajVetem, snipCeles, snipData){
   if(!cont) return;
   _mad.snipId = null; // s'aplikohet me per 1 snippet — tani per te zgjedhurit (_madSnipZgjedhur)
-  cont.innerHTML='<p class="small">Po ngarkoj…</p>';
+  cont.innerHTML='<p class="small">Loading…</p>';
   try{
     const r=await(await fetch('/api/madhesia')).json();
     _mad.MAXW=r.max_w||260; _mad.MAXH=r.max_h||290; _mad.MINW=r.min_w||134; _mad.MINH=r.min_h||155;
@@ -2608,7 +2608,7 @@ async function rekVizatoEcurine(id, dite, nga, deri){
 }
 async function rekRenderAudienca(id){
   const c=$('rekTabPermbajtja'); if(!c) return;
-  c.innerHTML='<p class="small">Po ngarkoj…</p>';
+  c.innerHTML='<p class="small">Loading…</p>';
   let cur={vendet:[],pajisjet:[]};
   try{ cur=await(await fetch('/api/reklamat/'+id+'/audienca')).json(); }catch(e){}
   const VENDET=['Australia','Austria','Belgium','Bosnia','Brazil','Bulgaria','Denmark','Egypt','United Arab Emirates','Finland','France','Germany','Greece','Netherlands','India','Indonesia','Ireland','Iceland','Italy','Israel','Japan','Canada','China','South Korea','Croatia','Malaysia','Mexico','United Kingdom','Norway','Poland','Portugal','Romania','Serbia','Singapore','Spain','USA','Sweden','Switzerland','Thailand','Turkey','Ukraine','New Zealand','Other (any unlisted country)'];
@@ -2713,7 +2713,7 @@ async function mainPlani(m){
     return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3fb950" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;margin-top:2px;"><polyline points="20 6 9 17 4 12"/></svg>';
   }
   function listaVeqorish(specifike, specifikePara){
-    const rradha = specifikePara ? ['Gjithçka nga plani Falas'].concat(specifike) : VECORITE_BAZE.concat(specifike);
+    const rradha = specifikePara ? ['Everything from the Free plan'].concat(specifike) : VECORITE_BAZE.concat(specifike);
     return '<div style="display:flex;flex-direction:column;gap:10px;margin:16px 0;">'+
       rradha.map(v=>'<div style="display:flex;gap:9px;align-items:flex-start;">'+ikonaKontrolli()+'<span class="small" style="color:var(--txt);">'+esc(v)+'</span></div>').join('')+
     '</div>';
@@ -2723,9 +2723,9 @@ async function mainPlani(m){
       '<div style="width:38px;height:38px;border-radius:12px;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">'+
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>'+
       '</div>'+
-      '<h2 class="h" style="margin:0;">Faturimi & Plani</h2>'+
+      '<h2 class="h" style="margin:0;">Billing & Plan</h2>'+
     '</div>';
-  m.innerHTML=header+'<div class="card" style="max-width:460px;"><p class="small">Po ngarkoj…</p></div>';
+  m.innerHTML=header+'<div class="card" style="max-width:460px;"><p class="small">Loading…</p></div>';
   let pr={};
   try{ pr=await(await fetch('/api/progres')).json(); }catch(e){}
   const ePremium = !!(une && une.plani==='premium');
@@ -2738,31 +2738,31 @@ async function mainPlani(m){
       '<div class="card" style="max-width:460px;margin:12px auto 0;position:relative;border-color:var(--good);box-shadow:0 8px 28px rgba(63,185,80,.12);padding:28px 26px;">'+
         '<div class="pill" style="position:absolute;top:-11px;left:26px;background:#f59e0b;color:#1a1200;font-weight:700;">Premium</div>'+
         '<div class="pill" style="position:absolute;top:-11px;right:26px;background:var(--good);color:#04240f;font-weight:700;display:flex;align-items:center;gap:5px;">'+
-          '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#04240f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Aktiv</div>'+
+          '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#04240f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Active</div>'+
         '<div style="text-align:center;padding:6px 0 2px;">'+
           '<div style="font-family:var(--f-head);font-size:32px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;font-size:14px;">/muaj</span></div>'+
-          '<p class="small mut" style="margin:4px 0 0;">Faturimi vazhdon automatikisht çdo muaj.</p>'+
+          '<p class="small mut" style="margin:4px 0 0;">Billing continues automatically every month.</p>'+
         '</div>'+
         listaVeqorish(VECORITE_PREMIUM_SPEC, true)+
-        '<button class="btn" style="width:100%;margin-top:6px;" onclick="planiZgjidh(\'falas\')">Anulo (kthehu te periudha falas, nëse ende ke ditë të mbetura)</button>'+
+        '<button class="btn" style="width:100%;margin-top:6px;" onclick="planiZgjidh(\'falas\')">Cancel (return to the free period, if you still have days remaining)</button>'+
       '</div>';
   } else if(eSkaduar){
     permbajtja =
       '<div class="card" style="max-width:460px;position:relative;">'+
         '<div class="pill" style="position:absolute;top:-11px;left:20px;background:#f59e0b;color:#1a1200;font-weight:700;">Premium</div>'+
-        '<p class="small" style="color:var(--err);font-weight:600;margin:6px 0 10px;">Periudha jote falas (3 muajt e parë) ka përfunduar — reklamat e tua janë ndaluar.</p>'+
+        '<p class="small" style="color:var(--err);font-weight:600;margin:6px 0 10px;">Your free period (the first 3 months) has ended — your ads have been paused.</p>'+
         '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
-        '<p class="small" style="margin:6px 0 0;">Aktivizo për t\'i rikthyer shërbimit menjëherë.</p>'+
+        '<p class="small" style="margin:6px 0 0;">Activate to restore the service immediately.</p>'+
         listaVeqorish(VECORITE_PREMIUM_SPEC, true)+
-        '<button class="btn cta" style="width:100%;" onclick="planiZgjidh(\'premium\')">Aktivizo tani →</button>'+
+        '<button class="btn cta" style="width:100%;" onclick="planiZgjidh(\'premium\')">Activate now →</button>'+
       '</div>';
   } else {
     permbajtja =
       '<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:stretch;">'+
         '<div class="card" style="flex:1 1 300px;position:relative;border-color:var(--good);">'+
           '<div class="pill" style="position:absolute;top:-11px;right:20px;background:var(--good);color:#04240f;font-weight:700;display:flex;align-items:center;gap:5px;">'+
-            '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#04240f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Aktiv tani</div>'+
-          '<div style="font-family:var(--f-mono);font-size:11px;color:var(--good);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">'+ditetMbetura+' ditë të mbetura</div>'+
+            '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#04240f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Active now</div>'+
+          '<div style="font-family:var(--f-mono);font-size:11px;color:var(--good);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">'+ditetMbetura+' days remaining</div>'+
           '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">Falas</div>'+
           '<p class="small" style="margin:6px 0 0;">Gjatë 3 muajve të parë, pa pagesë.</p>'+
           listaVeqorish(VECORITE_FALAS_SPEC)+
@@ -2772,7 +2772,7 @@ async function mainPlani(m){
           '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/muaj</span></div>'+
           '<p class="small" style="margin:6px 0 0;">Krijim dhe asistencë AI <b style="color:var(--txt);">pa asnjë kufi</b> — çdo gjë tjetër njësoj si Falas.</p>'+
           listaVeqorish(VECORITE_PREMIUM_SPEC, true)+
-          '<button class="btn" style="width:100%;" onclick="planiZgjidh(\'premium\')">Aktivizo tani (opsionale)</button>'+
+          '<button class="btn" style="width:100%;" onclick="planiZgjidh(\'premium\')">Activate now (optional)</button>'+
         '</div>'+
       '</div>';
   }
