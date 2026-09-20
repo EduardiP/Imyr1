@@ -26,7 +26,8 @@ const NAV2 = [
   { k:'dashboard', l:'Dashboard' },
   { k:'snippetet', l:'Ad Space', subs:[
     {l:'My spaces', nav:'snippetet'},
-    {l:'Set the size', nav:'madhesiaShumefishte'}
+    {l:'Set the size', nav:'madhesiaShumefishte'},
+    {l:'Space Analytics', nav:'snippetStats'}
   ]},
   { k:'kreative', l:'Creative', subs:[
     {l:'Create', nav:'kreative', tab:'krijo'},
