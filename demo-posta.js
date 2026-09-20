@@ -57,8 +57,7 @@ ${trupi}
 <footer>© 2026 PostaPro — faqe prove per Imyr</footer>
 
 <!-- ═══ NGJIT KETU rreshtin e Imyr-it (copy-paste nga wizard-i) — vlen per TE GJITHA faqet e PostaPro -->
-<script src="https://phronexusai.com/phronexusai.js" data-key="phronexus_178a1c91dc61af3208576f2e"></script>
-<script src="https://phronexusai.com/phronexus-track.js" data-key="imyr_16edad12040bdafc4e51b266"></script>
+<script src="https://phronexusai.com/phronexus-track.js" data-key="phronexus_7d495407a96cbab8d472e194"></script>
 <!-- ═══ deri ketu ═══ -->
 </body>
 </html>`;
