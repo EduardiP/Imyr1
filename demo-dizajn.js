@@ -1,119 +1,113 @@
-// demo-dizajn.js — SAAS PROVE "DizajnKit" (i ndare nga Imyr; fshije kur te mbaroje testimi)
-// Faqe te ndara, kornize e perbashket per KETE saas.
-// Rreshtin e Imyr-it e ngjit NJE HERE te layout() me poshte; vlen per te 3 faqet.
-
+// demo-dizajn.js — SAAS PROVE "PayFlow HR" (Payroll Software), i ndare nga Imyr.
+// Kategoria eshte QELLIMISHT "Payroll Software" — jo "Recruiting/ATS Software" — meqe kjo
+// e fundit do ta benin biznes KONKURRENT te drejtperdrejte me pikerisht ato biznese qe duam
+// te testojme (rregulli i fort: e njejta kategori kryesore → AI=0 automatik, perjashtim i plote).
+// "Payroll Software" eshte kategoria KOMPLEMENTARE, e identifikuar me pare per Recruiting/ATS —
+// duhet te marre skor te larte AI, JO te perjashtohet si konkurrent.
+//
+// 1 FAQE E VETME, publike — pershkrim + disa hapesira snippet-i (per te testuar shume snippeta
+// njekohesisht). Asnje login/register — thjesht faqe qe njeh AI-ja e platformes kur e analizon.
+//
+// SI TA PERDORESH:
+// 1. Regjistro biznesin e ri ne PhronexusAI, duke perdorur kete URL si "website" — lejo qe AI-ja
+//    ta analizoje vete kete pershkrim.
+// 2. Kategoria kryesore duhet te dale "Payroll Software" automatikisht.
+// 3. Per secilen hapesire (snippet) qe krijon te platforma, kopjo kodin e saj dhe zevendeso nje nga
+//    3 vendet e shenuara me "<!-- SNIPPET X: ngjit KETU -->" me poshte.
 
 const CSS = `
   body{ margin:0; font:16px/1.6 system-ui,Segoe UI,Roboto,sans-serif; color:#1a1a2e; background:#f6f7fb; }
-  header{ background:#d68910; color:#fff; padding:16px 24px; display:flex; justify-content:space-between; align-items:center; }
+  header{ background:#1a7a4c; color:#fff; padding:16px 24px; display:flex; justify-content:space-between; align-items:center; }
   header .lg{ font-weight:700; letter-spacing:.04em; }
-  header nav a{ color:rgba(255,255,255,.85); text-decoration:none; margin-left:18px; font-size:14px; }
-  header nav a:hover{ color:#fff; }
   .wrap{ max-width:800px; margin:0 auto; padding:44px 24px; }
   h1{ font-size:32px; margin:0 0 10px; }
   h2{ font-size:20px; margin:32px 0 10px; }
   p.lead{ color:#555; font-size:18px; margin:0 0 24px; }
-  .cta{ display:inline-block; background:#d68910; color:#fff; padding:13px 26px; border-radius:8px;
-        text-decoration:none; font-weight:600; border:none; cursor:pointer; font-size:16px; font-family:inherit; }
-  .cta:hover{ background:#a86a0c; }
   .feats{ display:flex; gap:14px; flex-wrap:wrap; margin:18px 0; }
   .feat{ flex:1; min-width:210px; background:#fff; border:1px solid #e6e8f0; border-radius:12px; padding:16px 18px; }
-  .feat b{ color:#d68910; }
-  .rreth{ background:#fff; border:1px solid #e6e8f0; border-left:4px solid #d68910; border-radius:10px; padding:20px 22px; margin:8px 0; }
+  .feat b{ color:#1a7a4c; }
+  .rreth{ background:#fff; border:1px solid #e6e8f0; border-left:4px solid #1a7a4c; border-radius:10px; padding:20px 22px; margin:8px 0; }
   .rreth h2{ margin-top:0; }
   .kv{ margin:10px 0; }
-  .kv b{ color:#d68910; }
-  .card{ background:#fff; border:1px solid #e6e8f0; border-radius:12px; padding:24px; margin-top:8px; }
-  label{ display:block; font-size:13px; color:#555; margin:14px 0 5px; font-weight:600; }
-  input{ width:100%; box-sizing:border-box; padding:11px 13px; border:1px solid #e6e8f0; border-radius:8px; font-size:15px; font-family:inherit; }
-  .note{ border:1px dashed #c8ccdb; border-radius:10px; padding:14px 16px; color:#555; font-size:14px; background:#fff; margin-top:26px; }
-  .note b{ color:#d68910; }
-  .ok{ width:56px; height:56px; border-radius:50%; background:#d6891022; color:#d68910;
-       display:flex; align-items:center; justify-content:center; font-size:28px; margin-bottom:14px; }
-  .steps{ display:flex; gap:8px; margin-bottom:26px; font-size:13px; color:#889; }
-  .steps span{ padding:5px 12px; border-radius:20px; background:#fff; border:1px solid #e6e8f0; }
-  .steps span.on{ background:#d68910; color:#fff; border-color:#d68910; }
+  .kv b{ color:#1a7a4c; }
+  .slotBox{ background:#fff; border:1px dashed #c8ccdb; border-radius:10px; padding:16px 18px; margin:14px 0; }
+  .slotBox .lbl{ font-size:12px; color:#889; text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px; font-weight:600; }
   footer{ max-width:800px; margin:0 auto; padding:24px; color:#889; font-size:13px; border-top:1px solid #e6e8f0; }
 `;
 
-function layout(titulli, trupi){
+function layout(){
   return `<!DOCTYPE html>
-<html lang="sq">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DizajnKit — ${titulli}</title>
+<title>PayFlow HR — Payroll Software</title>
 <style>${CSS}</style>
 </head>
 <body>
 
 <header>
-  <span class="lg">DizajnKit</span>
-  <nav><a href="/demo/dizajn">Ballina</a><a href="/demo/dizajn/regjistrohu">Regjistrohu</a></nav>
+  <span class="lg">PayFlow HR</span>
 </header>
 
-${trupi}
+<div class="wrap">
+  <h1>PayFlow HR</h1>
+  <p class="lead">Payroll software for small and mid-sized teams.</p>
 
-<footer>© 2026 DizajnKit — faqe prove per Imyr</footer>
+  <section class="rreth">
+    <h2>About</h2>
+    <p>PayFlow HR automates payroll for growing companies — calculate wages, taxes, and deductions automatically, pay employees and contractors on schedule, and generate compliant pay stubs and tax filings without spreadsheets. Built for HR and finance teams who currently run payroll manually or through a patchwork of tools.</p>
+    <div class="kv"><b>Who it's for:</b> HR and finance teams at growing companies who need reliable, automated payroll without hiring a dedicated payroll specialist.</div>
+    <div class="kv"><b>Keywords:</b> payroll, wages, tax filing, pay stubs, direct deposit, contractor payments, compliance</div>
+  </section>
 
-<!-- ═══ NGJIT KETU rreshtin e Imyr-it (copy-paste nga wizard-i) — vlen per TE GJITHA faqet e DizajnKit -->
-<script src="https://phronexusai.com/imyr.js" data-key="imyr_f0da8e7e2d3e4c4bf6b4e442"></script>
+  <h2>What PayFlow HR offers</h2>
+  <div class="feats">
+    <div class="feat"><b>&#10003;</b> Automatic payroll runs, every cycle</div>
+    <div class="feat"><b>&#10003;</b> Tax calculation &amp; filing built in</div>
+    <div class="feat"><b>&#10003;</b> Direct deposit for employees &amp; contractors</div>
+    <div class="feat"><b>&#10003;</b> Digital pay stubs, always on time</div>
+  </div>
 
-<!-- ═══ deri ketu ═══ -->
+  <h2>Ad spaces (test)</h2>
+  <p class="lead" style="font-size:15px;">Each box below is an independent ad space — paste one snippet per box to test multiple placements at once.</p>
+
+  <div class="slotBox">
+    <div class="lbl">Slot 1 — Header</div>
+    <!-- SNIPPET 1: ngjit KETU -->
+    
+    <!-- deri ketu -->
+  </div>
+
+  <div class="slotBox">
+    <div class="lbl">Slot 2 — Mid-page</div>
+    <!-- SNIPPET 2: ngjit KETU -->
+
+    
+    <!-- deri ketu -->
+  </div>
+
+  <div class="slotBox">
+    <div class="lbl">Slot 3 — Footer</div>
+    <!-- SNIPPET 3: ngjit KETU -->
+    
+    <!-- deri ketu -->
+  </div>
+
+</div>
+
+<footer>© 2026 PayFlow HR — test page for PhronexusAI</footer>
+
 </body>
 </html>`;
 }
 
-const feats = ["Bibliotekë komponentësh", "Shabllone faqesh", "Ikona & asete", "Përshtatje me markën"].map(function(v){ return '<div class="feat"><b>&#10003;</b> ' + v + '</div>'; }).join('');
-
+// VETEM 1 faqe e vertete tani — "regjistrohu"/"welcome" mbahen si redirect te thjeshte per
+// perputhshmeri (nese server.js akoma i referon keto rruge diku), s'perdoren me realisht.
 const faqet = {
-  ballina: function(){ return layout('ballina', `
-<div class="wrap">
-  <h1>DizajnKit</h1>
-  <p class="lead">Shabllone & komponentë UI për të nisur shpejt.</p>
-  <a class="cta" href="/demo/dizajn/regjistrohu">Krijo llogari &rarr;</a>
-
-  <section class="rreth">
-    <h2>Rreth shërbimit</h2>
-    <p>DizajnKit ofron shabllone të gatshme UI, komponentë të riperdorshëm dhe ikona për ekipet që ndërtojnë produkte SaaS. Nisni një ndërfaqe profesionale pa filluar nga e para, me elemente që përshtaten me markën tuaj.</p>
-    <div class="kv"><b>Për kë është:</b> Ekipet produkti dhe dizajnerët që duan të ndërtojnë ndërfaqe shpejt, pa nisur dizajnin nga zeroja.</div>
-    <div class="kv"><b>Fjalë-kyçe:</b> dizajn, UI, komponentë, shabllone, ikona</div>
-  </section>
-
-  <h2>Çfarë ofrojmë</h2>
-  <div class="feats">${feats}</div>
-
-  <!-- Reklama e Imyr-it shfaqet KETU (ballina) -->
-  <div style="margin-top:30px;"><div id="imyr-slot"></div></div>
-
-  <div class="note"><b>Prove Imyr:</b> perdor pershkrimin lart, tipi <b>B2B</b>,
-    website <b>/demo/dizajn</b>, URL konvertimi <b>/demo/dizajn/welcome</b>.</div>
-</div>`); },
-
-  regjistrohu: function(){ return layout('regjistrohu', `
-<div class="wrap">
-  <div class="steps"><span class="on">1. Te dhenat</span><span>2. Gati</span></div>
-  <h1>Krijo llogarine te DizajnKit</h1>
-  <p class="lead">Faqe e ndermjetme — konvertimi s'duhet te numerohet ende.</p>
-  <div class="card">
-    <label>Emri</label><input placeholder="Emri yt">
-    <label>Email</label><input type="email" placeholder="email@shembull.com">
-    <label>Fjalekalimi</label><input type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;">
-    <div style="margin-top:20px;">
-      <button class="cta" onclick="location.href='/demo/dizajn/welcome'">Regjistrohu &rarr;</button>
-    </div>
-  </div>
-  <div class="note">Pas butonit kalon te <b>/demo/dizajn/welcome</b>.</div>
-</div>`); },
-
-  welcome: function(){ return layout('mire se erdhe', `
-<div class="wrap">
-  <div class="steps"><span>1. Te dhenat</span><span class="on">2. Gati</span></div>
-  <div class="ok">&#10003;</div>
-  <h1>Mire se erdhe te DizajnKit!</h1>
-  <p class="lead">Llogaria u krijua. Kjo faqe hapet <b>vetem</b> pas regjistrimit.</p>
-  <div class="note">Nese vizitori erdhi nga nje reklame e Imyr-it, konvertimi shfaqet te profili i reklamuesit.</div>
-</div>`); }
+  ballina: function(){ return layout(); },
+  regjistrohu: function(){ return '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=/demo/dizajn"></head><body></body></html>'; },
+  welcome: function(){ return '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=/demo/dizajn"></head><body></body></html>'; }
 };
 
 module.exports = { faqet };
