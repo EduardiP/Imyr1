@@ -647,6 +647,7 @@ async function mainProfili(m){
   try{ d=await(await fetch('/api/profili')).json(); }catch(e){ m.innerHTML='<p class="small">Loading error.</p>'; return; }
   window.__profiliCache = d;
   profiliRenderPamje(m, d);
+  planiBanerNgarko();
 }
 function profiliRenderPamje(m, d){
   const inic=(d.emri||'?').trim().charAt(0).toUpperCase();
@@ -656,7 +657,7 @@ function profiliRenderPamje(m, d){
   const tipiTekst = d.tipi==='b2b'?'Businesses (B2B)':(d.tipi==='b2c'?'Individuals (B2C)':'Both');
   const konvMini =
     '<div class="miniStat"><div class="mv">'+(d.pike?d.pike.konvertime:0)+'</div><div class="small">conversions → '+(d.pike?d.pike.pike_nga_konvertimet:0)+' points</div><div class="small mut">(1 conversion = 1 point)</div></div>';
-  m.innerHTML=
+  m.innerHTML=planiBanerHtml()+
     '<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:6px;flex-wrap:wrap;">'+
       '<div style="display:flex;align-items:center;gap:16px;">'+
         avatarHTML+
@@ -787,9 +788,8 @@ async function planiBanerNgarko(){
     } else {
       h='<div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">'+
         '<div>'+
-          '<p class="small" style="margin:0;"><b>'+mbetura+' days left</b> in your free period.'+
-          (graceMbetur>0 ? ' <span class="mut">New ads also get priority matching for their first 7 days ('+graceMbetur+' left).</span>' : '')+
-          '</p>'+
+          (graceMbetur>0 ? '<p class="small mut" style="margin:0 0 4px;">'+graceMbetur+' days left to receive exposure without a connected space (grace period).</p>' : '')+
+          '<p class="small" style="margin:0;"><b>'+mbetura+' days left</b> in your free period (90 total). After that: $7/month for unlimited creative generation, AI assistance, and more — or upgrade anytime to remove limits early.</p>'+
         '</div>'+
         '<button class="btn" onclick="nav({v:\'profile\',nav:\'plani\'})" style="white-space:nowrap;">See plan</button>'+
       '</div>';
