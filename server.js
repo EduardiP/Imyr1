@@ -113,6 +113,16 @@ setTimeout(() => {
   pool.query(`UPDATE bizneset SET balance_krijuar=true WHERE logjika_shperndarjes='barazi' AND balance_krijuar=false`)
     .catch(e => console.error('migrim retroaktiv balance_krijuar:', e.message));
 }, 2000); // vonese e vogel, qe te sigurohemi se kolonat e sipërme jane shtuar tashme
+
+// --- APPSUMO: kod jetegjate (lifetime), i pavarur nga Paddle/$7-muaj ---
+pool.query(`CREATE TABLE IF NOT EXISTS appsumo_kodet (
+  id SERIAL PRIMARY KEY,
+  kodi TEXT UNIQUE NOT NULL,
+  perdorur BOOLEAN NOT NULL DEFAULT false,
+  email TEXT,
+  perdorur_at TIMESTAMPTZ
+)`).catch(e => console.error('migrim appsumo_kodet:', e.message));
+pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS appsumo_lifetime BOOLEAN NOT NULL DEFAULT false`).catch(e => console.error('migrim appsumo_lifetime:', e.message));
 pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS auto_krijuar BOOLEAN NOT NULL DEFAULT false`).catch(e => console.error('migrim auto_krijuar (promovimet):', e.message));
 
 // Migrim: gjurmimi i perdorimit te "Analizo me AI" (kufi 2/24 ore per biznes)
@@ -218,6 +228,11 @@ app.post('/api/regjistrohu', async (req, res) => {
     // krijo seance (login automatik pas regjistrimit)
     const token = crypto.randomBytes(24).toString('hex');
     await pool.query('INSERT INTO seancat (token, biznes_id) VALUES ($1,$2)', [token, r.rows[0].id]);
+    // APPSUMO: nese ky email ka nje kod TE perdorur ME PARE (kur biznesi ende s'ekzistonte), aktivizo tani.
+    try {
+      const appsumoK = await pool.query('SELECT 1 FROM appsumo_kodet WHERE email=$1 AND perdorur=true LIMIT 1', [email.toLowerCase().trim()]);
+      if (appsumoK.rows.length) await pool.query('UPDATE bizneset SET appsumo_lifetime=true WHERE id=$1', [r.rows[0].id]);
+    } catch (e) { /* jo kritike, s'e ndalon regjistrimin */ }
     res.cookie('imyr_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 30*24*60*60*1000 });
     res.json({ ok: true, biznes_id: r.rows[0].id });
   } catch (e) {
@@ -2325,6 +2340,94 @@ app.get('/sitemap.xml', (req, res) => {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${faqet.map(f => `  <url><loc>https://phronexusai.com${f}</loc><lastmod>${sot}</lastmod></url>`).join('\n')}
 </urlset>`);
+});
+
+// --- APPSUMO: seed i kodeve (thirret 1 here, manualisht, nga admini, pas deploy-it) ---
+app.post('/api/admin/appsumo-seed', iAdmin, async (req, res) => {
+  const kodet = Array.isArray(req.body.kodet) ? req.body.kodet : [];
+  if (!kodet.length) return res.status(400).json({ error: 'Duhet nje array "kodet".' });
+  try {
+    let futur = 0;
+    for (const k of kodet) {
+      const r = await pool.query('INSERT INTO appsumo_kodet (kodi) VALUES ($1) ON CONFLICT (kodi) DO NOTHING', [String(k).trim()]);
+      if (r.rowCount) futur++;
+    }
+    res.json({ ok: true, futur, gjithsej: kodet.length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- APPSUMO: rimbursimi/aktivizimi i kodit — publik, pa login (blerësi mund te mos kete llogari ende) ---
+app.post('/api/appsumo-redeem', async (req, res) => {
+  const email = (req.body.email || '').toLowerCase().trim();
+  const kodi = (req.body.kodi || '').trim();
+  if (!email || !kodi) return res.status(400).json({ error: 'Email dhe kodi jane te detyrueshem.' });
+  try {
+    const k = await pool.query('SELECT id, perdorur FROM appsumo_kodet WHERE kodi=$1', [kodi]);
+    if (!k.rows.length) return res.status(400).json({ error: 'Kodi i pavlefshem.' });
+    if (k.rows[0].perdorur) return res.status(400).json({ error: 'Ky kod eshte perdorur tashme.' });
+
+    await pool.query('UPDATE appsumo_kodet SET perdorur=true, email=$1, perdorur_at=now() WHERE id=$2', [email, k.rows[0].id]);
+
+    // Nese llogaria EKZISTON tashme (u regjistrua PARA se te blinte), aktivizo menjehere.
+    const b = await pool.query('SELECT id FROM bizneset WHERE email=$1', [email]);
+    if (b.rows.length) {
+      await pool.query('UPDATE bizneset SET appsumo_lifetime=true WHERE id=$1', [b.rows[0].id]);
+      return res.json({ ok: true, ekzistonte: true });
+    }
+    // Perndryshe, kodi mbetet i lidhur me email-in — aktivizohet automatikisht kur te regjistrohet (poshte).
+    res.json({ ok: true, ekzistonte: false });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/redeem', (req, res) => {
+  res.type('html').send(`<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redeem your PhronexusAI code</title>
+<style>
+  body{ margin:0; font:16px/1.6 system-ui,sans-serif; background:#0b0f17; color:#e6edf3; display:flex; align-items:center; justify-content:center; min-height:100vh; padding:24px; }
+  .card{ max-width:420px; width:100%; background:#141b26; border:1px solid #2a313c; border-radius:14px; padding:32px; }
+  h1{ font-size:22px; margin:0 0 8px; }
+  p.lead{ color:#8b949e; font-size:14px; margin:0 0 24px; }
+  label{ display:block; font-size:13px; color:#8b949e; margin:14px 0 6px; font-weight:600; }
+  input{ width:100%; box-sizing:border-box; padding:11px 13px; border:1px solid #2a313c; border-radius:8px; background:#0b0f17; color:#e6edf3; font-size:15px; }
+  button{ width:100%; margin-top:22px; padding:13px; border-radius:8px; border:none; background:#3b6ef0; color:#fff; font-weight:700; font-size:15px; cursor:pointer; }
+  button:disabled{ opacity:.6; cursor:default; }
+  .msg{ margin-top:16px; font-size:14px; padding:12px 14px; border-radius:8px; display:none; }
+  .msg.ok{ background:rgba(63,185,80,.15); color:#3fb950; display:block; }
+  .msg.err{ background:rgba(248,81,73,.15); color:#f85149; display:block; }
+</style></head>
+<body>
+<div class="card">
+  <h1>Redeem your AppSumo code</h1>
+  <p class="lead">Enter the email you'll use for PhronexusAI and your AppSumo code below.</p>
+  <label>Email</label>
+  <input type="email" id="email" placeholder="you@company.com">
+  <label>AppSumo code</label>
+  <input type="text" id="kodi" placeholder="PHRX-XXXXXXXXXX">
+  <button id="btn" onclick="redeem()">Redeem</button>
+  <div class="msg" id="msg"></div>
+</div>
+<script>
+async function redeem(){
+  const email=document.getElementById('email').value.trim();
+  const kodi=document.getElementById('kodi').value.trim();
+  const btn=document.getElementById('btn'), msg=document.getElementById('msg');
+  if(!email||!kodi){ msg.className='msg err'; msg.textContent='Please fill in both fields.'; return; }
+  btn.disabled=true; btn.textContent='Redeeming...';
+  try{
+    const r=await fetch('/api/appsumo-redeem',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,kodi})});
+    const d=await r.json();
+    if(!r.ok){ msg.className='msg err'; msg.textContent=d.error||'Something went wrong.'; btn.disabled=false; btn.textContent='Redeem'; return; }
+    if(d.ekzistonte){
+      msg.className='msg ok'; msg.textContent="You're all set! Your existing PhronexusAI account now has lifetime access. Log in to see it.";
+    } else {
+      msg.className='msg ok'; msg.textContent="Code accepted! Now create your PhronexusAI account with this same email — lifetime access will activate automatically.";
+    }
+    btn.style.display='none';
+  }catch(e){ msg.className='msg err'; msg.textContent='Network error, try again.'; btn.disabled=false; btn.textContent='Redeem'; }
+}
+</script>
+</body></html>`);
 });
 
 app.get('/robots.txt', (req, res) => {
