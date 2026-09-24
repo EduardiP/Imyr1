@@ -35,7 +35,10 @@ async function regjistrohu(){
     if(!body.emri||!body.email||!body.fjalekalimi){ msg('Please fill in your name, email, and password.'); $('btnReg').disabled=false; return; }
     const r=await(await fetch('/api/regjistrohu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
     if(r.error){ msg(r.error); $('btnReg').disabled=false; return; }
-    mbyllModal(); await loadMe(); nav(pasHyrjes());
+    try{ if(typeof window.lintrk==='function') window.lintrk('track', { conversion_id: 31342113 }); }catch(e){}
+    mbyllModal(); await loadMe();
+    try{ if(typeof window.gr==='function') window.gr('track', 'conversion', { email: body.email, uid: (une && une.id) }); }catch(e){}
+    nav(pasHyrjes());
   }catch(e){ msg('Error: '+e.message); }
   $('btnReg').disabled=false;
 }
@@ -44,6 +47,7 @@ async function hapKushteGoogle(){
   try{
     const p=await(await fetch('/api/google-pending')).json();
     if(!p.pending) return false;
+    window.__googlePendingEmail = p.email;
     $('gk_pershND').innerHTML='Welcome, <b>'+esc(p.emri||p.email)+'</b>. To finish, please accept the terms.';
     $('modalKushte').classList.remove('hide');
     return true;
@@ -56,8 +60,11 @@ async function pranoGoogle(){
     const r=await(await fetch('/api/google-prano',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({kushtet:true, oferta:$('gk_oferta').checked, lejonPromovim:$('gk_promovim').checked})})).json();
     if(r.error){ const m=$('gk_msg'); m.className='msg err'; m.textContent=r.error; $('gk_btn').disabled=false; return; }
+    try{ if(typeof window.lintrk==='function') window.lintrk('track', { conversion_id: 31342113 }); }catch(e){}
     $('modalKushte').classList.add('hide');
-    await loadMe(); nav(pasHyrjes());
+    await loadMe();
+    try{ if(typeof window.gr==='function') window.gr('track', 'conversion', { email: window.__googlePendingEmail, uid: (une && une.id) }); }catch(e){}
+    nav(pasHyrjes());
   }catch(e){ const m=$('gk_msg'); m.className='msg err'; m.textContent='Error: '+e.message; $('gk_btn').disabled=false; }
 }
 async function dil(){ await fetch('/api/dil',{method:'POST'}); une=null; location.href='/'; }
