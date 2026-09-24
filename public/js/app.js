@@ -3636,7 +3636,9 @@ async function wizKrijo(){
     const r=await(await fetch('/api/regjistrohu',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({emri,email,fjalekalimi:pass,website:web,tipi})})).json();
     if(r.error){ $('a_msg').className='msg err'; $('a_msg').textContent=r.error; $('a_btn').disabled=false; return; }
+    try{ if(typeof window.lintrk==='function') window.lintrk('track', { conversion_id: 31342113 }); }catch(e){}
     await loadMe();
+    try{ if(typeof window.gr==='function') window.gr('track', 'conversion', { email: email, uid: (une && une.id) }); }catch(e){}
     await advance();
   }catch(e){ $('a_msg').className='msg err'; $('a_msg').textContent='Gabim: '+e.message; $('a_btn').disabled=false; }
 }
