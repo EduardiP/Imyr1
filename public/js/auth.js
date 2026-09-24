@@ -35,9 +35,10 @@ async function regjistrohu(){
     if(!body.emri||!body.email||!body.fjalekalimi){ msg('Please fill in your name, email, and password.'); $('btnReg').disabled=false; return; }
     const r=await(await fetch('/api/regjistrohu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
     if(r.error){ msg(r.error); $('btnReg').disabled=false; return; }
-    try{ if(typeof window.lintrk==='function') window.lintrk('track', { conversion_id: 31342113 }); }catch(e){}
+    console.log('%c[GJURMIM] Regjistrimi u pranua, po thirren tracking-et...', 'color:orange;font-weight:bold;');
+    try{ if(typeof window.lintrk==='function'){ window.lintrk('track', { conversion_id: 31342113 }); console.log('%c[GJURMIM] LinkedIn lintrk() u thirr me sukses.', 'color:green;font-weight:bold;'); } else console.log('%c[GJURMIM] window.lintrk S\'EKZISTON — LinkedIn s\'u thirr.', 'color:red;font-weight:bold;'); }catch(e){ console.log('%c[GJURMIM] Gabim LinkedIn:', 'color:red;', e); }
     mbyllModal(); await loadMe();
-    try{ if(typeof window.gr==='function') window.gr('track', 'conversion', { email: body.email, uid: (une && une.id) }); }catch(e){}
+    try{ if(typeof window.gr==='function'){ window.gr('track', 'conversion', { email: body.email, uid: (une && une.id) }); console.log('%c[GJURMIM] Reditus gr() u thirr me sukses. Email: '+body.email+' Uid: '+(une&&une.id), 'color:green;font-weight:bold;'); } else console.log('%c[GJURMIM] window.gr S\'EKZISTON — Reditus s\'u thirr.', 'color:red;font-weight:bold;'); }catch(e){ console.log('%c[GJURMIM] Gabim Reditus:', 'color:red;', e); }
     nav(pasHyrjes());
   }catch(e){ msg('Error: '+e.message); }
   $('btnReg').disabled=false;
