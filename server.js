@@ -2275,7 +2275,7 @@ function imyrJsHandler(req, res) {
         var poz = d.pozicioni || 'qender';
         var align = poz==='majtas' ? 'flex-start' : (poz==='djathtas' ? 'flex-end' : 'center');
         var badge = (d.plani_host !== 'premium')
-          ? '<a href="' + base + '" target="_blank" rel="noopener" style="position:absolute;bottom:0;right:0;font:9px/1 system-ui,sans-serif;color:rgba(0,0,0,.35);text-decoration:none;background:rgba(255,255,255,.6);padding:2px 5px;border-radius:4px 0 0 0;">Powered by PhronexusAI</a>'
+          ? '<a href="' + base + '" target="_blank" rel="noopener" style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font:9px/1 system-ui,sans-serif;color:rgba(0,0,0,.45);text-decoration:none;background:rgba(255,255,255,.75);padding:2px 6px;border-radius:4px;white-space:nowrap;">Powered by PhronexusAI</a>'
           : '';
         var kutia = '<div style="width:' + mw + 'px;height:' + mh + 'px;max-width:100%;position:sticky;top:10px;overflow:hidden;">'
           + '<div style="position:relative;width:100%;height:100%;">' + inner + badge + '</div></div>';
