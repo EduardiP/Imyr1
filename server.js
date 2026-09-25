@@ -2274,7 +2274,11 @@ function imyrJsHandler(req, res) {
         }
         var poz = d.pozicioni || 'qender';
         var align = poz==='majtas' ? 'flex-start' : (poz==='djathtas' ? 'flex-end' : 'center');
-        var kutia = '<div style="width:' + mw + 'px;height:' + mh + 'px;max-width:100%;position:sticky;top:10px;">' + inner + '</div>';
+        var badge = (d.plani_host !== 'premium')
+          ? '<a href="' + base + '" target="_blank" rel="noopener" style="position:absolute;bottom:2px;right:4px;font:9px/1 system-ui,sans-serif;color:rgba(0,0,0,.35);text-decoration:none;background:rgba(255,255,255,.6);padding:1px 4px;border-radius:3px;">Powered by PhronexusAI</a>'
+          : '';
+        var kutia = '<div style="width:' + mw + 'px;height:' + mh + 'px;max-width:100%;position:sticky;top:10px;">'
+          + '<div style="position:relative;width:100%;height:100%;">' + inner + badge + '</div></div>';
         slot.innerHTML = '<div style="display:flex;justify-content:' + align + ';width:100%;">' + kutia + '</div>';
         if(d.id){ if(d.cikel_ri){ rifilloCikel(d.id); } else { shtoPare(d.id); } }
         if(!preview){
@@ -2689,11 +2693,12 @@ app.get('/ad', async (req, res) => {
     if (sn.pauzuar) return res.json({ teksti: null });   // snippet ne pauze → asgje (s'shfaqet, s'mat, s'konkurron)
     const bizId = sn.biznes_id;
     // Merr url_konvertimi te biznesit (konvertimi eshte per biznes)
-    const bkonv = await pool.query('SELECT url_konvertimi, snippet_active FROM bizneset WHERE id=$1', [bizId]);
+    const bkonv = await pool.query('SELECT url_konvertimi, snippet_active, plani FROM bizneset WHERE id=$1', [bizId]);
     const b = { rows: [{
       id: bizId,
       snippet_active: sn.snippet_active,
       url_konvertimi: bkonv.rows.length ? bkonv.rows[0].url_konvertimi : null,
+      plani_host: bkonv.rows.length ? bkonv.rows[0].plani : 'falas',
       madhesia_desktop: sn.madhesia_desktop,
       madhesia_mobile: sn.madhesia_mobile,
       pozicioni_reklames: sn.pozicioni,
@@ -2736,7 +2741,7 @@ app.get('/ad', async (req, res) => {
     const rek = await selector.zgjidhReklame(pool, bizId, pareRaw, b.rows[0].snippet_id || null);
     
     // konv_url = faqja e konvertimit E KETIJ biznesi (snippet-i e perdor per te njohur suksesin)
-    res.json(Object.assign({ konv_url: b.rows[0].url_konvertimi || null, madhesia: b.rows[0].madhesia_desktop || '210x261', madhesia_mobile: b.rows[0].madhesia_mobile || '290x260', pozicioni: b.rows[0].pozicioni_reklames || 'qender' }, rek || {}));
+    res.json(Object.assign({ konv_url: b.rows[0].url_konvertimi || null, plani_host: b.rows[0].plani_host || 'falas', madhesia: b.rows[0].madhesia_desktop || '210x261', madhesia_mobile: b.rows[0].madhesia_mobile || '290x260', pozicioni: b.rows[0].pozicioni_reklames || 'qender' }, rek || {}));
   } catch (e) {
     res.json({ teksti: null });
   }
