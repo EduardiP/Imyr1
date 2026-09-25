@@ -2739,7 +2739,8 @@ async function mainPlani(m){
   const VECORITE_PREMIUM_SPEC = [
     'UNLIMITED Creative generation (image, video, HTML5, with AI)',
     'UNLIMITED Ad creation',
-    'UNLIMITED AI assistance (creation chat + support)'
+    'UNLIMITED AI assistance (creation chat + support)',
+    'No "Powered by PhronexusAI" badge on your ads'
   ];
   function ikonaKontrolli(){
     return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3fb950" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;margin-top:2px;"><polyline points="20 6 9 17 4 12"/></svg>';
