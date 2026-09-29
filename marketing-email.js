@@ -35,32 +35,9 @@ function ndertoTransporteret() {
   return transporteret;
 }
 
-// Parser i thjeshte CSV — mjafton per formatin qe eksporton biznes-finder (email,domain,emri),
-// perfshire fusha te rrethuara me thonjeza qe permbajne presje.
-function parseCSV(tekst) {
-  const rreshta = [];
-  let rreshtiAkt = [], fusha = '', brendaThonjezash = false;
-  for (let i = 0; i < tekst.length; i++) {
-    const c = tekst[i], next = tekst[i + 1];
-    if (brendaThonjezash) {
-      if (c === '"' && next === '"') { fusha += '"'; i++; }
-      else if (c === '"') { brendaThonjezash = false; }
-      else fusha += c;
-    } else {
-      if (c === '"') brendaThonjezash = true;
-      else if (c === ',') { rreshtiAkt.push(fusha); fusha = ''; }
-      else if (c === '\n' || c === '\r') {
-        if (fusha !== '' || rreshtiAkt.length) { rreshtiAkt.push(fusha); rreshta.push(rreshtiAkt); rreshtiAkt = []; fusha = ''; }
-      } else fusha += c;
-    }
-  }
-  if (fusha !== '' || rreshtiAkt.length) { rreshtiAkt.push(fusha); rreshta.push(rreshtiAkt); }
-  return rreshta;
-}
-
 function escHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-module.exports = function (app, pool, iAdmin, upload) {
+module.exports = function (app, pool, iAdmin) {
 
   pool.query(`CREATE TABLE IF NOT EXISTS marketing_kontaktet (
     id SERIAL PRIMARY KEY,
@@ -101,9 +78,8 @@ module.exports = function (app, pool, iAdmin, upload) {
   <p class="mut">I ndare plotesisht nga pjesa tjeter e platformes. Kontaktet importohen nga CSV (eksportuar te projekti "biznes-finder").</p>
 
   <div class="card">
-    <h2>1. Importo kontakte (CSV)</h2>
-    <input type="file" id="csvFile" accept=".csv">
-    <button onclick="importoCSV()">Importo</button>
+    <h2>1. Sinkronizo kontaktet (automatikisht, nga biznes-finder)</h2>
+    <button onclick="sinkronizo()">Sinkronizo tani</button>
     <div class="status" id="statusImport"></div>
   </div>
 
@@ -139,18 +115,14 @@ async function ngarkoPermbledhjen(){
     document.getElementById('statusLlogarite').textContent = d.llogarite.length + ' llogari email aktive: ' + d.llogarite.join(', ');
   }catch(e){}
 }
-async function importoCSV(){
-  var input = document.getElementById('csvFile');
+async function sinkronizo(){
   var statusImport = document.getElementById('statusImport');
-  if(!input.files.length){ statusImport.textContent = 'Zgjidh nje skedar CSV fillimisht.'; return; }
-  statusImport.textContent = 'Duke importuar...';
-  var formData = new FormData();
-  formData.append('csv', input.files[0]);
+  statusImport.textContent = 'Duke sinkronizuar...';
   try{
-    var r = await fetch('/api/admin/marketing/importo', { method: 'POST', body: formData });
+    var r = await fetch('/api/admin/marketing/sinkronizo', { method: 'POST' });
     var d = await r.json();
     if(d.error){ statusImport.textContent = 'Gabim: ' + d.error; return; }
-    statusImport.textContent = d.importuar + ' kontakte te reja u importuan (' + d.dublikate + ' ishin tashme te njohura).';
+    statusImport.textContent = d.importuar + ' kontakte te reja u importuan (' + d.dublikate + ' ishin tashme te njohura, ' + d.pa_email + ' pa email). Gjithsej ne burim: ' + d.gjithsejNeBurim + '.';
     ngarkoPermbledhjen();
   }catch(e){ statusImport.textContent = 'Gabim: ' + e.message; }
 }
@@ -190,31 +162,25 @@ ngarkoPermbledhjen();
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
-  app.post('/api/admin/marketing/importo', iAdmin, upload.single('csv'), async (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'Mungon skedari CSV.' });
+  // ═══ Sinkronizim automatik nga projekti "biznes-finder" (jo CSV manual) ═══
+  app.post('/api/admin/marketing/sinkronizo', iAdmin, async (req, res) => {
+    const burimi = process.env.BIZNES_FINDER_URL; // p.sh. https://emailet-production.up.railway.app
+    if (!burimi) return res.status(500).json({ error: 'BIZNES_FINDER_URL s\'eshte konfiguruar.' });
     try {
-      const tekst = req.file.buffer.toString('utf-8');
-      const rreshta = parseCSV(tekst);
-      if (!rreshta.length) return res.status(400).json({ error: 'Skedari eshte bosh.' });
-      const headers = rreshta[0].map(h => h.trim().toLowerCase());
-      const idxEmail = headers.indexOf('email');
-      const idxDomain = headers.indexOf('domain');
-      const idxEmri = headers.indexOf('emri');
-      if (idxEmail === -1) return res.status(400).json({ error: 'Kolona "email" mungon ne CSV.' });
-      let importuar = 0, dublikate = 0;
-      for (let i = 1; i < rreshta.length; i++) {
-        const rr = rreshta[i];
-        const email = (rr[idxEmail] || '').trim();
-        if (!email || !email.includes('@')) continue;
-        const domain = idxDomain !== -1 ? (rr[idxDomain] || '').trim() : '';
-        const emri = idxEmri !== -1 ? (rr[idxEmri] || '').trim() : '';
+      const r = await fetch(burimi.replace(/\/$/, '') + '/api/te-gjitha');
+      if (!r.ok) return res.status(500).json({ error: 'biznes-finder ktheu ' + r.status });
+      const d = await r.json();
+      const rreshta = d.rows || [];
+      let importuar = 0, dublikate = 0, pa_email = 0;
+      for (const row of rreshta) {
+        if (!row.email || !row.email.includes('@')) { pa_email++; continue; }
         const ins = await pool.query(
           'INSERT INTO marketing_kontaktet (email, domain, emri) VALUES ($1,$2,$3) ON CONFLICT (email) DO NOTHING RETURNING id',
-          [email, domain, emri]
+          [row.email, row.domain, row.emri]
         );
         if (ins.rows.length) importuar++; else dublikate++;
       }
-      res.json({ importuar, dublikate });
+      res.json({ importuar, dublikate, pa_email, gjithsejNeBurim: rreshta.length });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
