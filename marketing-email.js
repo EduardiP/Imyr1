@@ -1,170 +1,71 @@
 // marketing-email.js — Dergim email-esh MARKETING (outreach i ftohte) te bizneset e gjetura
-// nga projekti i vecante "biznes-finder". SKEDAR I VECANT, i pa lidhur me pjesen tjeter
-// te platformes (email.js/ekipi.js mbeten te paprekur) — vetem faqja e vet admin,
-// e re, ne /admin/marketing.
+// nga projekti i vecante "biznes-finder". Skedar i vecante (backend); UI-ja tani jeton
+// brenda admin.html, si seksioni "Marketingu" (jo me faqe e ndare /admin/marketing).
 //
-// Kerkon variabla mjedisi (Railway -> Variables):
-//   GMAIL_USER, GMAIL_APP_PASSWORD          (RIPERDOR ato qe TASHME ekzistojne per info@phronexusai.com)
-//   MKT_EMAIL_2_USER, MKT_EMAIL_2_PASS      (i ri — p.sh. eduardpepushaj@gmail.com)
-//   MKT_EMAIL_3_USER, MKT_EMAIL_3_PASS      (i ri — p.sh. phronexusplatform@gmail.com)
-// Cdo llogari qe s'i ka te 2 variablat e veta, thjesht anashkalohet (s'prish gjeresine tjeter).
+// Variabla mjedisi (Railway -> Variables):
+//   GMAIL_USER, GMAIL_APP_PASSWORD          (RIPERDOR ato qe TASHME ekzistojne — info@phronexusai.com)
+//   MKT_EMAIL_2_USER, MKT_EMAIL_2_PASS      (i ri)
+//   MKT_EMAIL_3_USER, MKT_EMAIL_3_PASS      (i ri)
+//   BIZNES_FINDER_URL                       (p.sh. https://emailet-production.up.railway.app)
 
 const nodemailer = require('nodemailer');
 
 const LLOGARITE_KONFIG = [
-  { emri: 'info@phronexusai.com (ekzistuese)', user: 'GMAIL_USER', pass: 'GMAIL_APP_PASSWORD' },
-  { emri: 'Llogaria 2', user: 'MKT_EMAIL_2_USER', pass: 'MKT_EMAIL_2_PASS' },
-  { emri: 'Llogaria 3', user: 'MKT_EMAIL_3_USER', pass: 'MKT_EMAIL_3_PASS' }
+  { user: 'GMAIL_USER', pass: 'GMAIL_APP_PASSWORD' },
+  { user: 'MKT_EMAIL_2_USER', pass: 'MKT_EMAIL_2_PASS' },
+  { user: 'MKT_EMAIL_3_USER', pass: 'MKT_EMAIL_3_PASS' }
 ];
-
-const transporteret = []; // { email, transporter }
+const transporteret = {}; // { [email]: transporter }
 function ndertoTransporteret() {
-  if (transporteret.length) return transporteret;
+  if (Object.keys(transporteret).length) return transporteret;
   for (const l of LLOGARITE_KONFIG) {
     const user = process.env[l.user], pass = process.env[l.pass];
     if (!user || !pass) continue;
-    transporteret.push({
-      email: user,
-      transporter: nodemailer.createTransport({
-        host: 'smtp.gmail.com', port: 587, secure: false,
-        auth: { user, pass },
-        connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000
-      })
+    transporteret[user] = nodemailer.createTransport({
+      host: 'smtp.gmail.com', port: 587, secure: false,
+      auth: { user, pass },
+      connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000
     });
   }
   return transporteret;
 }
+function listaLlogariveAktive() { return Object.keys(ndertoTransporteret()); }
 
 function escHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 module.exports = function (app, pool, iAdmin) {
 
-  pool.query(`CREATE TABLE IF NOT EXISTS marketing_kontaktet (
-    id SERIAL PRIMARY KEY,
-    email TEXT UNIQUE NOT NULL,
-    domain TEXT,
-    emri TEXT,
-    kategoria TEXT,
-    derguar BOOLEAN NOT NULL DEFAULT false,
-    derguar_nga TEXT,
-    derguar_at TIMESTAMPTZ,
-    importuar_at TIMESTAMPTZ DEFAULT now()
-  )`).catch(e => console.error('marketing_kontaktet migrim:', e.message));
-
-  // ═══ Faqja e vet, e vecante — /admin/marketing ═══
-  app.get('/admin/marketing', iAdmin, (req, res) => {
-    res.type('html').send(`<!DOCTYPE html>
-<html lang="sq"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Marketing Email — PhronexusAI Admin</title>
-<style>
-  body{ margin:0; font:15px/1.6 system-ui,sans-serif; background:#0b0f17; color:#e6edf3; }
-  .wrap{ max-width:1000px; margin:0 auto; padding:32px 20px; }
-  h1{ font-size:22px; margin:0 0 6px; }
-  h2{ font-size:16px; margin:28px 0 10px; color:#e6edf3; }
-  p.mut{ color:#8b949e; font-size:13px; }
-  .card{ background:#141b26; border:1px solid #2a313c; border-radius:10px; padding:18px; margin-bottom:16px; }
-  input, textarea, select{ width:100%; box-sizing:border-box; padding:10px 12px; border:1px solid #2a313c; border-radius:8px; background:#0e1420; color:#e6edf3; font-size:14px; margin-bottom:10px; font-family:inherit; }
-  textarea{ min-height:160px; resize:vertical; }
-  button{ padding:10px 20px; border-radius:8px; border:none; background:#3b6ef0; color:#fff; font-weight:600; cursor:pointer; font-size:14px; }
-  button:disabled{ opacity:.5; }
-  table{ width:100%; border-collapse:collapse; margin-top:10px; }
-  th, td{ text-align:left; padding:7px 9px; border-bottom:1px solid #2a313c; font-size:13px; }
-  th{ color:#8b949e; }
-  .status{ font-size:13px; color:#8b949e; margin-top:8px; }
-  .llogarite{ font-size:13px; color:#3fb950; }
-</style></head>
-<body><div class="wrap">
-  <h1>Marketing Email</h1>
-  <p class="mut">I ndare plotesisht nga pjesa tjeter e platformes. Kontaktet importohen nga CSV (eksportuar te projekti "biznes-finder").</p>
-
-  <div class="card">
-    <h2>1. Sinkronizo kontaktet (automatikisht, nga biznes-finder)</h2>
-    <button onclick="sinkronizo()">Sinkronizo tani</button>
-    <div class="status" id="statusImport"></div>
-  </div>
-
-  <div class="card">
-    <h2>2. Kontaktet</h2>
-    <div id="permbledhjeKontakte" class="status"></div>
-    <table id="tabelaKontakte" style="display:none;">
-      <thead><tr><th>Email</th><th>Domain</th><th>Emri</th><th>Kategoria</th><th>Status</th></tr></thead>
-      <tbody id="tabelaKontakteBody"></tbody>
-    </table>
-  </div>
-
-  <div class="card">
-    <h2>3. Shkruaj email-in</h2>
-    <input type="text" id="subjekti" placeholder="Subjekti">
-    <textarea id="permbajtja" placeholder="Permbajtja (HTML lejohet). Perdor {emri} per emrin e biznesit, {domain} per domain-in."></textarea>
-  </div>
-
-  <div class="card">
-    <h2>4. Dergo</h2>
-    <div id="statusLlogarite" class="llogarite"></div>
-    <input type="number" id="sasia" placeholder="Sa kontakte te reja te dergohen tani (p.sh. 3)" value="3" min="1">
-    <button onclick="dergo()">Dergo</button>
-    <div class="status" id="statusDergim"></div>
-  </div>
-</div>
-<script>
-async function ngarkoPermbledhjen(){
-  try{
-    var r = await fetch('/api/admin/marketing/permbledhje');
-    var d = await r.json();
-    document.getElementById('permbledhjeKontakte').textContent = d.gjithsej + ' gjithsej — ' + d.dergu + ' te dergu, ' + d.paDergu + ' ende pa dergu.';
-    document.getElementById('statusLlogarite').textContent = d.llogarite.length + ' llogari email aktive: ' + d.llogarite.join(', ');
-  }catch(e){}
-}
-async function sinkronizo(){
-  var statusImport = document.getElementById('statusImport');
-  statusImport.textContent = 'Duke sinkronizuar...';
-  try{
-    var r = await fetch('/api/admin/marketing/sinkronizo', { method: 'POST' });
-    var d = await r.json();
-    if(d.error){ statusImport.textContent = 'Gabim: ' + d.error; return; }
-    statusImport.textContent = d.importuar + ' kontakte te reja u importuan (' + d.dublikate + ' ishin tashme te njohura, ' + d.pa_email + ' pa email). Gjithsej ne burim: ' + d.gjithsejNeBurim + '.';
-    ngarkoPermbledhjen();
-  }catch(e){ statusImport.textContent = 'Gabim: ' + e.message; }
-}
-async function dergo(){
-  var sasia = parseInt(document.getElementById('sasia').value) || 3;
-  var subjekti = document.getElementById('subjekti').value.trim();
-  var permbajtja = document.getElementById('permbajtja').value.trim();
-  var statusDergim = document.getElementById('statusDergim');
-  if(!subjekti || !permbajtja){ statusDergim.textContent = 'Ploteso subjektin dhe permbajtjen fillimisht.'; return; }
-  statusDergim.textContent = 'Duke derguar...';
-  try{
-    var r = await fetch('/api/admin/marketing/dergo', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ subjekti, permbajtja, sasia })
-    });
-    var d = await r.json();
-    if(d.error){ statusDergim.textContent = 'Gabim: ' + d.error; return; }
-    statusDergim.textContent = d.dergu + ' u derguan, ' + d.deshtuar + ' deshtuan.';
-    ngarkoPermbledhjen();
-  }catch(e){ statusDergim.textContent = 'Gabim: ' + e.message; }
-}
-ngarkoPermbledhjen();
-</script>
-</body></html>`);
-  });
-
-  // ═══ API-te ═══
-  app.get('/api/admin/marketing/permbledhje', iAdmin, async (req, res) => {
+  // ═══ Migrime ═══
+  (async () => {
     try {
-      const r = await pool.query(`SELECT
-        COUNT(*)::int AS gjithsej,
-        COUNT(*) FILTER (WHERE derguar) ::int AS dergu,
-        COUNT(*) FILTER (WHERE NOT derguar) ::int AS "paDergu"
-        FROM marketing_kontaktet`);
-      const llogarite = ndertoTransporteret().map(l => l.email);
-      res.json({ ...r.rows[0], llogarite });
-    } catch (e) { res.status(500).json({ error: e.message }); }
-  });
+      await pool.query(`CREATE TABLE IF NOT EXISTS marketing_kontaktet (
+        id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, domain TEXT, emri TEXT, kategoria TEXT,
+        derguar BOOLEAN NOT NULL DEFAULT false, derguar_nga TEXT, derguar_at TIMESTAMPTZ,
+        importuar_at TIMESTAMPTZ DEFAULT now()
+      )`);
+      await pool.query(`CREATE TABLE IF NOT EXISTS marketing_shabllonet (
+        id SERIAL PRIMARY KEY, emri TEXT NOT NULL, subjekti TEXT NOT NULL, html TEXT NOT NULL,
+        krijuar_at TIMESTAMPTZ DEFAULT now()
+      )`);
+      await pool.query(`CREATE TABLE IF NOT EXISTS marketing_fushatat (
+        id SERIAL PRIMARY KEY, emri TEXT, llogaria TEXT NOT NULL, shabllon_id INT REFERENCES marketing_shabllonet(id),
+        statusi TEXT NOT NULL DEFAULT 'aktiv', krijuar_at TIMESTAMPTZ DEFAULT now()
+      )`);
+      await pool.query(`CREATE TABLE IF NOT EXISTS marketing_fushata_kontakte (
+        id SERIAL PRIMARY KEY, fushata_id INT NOT NULL REFERENCES marketing_fushatat(id) ON DELETE CASCADE,
+        kontakt_id INT NOT NULL REFERENCES marketing_kontaktet(id), radha INT NOT NULL,
+        derguar BOOLEAN NOT NULL DEFAULT false, derguar_at TIMESTAMPTZ
+      )`);
+      await pool.query(`CREATE TABLE IF NOT EXISTS marketing_fushata_slots (
+        id SERIAL PRIMARY KEY, fushata_id INT NOT NULL REFERENCES marketing_fushatat(id) ON DELETE CASCADE,
+        data DATE NOT NULL, ora TIME NOT NULL, sasia INT NOT NULL, perdorur INT NOT NULL DEFAULT 0
+      )`);
+    } catch (e) { console.error('marketing-email migrim:', e.message); }
+  })();
 
-  // ═══ Sinkronizim automatik nga projekti "biznes-finder" (jo CSV manual) ═══
+  // ═══ Sinkronizim automatik nga biznes-finder ═══
   app.post('/api/admin/marketing/sinkronizo', iAdmin, async (req, res) => {
-    const burimi = process.env.BIZNES_FINDER_URL; // p.sh. https://emailet-production.up.railway.app
+    const burimi = process.env.BIZNES_FINDER_URL;
     if (!burimi) return res.status(500).json({ error: 'BIZNES_FINDER_URL s\'eshte konfiguruar.' });
     try {
       const r = await fetch(burimi.replace(/\/$/, '') + '/api/te-gjitha');
@@ -175,8 +76,8 @@ ngarkoPermbledhjen();
       for (const row of rreshta) {
         if (!row.email || !row.email.includes('@')) { pa_email++; continue; }
         const ins = await pool.query(
-          'INSERT INTO marketing_kontaktet (email, domain, emri) VALUES ($1,$2,$3) ON CONFLICT (email) DO NOTHING RETURNING id',
-          [row.email, row.domain, row.emri]
+          'INSERT INTO marketing_kontaktet (email, domain, emri, kategoria) VALUES ($1,$2,$3,$4) ON CONFLICT (email) DO UPDATE SET kategoria=COALESCE(marketing_kontaktet.kategoria, EXCLUDED.kategoria) RETURNING id',
+          [row.email, row.domain, row.emri, row.kategoria || null]
         );
         if (ins.rows.length) importuar++; else dublikate++;
       }
@@ -184,30 +85,148 @@ ngarkoPermbledhjen();
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
-  app.post('/api/admin/marketing/dergo', iAdmin, async (req, res) => {
-    const { subjekti, permbajtja, sasia } = req.body || {};
-    if (!subjekti || !permbajtja) return res.status(400).json({ error: 'Mungon subjekti ose permbajtja.' });
-    const llogarite = ndertoTransporteret();
-    if (!llogarite.length) return res.status(500).json({ error: 'Asnje llogari email s\'eshte konfiguruar.' });
+  app.get('/api/admin/marketing/permbledhje', iAdmin, async (req, res) => {
     try {
-      const r = await pool.query('SELECT * FROM marketing_kontaktet WHERE NOT derguar ORDER BY importuar_at ASC LIMIT $1', [sasia || 3]);
-      let dergu = 0, deshtuar = 0;
-      for (let i = 0; i < r.rows.length; i++) {
-        const kontakti = r.rows[i];
-        const llogaria = llogarite[i % llogarite.length]; // rotullim mes llogarive
-        const html = permbajtja
-          .replace(/\{emri\}/g, escHtml(kontakti.emri || kontakti.domain))
-          .replace(/\{domain\}/g, escHtml(kontakti.domain || ''));
-        try {
-          await llogaria.transporter.sendMail({
-            from: '"PhronexusAI" <' + llogaria.email + '>',
-            to: kontakti.email, subject: subjekti, html
-          });
-          await pool.query('UPDATE marketing_kontaktet SET derguar=true, derguar_nga=$1, derguar_at=now() WHERE id=$2', [llogaria.email, kontakti.id]);
-          dergu++;
-        } catch (e) { deshtuar++; }
-      }
-      res.json({ dergu, deshtuar });
+      const r = await pool.query(`SELECT COUNT(*)::int AS gjithsej,
+        COUNT(*) FILTER (WHERE derguar)::int AS dergu, COUNT(*) FILTER (WHERE NOT derguar)::int AS "paDergu"
+        FROM marketing_kontaktet`);
+      res.json({ ...r.rows[0], llogarite: listaLlogariveAktive() });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
+
+  // ═══ Llogarite disponueshme ═══
+  app.get('/api/admin/marketing/llogarite', iAdmin, (req, res) => {
+    res.json({ llogarite: listaLlogariveAktive() });
+  });
+
+  // ═══ Kategorite (nga kontaktet e importuara) ═══
+  app.get('/api/admin/marketing/kategorite', iAdmin, async (req, res) => {
+    try {
+      const r = await pool.query(`SELECT kategoria, COUNT(*)::int AS total, COUNT(*) FILTER (WHERE NOT derguar)::int AS "paDergu"
+        FROM marketing_kontaktet WHERE kategoria IS NOT NULL GROUP BY kategoria ORDER BY kategoria ASC`);
+      res.json({ kategorite: r.rows });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ═══ Kontaktet e nje kategorie ═══
+  app.get('/api/admin/marketing/kontaktet', iAdmin, async (req, res) => {
+    try {
+      const { kategoria } = req.query;
+      const r = kategoria
+        ? await pool.query('SELECT id, email, domain, emri, derguar FROM marketing_kontaktet WHERE kategoria=$1 ORDER BY emri ASC', [kategoria])
+        : await pool.query('SELECT id, email, domain, emri, derguar FROM marketing_kontaktet ORDER BY emri ASC');
+      res.json({ kontaktet: r.rows });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ═══ Shabllonet ═══
+  app.get('/api/admin/marketing/shabllonet', iAdmin, async (req, res) => {
+    try {
+      const r = await pool.query('SELECT id, emri, subjekti FROM marketing_shabllonet ORDER BY krijuar_at DESC');
+      res.json({ shabllonet: r.rows });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+  app.post('/api/admin/marketing/shabllonet', iAdmin, async (req, res) => {
+    const { emri, subjekti, html } = req.body || {};
+    if (!emri || !subjekti || !html) return res.status(400).json({ error: 'Mungon emri, subjekti, ose permbajtja.' });
+    try {
+      const r = await pool.query('INSERT INTO marketing_shabllonet (emri, subjekti, html) VALUES ($1,$2,$3) RETURNING id', [emri, subjekti, html]);
+      res.json({ ok: true, id: r.rows[0].id });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ═══ Krijo fushate (kontakte te selektuara + shabllon + orar) ═══
+  app.post('/api/admin/marketing/fushata', iAdmin, async (req, res) => {
+    const { emri, llogaria, shabllon_id, kontakt_ids, slots } = req.body || {};
+    if (!llogaria) return res.status(400).json({ error: 'Zgjidh nje llogari derguesi.' });
+    if (!shabllon_id) return res.status(400).json({ error: 'Zgjidh nje shabllon.' });
+    if (!Array.isArray(kontakt_ids) || !kontakt_ids.length) return res.status(400).json({ error: 'Zgjidh te pakten 1 kontakt.' });
+    if (!Array.isArray(slots) || !slots.length) return res.status(400).json({ error: 'Shto te pakten 1 date/ore ne orar.' });
+    if (!listaLlogariveAktive().includes(llogaria)) return res.status(400).json({ error: 'Llogaria "' + llogaria + '" s\'eshte konfiguruar.' });
+    const klient = await pool.connect();
+    try {
+      await klient.query('BEGIN');
+      const f = await klient.query(
+        'INSERT INTO marketing_fushatat (emri, llogaria, shabllon_id) VALUES ($1,$2,$3) RETURNING id',
+        [emri || null, llogaria, shabllon_id]
+      );
+      const fushataId = f.rows[0].id;
+      for (let i = 0; i < kontakt_ids.length; i++) {
+        await klient.query('INSERT INTO marketing_fushata_kontakte (fushata_id, kontakt_id, radha) VALUES ($1,$2,$3)', [fushataId, kontakt_ids[i], i]);
+      }
+      for (const s of slots) {
+        if (!s.data || !s.ora || !s.sasia) continue;
+        await klient.query('INSERT INTO marketing_fushata_slots (fushata_id, data, ora, sasia) VALUES ($1,$2,$3,$4)', [fushataId, s.data, s.ora, s.sasia]);
+      }
+      await klient.query('COMMIT');
+      res.json({ ok: true, fushata_id: fushataId });
+    } catch (e) {
+      await klient.query('ROLLBACK');
+      res.status(500).json({ error: e.message });
+    } finally { klient.release(); }
+  });
+
+  // ═══ Lista e fushatave (per Analitiken) ═══
+  app.get('/api/admin/marketing/fushatat', iAdmin, async (req, res) => {
+    try {
+      const r = await pool.query(`
+        SELECT f.id, f.emri, f.llogaria, f.statusi, f.krijuar_at, s.emri AS shabllon_emri,
+          COUNT(fk.id)::int AS gjithsej_kontakte,
+          COUNT(fk.id) FILTER (WHERE fk.derguar)::int AS derguar_kontakte
+        FROM marketing_fushatat f
+        LEFT JOIN marketing_shabllonet s ON s.id = f.shabllon_id
+        LEFT JOIN marketing_fushata_kontakte fk ON fk.fushata_id = f.id
+        GROUP BY f.id, s.emri ORDER BY f.krijuar_at DESC`);
+      res.json({ fushatat: r.rows });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ═══ Motori i planifikuar — kontrollon cdo minute, dergon kur eshte koha ═══
+  async function kontrolloDheDergoFushatat() {
+    const llog = ndertoTransporteret();
+    try {
+      const slotsGati = await pool.query(`
+        SELECT sl.id AS slot_id, sl.fushata_id, sl.sasia, sl.perdorur, f.llogaria, f.shabllon_id, f.statusi
+        FROM marketing_fushata_slots sl
+        JOIN marketing_fushatat f ON f.id = sl.fushata_id
+        WHERE f.statusi = 'aktiv' AND sl.perdorur < sl.sasia
+          AND (sl.data + sl.ora) <= now()
+        ORDER BY sl.data ASC, sl.ora ASC`);
+
+      for (const slot of slotsGati.rows) {
+        const transporter = llog[slot.llogaria];
+        if (!transporter) continue; // llogaria s'eshte me e konfiguruar, anashkalo ne heshtje
+        const sasiaAkoma = slot.sasia - slot.perdorur;
+        if (sasiaAkoma <= 0) continue;
+
+        const sh = await pool.query('SELECT subjekti, html FROM marketing_shabllonet WHERE id=$1', [slot.shabllon_id]);
+        if (!sh.rows.length) continue;
+        const { subjekti, html: htmlBazë } = sh.rows[0];
+
+        const teDerguar = await pool.query(`
+          SELECT fk.id AS fk_id, k.id AS kontakt_id, k.email, k.emri, k.domain
+          FROM marketing_fushata_kontakte fk JOIN marketing_kontaktet k ON k.id = fk.kontakt_id
+          WHERE fk.fushata_id=$1 AND NOT fk.derguar ORDER BY fk.radha ASC LIMIT $2`,
+          [slot.fushata_id, sasiaAkoma]);
+
+        for (const kont of teDerguar.rows) {
+          const html = htmlBazë.replace(/\{emri\}/g, escHtml(kont.emri || kont.domain)).replace(/\{domain\}/g, escHtml(kont.domain || ''));
+          try {
+            await transporter.sendMail({ from: '"PhronexusAI" <' + slot.llogaria + '>', to: kont.email, subject: subjekti, html });
+            await pool.query('UPDATE marketing_fushata_kontakte SET derguar=true, derguar_at=now() WHERE id=$1', [kont.fk_id]);
+            await pool.query('UPDATE marketing_kontaktet SET derguar=true, derguar_nga=$1, derguar_at=now() WHERE id=$2', [slot.llogaria, kont.kontakt_id]);
+            await pool.query('UPDATE marketing_fushata_slots SET perdorur = perdorur + 1 WHERE id=$1', [slot.slot_id]);
+          } catch (e) { console.error('marketing dergim deshtoi:', kont.email, e.message); }
+        }
+
+        // Nese s'ka me kontakte pa dergu fare ne kete fushate, e shenon te perfunduar.
+        const mbetur = await pool.query('SELECT COUNT(*)::int AS n FROM marketing_fushata_kontakte WHERE fushata_id=$1 AND NOT derguar', [slot.fushata_id]);
+        if (mbetur.rows[0].n === 0) {
+          await pool.query(`UPDATE marketing_fushatat SET statusi='perfunduar' WHERE id=$1`, [slot.fushata_id]);
+        }
+      }
+    } catch (e) { console.error('kontrolloDheDergoFushatat:', e.message); }
+  }
+  setInterval(kontrolloDheDergoFushatat, 60 * 1000);
+  kontrolloDheDergoFushatat();
 };
