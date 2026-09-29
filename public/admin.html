@@ -1519,7 +1519,9 @@ if(curMktSub==='analitika'){ renderMktAnalitika(m); return; }
 async function renderMktDergimet(m){
 m.innerHTML=
 '<h2 class="h">Dërgimet</h2>'+
-'<p class="small" style="margin:2px 0 18px;">Zgjidh llogarinë, kategorinë dhe kontaktet, shabllonin, dhe planifiko orarin.</p>'+
+'<p class="small" style="margin:2px 0 12px;">Zgjidh llogarinë, kategorinë dhe kontaktet, shabllonin, dhe planifiko orarin.</p>'+
+'<div style="margin-bottom:18px;"><button class="btn ghost" onclick="mktSinkronizo(this)">Sinkronizo kontaktet (nga biznes-finder)</button>'+
+'<span class="small" id="mktSinkStat" style="margin-left:10px;"></span></div>'+
 
 '<label>1. Llogaria dërguese</label>'+
 '<div id="mktLlogarite" class="small" style="margin-bottom:16px;">Po ngarkoj…</div>'+
@@ -1568,13 +1570,25 @@ try{
 const d=await(await fetch('/api/admin/marketing/llogarite')).json();
 const w=$('mktLlogarite');
 if(!d.llogarite||!d.llogarite.length){ w.innerHTML='<span style="color:#e5484d;">Asnjë llogari nuk eshte konfiguruar (kontrollo variablat te Railway).</span>'; return; }
-w.innerHTML=d.llogarite.map((em,i)=>
-'<label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-weight:400;">'+
-'<input type="radio" name="mktLlog" value="'+em+'" onchange="mktLlogaria=this.value"'+(i===0?' checked':'')+'> '+em+
+w.innerHTML='<div style="display:flex;flex-direction:column;gap:8px;">'+d.llogarite.map((em,i)=>
+'<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0e1116;border:1px solid var(--line);border-radius:8px;font-weight:400;cursor:pointer;">'+
+'<input type="radio" name="mktLlog" value="'+em+'" onchange="mktLlogaria=this.value" style="margin:0;width:auto;flex:none;"'+(i===0?' checked':'')+'> '+
+'<span>'+em+'</span>'+
 '</label>'
-).join('');
+).join('')+'</div>';
 if(d.llogarite.length) mktLlogaria=d.llogarite[0];
 }catch(e){ $('mktLlogarite').innerHTML='<span style="color:#e5484d;">Gabim gjatë ngarkimit.</span>'; }
+}
+async function mktSinkronizo(btn){
+const stat=$('mktSinkStat');
+btn.disabled=true; stat.textContent='Duke sinkronizuar…';
+try{
+const d=await(await fetch('/api/admin/marketing/sinkronizo',{method:'POST'})).json();
+if(d.error){ stat.textContent='Gabim: '+d.error; btn.disabled=false; return; }
+stat.textContent=d.importuar+' kontakte te reja u importuan ('+d.dublikate+' ishin tashme te njohura).';
+await mktNgarkoKategorite();
+}catch(e){ stat.textContent='Gabim: '+e.message; }
+btn.disabled=false;
 }
 async function mktNgarkoKategorite(){
 try{
