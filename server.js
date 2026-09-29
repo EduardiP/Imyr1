@@ -3105,6 +3105,8 @@ require('./njoftime-admin')(app, pool, iLoguar, iAdmin);
 
 require('./ndryshime-admin')(app, pool, iLoguar, iAdmin);
 
+require('./marketing-email')(app, pool, iAdmin, upload);
+
 // Resend (dergim email-esh) — nese RESEND_API_KEY s'eshte vendosur, resendKlient
 // mbetet null dhe ekipi.js e trajton pa u thyer (thjesht s'dergon email, fail-open).
 let resendKlient = null;
