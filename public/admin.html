@@ -153,8 +153,12 @@ const $ = id => document.getElementById(id);
 const SECTIONS = [
 { k:'bizneset', l:'Bizneset' },
 { k:'b1', l:'Kombinimet AI' }, { k:'b2', l:'Njoftime' },
-{ k:'b4', l:'Përzgjedhjet' }
+{ k:'b4', l:'Përzgjedhjet' }, { k:'mkt', l:'Marketingu' }
 ];
+const MKT_SUB = [
+{ k:'dergimet', l:'Dërgimet' }, { k:'analitika', l:'Analitika' }
+];
+let curMktSub = 'dergimet';
 const NJOFT_SUB = [
 { k:'kerkesa', l:'Kërkesat nga asistenti virtual' },
 { k:'pritje', l:'Lista e pritjes — Teams & Roles' },
@@ -206,6 +210,7 @@ if(curSec==='bizneset'){ renderBizneset(c); return; }
 if(curSec==='b1'){ renderKombinimet(c); return; }
 if(curSec==='b2'){ renderNjoftime(c); return; }
 if(curSec==='b4'){ renderPerzgjedhjet(c); return; }
+if(curSec==='mkt'){ renderMarketingu(c); return; }
 const lbl=(SECTIONS.find(s=>s.k===curSec)||{}).l||'';
 c.innerHTML='<div class="wrap"><h2 class="h">'+lbl+'</h2><p class="small" style="margin-top:8px;">Së shpejti.</p></div>';
 }
@@ -1481,6 +1486,205 @@ function esc(t){ const d=document.createElement('div'); d.textContent=(t==null?'
 function dt(x){ if(!x) return '—'; try{ return new Date(x).toLocaleString('sq'); }catch(e){ return x; } }
 async function boot(){ try{ const r=await fetch('/api/admin/une'); if(r.ok) showApp(); }catch(e){} }
 boot();
+// ================= MARKETINGU =================
+var mktLlogaria = null;
+var mktKategoriaAkt = null;
+var mktKontaktetZgjedhur = new Set();
+var mktShabllonId = null;
+var mktSlots = [];
+
+function renderMarketingu(c){
+c.innerHTML=
+'<div class="appwrap">'+
+'<aside class="sidebar"><div id="mktNav"></div></aside>'+
+'<main class="main" id="mktMain"></main>'+
+'</div>';
+renderMktNav(); renderMktMain();
+}
+function renderMktNav(){
+const n=$('mktNav'); n.innerHTML='';
+MKT_SUB.forEach(s=>{
+const b=document.createElement('button');
+b.className='subnav'+(s.k===curMktSub?' active':'');
+b.textContent=s.l; b.onclick=()=>{ curMktSub=s.k; renderMktNav(); renderMktMain(); };
+n.appendChild(b);
+});
+}
+function renderMktMain(){
+const m=$('mktMain');
+if(curMktSub==='dergimet'){ renderMktDergimet(m); return; }
+if(curMktSub==='analitika'){ renderMktAnalitika(m); return; }
+}
+
+async function renderMktDergimet(m){
+m.innerHTML=
+'<h2 class="h">Dërgimet</h2>'+
+'<p class="small" style="margin:2px 0 18px;">Zgjidh llogarinë, kategorinë dhe kontaktet, shabllonin, dhe planifiko orarin.</p>'+
+
+'<label>1. Llogaria dërguese</label>'+
+'<div id="mktLlogarite" class="small" style="margin-bottom:16px;">Po ngarkoj…</div>'+
+
+'<label>2. Kategoria</label>'+
+'<select id="mktKategoriaSel" style="width:100%;padding:9px;background:#0e1116;border:1px solid var(--line);border-radius:8px;color:var(--txt);margin-bottom:10px;" onchange="mktZgjidhKategori(this.value)">'+
+'<option value="">— zgjidh kategorinë —</option>'+
+'</select>'+
+'<div id="mktKontaktetWrap" style="display:none;margin-bottom:16px;">'+
+'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'+
+'<span class="small mut" id="mktKontaktetStat"></span>'+
+'<button class="btn ghost" style="padding:4px 10px;font-size:12px;" onclick="mktSelektoTeGjitha()">Selekto/Çselekto të gjitha</button>'+
+'</div>'+
+'<div id="mktKontaktetLista" style="max-height:260px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:8px;"></div>'+
+'</div>'+
+
+'<label>3. Shabllon</label>'+
+'<select id="mktShabllonSel" style="width:100%;padding:9px;background:#0e1116;border:1px solid var(--line);border-radius:8px;color:var(--txt);margin-bottom:10px;" onchange="mktZgjidhShabllon(this.value)">'+
+'<option value="">— zgjidh shabllonin —</option>'+
+'<option value="__ri__">+ Krijo shabllon të ri</option>'+
+'</select>'+
+'<div id="mktShabllonRi" style="display:none;margin-bottom:16px;">'+
+'<input id="mktShEmri" placeholder="Emri i shabllonit (p.sh. Outreach fillestar)" style="margin-bottom:8px;">'+
+'<input id="mktShSubjekti" placeholder="Subjekti" style="margin-bottom:8px;">'+
+'<textarea id="mktShHtml" placeholder="Përmbajtja (HTML). Përdor {emri} dhe {domain} për personalizim." style="min-height:120px;margin-bottom:8px;"></textarea>'+
+'<button class="btn ghost" onclick="mktRuajShabllon()">Ruaj shabllonin</button>'+
+'<span class="small" id="mktShStat" style="margin-left:8px;"></span>'+
+'</div>'+
+
+'<label>4. Orari (data, ora, sasia për atë moment)</label>'+
+'<div id="mktSlotsLista" style="margin-bottom:8px;"></div>'+
+'<button class="btn ghost" onclick="mktShtoSlot()">+ Shto datë/orë</button>'+
+
+'<div style="margin-top:20px;">'+
+'<input id="mktFushataEmri" placeholder="Emër fushate (opsional, vetëm për ta dalluar te Analitika)" style="margin-bottom:10px;">'+
+'<button class="primary" onclick="mktPlanifiko(this)">Planifiko dërgimin</button>'+
+'<span class="small" id="mktPlanStat" style="margin-left:10px;"></span>'+
+'</div>';
+
+mktLlogaria=null; mktKategoriaAkt=null; mktKontaktetZgjedhur=new Set(); mktShabllonId=null; mktSlots=[];
+mktNgarkoLlogarite(); mktNgarkoKategorite(); mktNgarkoShabllonet(); mktRenderSlots();
+}
+
+async function mktNgarkoLlogarite(){
+try{
+const d=await(await fetch('/api/admin/marketing/llogarite')).json();
+const w=$('mktLlogarite');
+if(!d.llogarite||!d.llogarite.length){ w.innerHTML='<span style="color:#e5484d;">Asnjë llogari nuk eshte konfiguruar (kontrollo variablat te Railway).</span>'; return; }
+w.innerHTML=d.llogarite.map((em,i)=>
+'<label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-weight:400;">'+
+'<input type="radio" name="mktLlog" value="'+em+'" onchange="mktLlogaria=this.value"'+(i===0?' checked':'')+'> '+em+
+'</label>'
+).join('');
+if(d.llogarite.length) mktLlogaria=d.llogarite[0];
+}catch(e){ $('mktLlogarite').innerHTML='<span style="color:#e5484d;">Gabim gjatë ngarkimit.</span>'; }
+}
+async function mktNgarkoKategorite(){
+try{
+const d=await(await fetch('/api/admin/marketing/kategorite')).json();
+const sel=$('mktKategoriaSel');
+sel.innerHTML='<option value="">— zgjidh kategorinë —</option>'+
+(d.kategorite||[]).map(k=>'<option value="'+k.kategoria+'">'+k.kategoria+' ('+k.paDergu+' pa dërguar / '+k.total+' total)</option>').join('');
+}catch(e){}
+}
+async function mktZgjidhKategori(kat){
+mktKategoriaAkt=kat; mktKontaktetZgjedhur=new Set();
+if(!kat){ $('mktKontaktetWrap').style.display='none'; return; }
+$('mktKontaktetWrap').style.display='block';
+$('mktKontaktetLista').innerHTML='<p class="small">Po ngarkoj…</p>';
+try{
+const d=await(await fetch('/api/admin/marketing/kontaktet?kategoria='+encodeURIComponent(kat))).json();
+window.__mktKontaktetAkt=d.kontaktet||[];
+$('mktKontaktetStat').textContent=d.kontaktet.length+' kontakte në këtë kategori.';
+$('mktKontaktetLista').innerHTML=d.kontaktet.map(k=>
+'<label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-weight:400;font-size:13px;'+(k.derguar?'opacity:.5;':'')+'">'+
+'<input type="checkbox" value="'+k.id+'" onchange="mktToggleKontakt('+k.id+',this.checked)"'+(k.derguar?' disabled':'')+'> '+
+k.emri+' — '+k.email+(k.derguar?' (tashmë dërguar)':'')+
+'</label>'
+).join('');
+}catch(e){ $('mktKontaktetLista').innerHTML='<p class="small">Gabim.</p>'; }
+}
+function mktToggleKontakt(id,checked){ if(checked) mktKontaktetZgjedhur.add(id); else mktKontaktetZgjedhur.delete(id); }
+function mktSelektoTeGjitha(){
+const kutit=$('mktKontaktetLista').querySelectorAll('input[type=checkbox]:not(:disabled)');
+const teGjithaZgjedhur = mktKontaktetZgjedhur.size >= kutit.length;
+kutit.forEach(k=>{ k.checked=!teGjithaZgjedhur; mktToggleKontakt(parseInt(k.value), !teGjithaZgjedhur); });
+}
+async function mktNgarkoShabllonet(){
+try{
+const d=await(await fetch('/api/admin/marketing/shabllonet')).json();
+const sel=$('mktShabllonSel');
+sel.innerHTML='<option value="">— zgjidh shabllonin —</option>'+
+(d.shabllonet||[]).map(s=>'<option value="'+s.id+'">'+s.emri+'</option>').join('')+
+'<option value="__ri__">+ Krijo shabllon të ri</option>';
+}catch(e){}
+}
+function mktZgjidhShabllon(v){
+if(v==='__ri__'){ $('mktShabllonRi').style.display='block'; mktShabllonId=null; return; }
+$('mktShabllonRi').style.display='none'; mktShabllonId=v?parseInt(v):null;
+}
+async function mktRuajShabllon(){
+const emri=$('mktShEmri').value.trim(), subjekti=$('mktShSubjekti').value.trim(), html=$('mktShHtml').value.trim();
+const stat=$('mktShStat');
+if(!emri||!subjekti||!html){ stat.textContent='Plotëso të gjitha fushat.'; return; }
+stat.textContent='Duke ruajtur…';
+try{
+const d=await(await fetch('/api/admin/marketing/shabllonet',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({emri,subjekti,html})})).json();
+if(d.error){ stat.textContent='Gabim: '+d.error; return; }
+stat.textContent='U ruajt.'; mktShabllonId=d.id;
+await mktNgarkoShabllonet(); $('mktShabllonSel').value=String(d.id); $('mktShabllonRi').style.display='none';
+}catch(e){ stat.textContent='Gabim: '+e.message; }
+}
+function mktRenderSlots(){
+$('mktSlotsLista').innerHTML=mktSlots.map((s,i)=>
+'<div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;">'+
+'<input type="date" value="'+s.data+'" onchange="mktSlots['+i+'].data=this.value" style="flex:1;margin:0;">'+
+'<input type="time" value="'+s.ora+'" onchange="mktSlots['+i+'].ora=this.value" style="flex:1;margin:0;">'+
+'<input type="number" min="1" value="'+s.sasia+'" onchange="mktSlots['+i+'].sasia=parseInt(this.value)||1" placeholder="Sasia" style="width:90px;margin:0;">'+
+'<button class="btn ghost" style="padding:6px 10px;" onclick="mktHiqSlot('+i+')">✕</button>'+
+'</div>'
+).join('');
+}
+function mktShtoSlot(){
+const sot=new Date().toISOString().slice(0,10);
+mktSlots.push({ data: sot, ora: '09:00', sasia: 3 });
+mktRenderSlots();
+}
+function mktHiqSlot(i){ mktSlots.splice(i,1); mktRenderSlots(); }
+
+async function mktPlanifiko(btn){
+const stat=$('mktPlanStat');
+if(!mktLlogaria){ stat.textContent='Zgjidh një llogari dërguesi.'; return; }
+if(!mktShabllonId){ stat.textContent='Zgjidh ose krijo një shabllon.'; return; }
+if(!mktKontaktetZgjedhur.size){ stat.textContent='Zgjidh të paktën 1 kontakt.'; return; }
+if(!mktSlots.length){ stat.textContent='Shto të paktën 1 datë/orë.'; return; }
+btn.disabled=true; stat.textContent='Duke planifikuar…';
+try{
+const d=await(await fetch('/api/admin/marketing/fushata',{method:'POST',headers:{'Content-Type':'application/json'},
+body:JSON.stringify({
+emri: $('mktFushataEmri').value.trim(),
+llogaria: mktLlogaria, shabllon_id: mktShabllonId,
+kontakt_ids: Array.from(mktKontaktetZgjedhur), slots: mktSlots
+})})).json();
+if(d.error){ stat.textContent='Gabim: '+d.error; btn.disabled=false; return; }
+stat.textContent='U planifikua! Do të dërgohet automatikisht sipas orarit.';
+setTimeout(()=>renderMktDergimet($('mktMain')), 1500);
+}catch(e){ stat.textContent='Gabim: '+e.message; btn.disabled=false; }
+}
+
+async function renderMktAnalitika(m){
+m.innerHTML='<h2 class="h">Analitika</h2><p class="small" style="margin:2px 0 18px;">Fushatat e planifikuara dhe progresi i tyre.</p><div id="mktAnalLista"><p class="small">Po ngarkoj…</p></div>';
+try{
+const d=await(await fetch('/api/admin/marketing/fushatat')).json();
+const f=d.fushatat||[];
+if(!f.length){ $('mktAnalLista').innerHTML='<p class="small">Ende s\'ka fushata të planifikuara.</p>'; return; }
+$('mktAnalLista').innerHTML='<div class="njTblWrap"><div class="njTbl">'+
+'<div class="njThead"><span>Emri</span><span>Llogaria</span><span>Shabllon</span><span>Progresi</span><span>Statusi</span></div>'+
+f.map(x=>
+'<div class="krow"><span>'+(x.emri||'(pa emër)')+'</span><span>'+x.llogaria+'</span><span>'+(x.shabllon_emri||'—')+'</span>'+
+'<span>'+x.derguar_kontakte+' / '+x.gjithsej_kontakte+'</span><span>'+(x.statusi==='aktiv'?'Aktiv':'Përfunduar')+'</span></div>'
+).join('')+
+'</div></div>';
+}catch(e){ $('mktAnalLista').innerHTML='<p class="small">Gabim.</p>'; }
+}
+
 </script>
 </body>
 </html>
