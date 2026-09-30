@@ -32,6 +32,28 @@ function ndertoTransporteret() {
 function listaLlogariveAktive() { return Object.keys(ndertoTransporteret()); }
 
 function escHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// Nxjerr emrin e "pastruar" te platformes nga domain-i: ashbyhq.com -> Ashbyhq
+function emriPlatformesNgaDomain(domain) {
+  if (!domain) return '';
+  const pjesa = String(domain).split('.')[0] || '';
+  return pjesa.charAt(0).toUpperCase() + pjesa.slice(1);
+}
+
+// Kthen "sasia" orë (format "HH:MM"), të shpërndara njëtrajtësisht brenda 24 orëve,
+// me pak rastësi brenda secilit brez, që të mos duket krejt robotike (00:00, 08:00, 16:00 saktë).
+function shperndajNe24Ore(sasia) {
+  const minutaGjithsej = 24 * 60;
+  const gjeresiaBrezit = minutaGjithsej / sasia;
+  const oret = [];
+  for (let i = 0; i < sasia; i++) {
+    const fillimiBrezit = i * gjeresiaBrezit;
+    const minutaERastesishme = fillimiBrezit + Math.floor(Math.random() * gjeresiaBrezit);
+    const h = Math.floor(minutaERastesishme / 60) % 24;
+    const m = Math.floor(minutaERastesishme % 60);
+    oret.push(String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0'));
+  }
+  return oret;
+}
 
 module.exports = function (app, pool, iAdmin) {
 
@@ -82,6 +104,14 @@ module.exports = function (app, pool, iAdmin) {
         if (ins.rows.length) importuar++; else dublikate++;
       }
       res.json({ importuar, dublikate, pa_email, gjithsejNeBurim: rreshta.length });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get('/api/admin/marketing/debug', iAdmin, async (req, res) => {
+    try {
+      const r = await pool.query('SELECT id, email, kategoria FROM marketing_kontaktet ORDER BY importuar_at DESC LIMIT 10');
+      const rDistinct = await pool.query('SELECT DISTINCT kategoria, COUNT(*)::int AS n FROM marketing_kontaktet GROUP BY kategoria');
+      res.json({ dhjeteRreshtatEFundit: r.rows, kategoriteDistinkte: rDistinct.rows });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
@@ -156,7 +186,15 @@ module.exports = function (app, pool, iAdmin) {
       }
       for (const s of slots) {
         if (!s.data || !s.ora || !s.sasia) continue;
-        await klient.query('INSERT INTO marketing_fushata_slots (fushata_id, data, ora, sasia) VALUES ($1,$2,$3,$4)', [fushataId, s.data, s.ora, s.sasia]);
+        if (s.sasia > 1) {
+          // Shperndaj vete, njetrajtesisht, brenda 24 oreve te asaj date-je (jo te gjitha ne te njejten ore).
+          const oret = shperndajNe24Ore(s.sasia);
+          for (const ora of oret) {
+            await klient.query('INSERT INTO marketing_fushata_slots (fushata_id, data, ora, sasia) VALUES ($1,$2,$3,1)', [fushataId, s.data, ora]);
+          }
+        } else {
+          await klient.query('INSERT INTO marketing_fushata_slots (fushata_id, data, ora, sasia) VALUES ($1,$2,$3,$4)', [fushataId, s.data, s.ora, s.sasia]);
+        }
       }
       await klient.query('COMMIT');
       res.json({ ok: true, fushata_id: fushataId });
@@ -182,7 +220,10 @@ module.exports = function (app, pool, iAdmin) {
   });
 
   // ═══ Motori i planifikuar — kontrollon cdo minute, dergon kur eshte koha ═══
+  let poPunon = false;
   async function kontrolloDheDergoFushatat() {
+    if (poPunon) return; // nje ekzekutim tashme ne progres, mos fillo nje te dyte mbi te
+    poPunon = true;
     const llog = ndertoTransporteret();
     try {
       const slotsGati = await pool.query(`
@@ -210,7 +251,7 @@ module.exports = function (app, pool, iAdmin) {
           [slot.fushata_id, sasiaAkoma]);
 
         for (const kont of teDerguar.rows) {
-          const html = htmlBazë.replace(/\{emri\}/g, escHtml(kont.emri || kont.domain)).replace(/\{domain\}/g, escHtml(kont.domain || ''));
+          const html = htmlBazë.replace(/\{emri\}/g, escHtml(kont.emri || kont.domain)).replace(/\{domain\}/g, escHtml(kont.domain || '')).replace(/\{platforma\}/g, escHtml(emriPlatformesNgaDomain(kont.domain)));
           try {
             await transporter.sendMail({ from: '"PhronexusAI" <' + slot.llogaria + '>', to: kont.email, subject: subjekti, html });
             await pool.query('UPDATE marketing_fushata_kontakte SET derguar=true, derguar_at=now() WHERE id=$1', [kont.fk_id]);
@@ -226,6 +267,7 @@ module.exports = function (app, pool, iAdmin) {
         }
       }
     } catch (e) { console.error('kontrolloDheDergoFushatat:', e.message); }
+    finally { poPunon = false; }
   }
   setInterval(kontrolloDheDergoFushatat, 60 * 1000);
   kontrolloDheDergoFushatat();
