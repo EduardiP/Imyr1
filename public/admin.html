@@ -1737,11 +1737,13 @@ setTimeout(()=>renderMktDergimet($('mktMain')), 1500);
 }
 
 async function renderMktAnalitika(m){
-m.innerHTML='<h2 class="h">Analitika</h2><p class="small" style="margin:2px 0 18px;">Fushatat e planifikuara dhe progresi i tyre.</p><div id="mktAnalLista"><p class="small">Po ngarkoj…</p></div>';
+m.innerHTML='<h2 class="h">Analitika</h2><p class="small" style="margin:2px 0 18px;">Fushatat e planifikuara dhe progresi i tyre.</p><div id="mktAnalLista"><p class="small">Po ngarkoj…</p></div>'+
+'<h2 class="h" style="margin-top:28px;">Regjistri i dërgimeve</h2><p class="small" style="margin:2px 0 18px;">Çdo përpjekje dërgimi, sukses apo dështim, me detaje — për diagnostikim.</p><div id="mktLogLista"><p class="small">Po ngarkoj…</p></div>';
 try{
 const d=await(await fetch('/api/admin/marketing/fushatat')).json();
 const f=d.fushatat||[];
-if(!f.length){ $('mktAnalLista').innerHTML='<p class="small">Ende s\'ka fushata të planifikuara.</p>'; return; }
+if(!f.length){ $('mktAnalLista').innerHTML='<p class="small">Ende s\'ka fushata të planifikuara.</p>'; }
+else{
 $('mktAnalLista').innerHTML='<div class="njTblWrap"><div class="njTbl">'+
 '<div class="njThead"><span>Emri</span><span>Llogaria</span><span>Shabllon</span><span>Progresi</span><span>Statusi</span></div>'+
 f.map(x=>
@@ -1749,7 +1751,20 @@ f.map(x=>
 '<span>'+x.derguar_kontakte+' / '+x.gjithsej_kontakte+'</span><span>'+(x.statusi==='aktiv'?'Aktiv':'Përfunduar')+'</span></div>'
 ).join('')+
 '</div></div>';
+}
 }catch(e){ $('mktAnalLista').innerHTML='<p class="small">Gabim.</p>'; }
+try{
+const dl=await(await fetch('/api/admin/marketing/log')).json();
+const l=dl.log||[];
+if(!l.length){ $('mktLogLista').innerHTML='<p class="small">Ende s\'ka asnjë përpjekje dërgimi të regjistruar.</p>'; return; }
+$('mktLogLista').innerHTML='<div class="njTblWrap"><div class="njTbl">'+
+'<div class="njThead"><span>Kur</span><span>Email</span><span>Rezultati</span><span>Detaje</span></div>'+
+l.map(x=>
+'<div class="krow"><span>'+new Date(x.krijuar_at).toLocaleString('sq-AL')+'</span><span>'+x.email+'</span>'+
+'<span style="color:'+(x.sukses?'#3fb950':'#e5484d')+';">'+(x.sukses?'U dërgua':'Dështoi')+'</span><span>'+(x.detaje||'—')+'</span></div>'
+).join('')+
+'</div></div>';
+}catch(e){ $('mktLogLista').innerHTML='<p class="small">Gabim.</p>'; }
 }
 
 </script>
