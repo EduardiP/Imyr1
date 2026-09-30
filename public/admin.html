@@ -1491,7 +1491,7 @@ var mktLlogaria = null;
 var mktKategoriaAkt = null;
 var mktKontaktetZgjedhur = new Set();
 var mktShabllonId = null;
-var mktSlots = [];
+var mktDitet = [];
 
 function renderMarketingu(c){
 c.innerHTML=
@@ -1551,10 +1551,10 @@ m.innerHTML=
 '<span class="small" id="mktShStat" style="margin-left:8px;"></span>'+
 '</div>'+
 
-'<label>4. Orari (data, ora, sasia për atë moment)</label>'+
-'<p class="small" style="margin:4px 0 8px;">Nëse vendos sasia=1, ora jote respektohet saktësisht. Nëse vendos sasia&gt;1 për 1 rresht, ato shpërndahen vetë, njëtrajtësisht, brenda 24 orëve të asaj date-je (jo të gjitha në të njëjtën orë).</p>'+
-'<div id="mktSlotsLista" style="margin-bottom:8px;"></div>'+
-'<button class="btn ghost" onclick="mktShtoSlot()">+ Shto datë/orë</button>'+
+'<label>4. Orari</label>'+
+'<p class="small" style="margin:4px 0 8px;">Cakto datën dhe sa email atë ditë — oret llogariten vetë, të shpërndara njëtrajtësisht (largësi maksimale mes tyre). Mund t\'i ndryshosh individualisht; nëse ndryshon numrin, të gjitha rillogariten.</p>'+
+'<div id="mktDitetLista" style="margin-bottom:8px;"></div>'+
+'<button class="btn ghost" onclick="mktShtoDite()">+ Shto ditë</button>'+
 
 '<div style="margin-top:20px;">'+
 '<input id="mktFushataEmri" placeholder="Emër fushate (opsional, vetëm për ta dalluar te Analitika)" style="margin-bottom:10px;">'+
@@ -1562,8 +1562,8 @@ m.innerHTML=
 '<span class="small" id="mktPlanStat" style="margin-left:10px;"></span>'+
 '</div>';
 
-mktLlogaria=null; mktKategoriaAkt=null; mktKontaktetZgjedhur=new Set(); mktShabllonId=null; mktSlots=[];
-mktNgarkoLlogarite(); mktNgarkoKategorite(); mktNgarkoShabllonet(); mktRenderSlots();
+mktLlogaria=null; mktKategoriaAkt=null; mktKontaktetZgjedhur=new Set(); mktShabllonId=null; mktDitet=[];
+mktNgarkoLlogarite(); mktNgarkoKategorite(); mktNgarkoShabllonet(); mktRenderDitet();
 }
 
 async function mktNgarkoLlogarite(){
@@ -1647,36 +1647,88 @@ stat.textContent='U ruajt.'; mktShabllonId=d.id;
 await mktNgarkoShabllonet(); $('mktShabllonSel').value=String(d.id); $('mktShabllonRi').style.display='none';
 }catch(e){ stat.textContent='Gabim: '+e.message; }
 }
-function mktRenderSlots(){
-$('mktSlotsLista').innerHTML=mktSlots.map((s,i)=>
-'<div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;">'+
-'<input type="date" value="'+s.data+'" onchange="mktSlots['+i+'].data=this.value" style="flex:1;margin:0;">'+
-'<input type="time" value="'+s.ora+'" onchange="mktSlots['+i+'].ora=this.value" style="flex:1;margin:0;">'+
-'<input type="number" min="1" value="'+s.sasia+'" onchange="mktSlots['+i+'].sasia=parseInt(this.value)||1" placeholder="Sasia" style="width:90px;margin:0;">'+
-'<button class="btn ghost" style="padding:6px 10px;" onclick="mktHiqSlot('+i+')">✕</button>'+
+// Llogarit "sasia" ore, te shperndara NJETRAJTESISHT (largesi maksimale, jo rastesisht) —
+// brenda dites, duke filluar nga "minutaFillimit" (0=mesnate; minuta aktuale nese eshte sot).
+function mktLlogaritOretENjetrajteshme(sasia, minutaFillimit){
+if(sasia<1) return [];
+const minutaGjithsej=(24*60)-minutaFillimit;
+if(minutaGjithsej<=0) return [];
+const gjeresiaBrezit=minutaGjithsej/sasia;
+const oret=[];
+for(let i=0;i<sasia;i++){
+const minutaEPozicionit=minutaFillimit+(i+0.5)*gjeresiaBrezit; // qendra e brezit = largesi maksimale nga fqinjet
+const h=Math.floor(minutaEPozicionit/60)%24;
+const m=Math.floor(minutaEPozicionit%60);
+oret.push(String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'));
+}
+return oret;
+}
+function mktEshteSot(data){
+const d=new Date();
+const sot=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+return data===sot;
+}
+function mktMinutatAktuale(){
+const d=new Date();
+return d.getHours()*60+d.getMinutes();
+}
+function mktRillogaritDiten(i){
+const dite=mktDitet[i];
+const minutaFillimit=mktEshteSot(dite.data)?mktMinutatAktuale():0;
+dite.oret=mktLlogaritOretENjetrajteshme(dite.oret.length,minutaFillimit);
+mktRenderDitet();
+}
+function mktNdryshoNumrin(i,riNumer){
+const dite=mktDitet[i];
+const numer=Math.max(1,parseInt(riNumer)||1);
+const minutaFillimit=mktEshteSot(dite.data)?mktMinutatAktuale():0;
+dite.oret=mktLlogaritOretENjetrajteshme(numer,minutaFillimit);
+mktRenderDitet();
+}
+function mktNdryshoOreIndividuale(i,j,riOra){
+mktDitet[i].oret[j]=riOra;
+}
+function mktShtoDite(){
+const d=new Date();
+const sot=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const minutaFillimit=mktMinutatAktuale();
+mktDitet.push({ data: sot, oret: mktLlogaritOretENjetrajteshme(3,minutaFillimit) });
+mktRenderDitet();
+}
+function mktHiqDite(i){ mktDitet.splice(i,1); mktRenderDitet(); }
+function mktRenderDitet(){
+$('mktDitetLista').innerHTML=mktDitet.map((dite,i)=>
+'<div style="border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;">'+
+'<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">'+
+'<input type="date" value="'+dite.data+'" onchange="mktDitet['+i+'].data=this.value; mktRillogaritDiten('+i+');" style="flex:1;margin:0;">'+
+'<input type="number" min="1" value="'+dite.oret.length+'" onchange="mktNdryshoNumrin('+i+',this.value)" placeholder="Numri" style="width:90px;margin:0;">'+
+'<button class="btn ghost" style="padding:6px 10px;" onclick="mktHiqDite('+i+')">✕</button>'+
+'</div>'+
+'<div style="display:flex;flex-wrap:wrap;gap:6px;">'+
+dite.oret.map((ora,j)=>
+'<input type="time" value="'+ora+'" onchange="mktNdryshoOreIndividuale('+i+','+j+',this.value)" style="width:100px;margin:0;">'
+).join('')+
+'</div>'+
 '</div>'
 ).join('');
 }
-function mktShtoSlot(){
-const sot=new Date().toISOString().slice(0,10);
-mktSlots.push({ data: sot, ora: '09:00', sasia: 3 });
-mktRenderSlots();
-}
-function mktHiqSlot(i){ mktSlots.splice(i,1); mktRenderSlots(); }
 
 async function mktPlanifiko(btn){
 const stat=$('mktPlanStat');
 if(!mktLlogaria){ stat.textContent='Zgjidh një llogari dërguesi.'; return; }
 if(!mktShabllonId){ stat.textContent='Zgjidh ose krijo një shabllon.'; return; }
 if(!mktKontaktetZgjedhur.size){ stat.textContent='Zgjidh të paktën 1 kontakt.'; return; }
-if(!mktSlots.length){ stat.textContent='Shto të paktën 1 datë/orë.'; return; }
+if(!mktDitet.length){ stat.textContent='Shto të paktën 1 ditë.'; return; }
+// Shpaketo strukturen e grupuar (dite -> shume ore) ne liste te thjeshte slot-esh, 1 per ore individuale.
+const slotsFinal=[];
+mktDitet.forEach(dite=>{ dite.oret.forEach(ora=>{ slotsFinal.push({ data: dite.data, ora: ora, sasia: 1 }); }); });
 btn.disabled=true; stat.textContent='Duke planifikuar…';
 try{
 const d=await(await fetch('/api/admin/marketing/fushata',{method:'POST',headers:{'Content-Type':'application/json'},
 body:JSON.stringify({
 emri: $('mktFushataEmri').value.trim(),
 llogaria: mktLlogaria, shabllon_id: mktShabllonId,
-kontakt_ids: Array.from(mktKontaktetZgjedhur), slots: mktSlots
+kontakt_ids: Array.from(mktKontaktetZgjedhur), slots: slotsFinal
 })})).json();
 if(d.error){ stat.textContent='Gabim: '+d.error; btn.disabled=false; return; }
 stat.textContent='U planifikua! Do të dërgohet automatikisht sipas orarit.';
