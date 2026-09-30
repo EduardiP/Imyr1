@@ -88,6 +88,10 @@ module.exports = function (app, pool, iAdmin) {
         id SERIAL PRIMARY KEY, fushata_id INT NOT NULL REFERENCES marketing_fushatat(id) ON DELETE CASCADE,
         data DATE NOT NULL, ora TIME NOT NULL, sasia INT NOT NULL, perdorur INT NOT NULL DEFAULT 0
       )`);
+      await pool.query(`CREATE TABLE IF NOT EXISTS marketing_log (
+        id SERIAL PRIMARY KEY, fushata_id INT, email TEXT, sukses BOOLEAN NOT NULL,
+        detaje TEXT, krijuar_at TIMESTAMPTZ DEFAULT now()
+      )`);
     } catch (e) { console.error('marketing-email migrim:', e.message); }
 
     // Para-ngarko 1 shabllon te dizajnuar, gati per t'u perdorur — vetem 1 here,
@@ -245,6 +249,13 @@ module.exports = function (app, pool, iAdmin) {
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
+  app.get('/api/admin/marketing/log', iAdmin, async (req, res) => {
+    try {
+      const r = await pool.query('SELECT * FROM marketing_log ORDER BY krijuar_at DESC LIMIT 100');
+      res.json({ log: r.rows });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
   // ═══ Motori i planifikuar — kontrollon cdo minute, dergon kur eshte koha ═══
   let poPunon = false;
   async function kontrolloDheDergoFushatat() {
@@ -283,7 +294,11 @@ module.exports = function (app, pool, iAdmin) {
             await pool.query('UPDATE marketing_fushata_kontakte SET derguar=true, derguar_at=now() WHERE id=$1', [kont.fk_id]);
             await pool.query('UPDATE marketing_kontaktet SET derguar=true, derguar_nga=$1, derguar_at=now(), derguar_sasi=derguar_sasi+1 WHERE id=$2', [slot.llogaria, kont.kontakt_id]);
             await pool.query('UPDATE marketing_fushata_slots SET perdorur = perdorur + 1 WHERE id=$1', [slot.slot_id]);
-          } catch (e) { console.error('marketing dergim deshtoi:', kont.email, e.message); }
+            await pool.query('INSERT INTO marketing_log (fushata_id, email, sukses, detaje) VALUES ($1,$2,true,$3)', [slot.fushata_id, kont.email, 'Derguar nga ' + slot.llogaria]);
+          } catch (e) {
+            console.error('marketing dergim deshtoi:', kont.email, e.message);
+            await pool.query('INSERT INTO marketing_log (fushata_id, email, sukses, detaje) VALUES ($1,$2,false,$3)', [slot.fushata_id, kont.email, String(e.message).slice(0, 500)]).catch(()=>{});
+          }
         }
 
         // Nese s'ka me kontakte pa dergu fare ne kete fushate, e shenon te perfunduar.
