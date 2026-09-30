@@ -269,7 +269,9 @@ module.exports = function (app, pool, iAdmin) {
         JOIN marketing_fushatat f ON f.id = sl.fushata_id
         WHERE f.statusi = 'aktiv' AND sl.perdorur < sl.sasia
           AND ((sl.data + sl.ora) AT TIME ZONE 'Europe/Tirane') <= now()
-        ORDER BY sl.data ASC, sl.ora ASC`);
+        ORDER BY sl.data ASC, sl.ora ASC
+        LIMIT 1`); // VETEM 1 slot per ekzekutim — nese disa jane "vone" njekohesisht (p.sh. pas nje rinisje
+                    // serveri), vazhdojne 1 nga 1, minute pas minute, jo te gjitha njeheresh.
 
       for (const slot of slotsGati.rows) {
         const transporter = llog[slot.llogaria];
