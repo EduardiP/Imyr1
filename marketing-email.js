@@ -41,12 +41,16 @@ function emriPlatformesNgaDomain(domain) {
 
 // Kthen "sasia" orë (format "HH:MM"), të shpërndara njëtrajtësisht brenda 24 orëve,
 // me pak rastësi brenda secilit brez, që të mos duket krejt robotike (00:00, 08:00, 16:00 saktë).
-function shperndajNe24Ore(sasia) {
-  const minutaGjithsej = 24 * 60;
+// minutaFillimit: nga cila minute e dites te filloje shperndarja (0 = mesnate, normale per data te ardhshme;
+// per "sot", kalohet minuta aktuale, qe te mos gjenerohen ore qe kane kaluar tashme).
+function shperndajNe24Ore(sasia, minutaFillimit) {
+  minutaFillimit = minutaFillimit || 0;
+  const minutaGjithsej = (24 * 60) - minutaFillimit;
+  if (minutaGjithsej <= 0) return []; // dita ka mbaruar plotesisht, s'ka me hapesire sot
   const gjeresiaBrezit = minutaGjithsej / sasia;
   const oret = [];
   for (let i = 0; i < sasia; i++) {
-    const fillimiBrezit = i * gjeresiaBrezit;
+    const fillimiBrezit = minutaFillimit + i * gjeresiaBrezit;
     const minutaERastesishme = fillimiBrezit + Math.floor(Math.random() * gjeresiaBrezit);
     const h = Math.floor(minutaERastesishme / 60) % 24;
     const m = Math.floor(minutaERastesishme % 60);
@@ -63,8 +67,10 @@ module.exports = function (app, pool, iAdmin) {
       await pool.query(`CREATE TABLE IF NOT EXISTS marketing_kontaktet (
         id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, domain TEXT, emri TEXT, kategoria TEXT,
         derguar BOOLEAN NOT NULL DEFAULT false, derguar_nga TEXT, derguar_at TIMESTAMPTZ,
+        derguar_sasi INT NOT NULL DEFAULT 0,
         importuar_at TIMESTAMPTZ DEFAULT now()
       )`);
+      await pool.query(`ALTER TABLE marketing_kontaktet ADD COLUMN IF NOT EXISTS derguar_sasi INT NOT NULL DEFAULT 0`);
       await pool.query(`CREATE TABLE IF NOT EXISTS marketing_shabllonet (
         id SERIAL PRIMARY KEY, emri TEXT NOT NULL, subjekti TEXT NOT NULL, html TEXT NOT NULL,
         krijuar_at TIMESTAMPTZ DEFAULT now()
@@ -156,8 +162,8 @@ module.exports = function (app, pool, iAdmin) {
     try {
       const { kategoria } = req.query;
       const r = kategoria
-        ? await pool.query('SELECT id, email, domain, emri, derguar FROM marketing_kontaktet WHERE kategoria=$1 ORDER BY emri ASC', [kategoria])
-        : await pool.query('SELECT id, email, domain, emri, derguar FROM marketing_kontaktet ORDER BY emri ASC');
+        ? await pool.query('SELECT id, email, domain, emri, derguar, derguar_sasi FROM marketing_kontaktet WHERE kategoria=$1 ORDER BY emri ASC', [kategoria])
+        : await pool.query('SELECT id, email, domain, emri, derguar, derguar_sasi FROM marketing_kontaktet ORDER BY emri ASC');
       res.json({ kontaktet: r.rows });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
@@ -197,11 +203,18 @@ module.exports = function (app, pool, iAdmin) {
       for (let i = 0; i < kontakt_ids.length; i++) {
         await klient.query('INSERT INTO marketing_fushata_kontakte (fushata_id, kontakt_id, radha) VALUES ($1,$2,$3)', [fushataId, kontakt_ids[i], i]);
       }
+      // Merr daten/oren aktuale sipas Tiranes (1 here, perdoret per te gjithe slot-et e ketij krijimi).
+      const tani = await klient.query("SELECT (now() AT TIME ZONE 'Europe/Tirane')::date AS data, EXTRACT(HOUR FROM (now() AT TIME ZONE 'Europe/Tirane'))::int * 60 + EXTRACT(MINUTE FROM (now() AT TIME ZONE 'Europe/Tirane'))::int AS minuta");
+      const dataSotme = tani.rows[0].data.toISOString().slice(0, 10);
+      const minutaTani = tani.rows[0].minuta;
+
       for (const s of slots) {
         if (!s.data || !s.ora || !s.sasia) continue;
         if (s.sasia > 1) {
-          // Shperndaj vete, njetrajtesisht, brenda 24 oreve te asaj date-je (jo te gjitha ne te njejten ore).
-          const oret = shperndajNe24Ore(s.sasia);
+          // Nese data e zgjedhur eshte SOT, shperndaj vetem ne oret e MBETURA (jo qe nga mesnata),
+          // qe te mos gjenerohen ore qe tashme kane kaluar per kete dite.
+          const minutaFillimit = (s.data === dataSotme) ? minutaTani : 0;
+          const oret = shperndajNe24Ore(s.sasia, minutaFillimit);
           for (const ora of oret) {
             await klient.query('INSERT INTO marketing_fushata_slots (fushata_id, data, ora, sasia) VALUES ($1,$2,$3,1)', [fushataId, s.data, ora]);
           }
@@ -268,7 +281,7 @@ module.exports = function (app, pool, iAdmin) {
           try {
             await transporter.sendMail({ from: '"PhronexusAI" <' + slot.llogaria + '>', to: kont.email, subject: subjekti, html });
             await pool.query('UPDATE marketing_fushata_kontakte SET derguar=true, derguar_at=now() WHERE id=$1', [kont.fk_id]);
-            await pool.query('UPDATE marketing_kontaktet SET derguar=true, derguar_nga=$1, derguar_at=now() WHERE id=$2', [slot.llogaria, kont.kontakt_id]);
+            await pool.query('UPDATE marketing_kontaktet SET derguar=true, derguar_nga=$1, derguar_at=now(), derguar_sasi=derguar_sasi+1 WHERE id=$2', [slot.llogaria, kont.kontakt_id]);
             await pool.query('UPDATE marketing_fushata_slots SET perdorur = perdorur + 1 WHERE id=$1', [slot.slot_id]);
           } catch (e) { console.error('marketing dergim deshtoi:', kont.email, e.message); }
         }
