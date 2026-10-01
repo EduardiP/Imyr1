@@ -153,9 +153,13 @@ module.exports = function (app, pool, iAdmin) {
       }
     } catch (e) { console.error('marketing-email seed shablloni 3:', e.message); }
 
-    // Shabllon i 4-t, i para-ngarkuar, krejt i ri, i pavarur — permbajtja e fundit, pa cmime,
-    // kodifikuar NE TE NJEJTEN menyre te thjeshte si shablloni #3 (TEST-identik).
+    // Shabllon i 4-t — "Dritarja e regjistrimit". Permbajtja perditesohet GJITHMONE (UPDATE i
+    // pakushtezuar), qe ndryshimet e ardhshme te aplikohen gjithmone, pavaresisht nese rreshti ekziston tashme.
     try {
+      await pool.query(
+        "UPDATE marketing_shabllonet SET html=$1, subjekti=$2 WHERE emri='Dritarja e regjistrimit'",
+        ['<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">\n      <p style="line-height:1.6;">Hi there,</p>\n      <p style="line-height:1.6;">Quick note about PhronexusAI — the cross-promotion network I mentioned before.</p>\n      <p style="line-height:1.6;">Right now, businesses that join get 90 days completely free, no subscription needed. After that, if you choose to continue, the monthly rate stays permanently lower than what new signups will pay once this window closes.</p>\n      <p style="line-height:1.6;">The idea itself: your business gets paired with complementary businesses (never competitors), so you show up in front of their visitors, and vice versa. AI handles the matching based on what\'s likely to convert.</p>\n      <p style="line-height:1.6;">Once this early window ends, the free period shortens and the rate goes up for anyone joining after. Signing up now locks in both.</p>\n      <p><a href="https://phronexusai.com" style="display:inline-block;background:#3b6ef0;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">See how it works</a></p>\n      <p style="color:#94a3b8;font-size:12px;margin-top:28px;">PhronexusAI &middot; <a href="{unsubscribe_link}" style="color:#94a3b8;">Unsubscribe</a></p>\n    </div>\n', 'Quick note about PhronexusAI']
+      );
       const ekziston4 = await pool.query("SELECT 1 FROM marketing_shabllonet WHERE emri=$1", ['Dritarja e regjistrimit']);
       if (!ekziston4.rows.length) {
         await pool.query(
