@@ -324,8 +324,7 @@ module.exports = function (app, pool, iAdmin) {
         const subjektiFinal = subjekti.replace(/\{emri\}/g, kont.emri || kont.domain).replace(/\{domain\}/g, kont.domain || '').replace(/\{platforma\}/g, platformaEmri);
         try {
           await transporter.sendMail({
-            from: '"PhronexusAI" <' + llogaria + '>', to: kont.email, subject: subjektiFinal, html,
-            headers: { 'List-Unsubscribe': '<' + unsubLink + '>', 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
+            from: '"PhronexusAI" <' + llogaria + '>', to: kont.email, subject: subjektiFinal, html
           });
           await pool.query('UPDATE marketing_kontaktet SET derguar=true, derguar_nga=$1, derguar_at=now(), derguar_sasi=derguar_sasi+1 WHERE id=$2', [llogaria, kont.id]);
           await pool.query('INSERT INTO marketing_log (fushata_id, email, sukses, detaje) VALUES (NULL,$1,true,$2)', [kont.email, 'Derguar menjehere nga ' + llogaria]);
@@ -446,8 +445,7 @@ module.exports = function (app, pool, iAdmin) {
           const subjektiFinal = subjekti.replace(/\{emri\}/g, kont.emri || kont.domain).replace(/\{domain\}/g, kont.domain || '').replace(/\{platforma\}/g, platformaEmri);
           try {
             await transporter.sendMail({
-              from: '"PhronexusAI" <' + slot.llogaria + '>', to: kont.email, subject: subjektiFinal, html,
-              headers: { 'List-Unsubscribe': '<' + unsubLink + '>', 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
+              from: '"PhronexusAI" <' + slot.llogaria + '>', to: kont.email, subject: subjektiFinal, html
             });
             await pool.query('UPDATE marketing_fushata_kontakte SET derguar=true, derguar_at=now() WHERE id=$1', [kont.fk_id]);
             await pool.query('UPDATE marketing_kontaktet SET derguar=true, derguar_nga=$1, derguar_at=now(), derguar_sasi=derguar_sasi+1 WHERE id=$2', [slot.llogaria, kont.kontakt_id]);
