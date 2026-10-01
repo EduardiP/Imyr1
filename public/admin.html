@@ -1551,15 +1551,28 @@ m.innerHTML=
 '<span class="small" id="mktShStat" style="margin-left:8px;"></span>'+
 '</div>'+
 
-'<label>4. Orari</label>'+
+'<label>4. Mënyra e dërgimit</label>'+
+'<div style="display:flex;gap:16px;margin-bottom:14px;">'+
+'<label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="radio" name="mktMenyra" value="planifiko" checked onchange="mktNdryshoMenyren(this.value)"> Planifiko (orar)</label>'+
+'<label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="radio" name="mktMenyra" value="menjehere" onchange="mktNdryshoMenyren(this.value)"> Dërgo menjëherë</label>'+
+'</div>'+
+'<div id="mktSeksionOrari">'+
+'<label>Orari</label>'+
 '<p class="small" style="margin:4px 0 8px;">Cakto datën dhe sa email atë ditë — oret llogariten vetë, të shpërndara njëtrajtësisht (largësi maksimale mes tyre). Mund t\'i ndryshosh individualisht; nëse ndryshon numrin, të gjitha rillogariten.</p>'+
 '<div id="mktDitetLista" style="margin-bottom:8px;"></div>'+
 '<button class="btn ghost" onclick="mktShtoDite()">+ Shto ditë</button>'+
+'</div>'+
 
-'<div style="margin-top:20px;">'+
+'<div id="mktSeksionPlanifiko" style="margin-top:20px;">'+
 '<input id="mktFushataEmri" placeholder="Emër fushate (opsional, vetëm për ta dalluar te Analitika)" style="margin-bottom:10px;">'+
 '<button class="primary" onclick="mktPlanifiko(this)">Planifiko dërgimin</button>'+
 '<span class="small" id="mktPlanStat" style="margin-left:10px;"></span>'+
+'</div>'+
+
+'<div id="mktSeksionMenjehere" style="display:none;margin-top:20px;">'+
+'<p class="small" style="margin:0 0 10px;">Dërgon direkt, brenda kësaj kërkese, pa kaluar nëpër orar — njësoj si njoftimet 7/90-ditëshe.</p>'+
+'<button class="primary" onclick="mktDergoMenjehere(this)">Dërgo tani</button>'+
+'<span class="small" id="mktMenjehereStat" style="margin-left:10px;"></span>'+
 '</div>';
 
 mktLlogaria=null; mktKategoriaAkt=null; mktKontaktetZgjedhur=new Set(); mktShabllonId=null; mktDitet=[];
@@ -1713,6 +1726,25 @@ dite.oret.map((ora,j)=>
 ).join('');
 }
 
+function mktNdryshoMenyren(menyra){
+$('mktSeksionOrari').style.display = menyra==='planifiko' ? 'block' : 'none';
+$('mktSeksionPlanifiko').style.display = menyra==='planifiko' ? 'block' : 'none';
+$('mktSeksionMenjehere').style.display = menyra==='menjehere' ? 'block' : 'none';
+}
+async function mktDergoMenjehere(btn){
+const stat=$('mktMenjehereStat');
+if(!mktLlogaria){ stat.textContent='Zgjidh një llogari dërguesi.'; return; }
+if(!mktShabllonId){ stat.textContent='Zgjidh ose krijo një shabllon.'; return; }
+if(!mktKontaktetZgjedhur.size){ stat.textContent='Zgjidh të paktën 1 kontakt.'; return; }
+btn.disabled=true; stat.textContent='Duke dërguar…';
+try{
+const d=await(await fetch('/api/admin/marketing/dergo-menjehere',{method:'POST',headers:{'Content-Type':'application/json'},
+body:JSON.stringify({ llogaria: mktLlogaria, shabllon_id: mktShabllonId, kontakt_ids: Array.from(mktKontaktetZgjedhur) })})).json();
+if(d.error){ stat.textContent='Gabim: '+d.error; btn.disabled=false; return; }
+stat.textContent=d.dergu+' u dërguan, '+d.deshtuar+' dështuan.';
+setTimeout(()=>renderMktDergimet($('mktMain')), 1500);
+}catch(e){ stat.textContent='Gabim: '+e.message; btn.disabled=false; }
+}
 async function mktPlanifiko(btn){
 const stat=$('mktPlanStat');
 if(!mktLlogaria){ stat.textContent='Zgjidh një llogari dërguesi.'; return; }
