@@ -71,6 +71,7 @@ module.exports = function (app, pool, iAdmin) {
         importuar_at TIMESTAMPTZ DEFAULT now()
       )`);
       await pool.query(`ALTER TABLE marketing_kontaktet ADD COLUMN IF NOT EXISTS derguar_sasi INT NOT NULL DEFAULT 0`);
+      await pool.query(`ALTER TABLE marketing_kontaktet ADD COLUMN IF NOT EXISTS unsubscribed BOOLEAN NOT NULL DEFAULT false`);
       await pool.query(`CREATE TABLE IF NOT EXISTS marketing_shabllonet (
         id SERIAL PRIMARY KEY, emri TEXT NOT NULL, subjekti TEXT NOT NULL, html TEXT NOT NULL,
         krijuar_at TIMESTAMPTZ DEFAULT now()
@@ -148,6 +149,21 @@ module.exports = function (app, pool, iAdmin) {
   });
 
   // ═══ Llogarite disponueshme ═══
+  // Publik, pa autorizim — marresi e klikon direkt nga email-i.
+  app.get('/marketing-unsubscribe', async (req, res) => {
+    const email = req.query.email;
+    try {
+      if (email) await pool.query('UPDATE marketing_kontaktet SET unsubscribed=true WHERE email=$1', [email]);
+      res.type('html').send('<!DOCTYPE html><html><body style="font-family:sans-serif;max-width:420px;margin:60px auto;text-align:center;color:#1c2128;"><h2>You have been unsubscribed</h2><p>You will not receive further emails from PhronexusAI.</p></body></html>');
+    } catch (e) { res.status(500).send('Error processing request.'); }
+  });
+  // RFC 8058 — Gmail/Yahoo e thërrasin këtë automatikisht kur marresi klikon "Unsubscribe" te vetë Gmail-i.
+  app.post('/marketing-unsubscribe', async (req, res) => {
+    const email = req.query.email;
+    try { if (email) await pool.query('UPDATE marketing_kontaktet SET unsubscribed=true WHERE email=$1', [email]); } catch (e) {}
+    res.status(200).end();
+  });
+
   app.get('/api/admin/marketing/llogarite', iAdmin, (req, res) => {
     res.json({ llogarite: listaLlogariveAktive() });
   });
@@ -286,13 +302,17 @@ module.exports = function (app, pool, iAdmin) {
         const teDerguar = await pool.query(`
           SELECT fk.id AS fk_id, k.id AS kontakt_id, k.email, k.emri, k.domain
           FROM marketing_fushata_kontakte fk JOIN marketing_kontaktet k ON k.id = fk.kontakt_id
-          WHERE fk.fushata_id=$1 AND NOT fk.derguar ORDER BY fk.radha ASC LIMIT $2`,
+          WHERE fk.fushata_id=$1 AND NOT fk.derguar AND NOT k.unsubscribed ORDER BY fk.radha ASC LIMIT $2`,
           [slot.fushata_id, sasiaAkoma]);
 
         for (const kont of teDerguar.rows) {
-          const html = htmlBazë.replace(/\{emri\}/g, escHtml(kont.emri || kont.domain)).replace(/\{domain\}/g, escHtml(kont.domain || '')).replace(/\{platforma\}/g, escHtml(emriPlatformesNgaDomain(kont.domain)));
+          const unsubLink = 'https://phronexusai.com/marketing-unsubscribe?email=' + encodeURIComponent(kont.email);
+          const html = htmlBazë.replace(/\{emri\}/g, escHtml(kont.emri || kont.domain)).replace(/\{domain\}/g, escHtml(kont.domain || '')).replace(/\{platforma\}/g, escHtml(emriPlatformesNgaDomain(kont.domain))).replace(/\{unsubscribe_link\}/g, unsubLink);
           try {
-            await transporter.sendMail({ from: '"PhronexusAI" <' + slot.llogaria + '>', to: kont.email, subject: subjekti, html });
+            await transporter.sendMail({
+              from: '"PhronexusAI" <' + slot.llogaria + '>', to: kont.email, subject: subjekti, html,
+              headers: { 'List-Unsubscribe': '<' + unsubLink + '>', 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
+            });
             await pool.query('UPDATE marketing_fushata_kontakte SET derguar=true, derguar_at=now() WHERE id=$1', [kont.fk_id]);
             await pool.query('UPDATE marketing_kontaktet SET derguar=true, derguar_nga=$1, derguar_at=now(), derguar_sasi=derguar_sasi+1 WHERE id=$2', [slot.llogaria, kont.kontakt_id]);
             await pool.query('UPDATE marketing_fushata_slots SET perdorur = perdorur + 1 WHERE id=$1', [slot.slot_id]);
