@@ -119,6 +119,18 @@ module.exports = function (app, pool, iAdmin) {
         console.log('marketing-email: shabllon i 2-te (Biznes online) u para-ngarkua.');
       }
     } catch (e) { console.error('marketing-email seed shablloni 2:', e.message); }
+
+    // Shabllon i 3-te, i para-ngarkuar — permbajtje IDENTIKE me 7-ditesh-in e email.js (qe funksionon).
+    try {
+      const ekziston3 = await pool.query("SELECT 1 FROM marketing_shabllonet WHERE emri=$1", ['TEST - identik me 7-ditesh-in']);
+      if (!ekziston3.rows.length) {
+        await pool.query(
+          'INSERT INTO marketing_shabllonet (emri, subjekti, html) VALUES ($1,$2,$3)',
+          ['TEST - identik me 7-ditesh-in', 'Your free week is ending — connect your ad space', '<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">\n      <h2 style="color:#3b6ef0;margin:0 0 12px;">Hi {platforma},</h2>\n      <p style="line-height:1.6;">For your first 7 days, your ads have been shown across the network automatically — no setup needed.</p>\n      <p style="line-height:1.6;"><b>That grace period is ending.</b></p>\n      <p style="line-height:1.6;">Connect your ad space now: your ads keep running, uninterrupted.<br>\n      Skip it: your ads stop showing, and you stop getting exposure from other businesses too.</p>\n      <p><a href="https://phronexusai.com" style="display:inline-block;background:#3b6ef0;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Connect ad space →</a></p>\n      <p style="color:#94a3b8;font-size:12px;margin-top:28px;">PhronexusAI &middot; <a href="{unsubscribe_link}" style="color:#94a3b8;">Unsubscribe</a></p>\n    </div>']
+        );
+        console.log('marketing-email: shabllon i 3-te (TEST 7-ditesh) u para-ngarkua.');
+      }
+    } catch (e) { console.error('marketing-email seed shablloni 3:', e.message); }
   })();
 
   // ═══ Sinkronizim automatik nga biznes-finder ═══
