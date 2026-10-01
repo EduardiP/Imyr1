@@ -1577,10 +1577,10 @@ m.innerHTML=
 '</div>'+
 
 '<div id="mktSeksionLinqe" style="display:none;margin-top:20px;">'+
-'<p class="small" style="margin:0 0 10px;">Gjeneron 1 link për secilin kontakt — kliko, Gmail hapet i mbushur paraprakisht, ti vetë klikon "Send" brenda Gmail-it. Dërgim 100% manual, real.</p>'+
-'<button class="primary" onclick="mktGjeneroLinqe(this)">Gjenero linqet</button>'+
+'<p class="small" style="margin:0 0 10px;">Linqet dergohen si email, te adresa jote — hap email-in, kliko linkun, Gmail hapet i mbushur, ti klikon "Send".</p>'+
+'<input id="mktLinqeEmailTek" placeholder="Email-i yt (ku te vijne linqet)" style="margin-bottom:10px;">'+
+'<button class="primary" onclick="mktGjeneroLinqe(this)">Dërgo linqet te email-i im</button>'+
 '<span class="small" id="mktLinqeStat" style="margin-left:10px;"></span>'+
-'<div id="mktLinqeLista" style="margin-top:14px;"></div>'+
 '</div>';
 
 mktLlogaria=null; mktKategoriaAkt=null; mktKontaktetZgjedhur=new Set(); mktShabllonId=null; mktDitet=[];
@@ -1742,20 +1742,16 @@ $('mktSeksionLinqe').style.display = menyra==='linqe' ? 'block' : 'none';
 }
 async function mktGjeneroLinqe(btn){
 const stat=$('mktLinqeStat');
+const emailTek=$('mktLinqeEmailTek').value.trim();
 if(!mktShabllonId){ stat.textContent='Zgjidh ose krijo një shabllon.'; return; }
 if(!mktKontaktetZgjedhur.size){ stat.textContent='Zgjidh të paktën 1 kontakt.'; return; }
-btn.disabled=true; stat.textContent='Duke gjeneruar…';
+if(!emailTek){ stat.textContent='Shkruaj email-in tënd.'; return; }
+btn.disabled=true; stat.textContent='Duke dërguar…';
 try{
 const d=await(await fetch('/api/admin/marketing/linqet-gmail',{method:'POST',headers:{'Content-Type':'application/json'},
-body:JSON.stringify({ llogaria: mktLlogaria, shabllon_id: mktShabllonId, kontakt_ids: Array.from(mktKontaktetZgjedhur) })})).json();
+body:JSON.stringify({ llogaria: mktLlogaria, shabllon_id: mktShabllonId, kontakt_ids: Array.from(mktKontaktetZgjedhur), email_tek: emailTek })})).json();
 if(d.error){ stat.textContent='Gabim: '+d.error; btn.disabled=false; return; }
-stat.textContent=d.linqe.length+' linqe gati.';
-$('mktLinqeLista').innerHTML=d.linqe.map(l=>
-'<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);">'+
-'<span style="flex:1;font-size:13px;">'+l.email+'</span>'+
-'<a href="'+l.link+'" target="_blank" class="btn ghost" style="padding:5px 12px;font-size:13px;text-decoration:none;">Hap te Gmail →</a>'+
-'</div>'
-).join('');
+stat.textContent=d.sasia+' link u dërguan te '+d.dergu_tek+'. Kontrollo email-in.';
 btn.disabled=false;
 }catch(e){ stat.textContent='Gabim: '+e.message; btn.disabled=false; }
 }
