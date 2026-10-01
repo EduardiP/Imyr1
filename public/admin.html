@@ -1623,7 +1623,7 @@ window.__mktKontaktetAkt=d.kontaktet||[];
 $('mktKontaktetStat').textContent=d.kontaktet.length+' kontakte në këtë kategori.';
 $('mktKontaktetLista').innerHTML=d.kontaktet.map(k=>
 '<label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-weight:400;font-size:13px;'+(k.derguar?'opacity:.5;':'')+'">'+
-'<input type="checkbox" value="'+k.id+'" onchange="mktToggleKontakt('+k.id+',this.checked)"'+(k.derguar?' disabled':'')+'> '+
+'<input type="checkbox" value="'+k.id+'" onchange="mktToggleKontakt('+k.id+',this.checked)"> '+
 k.emri+' — '+k.email+(k.derguar_sasi>0?' <span style="margin-left:4px;font-size:11px;background:#2a313c;padding:2px 7px;border-radius:9px;color:#9aa4b2;">['+k.derguar_sasi+']</span>':'')+
 '</label>'
 ).join('');
