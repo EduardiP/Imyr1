@@ -217,6 +217,45 @@ module.exports = function (app, pool, iAdmin) {
   });
 
   // ═══ Krijo fushate (kontakte te selektuara + shabllon + orar) ═══
+  // Dergim I DREJTPERDREJTE, menjehere — brenda vete kerkeses HTTP, pa kaluar nepermjet
+  // databazes/motorit ne sfond — e njejta qasje si email.js, per te izoluar nese mekanizmi
+  // schedule vete eshte faktor ne deliverability.
+  app.post('/api/admin/marketing/dergo-menjehere', iAdmin, async (req, res) => {
+    const { llogaria, shabllon_id, kontakt_ids } = req.body || {};
+    if (!llogaria) return res.status(400).json({ error: 'Zgjidh nje llogari derguesi.' });
+    if (!shabllon_id) return res.status(400).json({ error: 'Zgjidh nje shabllon.' });
+    if (!Array.isArray(kontakt_ids) || !kontakt_ids.length) return res.status(400).json({ error: 'Zgjidh te pakten 1 kontakt.' });
+    const llog = ndertoTransporteret();
+    const transporter = llog[llogaria];
+    if (!transporter) return res.status(400).json({ error: 'Llogaria "' + llogaria + '" s\'eshte konfiguruar.' });
+    try {
+      const sh = await pool.query('SELECT subjekti, html FROM marketing_shabllonet WHERE id=$1', [shabllon_id]);
+      if (!sh.rows.length) return res.status(400).json({ error: 'Shablloni s\'u gjet.' });
+      const { subjekti, html: htmlBazë } = sh.rows[0];
+      const r = await pool.query('SELECT id, email, emri, domain FROM marketing_kontaktet WHERE id = ANY($1::int[]) AND NOT unsubscribed', [kontakt_ids]);
+      let dergu = 0, deshtuar = 0;
+      for (const kont of r.rows) {
+        const unsubLink = 'https://phronexusai.com/marketing-unsubscribe?email=' + encodeURIComponent(kont.email);
+        const platformaEmri = emriPlatformesNgaDomain(kont.domain);
+        const html = htmlBazë.replace(/\{emri\}/g, escHtml(kont.emri || kont.domain)).replace(/\{domain\}/g, escHtml(kont.domain || '')).replace(/\{platforma\}/g, escHtml(platformaEmri)).replace(/\{unsubscribe_link\}/g, unsubLink);
+        const subjektiFinal = subjekti.replace(/\{emri\}/g, kont.emri || kont.domain).replace(/\{domain\}/g, kont.domain || '').replace(/\{platforma\}/g, platformaEmri);
+        try {
+          await transporter.sendMail({
+            from: '"PhronexusAI" <' + llogaria + '>', to: kont.email, subject: subjektiFinal, html,
+            headers: { 'List-Unsubscribe': '<' + unsubLink + '>', 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
+          });
+          await pool.query('UPDATE marketing_kontaktet SET derguar=true, derguar_nga=$1, derguar_at=now(), derguar_sasi=derguar_sasi+1 WHERE id=$2', [llogaria, kont.id]);
+          await pool.query('INSERT INTO marketing_log (fushata_id, email, sukses, detaje) VALUES (NULL,$1,true,$2)', [kont.email, 'Derguar menjehere nga ' + llogaria]);
+          dergu++;
+        } catch (e) {
+          await pool.query('INSERT INTO marketing_log (fushata_id, email, sukses, detaje) VALUES (NULL,$1,false,$2)', [kont.email, String(e.message).slice(0, 500)]).catch(()=>{});
+          deshtuar++;
+        }
+      }
+      res.json({ ok: true, dergu, deshtuar });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
   app.post('/api/admin/marketing/fushata', iAdmin, async (req, res) => {
     const { emri, llogaria, shabllon_id, kontakt_ids, slots } = req.body || {};
     if (!llogaria) return res.status(400).json({ error: 'Zgjidh nje llogari derguesi.' });
@@ -319,10 +358,12 @@ module.exports = function (app, pool, iAdmin) {
 
         for (const kont of teDerguar.rows) {
           const unsubLink = 'https://phronexusai.com/marketing-unsubscribe?email=' + encodeURIComponent(kont.email);
-          const html = htmlBazë.replace(/\{emri\}/g, escHtml(kont.emri || kont.domain)).replace(/\{domain\}/g, escHtml(kont.domain || '')).replace(/\{platforma\}/g, escHtml(emriPlatformesNgaDomain(kont.domain))).replace(/\{unsubscribe_link\}/g, unsubLink);
+          const platformaEmri = emriPlatformesNgaDomain(kont.domain);
+          const html = htmlBazë.replace(/\{emri\}/g, escHtml(kont.emri || kont.domain)).replace(/\{domain\}/g, escHtml(kont.domain || '')).replace(/\{platforma\}/g, escHtml(platformaEmri)).replace(/\{unsubscribe_link\}/g, unsubLink);
+          const subjektiFinal = subjekti.replace(/\{emri\}/g, kont.emri || kont.domain).replace(/\{domain\}/g, kont.domain || '').replace(/\{platforma\}/g, platformaEmri);
           try {
             await transporter.sendMail({
-              from: '"PhronexusAI" <' + slot.llogaria + '>', to: kont.email, subject: subjekti, html,
+              from: '"PhronexusAI" <' + slot.llogaria + '>', to: kont.email, subject: subjektiFinal, html,
               headers: { 'List-Unsubscribe': '<' + unsubLink + '>', 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
             });
             await pool.query('UPDATE marketing_fushata_kontakte SET derguar=true, derguar_at=now() WHERE id=$1', [kont.fk_id]);
