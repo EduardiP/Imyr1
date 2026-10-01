@@ -1552,9 +1552,10 @@ m.innerHTML=
 '</div>'+
 
 '<label>4. Mënyra e dërgimit</label>'+
-'<div style="display:flex;gap:16px;margin-bottom:14px;">'+
+'<div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap;">'+
 '<label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="radio" name="mktMenyra" value="planifiko" checked onchange="mktNdryshoMenyren(this.value)"> Planifiko (orar)</label>'+
 '<label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="radio" name="mktMenyra" value="menjehere" onchange="mktNdryshoMenyren(this.value)"> Dërgo menjëherë</label>'+
+'<label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="radio" name="mktMenyra" value="linqe" onchange="mktNdryshoMenyren(this.value)"> 1-klikim (manualisht, te Gmail)</label>'+
 '</div>'+
 '<div id="mktSeksionOrari">'+
 '<label>Orari</label>'+
@@ -1573,6 +1574,13 @@ m.innerHTML=
 '<p class="small" style="margin:0 0 10px;">Dërgon direkt, brenda kësaj kërkese, pa kaluar nëpër orar — njësoj si njoftimet 7/90-ditëshe.</p>'+
 '<button class="primary" onclick="mktDergoMenjehere(this)">Dërgo tani</button>'+
 '<span class="small" id="mktMenjehereStat" style="margin-left:10px;"></span>'+
+'</div>'+
+
+'<div id="mktSeksionLinqe" style="display:none;margin-top:20px;">'+
+'<p class="small" style="margin:0 0 10px;">Gjeneron 1 link për secilin kontakt — kliko, Gmail hapet i mbushur paraprakisht, ti vetë klikon "Send" brenda Gmail-it. Dërgim 100% manual, real.</p>'+
+'<button class="primary" onclick="mktGjeneroLinqe(this)">Gjenero linqet</button>'+
+'<span class="small" id="mktLinqeStat" style="margin-left:10px;"></span>'+
+'<div id="mktLinqeLista" style="margin-top:14px;"></div>'+
 '</div>';
 
 mktLlogaria=null; mktKategoriaAkt=null; mktKontaktetZgjedhur=new Set(); mktShabllonId=null; mktDitet=[];
@@ -1730,6 +1738,26 @@ function mktNdryshoMenyren(menyra){
 $('mktSeksionOrari').style.display = menyra==='planifiko' ? 'block' : 'none';
 $('mktSeksionPlanifiko').style.display = menyra==='planifiko' ? 'block' : 'none';
 $('mktSeksionMenjehere').style.display = menyra==='menjehere' ? 'block' : 'none';
+$('mktSeksionLinqe').style.display = menyra==='linqe' ? 'block' : 'none';
+}
+async function mktGjeneroLinqe(btn){
+const stat=$('mktLinqeStat');
+if(!mktShabllonId){ stat.textContent='Zgjidh ose krijo një shabllon.'; return; }
+if(!mktKontaktetZgjedhur.size){ stat.textContent='Zgjidh të paktën 1 kontakt.'; return; }
+btn.disabled=true; stat.textContent='Duke gjeneruar…';
+try{
+const d=await(await fetch('/api/admin/marketing/linqet-gmail',{method:'POST',headers:{'Content-Type':'application/json'},
+body:JSON.stringify({ llogaria: mktLlogaria, shabllon_id: mktShabllonId, kontakt_ids: Array.from(mktKontaktetZgjedhur) })})).json();
+if(d.error){ stat.textContent='Gabim: '+d.error; btn.disabled=false; return; }
+stat.textContent=d.linqe.length+' linqe gati.';
+$('mktLinqeLista').innerHTML=d.linqe.map(l=>
+'<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);">'+
+'<span style="flex:1;font-size:13px;">'+l.email+'</span>'+
+'<a href="'+l.link+'" target="_blank" class="btn ghost" style="padding:5px 12px;font-size:13px;text-decoration:none;">Hap te Gmail →</a>'+
+'</div>'
+).join('');
+btn.disabled=false;
+}catch(e){ stat.textContent='Gabim: '+e.message; btn.disabled=false; }
 }
 async function mktDergoMenjehere(btn){
 const stat=$('mktMenjehereStat');
