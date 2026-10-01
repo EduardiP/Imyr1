@@ -254,10 +254,14 @@ module.exports = function (app, pool, iAdmin) {
   // schedule vete eshte faktor ne deliverability.
   // Gjeneron linqe Gmail, te mbushur paraprakisht — perdoruesi vete klikon "Send", brenda Gmail-it.
   app.post('/api/admin/marketing/linqet-gmail', iAdmin, async (req, res) => {
-    const { llogaria, shabllon_id, kontakt_ids } = req.body || {};
+    const { llogaria, shabllon_id, kontakt_ids, email_tek } = req.body || {};
     if (!llogaria) return res.status(400).json({ error: 'Zgjidh nje llogari derguesi.' });
     if (!shabllon_id) return res.status(400).json({ error: 'Zgjidh nje shabllon.' });
     if (!Array.isArray(kontakt_ids) || !kontakt_ids.length) return res.status(400).json({ error: 'Zgjidh te pakten 1 kontakt.' });
+    if (!email_tek) return res.status(400).json({ error: 'Shkruaj email-in tend, ku duhet te vijne linqet.' });
+    const llog = ndertoTransporteret();
+    const transporter = llog[llogaria];
+    if (!transporter) return res.status(400).json({ error: 'Llogaria "' + llogaria + '" s\'eshte konfiguruar.' });
     try {
       const sh = await pool.query('SELECT subjekti, html FROM marketing_shabllonet WHERE id=$1', [shabllon_id]);
       if (!sh.rows.length) return res.status(400).json({ error: 'Shablloni s\'u gjet.' });
@@ -271,7 +275,13 @@ module.exports = function (app, pool, iAdmin) {
         const link = 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(kont.email) + '&su=' + encodeURIComponent(subjektiFinal) + '&body=' + encodeURIComponent(tekstiBaze);
         return { kontakt_id: kont.id, email: kont.email, link };
       });
-      res.json({ ok: true, linqe });
+      // Ndertoi email-in "digest" — lista e linqeve, si butona te klikueshem.
+      const htmlDigest = '<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;">' +
+        '<p>' + linqe.length + ' kontakte gati per dergim:</p>' +
+        linqe.map(l => '<p><a href="' + l.link + '" style="display:inline-block;background:#3b6ef0;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;">Dergo te ' + escHtml(l.email) + '</a></p>').join('') +
+        '</div>';
+      await transporter.sendMail({ from: '"PhronexusAI" <' + llogaria + '>', to: email_tek, subject: linqe.length + ' email gati per dergim', html: htmlDigest });
+      res.json({ ok: true, dergu_tek: email_tek, sasia: linqe.length });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
