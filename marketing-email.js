@@ -72,6 +72,12 @@ module.exports = function (app, pool, iAdmin) {
       )`);
       await pool.query(`ALTER TABLE marketing_kontaktet ADD COLUMN IF NOT EXISTS derguar_sasi INT NOT NULL DEFAULT 0`);
       await pool.query(`ALTER TABLE marketing_kontaktet ADD COLUMN IF NOT EXISTS unsubscribed BOOLEAN NOT NULL DEFAULT false`);
+      // Perditeso permbajtjen e shabllonit "Biznes online - outreach" ne versionin e ri, te thjeshtuar
+      // (struktura shume me e thjeshte, njesoj si email.js qe funksionon) — rinovohet cdo rinisje.
+      await pool.query(
+        "UPDATE marketing_shabllonet SET html=$1, subjekti=$2 WHERE emri='Biznes online - outreach'",
+        ['<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">\n  <h2 style="color:#3b6ef0;margin:0 0 12px;">Hi {platforma},</h2>\n  <p style="line-height:1.6;">Quick one — PhronexusAI shows your business to visitors of other online businesses, and in return, you show a few of theirs to yours. That\'s the whole idea.</p>\n  <p style="line-height:1.6;">Your first week, you get traffic automatically, no setup. The first 90 days are free after that. Join now and your rate stays lower than what new businesses pay later, for as long as you\'re with us.</p>\n  <p style="line-height:1.6;">One thing worth knowing: we never show your competitors to your visitors, or you to theirs. Just businesses that complement each other.</p>\n  <p><a href="https://phronexusai.com" style="display:inline-block;background:#3b6ef0;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">See how it works</a></p>\n  <p style="color:#94a3b8;font-size:12px;margin-top:28px;">PhronexusAI &middot; <a href="{unsubscribe_link}" style="color:#94a3b8;">Unsubscribe</a></p>\n</div>', 'Idea for {platforma}']
+      );
       await pool.query(`CREATE TABLE IF NOT EXISTS marketing_shabllonet (
         id SERIAL PRIMARY KEY, emri TEXT NOT NULL, subjekti TEXT NOT NULL, html TEXT NOT NULL,
         krijuar_at TIMESTAMPTZ DEFAULT now()
