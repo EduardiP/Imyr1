@@ -13,7 +13,8 @@ const nodemailer = require('nodemailer');
 const LLOGARITE_KONFIG = [
   { user: 'GMAIL_USER', pass: 'GMAIL_APP_PASSWORD' },
   { user: 'MKT_EMAIL_2_USER', pass: 'MKT_EMAIL_2_PASS' },
-  { user: 'MKT_EMAIL_3_USER', pass: 'MKT_EMAIL_3_PASS' }
+  { user: 'MKT_EMAIL_3_USER', pass: 'MKT_EMAIL_3_PASS' },
+  { user: 'MKT_EMAIL_4_USER', pass: 'MKT_EMAIL_4_PASS' }
 ];
 const transporteret = {}; // { [email]: transporter }
 function ndertoTransporteret() {
