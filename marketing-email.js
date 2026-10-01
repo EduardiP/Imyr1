@@ -87,16 +87,16 @@ module.exports = function (app, pool, iAdmin) {
       )`);
       await pool.query(`ALTER TABLE marketing_kontaktet ADD COLUMN IF NOT EXISTS derguar_sasi INT NOT NULL DEFAULT 0`);
       await pool.query(`ALTER TABLE marketing_kontaktet ADD COLUMN IF NOT EXISTS unsubscribed BOOLEAN NOT NULL DEFAULT false`);
-      // Perditeso permbajtjen e shabllonit "Biznes online - outreach" ne versionin e ri, te thjeshtuar
-      // (struktura shume me e thjeshte, njesoj si email.js qe funksionon) — rinovohet cdo rinisje.
-      await pool.query(
-        "UPDATE marketing_shabllonet SET html=$1, subjekti=$2 WHERE emri='Biznes online - outreach'",
-        ['<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">\n<p>Hi there,</p>\n<p>Quick note about PhronexusAI — the cross-promotion network I mentioned before.</p>\n<p>Right now, businesses that join get 90 days completely free, no subscription needed. After that, if you choose to continue, the monthly rate stays permanently lower than what new signups will pay once this window closes.</p>\n<p>The idea itself: your business gets paired with complementary businesses (never competitors), so you show up in front of their visitors, and vice versa. AI handles the matching based on what\'s likely to convert.</p>\n<p>Once this early window ends, the free period shortens and the rate goes up for anyone joining after. Signing up now locks in both.</p>\n<p><a href="https://phronexusai.com" style="display:inline-block;background:#3b6ef0;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Get started →</a></p>\n<p style="color:#94a3b8;font-size:12px;margin-top:28px;">PhronexusAI &middot; <a href="{unsubscribe_link}" style="color:#94a3b8;">Unsubscribe</a></p>\n</div>', 'The free period is ending']
-      );
       await pool.query(`CREATE TABLE IF NOT EXISTS marketing_shabllonet (
         id SERIAL PRIMARY KEY, emri TEXT NOT NULL, subjekti TEXT NOT NULL, html TEXT NOT NULL,
         krijuar_at TIMESTAMPTZ DEFAULT now()
       )`);
+      // Perditeso permbajtjen e shabllonit "Biznes online - outreach" ne versionin e ri, te thjeshtuar
+      // (struktura shume me e thjeshte, njesoj si email.js qe funksionon) — rinovohet cdo rinisje.
+      await pool.query(
+        "UPDATE marketing_shabllonet SET html=$1, subjekti=$2 WHERE emri='Biznes online - outreach'",
+        ['<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">\n<p>Hi there,</p>\n<p>Quick heads-up: PhronexusAI is currently running an early-signup window.</p>\n<p>Join now, and you get 90 days completely free (plus 7 days of live traffic right away), then $7/month after — locked in for as long as you stay.</p>\n<p>Once this window closes, new signups only get a 14-day trial, and the rate becomes $20/month.</p>\n<p>Same idea either way: your business gets paired with complementary businesses (never competitors) so you show up in front of their visitors, and vice versa.</p>\n<p><a href="https://phronexusai.com" style="display:inline-block;background:#3b6ef0;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Get started →</a></p>\n<p style="color:#94a3b8;font-size:12px;margin-top:28px;">PhronexusAI &middot; <a href="{unsubscribe_link}" style="color:#94a3b8;">Unsubscribe</a></p>\n</div>', '90 days ends soon for new signups']
+      );
       await pool.query(`CREATE TABLE IF NOT EXISTS marketing_fushatat (
         id SERIAL PRIMARY KEY, emri TEXT, llogaria TEXT NOT NULL, shabllon_id INT REFERENCES marketing_shabllonet(id),
         statusi TEXT NOT NULL DEFAULT 'aktiv', krijuar_at TIMESTAMPTZ DEFAULT now()
@@ -147,11 +147,24 @@ module.exports = function (app, pool, iAdmin) {
       if (!ekziston3.rows.length) {
         await pool.query(
           'INSERT INTO marketing_shabllonet (emri, subjekti, html) VALUES ($1,$2,$3)',
-          ['TEST - identik me 7-ditesh-in', 'Welcome to Phronexus AI.', '<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">\n<p>Hi there,</p>\n<p>Quick note about PhronexusAI — the cross-promotion network I mentioned before.</p>\n<p>Right now, businesses that join get 90 days completely free, no subscription needed. After that, if you choose to continue, the monthly rate stays permanently lower than what new signups will pay once this window closes.</p>\n<p>The idea itself: your business gets paired with complementary businesses (never competitors), so you show up in front of their visitors, and vice versa. AI handles the matching based on what\'s likely to convert.</p>\n<p>Once this early window ends, the free period shortens and the rate goes up for anyone joining after. Signing up now locks in both.</p>\n<p><a href="https://phronexusai.com" style="display:inline-block;background:#3b6ef0;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Get started →</a></p>\n<p style="color:#94a3b8;font-size:12px;margin-top:28px;">PhronexusAI &middot; <a href="{unsubscribe_link}" style="color:#94a3b8;">Unsubscribe</a></p>\n</div>']
+          ['TEST - identik me 7-ditesh-in', 'Your free week is ending — connect your ad space', '<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">\n      <h2 style="color:#3b6ef0;margin:0 0 12px;">Hi {platforma},</h2>\n      <p style="line-height:1.6;">For your first 7 days, your ads have been shown across the network automatically — no setup needed.</p>\n      <p style="line-height:1.6;"><b>That grace period is ending.</b></p>\n      <p style="line-height:1.6;">Connect your ad space now: your ads keep running, uninterrupted.<br>\n      Skip it: your ads stop showing, and you stop getting exposure from other businesses too.</p>\n      <p><a href="https://phronexusai.com" style="display:inline-block;background:#3b6ef0;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Connect ad space →</a></p>\n      <p style="color:#94a3b8;font-size:12px;margin-top:28px;">PhronexusAI &middot; <a href="{unsubscribe_link}" style="color:#94a3b8;">Unsubscribe</a></p>\n    </div>']
         );
         console.log('marketing-email: shabllon i 3-te (TEST 7-ditesh) u para-ngarkua.');
       }
     } catch (e) { console.error('marketing-email seed shablloni 3:', e.message); }
+
+    // Shabllon i 4-t, i para-ngarkuar, krejt i ri, i pavarur — permbajtja e fundit, pa cmime,
+    // kodifikuar NE TE NJEJTEN menyre te thjeshte si shablloni #3 (TEST-identik).
+    try {
+      const ekziston4 = await pool.query("SELECT 1 FROM marketing_shabllonet WHERE emri=$1", ['Dritarja e regjistrimit']);
+      if (!ekziston4.rows.length) {
+        await pool.query(
+          'INSERT INTO marketing_shabllonet (emri, subjekti, html) VALUES ($1,$2,$3)',
+          ['Dritarja e regjistrimit', '90 days ends soon for new signups', '<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">\n      <p style="line-height:1.6;">Hi there,</p>\n      <p style="line-height:1.6;">Quick note about PhronexusAI — the cross-promotion network I mentioned before.</p>\n      <p style="line-height:1.6;">Right now, businesses that join get 90 days completely free, no subscription needed. After that, if you choose to continue, the monthly rate stays permanently lower than what new signups will pay once this window closes.</p>\n      <p style="line-height:1.6;">The idea itself: your business gets paired with complementary businesses (never competitors), so you show up in front of their visitors, and vice versa. AI handles the matching based on what\'s likely to convert.</p>\n      <p style="line-height:1.6;">Once this early window ends, the free period shortens and the rate goes up for anyone joining after. Signing up now locks in both.</p>\n      <p><a href="https://phronexusai.com" style="display:inline-block;background:#3b6ef0;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">See how it works</a></p>\n      <p style="color:#94a3b8;font-size:12px;margin-top:28px;">PhronexusAI &middot; <a href="{unsubscribe_link}" style="color:#94a3b8;">Unsubscribe</a></p>\n    </div>\n']
+        );
+        console.log('marketing-email: shabllon i 4-t (Dritarja e regjistrimit) u para-ngarkua.');
+      }
+    } catch (e) { console.error('marketing-email seed shablloni 4:', e.message); }
   })();
 
   // ═══ Sinkronizim automatik nga biznes-finder ═══
