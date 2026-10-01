@@ -43,6 +43,20 @@ function emriPlatformesNgaDomain(domain) {
 // me pak rastësi brenda secilit brez, që të mos duket krejt robotike (00:00, 08:00, 16:00 saktë).
 // minutaFillimit: nga cila minute e dites te filloje shperndarja (0 = mesnate, normale per data te ardhshme;
 // per "sot", kalohet minuta aktuale, qe te mos gjenerohen ore qe kane kaluar tashme).
+// Shndërron HTML-në e thjeshtë të shabllonëve tanë në tekst të rrafshët — kërkohet nga
+// linku i Gmail-it ("body="), i cili pranon VETËM tekst, jo HTML.
+function htmlNeTekst(html) {
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&middot;/g, '·').replace(/&mdash;/g, '—').replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+
 function shperndajNe24Ore(sasia, minutaFillimit) {
   minutaFillimit = minutaFillimit || 0;
   const minutaGjithsej = (24 * 60) - minutaFillimit;
@@ -238,6 +252,29 @@ module.exports = function (app, pool, iAdmin) {
   // Dergim I DREJTPERDREJTE, menjehere — brenda vete kerkeses HTTP, pa kaluar nepermjet
   // databazes/motorit ne sfond — e njejta qasje si email.js, per te izoluar nese mekanizmi
   // schedule vete eshte faktor ne deliverability.
+  // Gjeneron linqe Gmail, te mbushur paraprakisht — perdoruesi vete klikon "Send", brenda Gmail-it.
+  app.post('/api/admin/marketing/linqet-gmail', iAdmin, async (req, res) => {
+    const { llogaria, shabllon_id, kontakt_ids } = req.body || {};
+    if (!llogaria) return res.status(400).json({ error: 'Zgjidh nje llogari derguesi.' });
+    if (!shabllon_id) return res.status(400).json({ error: 'Zgjidh nje shabllon.' });
+    if (!Array.isArray(kontakt_ids) || !kontakt_ids.length) return res.status(400).json({ error: 'Zgjidh te pakten 1 kontakt.' });
+    try {
+      const sh = await pool.query('SELECT subjekti, html FROM marketing_shabllonet WHERE id=$1', [shabllon_id]);
+      if (!sh.rows.length) return res.status(400).json({ error: 'Shablloni s\'u gjet.' });
+      const { subjekti, html: htmlBazë } = sh.rows[0];
+      const r = await pool.query('SELECT id, email, emri, domain FROM marketing_kontaktet WHERE id = ANY($1::int[]) AND NOT unsubscribed', [kontakt_ids]);
+      const linqe = r.rows.map(kont => {
+        const unsubLink = 'https://phronexusai.com/marketing-unsubscribe?email=' + encodeURIComponent(kont.email);
+        const platformaEmri = emriPlatformesNgaDomain(kont.domain);
+        const tekstiBaze = htmlNeTekst(htmlBazë).replace(/\{emri\}/g, kont.emri || kont.domain).replace(/\{domain\}/g, kont.domain || '').replace(/\{platforma\}/g, platformaEmri).replace(/\{unsubscribe_link\}/g, unsubLink);
+        const subjektiFinal = subjekti.replace(/\{emri\}/g, kont.emri || kont.domain).replace(/\{domain\}/g, kont.domain || '').replace(/\{platforma\}/g, platformaEmri);
+        const link = 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(kont.email) + '&su=' + encodeURIComponent(subjektiFinal) + '&body=' + encodeURIComponent(tekstiBaze);
+        return { kontakt_id: kont.id, email: kont.email, link };
+      });
+      res.json({ ok: true, linqe });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
   app.post('/api/admin/marketing/dergo-menjehere', iAdmin, async (req, res) => {
     const { llogaria, shabllon_id, kontakt_ids } = req.body || {};
     if (!llogaria) return res.status(400).json({ error: 'Zgjidh nje llogari derguesi.' });
