@@ -1,8 +1,8 @@
 ---
 title: How to Get Your First SaaS Users Without Paid Ads
 description: Where to find your first SaaS users with no ad budget, what to say when you reach them, how long it really takes, and the mistakes that waste months.
-date: 2026-10-14
-draft: true
+date: 2026-10-04
+draft: false
 ---
 Getting your first users is a different problem from growing. You are not optimising a funnel yet. You are looking for the first few people who have the problem, will try the product, and will tell you honestly what is wrong with it. Here are the approaches that need no ad budget, in roughly the order I would try them.
 
