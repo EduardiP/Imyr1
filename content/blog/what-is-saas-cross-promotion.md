@@ -1,8 +1,8 @@
 ---
 title: What Is SaaS Cross-Promotion? A Practical Guide
 description: SaaS cross-promotion means software companies show each other to their own visitors instead of buying ads. How it works, when it helps, and how to start.
-date: 2026-10-07
-draft: true
+date: 2026-10-04
+draft: false
 ---
 Most early-stage SaaS companies share one problem: a product that works, and almost nobody who knows it exists. Paid ads can fix that, but they cost money before you know whether your message converts. Cross-promotion is the other route. Instead of buying attention, you borrow it from a company whose visitors already look like your customers.
 
