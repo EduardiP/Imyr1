@@ -2340,9 +2340,12 @@ app.get('/sitemap.xml', (req, res) => {
   res.type('application/xml');
   const faqet = ['/', '/si-funksionon', '/about', '/ai-matching', '/formate-ai', '/gjurmimi-analitika', '/ekipet-rolet', '/blog', '/contact', '/terms', '/privacy', '/refund'];
   const sot = new Date().toISOString().slice(0, 10);
+  // Artikujt e blogut (vetem ata te publikuar); nese blog.js mungon, sitemap-i mbetet si me pare.
+  let blogRreshta = [];
+  try { blogRreshta = require('./blog').sitemapRreshta(); } catch (e) { blogRreshta = []; }
   res.send(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${faqet.map(f => `  <url><loc>https://phronexusai.com${f}</loc><lastmod>${sot}</lastmod></url>`).join('\n')}
+${faqet.map(f => `  <url><loc>https://phronexusai.com${f}</loc><lastmod>${sot}</lastmod></url>`).join('\n')}${blogRreshta.length ? '\n' + blogRreshta.join('\n') : ''}
 </urlset>`);
 });
 
@@ -3679,7 +3682,14 @@ app.get('/tracking-analytics', (req, res) => res.sendFile(path.join(__dirname, '
 app.get('/ekipet-rolet', (req, res) => res.sendFile(path.join(__dirname, 'public', 'ekipet-rolet.html')));
 app.get('/teams-roles', (req, res) => res.sendFile(path.join(__dirname, 'public', 'ekipet-rolet.html')));
 app.get('/ai-matching', (req, res) => res.sendFile(path.join(__dirname, 'public', 'ai-matching.html')));
-app.get('/blog', (req, res) => res.sendFile(path.join(__dirname, 'public', 'blog.html')));
+// ---- BLOG (fillim) ---- artikujt jane skedare .md te dosja content/blog (shih blog.js). Pa artikuj te publikuar, /blog shfaq blog.html statik.
+try {
+  require('./blog')(app, { publicDir: path.join(__dirname, 'public'), contentDir: path.join(__dirname, 'content', 'blog') });
+} catch (e) {
+  console.error('blog.js nuk u ngarkua, po perdoret blog.html statik:', e.message);
+  app.get('/blog', (req, res) => res.sendFile(path.join(__dirname, 'public', 'blog.html')));
+}
+// ---- BLOG (fund) ----
 app.get('/ekipi', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/prano-ftesen', (req, res) => res.sendFile(path.join(__dirname, 'public', 'prano-ftesen.html')));
 app.get('/cilesimet', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
