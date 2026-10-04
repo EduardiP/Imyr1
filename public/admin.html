@@ -1619,8 +1619,23 @@ async function mktNgarkoKategorite(){
 try{
 const d=await(await fetch('/api/admin/marketing/kategorite')).json();
 const sel=$('mktKategoriaSel');
-sel.innerHTML='<option value="">— zgjidh kategorinë —</option>'+
-(d.kategorite||[]).map(k=>'<option value="'+k.kategoria+'">'+k.kategoria+' ('+k.paDergu+' pa dërguar / '+k.total+' total)</option>').join('');
+const PREF='Crustdata: ';
+sel.innerHTML='';
+const p0=document.createElement('option'); p0.value=''; p0.textContent='— zgjidh kategorinë —'; sel.appendChild(p0);
+// Dy seksione ne te njejten liste: Exa (kategorite e vjetra) dhe Crustdata (kategorite qe nisin me "Crustdata: ").
+const grupe=[['Exa',[]],['Crustdata',[]]];
+(d.kategorite||[]).forEach(function(k){ grupe[String(k.kategoria).indexOf(PREF)===0?1:0][1].push(k); });
+grupe.forEach(function(g){
+if(!g[1].length) return;
+const og=document.createElement('optgroup'); og.label=g[0];
+g[1].forEach(function(k){
+const o=document.createElement('option'); o.value=k.kategoria;
+const emri=g[0]==='Crustdata'?String(k.kategoria).slice(PREF.length):k.kategoria;
+o.textContent=emri+' ('+k.paDergu+' pa dërguar / '+k.total+' total)';
+og.appendChild(o);
+});
+sel.appendChild(og);
+});
 }catch(e){}
 }
 async function mktZgjidhKategori(kat){
