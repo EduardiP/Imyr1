@@ -6,6 +6,7 @@
 //   GMAIL_USER, GMAIL_APP_PASSWORD          (RIPERDOR ato qe TASHME ekzistojne — info@phronexusai.com)
 //   MKT_EMAIL_2_USER, MKT_EMAIL_2_PASS      (i ri)
 //   MKT_EMAIL_3_USER, MKT_EMAIL_3_PASS      (i ri)
+//   MKT_EMAIL_4_..., MKT_EMAIL_5_..., MKT_EMAIL_6_...  (USER dhe PASS; nje llogari aktivizohet vetem kur ka te dyja)
 //   BIZNES_FINDER_URL                       (p.sh. https://emailet-production.up.railway.app)
 
 const nodemailer = require('nodemailer');
@@ -14,7 +15,9 @@ const LLOGARITE_KONFIG = [
   { user: 'GMAIL_USER', pass: 'GMAIL_APP_PASSWORD' },
   { user: 'MKT_EMAIL_2_USER', pass: 'MKT_EMAIL_2_PASS' },
   { user: 'MKT_EMAIL_3_USER', pass: 'MKT_EMAIL_3_PASS' },
-  { user: 'MKT_EMAIL_4_USER', pass: 'MKT_EMAIL_4_PASS' }
+  { user: 'MKT_EMAIL_4_USER', pass: 'MKT_EMAIL_4_PASS' },
+  { user: 'MKT_EMAIL_5_USER', pass: 'MKT_EMAIL_5_PASS' },
+  { user: 'MKT_EMAIL_6_USER', pass: 'MKT_EMAIL_6_PASS' }
 ];
 const transporteret = {}; // { [email]: transporter }
 function ndertoTransporteret() {
