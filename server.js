@@ -1,1836 +1,3757 @@
-// Mjet zbulimi bizneseh — Exa API (zbulim) + OpenAI (filtrim AI) + Generect (email) + PostgreSQL.
-// Variabla mjedisi te kerkuara ne Railway: EXA_API_KEY, OPENAI_API_KEY, GENERECT_API_KEY, DATABASE_URL, SERPER_API_KEY (per tab-in Bisedat), CRUSTDATA_API_KEY (per tab-in Kompani te reja), GOOGLE_ALERTS_FEEDS (per tab-in Alerte).
+// Imyr — server (Faza 1 + fillimi i Fazes 2)
+// Rrjet cross-promotion per biznese.
+// Faza 1: server + databaza + login i sigurt (regjistrim/hyrje).
+// Faza 2 (fillim): snippet-i (widget.js), /ad, /track, ruajtja e promovimit, statusi i lidhjes.
 
 const express = require('express');
 const { Pool } = require('pg');
+const bcrypt = require('bcryptjs');
+const cookieParser = require('cookie-parser');
+const crypto = require('crypto');
+const path = require('path');
+const https = require('https');
+const http = require('http');
+const selector = require('./selector');
+const analytics = require('./analytics');
+const platforma = require('./platforma');
+const pesha = require('./pesha');
+const kombinimi = require('./kombinimi');
+const multer = require('multer');
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+
 const app = express();
-app.use(express.json());
 
-const EXA_KEY = process.env.EXA_API_KEY;
-const OPENAI_KEY = process.env.OPENAI_API_KEY;
-const GENERECT_KEY = process.env.GENERECT_API_KEY;
-const SERPER_KEY = process.env.SERPER_API_KEY;
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+// Ridrejto URL-en e Railway te domain-i i vertete (per SEO dhe qartesi).
+// Aktiv vetem nese PRIMARY_HOST eshte vendosur te variablat.
+app.use((req, res, next) => {
+  const primar = process.env.PRIMARY_HOST;   // p.sh. phronexusai.com
+  if (primar && req.headers.host && req.headers.host !== primar) {
+    // Mos ridrejto: snippet-et/endpoint-et (klientet i kane vendosur me URL-en e vjeter),
+    // dhe admin/api (qe login-i e cookie-t te mos prishen mes domain-eve).
+    const perjashto = ['/imyr.js','/phronexusai.js','/imyr-track.js','/phronexus-track.js','/tag.js','/lidh','/track-lidh','/ad','/cil','/track','/klik','/konvertim','/konvertim-verifiko','/diag','/diag-zonat','/admin','/api'];
+    if (!perjashto.some(p => req.path.startsWith(p))) {
+      return res.redirect(302, 'https://' + primar + req.originalUrl);
+    }
+  }
+  next();
+});
 
-pool.query(`CREATE TABLE IF NOT EXISTS bizneset_gjetur (
-  id SERIAL PRIMARY KEY,
-  domain TEXT UNIQUE NOT NULL,
-  emri TEXT,
-  url TEXT,
-  pershkrimi TEXT,
-  kategoria TEXT,
-  email TEXT,
-  gjetur_at TIMESTAMPTZ DEFAULT now()
-)`).catch(e => console.error('migrim:', e.message));
-pool.query(`ALTER TABLE bizneset_gjetur ADD COLUMN IF NOT EXISTS email_statusi TEXT`).catch(e => console.error('migrim email_statusi:', e.message));
-// Historiku i kompanive qe tab-i "Kompani te reja" ia ka treguar tashme perdoruesit, qe te mos i dale dy here.
-pool.query(`CREATE TABLE IF NOT EXISTS kompani_pare (
-  domain TEXT PRIMARY KEY,
-  emri TEXT,
-  gjetur_at TIMESTAMPTZ DEFAULT now()
-)`).then(() => pool.query(`ALTER TABLE kompani_pare
-  ADD COLUMN IF NOT EXISTS website TEXT, ADD COLUMN IF NOT EXISTS viti INTEGER, ADD COLUMN IF NOT EXISTS punonjes TEXT,
-  ADD COLUMN IF NOT EXISTS shteti TEXT, ADD COLUMN IF NOT EXISTS qyteti TEXT, ADD COLUMN IF NOT EXISTS linkedin TEXT, ADD COLUMN IF NOT EXISTS twitter TEXT,
-  ADD COLUMN IF NOT EXISTS fshih BOOLEAN DEFAULT true, ADD COLUMN IF NOT EXISTS email TEXT, ADD COLUMN IF NOT EXISTS email_lloji TEXT,
-  ADD COLUMN IF NOT EXISTS email_mx BOOLEAN, ADD COLUMN IF NOT EXISTS email_burimi TEXT,
-  ADD COLUMN IF NOT EXISTS email_gjendja TEXT DEFAULT 'pa-kerkuar', ADD COLUMN IF NOT EXISTS email_at TIMESTAMPTZ, ADD COLUMN IF NOT EXISTS kategoria TEXT`))
-  .catch(e => console.error('migrim kompani_pare:', e.message));
-// Njoftimet e Google Alerts (nga feed-et RSS), per tab-in "Alerte".
-pool.query(`CREATE TABLE IF NOT EXISTS alerte_rezultate (
-  id SERIAL PRIMARY KEY,
-  url TEXT UNIQUE NOT NULL,
-  titulli TEXT,
-  fragmenti TEXT,
-  burimi TEXT,
-  alerti TEXT,
-  publikuar TIMESTAMPTZ,
-  gjetur_at TIMESTAMPTZ DEFAULT now(),
-  statusi TEXT DEFAULT 'i ri'
-)`).catch(e => console.error('migrim alerte_rezultate:', e.message));
-
-function domainNga(url) {
+// ═══ PADDLE WEBHOOK — DUHET te vije PARA express.json() global, meqe ka nevoje
+// per RAW body (jo te parsuar) per verifikimin e nenshkrimit. ═══
+app.post('/api/paddle-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
-    const host = new URL(url).hostname.replace(/^www\./, '');
-    const pjeset = host.split('.');
-    return pjeset.length > 2 ? pjeset.slice(-2).join('.') : host;
-  } catch (e) { return url; }
+    const sig = req.headers['paddle-signature'] || '';
+    const raw = req.body.toString();
+    const secret = process.env.PADDLE_WEBHOOK_SECRET;
+    if (!secret) { console.error('PADDLE_WEBHOOK_SECRET mungon'); return res.status(500).end(); }
+
+    const parts = Object.fromEntries(sig.split(';').map(p => p.split('=')));
+    const ts = parts.ts, h1 = parts.h1;
+    if (!ts || !h1) return res.status(400).end();
+    const pritur = crypto.createHmac('sha256', secret).update(ts + ':' + raw).digest('hex');
+    const eVlefshem = h1.length === pritur.length &&
+      crypto.timingSafeEqual(Buffer.from(h1), Buffer.from(pritur));
+    if (!eVlefshem) { console.error('Paddle webhook: nenshkrim i pavlefshem'); return res.status(401).end(); }
+
+    const event = JSON.parse(raw);
+    const lloji = event.event_type;
+    const data = event.data || {};
+
+    if (lloji === 'transaction.completed' || lloji === 'subscription.activated' || lloji === 'subscription.created') {
+      const bizId = data.custom_data && data.custom_data.biznes_id;
+      const subId = data.subscription_id || (lloji !== 'transaction.completed' ? data.id : null);
+      const custId = data.customer_id;
+      if (bizId) {
+        await pool.query(
+          `UPDATE bizneset SET plani='premium', paddle_subscription_id=COALESCE($2,paddle_subscription_id),
+           paddle_customer_id=COALESCE($3,paddle_customer_id) WHERE id=$1`,
+          [bizId, subId, custId]);
+      }
+    } else if (lloji === 'subscription.canceled' || lloji === 'subscription.past_due' || lloji === 'subscription.paused') {
+      const subId = data.id;
+      if (subId) {
+        await pool.query(`UPDATE bizneset SET plani='falas' WHERE paddle_subscription_id=$1`, [subId]);
+      }
+    }
+    res.status(200).json({ received: true });
+  } catch (e) {
+    console.error('Paddle webhook deshtoi:', e.message);
+    res.status(500).end();
+  }
+});
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
+// Migrim: snippet_id te ngjarjet (per te ditur cili snippet i biznesit shfaqi reklamen qe solli shikimin/klikimin/konvertimin)
+pool.query(`ALTER TABLE ngjarjet ADD COLUMN IF NOT EXISTS snippet_id INTEGER`).catch(e => console.error('migrim snippet_id:', e.message));
+
+// Migrim: logjika e shperndarjes (ankand | barazi) — parazgjedhje 'ankand' per te GJITHA (ekzistueset + te reja)
+pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS logjika_shperndarjes TEXT NOT NULL DEFAULT 'ankand'`).catch(e => console.error('migrim logjika_shperndarjes (bizneset):', e.message));
+pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS logjika_shperndarjes TEXT NOT NULL DEFAULT 'ankand'`).catch(e => console.error('migrim logjika_shperndarjes (promovimet):', e.message));
+// Gjurmim i VEÇANTË: a e ka biznesi KONFIRMUAR REALISHT llogarine Ankand/Balance (jo thjesht
+// "logjika_shperndarjes" si preferencë e thjeshte) — deri sa te konfirmohet EKSPLICIT (butoni
+// "Create account"), llogaria tjeter NUK duhet te marre pjese ne asnje ankand/balance real.
+pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS ankand_krijuar BOOLEAN NOT NULL DEFAULT false`).catch(e => console.error('migrim ankand_krijuar:', e.message));
+pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS kategori_dytesore TEXT`).catch(e => console.error('migrim kategori_dytesore:', e.message));
+pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS paddle_subscription_id TEXT`).catch(e => console.error('migrim paddle_subscription_id:', e.message));
+pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS paddle_customer_id TEXT`).catch(e => console.error('migrim paddle_customer_id:', e.message));
+pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS balance_krijuar BOOLEAN NOT NULL DEFAULT false`).catch(e => console.error('migrim balance_krijuar:', e.message));
+// MIGRIM KRITIK: bizneset EKZISTUESE marrin automatikisht "krijuar=true" per pishinen
+// e tyre AKTUALE (sipas logjika_shperndarjes qe kane tani) — perndryshe FILTRI i
+// kandidateve (poshte, selector.js/automatik.js) do t'i perjashtonte TE GJITHE,
+// meqe kolonat e reja fillojne default false per çdo rresht ekzistues.
+setTimeout(() => {
+  pool.query(`UPDATE bizneset SET ankand_krijuar=true WHERE logjika_shperndarjes='ankand' AND ankand_krijuar=false`)
+    .catch(e => console.error('migrim retroaktiv ankand_krijuar:', e.message));
+  pool.query(`UPDATE bizneset SET balance_krijuar=true WHERE logjika_shperndarjes='barazi' AND balance_krijuar=false`)
+    .catch(e => console.error('migrim retroaktiv balance_krijuar:', e.message));
+}, 2000); // vonese e vogel, qe te sigurohemi se kolonat e sipërme jane shtuar tashme
+
+// --- APPSUMO: kod jetegjate (lifetime), i pavarur nga Paddle/$7-muaj ---
+pool.query(`CREATE TABLE IF NOT EXISTS appsumo_kodet (
+  id SERIAL PRIMARY KEY,
+  kodi TEXT UNIQUE NOT NULL,
+  perdorur BOOLEAN NOT NULL DEFAULT false,
+  email TEXT,
+  perdorur_at TIMESTAMPTZ
+)`).catch(e => console.error('migrim appsumo_kodet:', e.message));
+pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS appsumo_lifetime BOOLEAN NOT NULL DEFAULT false`).catch(e => console.error('migrim appsumo_lifetime:', e.message));
+pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS auto_krijuar BOOLEAN NOT NULL DEFAULT false`).catch(e => console.error('migrim auto_krijuar (promovimet):', e.message));
+
+// Migrim: gjurmimi i perdorimit te "Analizo me AI" (kufi 2/24 ore per biznes)
+pool.query(`CREATE TABLE IF NOT EXISTS analizo_perdorimi (
+  id SERIAL PRIMARY KEY,
+  biznes_id INTEGER NOT NULL REFERENCES bizneset(id) ON DELETE CASCADE,
+  krijuar_at TIMESTAMPTZ DEFAULT now()
+)`).catch(e => console.error('migrim analizo_perdorimi:', e.message));
+
+// Migrim: burimi i ngjarjes ('ankand' | 'barazi') — tani mbushet realisht nga /track,/klik,/konvertim,
+// duke lexuar logjika_shperndarjes te vete reklames se treguar (jo nga snippet-i i klientit).
+pool.query(`ALTER TABLE ngjarjet ADD COLUMN IF NOT EXISTS burimi TEXT`).catch(e => console.error('migrim burimi:', e.message));
+
+// Migrim: perqindja Ankand/Balance per HOST (parazgjedhje/"te gjitha snippet-et bashke")
+pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS barazi_perqindje INTEGER NOT NULL DEFAULT 50`).catch(e => console.error('migrim barazi_perqindje:', e.message));
+// Migrim: menyra e Hosting-ut ('te-gjitha' | 'vecmas') + mbivendosje per-snippet (nese 'vecmas')
+pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS hosting_menyra TEXT NOT NULL DEFAULT 'te-gjitha'`).catch(e => console.error('migrim hosting_menyra:', e.message));
+pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS hosting_mode TEXT NOT NULL DEFAULT 'automatik'`).catch(e => console.error('migrim hosting_mode:', e.message));
+pool.query(`ALTER TABLE snippetet ADD COLUMN IF NOT EXISTS barazi_perqindje INTEGER`).catch(e => console.error('migrim barazi_perqindje (snippetet):', e.message));
+
+// Migrim: tabela `balancet` per regjistrimin e vendimeve ne logjiken Balance
+require('./balanca')(pool).init().catch(e => console.error('init balancet:', e.message));
+
+// Migrim: tabela `borxhi_global` per sistemin Automatik (kufiri 10 nder-pishinash)
+require('./automatik')(pool).init().catch(e => console.error('init borxhi_global:', e.message));
+
+// --- Ruajtja e skedareve (Cloudflare R2) ---
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
+const s3 = process.env.R2_ENDPOINT ? new S3Client({
+  region: 'auto',
+  endpoint: process.env.R2_ENDPOINT,
+  credentials: { accessKeyId: process.env.R2_ACCESS_KEY, secretAccessKey: process.env.R2_SECRET_KEY }
+}) : null;
+
+// initDB tani eshte te db.js
+const { initDB } = require('./db');
+
+// --- Ndihmes: krijo nje celes unik ---
+function beCeles() {
+  return 'phronexus_' + crypto.randomBytes(12).toString('hex');
 }
-function esc(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-const DOMAIN_ZHURME = [
-  'quora.com', 'prnewswire.com', 'globenewswire.com', 'finance.yahoo.com', 'businesswire.com',
-  'linkedin.com', 'glassdoor.com', 'indeed.com', 'grandresearchstore.com', 'reddit.com',
-  'wikipedia.org', 'youtube.com', 'facebook.com', 'twitter.com', 'x.com', 'crunchbase.com',
-  'techcrunch.com', 'wearetech.africa', 'techsoma.africa', 'techbuild.africa', 'forbes.com',
-  'bloomberg.com', 'reuters.com', 'gartner.com', 'g2.com', 'capterra.com', 'getapp.com',
-  'softwareadvice.com', 'trustpilot.com', 'medium.com', 'drjobs.ae'
-];
-const SHABLLON_ARTIKULL = /\/(blog|news|resources|articles|guides?|insights?)\//i;
-const FJALE_ARTIKULL = /\b(best|top|vs|review|comparison|guide to)\b.{0,40}\b20\d\d\b/i;
-
-function eshteZhurme(url, title) {
-  const domain = domainNga(url);
-  if (DOMAIN_ZHURME.some(z => domain === z || domain.endsWith('.' + z))) return true;
-  if (SHABLLON_ARTIKULL.test(url)) return true;
-  if (FJALE_ARTIKULL.test(title || '')) return true;
-  return false;
+// --- Ndihmes: CORS per endpoint-et publike (thirren nga dyqane te tjera) ---
+function cors(res) {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
 }
 
-async function filtroMeAI(rezultate) {
-  if (!OPENAI_KEY || !rezultate.length) return rezultate.map(() => true);
-  const lista = rezultate.map((x, i) => (i+1) + '. Titulli: "' + (x.title||'') + '" | Fragment: "' + ((x.highlights&&x.highlights[0])||'').slice(0,200) + '"').join('\n');
-  const prompt = 'Per secilen nga hyrjet e meposhtme (te numeruara 1 deri ' + rezultate.length + '), thuaj nese ESHTE vete faqja kryesore/produkti i nje kompanie/platforme reale (po), OSE nese eshte artikull lajmesh, blog, faqe krahasimi/review, forum, listim pune, ose profil individual (jo).\n\n' + lista + '\n\nPergjigju VETEM me nje objekt JSON ku cdo celes eshte NUMRI (si tekst) dhe vlera eshte "po" ose "jo" — perfshi TE GJITHE numrat 1 deri ' + rezultate.length + ', asnje te mos mungoje. Asgje tjeter, pa shpjegime. Shembull per 3 hyrje: {"1":"po","2":"jo","3":"po"}';
+// --- Middleware: kontrollo a eshte i loguar ---
+async function iLoguar(req, res, next) {
+  const token = req.cookies.imyr_session;
+  if (!token) return res.status(401).json({ error: 'Nuk je i loguar.' });
+  try {
+    const r = await pool.query('SELECT biznes_id FROM seancat WHERE token=$1', [token]);
+    if (!r.rows.length) return res.status(401).json({ error: 'Seanca e pavlefshme.' });
+    const idLogimi = r.rows[0].biznes_id;
+
+    // Nese llogaria qe hyri eshte ANETAR EKIPI (jo biznesi kryesor), te gjitha te
+    // dhenat duhet te lexohen/shkruhen nga BIZNESI PRIND (i perbashket), JO nga
+    // rreshti i vet i anetarit (qe eshte bosh — s'ka snippet-e, promovime, etj.).
+    // req.identitetiAnetarId mban ID-ne E VERTETE te personit te loguar (per
+    // kontrollin e lejeve me vone) — req.biznesId mbetet gjithmone biznesi i
+    // PERBASHKET qe cdo endpoint ekzistues tashme e perdor.
+    const bizR = await pool.query(
+      'SELECT pronari_biznes_id, eshte_anetar_ekipi FROM bizneset WHERE id=$1', [idLogimi]);
+    const eshteAnetar = bizR.rows.length && bizR.rows[0].eshte_anetar_ekipi && bizR.rows[0].pronari_biznes_id;
+
+    req.biznesId = eshteAnetar ? bizR.rows[0].pronari_biznes_id : idLogimi;
+    req.identitetiAnetarId = eshteAnetar ? idLogimi : null; // null = pronari vete (qasje e plote)
+    next();
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+}
+
+// --- REGJISTRIM ---
+app.post('/api/regjistrohu', async (req, res) => {
+  const { emri, email, fjalekalimi, kategoria, website } = req.body;
+  const tipi = ['b2b','b2c','b2b2c'].includes(req.body.tipi) ? req.body.tipi : null;
+  const logjika = ['ankand','barazi'].includes(req.body.logjika_shperndarjes) ? req.body.logjika_shperndarjes : 'ankand';
+  const oferta = !!req.body.oferta;
+  const lejonPromovim = !!req.body.lejonPromovim;
+  if (!emri || !email || !fjalekalimi) {
+    return res.status(400).json({ error: 'Emri, email dhe fjalekalimi jane te detyrueshem.' });
+  }
+  if (!req.body.kushtet) {
+    return res.status(400).json({ error: 'Duhet te pranosh Kushtet dhe Privatesine.' });
+  }
+  if (String(fjalekalimi).length < 6) {
+    return res.status(400).json({ error: 'Fjalekalimi duhet te kete te pakten 6 shkronja.' });
+  }
+  try {
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pranoi_promovim_platforme BOOLEAN NOT NULL DEFAULT false`);
+    const hash = await bcrypt.hash(fjalekalimi, 10);
+    const celes = beCeles();
+    const r = await pool.query(
+      `INSERT INTO bizneset (emri, email, fjalekalimi, kategoria, website, celes, tipi, logjika_shperndarjes, pranoi_kushtet, pranoi_oferta, pranoi_promovim_platforme, pranoi_kushtet_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,true,$9,$10,now()) RETURNING id`,
+      [emri, email.toLowerCase().trim(), hash, kategoria || null, website || null, celes, tipi, logjika, oferta, lejonPromovim]
+    );
+    // krijo seance (login automatik pas regjistrimit)
+    const token = crypto.randomBytes(24).toString('hex');
+    await pool.query('INSERT INTO seancat (token, biznes_id) VALUES ($1,$2)', [token, r.rows[0].id]);
+    // APPSUMO: nese ky email ka nje kod TE perdorur ME PARE (kur biznesi ende s'ekzistonte), aktivizo tani.
+    try {
+      const appsumoK = await pool.query('SELECT 1 FROM appsumo_kodet WHERE email=$1 AND perdorur=true LIMIT 1', [email.toLowerCase().trim()]);
+      if (appsumoK.rows.length) await pool.query('UPDATE bizneset SET appsumo_lifetime=true WHERE id=$1', [r.rows[0].id]);
+    } catch (e) { /* jo kritike, s'e ndalon regjistrimin */ }
+    res.cookie('imyr_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 30*24*60*60*1000 });
+    res.json({ ok: true, biznes_id: r.rows[0].id });
+  } catch (e) {
+    if (e.code === '23505') return res.status(400).json({ error: 'Ky email eshte i regjistruar tashme.' });
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// --- HYRJE (login) ---
+app.post('/api/hyr', async (req, res) => {
+  const { email, fjalekalimi } = req.body;
+  if (!email || !fjalekalimi) return res.status(400).json({ error: 'Email dhe fjalekalimi jane te detyrueshem.' });
+  try {
+    const r = await pool.query('SELECT id, fjalekalimi FROM bizneset WHERE email=$1', [email.toLowerCase().trim()]);
+    if (!r.rows.length) return res.status(400).json({ error: 'Email ose fjalekalim i gabuar.' });
+    if (!r.rows[0].fjalekalimi) return res.status(400).json({ error: 'Kjo llogari u krijua me Google. Hyr me Google.' });
+    const ok = await bcrypt.compare(fjalekalimi, r.rows[0].fjalekalimi);
+    if (!ok) return res.status(400).json({ error: 'Email ose fjalekalim i gabuar.' });
+    const token = crypto.randomBytes(24).toString('hex');
+    await pool.query('INSERT INTO seancat (token, biznes_id) VALUES ($1,$2)', [token, r.rows[0].id]);
+    res.cookie('imyr_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 30*24*60*60*1000 });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Mban perkohesisht te dhenat e Google-it derisa perdoruesi i ri te pranoje kushtet
+const googlePending = {};
+setInterval(() => { const tani = Date.now(); for (const k in googlePending) { if (tani - googlePending[k].koha > 15*60*1000) delete googlePending[k]; } }, 5*60*1000);
+
+// Kontroll çdo 24 orë: verifikon nëse snippet-et aktive janë ende te faqja.
+// Nëse kodi u hoq (s'gjendet me celes+imyr.js), snippet_active → false.
+// Kur biznesi s'ka asnjë snippet aktiv, reklamat e tij ndalen automatikisht (selektori i filtron).
+async function kontrolloSnippetet24h() {
+  try {
+    const r = await pool.query(
+      `SELECT s.id, s.celes, b.website
+       FROM snippetet s JOIN bizneset b ON b.id = s.biznes_id
+       WHERE b.website IS NOT NULL AND b.website <> ''`);
+    for (const s of r.rows) {
+      let faqja = s.website;
+      if (!/^https?:\/\//i.test(faqja)) faqja = 'https://' + faqja;
+      let gjendet = false, arritur = false;
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 6000);
+        const resp = await fetch(faqja, { signal: ctrl.signal, redirect: 'follow',
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36' } });
+        clearTimeout(t);
+        const html = await resp.text();
+        arritur = true;
+        if ((html.indexOf('imyr.js') !== -1 || html.indexOf('phronexusai.js') !== -1) && html.indexOf(s.celes) !== -1) gjendet = true;
+      } catch (e) { arritur = false; }
+      // Vendos statusin AKTUAL: nese e arritEm faqen, statusi pasqyron gjendjen reale.
+      // (NEse s'e arritEm faqen, s'e prekim — mund tE jetE bllokim i pErkohshEm.)
+      if (arritur) {
+        await pool.query('UPDATE snippetet SET snippet_active=$1 WHERE id=$2', [gjendet, s.id]);
+      }
+      await new Promise(res => setTimeout(res, 1000));  // pauze mes kontrolleve
+    }
+  } catch (e) {}
+}
+setInterval(kontrolloSnippetet24h, 24 * 3600 * 1000);  // çdo 24 orë
+
+// --- LOGIN ME GOOGLE ---
+app.get('/auth/google', (req, res) => {
+  const cid = process.env.GOOGLE_CLIENT_ID;
+  const appUrl = process.env.APP_URL;
+  if (!cid || !appUrl) return res.status(500).send('Google login s\'është konfiguruar.');
+  const params = new URLSearchParams({
+    client_id: cid,
+    redirect_uri: appUrl + '/auth/google/callback',
+    response_type: 'code',
+    scope: 'openid email profile',
+    access_type: 'online',
+    prompt: 'select_account'
+  });
+  res.redirect('https://accounts.google.com/o/oauth2/v2/auth?' + params.toString());
+});
+
+app.get('/auth/google/callback', async (req, res) => {
+  const code = req.query.code;
+  const cid = process.env.GOOGLE_CLIENT_ID;
+  const secret = process.env.GOOGLE_CLIENT_SECRET;
+  const appUrl = process.env.APP_URL;
+  if (!code || !cid || !secret || !appUrl) return res.redirect('/?login=gabim');
+  try {
+    // 1. Shkembe kodin per token
+    const tokRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code, client_id: cid, client_secret: secret,
+        redirect_uri: appUrl + '/auth/google/callback',
+        grant_type: 'authorization_code'
+      })
+    });
+    const tok = await tokRes.json();
+    if (!tok.access_token) return res.redirect('/?login=gabim');
+
+    // 2. Merr profilin (email + emri)
+    const uRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: 'Bearer ' + tok.access_token }
+    });
+    const u = await uRes.json();
+    if (!u.email) return res.redirect('/?login=gabim');
+    const email = u.email.toLowerCase().trim();
+    const emri = u.name || email.split('@')[0];
+
+    // 3. Gjej ose krijo biznesin
+    let biz = await pool.query('SELECT id FROM bizneset WHERE email=$1', [email]);
+    if (biz.rows.length) {
+      // Ekziston => hyr direkt
+      const token = crypto.randomBytes(24).toString('hex');
+      await pool.query('INSERT INTO seancat (token, biznes_id) VALUES ($1,$2)', [token, biz.rows[0].id]);
+      res.cookie('imyr_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 30*24*60*60*1000 });
+      return res.redirect('/?login=ok');
+    }
+    // Hyrje e PARE (ose pas fshirjes) => kerko pranimin e kushteve para se te krijohet
+    const pending = crypto.randomBytes(16).toString('hex');
+    googlePending[pending] = { email, emri, koha: Date.now() };
+    res.cookie('imyr_pending', pending, { httpOnly: true, sameSite: 'lax', maxAge: 15*60*1000 });
+    return res.redirect('/?login=kushte');
+  } catch (e) {
+    res.redirect('/?login=gabim');
+  }
+});
+
+// --- Kush eshte ne pritje te pranimit (per faqen e kushteve) ---
+app.get('/api/google-pending', (req, res) => {
+  const p = req.cookies.imyr_pending;
+  if (!p || !googlePending[p]) return res.json({ pending: false });
+  res.json({ pending: true, emri: googlePending[p].emri, email: googlePending[p].email });
+});
+
+// --- Perfundo krijimin e llogarise Google pas pranimit te kushteve ---
+app.post('/api/google-prano', async (req, res) => {
+  const p = req.cookies.imyr_pending;
+  if (!p || !googlePending[p]) return res.status(400).json({ error: 'Session expired. Please try again.' });
+  if (!req.body.kushtet) return res.status(400).json({ error: 'Duhet të pranosh Kushtet dhe Privatësinë.' });
+  const { email, emri } = googlePending[p];
+  const oferta = !!req.body.oferta;
+  const lejonPromovim = !!req.body.lejonPromovim;
+  try {
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pranoi_promovim_platforme BOOLEAN NOT NULL DEFAULT false`);
+    // Nese u krijua ndermjet kohes, thjesht hyr
+    let biz = await pool.query('SELECT id FROM bizneset WHERE email=$1', [email]);
+    let bizId;
+    if (biz.rows.length) {
+      bizId = biz.rows[0].id;
+    } else {
+      const celes = beCeles();
+      const ins = await pool.query(
+        `INSERT INTO bizneset (emri, email, fjalekalimi, celes, pranoi_kushtet, pranoi_oferta, pranoi_promovim_platforme, pranoi_kushtet_at)
+         VALUES ($1,$2,$3,$4,true,$5,$6,now()) RETURNING id`,
+        [emri, email, null, celes, oferta, lejonPromovim]);
+      bizId = ins.rows[0].id;
+    }
+    delete googlePending[p];
+    res.clearCookie('imyr_pending');
+    const token = crypto.randomBytes(24).toString('hex');
+    await pool.query('INSERT INTO seancat (token, biznes_id) VALUES ($1,$2)', [token, bizId]);
+    res.cookie('imyr_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 30*24*60*60*1000 });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- TE DHENAT BAZE TE BIZNESIT (emri + website + tipi) — pas login-it me Google ---
+app.post('/api/biz-baza', iLoguar, async (req, res) => {
+  const emri = (req.body.emri || '').trim();
+  const website = (req.body.website || '').trim();
+  const tipi = ['b2b','b2c','b2b2c'].includes(req.body.tipi) ? req.body.tipi : null;
+  if (!emri || !website || !tipi) return res.status(400).json({ error: 'Emri, website dhe tipi jane te detyrueshem.' });
+  try {
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS biznesi_auto BOOLEAN NOT NULL DEFAULT false`);
+    if (['ankand','barazi'].includes(req.body.logjika_shperndarjes)) {
+      await pool.query('UPDATE bizneset SET emri=$2, website=$3, tipi=$4, logjika_shperndarjes=$5, biznesi_auto=false WHERE id=$1',
+        [req.biznesId, emri, website, tipi, req.body.logjika_shperndarjes]);
+    } else {
+      // Nese s'dergohet eksplicit, mos e prek fare — mos rivendos aksidentalisht ne 'ankand'
+      await pool.query('UPDATE bizneset SET emri=$2, website=$3, tipi=$4, biznesi_auto=false WHERE id=$1', [req.biznesId, emri, website, tipi]);
+    }
+    res.json({ ok: true });
+    // Studjo platformen ne sfond (pa e bllokuar pergjigjen) dhe ruaje
+    platforma.ruajPlatformen(pool, req.biznesId, website).catch(() => {});
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- LOGJIKA E SHPERNDARJES (ndryshim i vetin, per llogari ekzistuese — Ankand ↔ Barazi) ---
+app.post('/api/logjika-shperndarjes', iLoguar, async (req, res) => {
+  const logjika = ['ankand','barazi'].includes(req.body.logjika_shperndarjes) ? req.body.logjika_shperndarjes : null;
+  if (!logjika) return res.status(400).json({ error: 'Vlerë e pavlefshme.' });
+  try {
+    const gjendjaAktuale = await pool.query(
+      'SELECT ankand_krijuar, balance_krijuar FROM bizneset WHERE id=$1', [req.biznesId]);
+    const asnjeAkoma = gjendjaAktuale.rows.length &&
+      !gjendjaAktuale.rows[0].ankand_krijuar && !gjendjaAktuale.rows[0].balance_krijuar;
+    if (asnjeAkoma) {
+      const kol = (logjika === 'barazi') ? 'balance_krijuar' : 'ankand_krijuar';
+      await pool.query(`UPDATE bizneset SET logjika_shperndarjes=$2, ${kol}=true WHERE id=$1`, [req.biznesId, logjika]);
+    } else {
+      await pool.query('UPDATE bizneset SET logjika_shperndarjes=$2 WHERE id=$1', [req.biznesId, logjika]);
+    }
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/konfirmo-llogarine', iLoguar, async (req, res) => {
+  const logjika = ['ankand','barazi'].includes(req.body.logjika) ? req.body.logjika : null;
+  if (!logjika) return res.status(400).json({ error: 'Vlerë e pavlefshme.' });
+  const kol = (logjika === 'barazi') ? 'balance_krijuar' : 'ankand_krijuar';
+  try {
+    await pool.query(`UPDATE bizneset SET logjika_shperndarjes=$2, ${kol}=true WHERE id=$1`, [req.biznesId, logjika]);
+    // Aktivizo reklamen automatike te para-krijuar (joaktive) per kete pishine, nese ekziston —
+    // ishte krijuar bashke me reklamen fillestare te pishines tjeter, gati per t'u aktivizuar.
+    await pool.query(
+      `UPDATE promovimet SET aktiv=true WHERE biznes_id=$1 AND logjika_shperndarjes=$2 AND auto_krijuar=true AND aktiv=false`,
+      [req.biznesId, logjika]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/llogarite-konfirmuara', iLoguar, async (req, res) => {
+  try {
+    const r = await pool.query('SELECT ankand_krijuar, balance_krijuar FROM bizneset WHERE id=$1', [req.biznesId]);
+    res.json({ ankand: !!(r.rows[0] && r.rows[0].ankand_krijuar), barazi: !!(r.rows[0] && r.rows[0].balance_krijuar) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- HOSTING: lexo cilesimet aktuale (mode + menyra + perqindjet) ---
+app.get('/api/hosting/cilesimet', iLoguar, async (req, res) => {
+  try {
+    const b = await pool.query('SELECT hosting_mode, hosting_menyra, barazi_perqindje FROM bizneset WHERE id=$1', [req.biznesId]);
+    const sn = await pool.query('SELECT id, emri, barazi_perqindje FROM snippetet WHERE biznes_id=$1 ORDER BY id', [req.biznesId]);
+    res.json({
+      mode: (b.rows[0] && b.rows[0].hosting_mode) || 'automatik',
+      menyra: (b.rows[0] && b.rows[0].hosting_menyra) || 'te-gjitha',
+      barazi_perqindje: (b.rows[0] && b.rows[0].barazi_perqindje != null) ? b.rows[0].barazi_perqindje : 50,
+      snippetet: sn.rows.map(s => ({
+        id: s.id, emri: s.emri,
+        barazi_perqindje: s.barazi_perqindje != null ? s.barazi_perqindje : 50
+      }))
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- HOSTING: ruaj cilesimet (mode + menyra + perqindja/et) ---
+app.post('/api/hosting/ruaj', iLoguar, async (req, res) => {
+  const mode = req.body.mode === 'manual' ? 'manual' : 'automatik';
+  const menyra = req.body.menyra === 'vecmas' ? 'vecmas' : 'te-gjitha';
+  try {
+    // Gjithmone ruaj mode-n kryesor (automatik/manual)
+    await pool.query('UPDATE bizneset SET hosting_mode=$2 WHERE id=$1', [req.biznesId, mode]);
+    // Nese eshte manual, ruaj edhe menyren + perqindjet e detajuara
+    if (mode === 'manual') {
+      await pool.query('UPDATE bizneset SET hosting_menyra=$2 WHERE id=$1', [req.biznesId, menyra]);
+      if (menyra === 'te-gjitha') {
+        const p = Math.max(0, Math.min(100, parseInt(req.body.barazi_perqindje, 10)));
+        await pool.query('UPDATE bizneset SET barazi_perqindje=$2 WHERE id=$1', [req.biznesId, isNaN(p) ? 50 : p]);
+      } else {
+        const lista = Array.isArray(req.body.snippetet) ? req.body.snippetet : [];
+        for (const s of lista) {
+          const sid = parseInt(s.id, 10);
+          const p = Math.max(0, Math.min(100, parseInt(s.barazi_perqindje, 10)));
+          if (sid) await pool.query('UPDATE snippetet SET barazi_perqindje=$2 WHERE id=$1 AND biznes_id=$3', [sid, isNaN(p) ? 50 : p, req.biznesId]);
+        }
+      }
+    }
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- DIL (logout) ---
+app.post('/api/dil', async (req, res) => {
+  const token = req.cookies.imyr_session;
+  if (token) await pool.query('DELETE FROM seancat WHERE token=$1', [token]).catch(()=>{});
+  res.clearCookie('imyr_session');
+  res.json({ ok: true });
+});
+
+// --- INFO IME (kush jam) ---
+app.post('/api/suport/kerkese', iLoguar, async (req, res) => {
+  const { subjekti, mesazhi } = req.body;
+  if(!mesazhi || !mesazhi.trim()) return res.json({error:'Shkruaj një mesazh.'});
+  await pool.query(`CREATE TABLE IF NOT EXISTS suport_kerkesat (
+    id SERIAL PRIMARY KEY, biznes_id INTEGER NOT NULL REFERENCES bizneset(id),
+    subjekti TEXT, mesazhi TEXT NOT NULL, statusi TEXT NOT NULL DEFAULT 'e_re',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
+  await pool.query('INSERT INTO suport_kerkesat (biznes_id, subjekti, mesazhi) VALUES ($1,$2,$3)',
+    [req.biznesId, (subjekti||'').trim().slice(0,200), mesazhi.trim()]);
+  res.json({ ok:true });
+});
+
+app.get('/api/promovim-platforme', iLoguar, async (req, res) => {
+  try {
+    const r = await pool.query('SELECT pranoi_promovim_platforme FROM bizneset WHERE id=$1', [req.biznesId]);
+    res.json({ lejon: !!(r.rows[0] && r.rows[0].pranoi_promovim_platforme) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.post('/api/promovim-platforme', iLoguar, async (req, res) => {
+  try {
+    await pool.query('UPDATE bizneset SET pranoi_promovim_platforme=$1 WHERE id=$2', [!!req.body.lejon, req.biznesId]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.post('/api/plani', iLoguar, async (req, res) => {
+  // SIGURI: kjo rruge lejon VETEM anulimin — 'premium' vendoset VETEM nga
+  // webhook-u i Paddle-it, pasi pagesa te jete verifikuar realisht.
+  // ANULIMI thërret VETË API-në e Paddle-it (jo vetëm ndryshim lokal) — subscription-i
+  // anulohet NE FUND te periudhes se faturuar (klienti mban aksesin deri atëherë,
+  // meqë e ka paguar tashmë) — plani='falas' vendoset VETEM kur webhook-u
+  // 'subscription.canceled' konfirmon qe anulimi ka marre fund realisht.
+  try {
+    const b = await pool.query('SELECT paddle_subscription_id FROM bizneset WHERE id=$1', [req.biznesId]);
+    const subId = b.rows[0] && b.rows[0].paddle_subscription_id;
+    const key = process.env.PADDLE_API_KEY;
+    const baseUrl = process.env.PADDLE_SANDBOX === 'true' ? 'https://sandbox-api.paddle.com' : 'https://api.paddle.com';
+    if (subId && key) {
+      const r = await fetch(baseUrl + '/subscriptions/' + subId + '/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify({})  // pa effective_from → anulohet ne fund te periudhes se faturuar
+      });
+      if (!r.ok) {
+        const errTxt = await r.text();
+        console.error('Paddle cancel deshtoi:', r.status, errTxt);
+        return res.status(500).json({ error: 'Anulimi dështoi. Provo sërish, ose kontakto suportin.' });
+      }
+    }
+    res.json({ ok:true, menjehere:false });
+  } catch (e) {
+    console.error('Anulimi deshtoi:', e.message);
+    res.status(500).json({ error: 'Anulimi dështoi.' });
+  }
+});
+
+app.post('/api/asistenti', iLoguar, async (req, res) => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'AI s\'eshte konfiguruar.' });
+  const mesazhet = (req.body && req.body.mesazhet) || [];
+  const konteksti = (req.body && req.body.konteksti) === 'konvertim' ? 'konvertim' : 'reklama';
+  if (!Array.isArray(mesazhet) || !mesazhet.length) return res.status(400).json({ error: 'Mungojne mesazhet.' });
+
+  const bazaTeknike = `
+Ti je nje asistent TEKNIK, i specializuar, qe ndihmon perdorues (zakonisht pronare biznesesh, jo domosdo zhvillues) te vendosin kod (snippet) ne faqen e tyre te internetit.
+
+RREGULLA:
+- Pergjigju NE GJUHEN e mesazhit te fundit te perdoruesit.
+- Shkruaj tekst te thjeshte, PA Markdown (pa **, pa # tituj, pa backticks per kod — thjesht shkruaje kodin direkt ne tekst te thjeshte, ne rresht te vet).
+- Ji konkret dhe praktik: kerko platformen (Shopify, WordPress, Webflow, React/Next, HTML statike, etj.) nese s'e di ende, dhe jep udhezime te sakta per ATE platforme specifike.
+- Nese perdoruesi s'e di platformen e vet, ndihmoje ta identifikoje (p.sh. "kontrollo URL-ne e admin panelit tend" ose "shiko footer-in e faqes per emrin e platformes").
+- Jep GJITHMONE hapa konkrete, te numeruar kur eshte e mundur.`;
+
+  const snippetiReklame = `
+KONTEKSTI: KOD PER HAPESIREN E REKLAMES (jep-e-merr reklamash).
+Kodi qe duhet vendosur duket keshtu: <script src="https://phronexusai.com/phronexusai.js" data-key="CELESI_UNIK_I_BIZNESIT"></script>
+- Vendoset PARA </body>, ne skedarin KRYESOR qe ngarkohet ne CDO faqe te sajtit (jo vetem 1 faqe).
+- Per Shopify: te theme.liquid. Per WordPress: te footer.php (ose permes plugin si "Insert Headers and Footers"). Per Webflow: te "Custom code" → "Footer code" (Project Settings). Per React/Next: te _app.js/App.jsx/layout.js, ose te index.html publik. Per HTML statik: direkt para </body> ne cdo skedar .html (ose ne nje "include" te perbashket nese ka).
+- Kodi VETE e shfaq reklamen automatikisht — perdoruesi s'ka pune tjeter pas vendosjes.
+- Per te verifikuar, klienti perdor butonin "Verify connection" te platforma, i cili rihap faqen dhe rikontrollon.`;
+
+  const snippetiKonvertim = `
+KONTEKSTI: GJURMIMI I KONVERTIMEVE.
+Kodi (i njejti, gjithmone): <script src="https://phronexusai.com/phronexus-track.js" data-key="CELESI_UNIK_I_BIZNESIT"></script>
+- Vendoset PARA </body>, ne skedarin KRYESOR qe ngarkohet ne CDO faqe (njesoj si me siper — theme.liquid/footer.php/Custom code/_app.js/HTML statik, sipas platformes).
+- Ky kod VETE S'SHFAQ asgje — vetem gjurmon. Ka 2 menyra te percaktoj CFARE numerohet si konvertim (klienti zgjedh 1 ose te dyja, te platforme, jo ketu):
+  1. PER URL: kur vizitori arrin nje URL specifike (p.sh. domeni.com/faleminderit) — automatik, s'kerkon kod shtese, vetem vendos URL-ne te platforma.
+  2. PER KOD/buton: nje pjese e vogel kodi shtese duhet vendosur DIREKT te elementi (buton/link) qe do gjurmohet — jep shembull konkret nese perdoruesi pyet per kete specifikisht (p.sh. nje onclick handler qe therret nje funksion global qe platforma e injekton vetvetiu pasi snippet-i kryesor eshte i ngarkuar).
+- Per te verifikuar snippet-in kryesor, klienti perdor butonin "Verify connection" te platforma.`;
+
+  const system = bazaTeknike + (konteksti === 'konvertim' ? snippetiKonvertim : snippetiReklame);
+
   try {
     const r = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + OPENAI_KEY },
-      body: JSON.stringify({ model: 'gpt-5-nano', messages: [{ role: 'user', content: prompt }] })
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model: process.env.OPENAI_MODEL_SUPORT || 'gpt-4o-mini',
+        max_tokens: 500,
+        messages: [{ role: 'system', content: system }, ...mesazhet]
+      })
     });
+    if (!r.ok) { const t = await r.text(); return res.status(500).json({ error: 'AI ' + r.status + ': ' + t.slice(0, 200) }); }
     const data = await r.json();
-    const tekst = data.choices[0].message.content.trim();
-    const obj = JSON.parse(tekst.match(/\{.*\}/s)[0]);
-    return rezultate.map((_, i) => {
-      const vlera = obj[String(i + 1)];
-      return vlera === undefined ? true : String(vlera).toLowerCase().startsWith('po');
-    });
+    const pergjigje = ((data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '').trim();
+    res.json({ pergjigje });
   } catch (e) {
-    console.error('Gabim filtroMeAI:', e.message);
-    return rezultate.map(() => true);
+    res.status(500).json({ error: 'Gabim ne lidhje me AI.' });
   }
-}
+});
 
-// Kerkon person vendimmarres (CEO/Founder/Owner) ne kete domain, pastaj email-in e tij. Kthen null nese s'gjendet.
-// Rrjedha (konfirmuar nga kodi burimor zyrtar i Generect):
-//  1. enrich/database/company/  (domain -> linkedin_link)
-//  2. search/database/leads/    (company_link + job_titles -> lead id)
-//  3. email/find/               (lead_id -> email)
-// Generect pranon lead_id OSE linkedin_url per te gjetur email-in. Rreshtat e kthyer shpesh s'kane "id", por kane linkedin_url.
-function identifikuesPersoni(lead) {
-  if (!lead) return null;
-  if (lead.id) return { lead_id: String(lead.id) };
-  if (lead.linkedin_url) return { linkedin_url: String(lead.linkedin_url) };
-  return null;
-}
-function nxjerrEmail(d) {
-  if (!d) return null;
-  // Generect e kthen email-in e verifikuar te "valid_email" (me "result":"valid").
-  if (typeof d.valid_email === 'string' && d.valid_email && d.valid_email !== 'none' && (!d.result || d.result === 'valid')) return d.valid_email;
-  if (typeof d.email === 'string' && d.email) return d.email;
-  if (Array.isArray(d.emails) && d.emails.length) {
-    const e = d.emails[0];
-    return typeof e === 'string' ? e : ((e && e.email) || null);
-  }
-  return null;
-}
-// Zgjedh personin me rolin me vendimmarres: CEO, pastaj Founder, pastaj Owner, pastaj cilido tjeter.
-function zgjidhPersonin(leads) {
-  if (!Array.isArray(leads) || !leads.length) return null;
-  const pike = l => {
-    const t = String(l.job_title || l.raw_job_title || '');
-    if (/chief executive|\bceo\b/i.test(t)) return 0;
-    if (/founder/i.test(t)) return 1;
-    if (/\bowner\b/i.test(t)) return 2;
-    return 3;
-  };
-  return leads.slice().sort((a, b) => pike(a) - pike(b))[0];
-}
+app.post('/api/asistenti/ruaj-vendin', iLoguar, async (req, res) => {
+  // Ruajtje e thjeshte, opsionale — s'e ndal pergjigjen kryesore nese deshton.
+  res.json({ ok: true });
+});
 
-async function gjejEmailPerDomain(domain) {
-  // Kthen { email, arsyeja }. arsyeja: gjetur | pa_kompani | pa_person | pa_email | gabim
-  if (!GENERECT_KEY) return { email: null, arsyeja: 'gabim' };
-  const headers = { 'Content-Type': 'application/json', 'Authorization': 'Token ' + GENERECT_KEY };
-  const baza = 'https://api.generect.com/api/v1';
+app.get('/api/track-fresket', iLoguar, async (req, res) => {
+  try {
+    const r = await pool.query('SELECT track_active FROM bizneset WHERE id=$1', [req.biznesId]);
+    res.json({ aktiv: !!(r.rows[0] && r.rows[0].track_active) });
+  } catch (e) { res.json({ aktiv: false }); }
+});
 
-  // Nje thirrje me nje riprovim, nese rrjeti deshton ose serveri kthen 429/5xx.
-  async function thirr(rruga, trupi) {
-    for (let prove = 0; prove < 2; prove++) {
+app.get('/api/paddle-config', iLoguar, (req, res) => {
+  res.json({
+    token: process.env.PADDLE_CLIENT_TOKEN || null,
+    priceId: process.env.PADDLE_PRICE_ID || null,
+    sandbox: process.env.PADDLE_SANDBOX === 'true'
+  });
+});
+
+app.get('/api/une', iLoguar, async (req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT id, emri, email, kategoria, plani, website, celes, tipi, url_konvertimi, logo_url,
+              kategoria_kryesore, nenkategorite, permbledhje, pershkrimi, logjika_shperndarjes
+       FROM bizneset WHERE id=$1`, [req.biznesId]);
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- PROGRESI (cilat hapa jane plotesuar) ---
+app.get('/api/progres', iLoguar, async (req, res) => {
+  try {
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS biznesi_auto BOOLEAN NOT NULL DEFAULT false`);
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pershkrimi_auto BOOLEAN NOT NULL DEFAULT false`);
+    const b = await pool.query(
+      'SELECT permbledhje, pershkrimi, snippet_active, track_active, url_konvertimi, website, tipi, biznesi_auto, pershkrimi_auto, created_at, plani FROM bizneset WHERE id=$1', [req.biznesId]);
+    const p = await pool.query('SELECT 1 FROM promovimet WHERE biznes_id=$1 AND aktiv=true LIMIT 1', [req.biznesId]);
+    const uLidhur = await pool.query('SELECT 1 FROM konvertimet WHERE biznes_id=$1 AND track_active=true LIMIT 1', [req.biznesId]);
+    const zLidhur = await pool.query('SELECT 1 FROM zonat WHERE biznes_id=$1 AND track_active=true AND fshire=false LIMIT 1', [req.biznesId]);
+    // A ka te pakten nje snippet reklame aktiv?
+    const snLidhur = await pool.query('SELECT 1 FROM snippetet WHERE biznes_id=$1 AND snippet_active=true LIMIT 1', [req.biznesId]);
+    const row = b.rows[0] || {};
+    const ditet = row.created_at ? Math.floor((Date.now() - new Date(row.created_at).getTime()) / 86400000) : 999;
+    // Plani falas skadon pas ~3 muajsh (90 dite) — nese ende s'eshte 'premium', reklamat ndalojne te shfaqen.
+    const planiSkaduar = (row.plani !== 'premium') && (ditet >= 90);
+    // Konvertimi i plote: snippet-i i gjurmimit aktiv DHE (nje URL ose nje zone e lidhur)
+    const konvertimIPlote = !!row.track_active && (uLidhur.rows.length > 0 || zLidhur.rows.length > 0);
+    res.json({
+      llogaria: !!(row.website && row.tipi),            // gati kur ka website + tipi
+      pershkrimi: !!(row.permbledhje || row.pershkrimi),// pershkrimi/AI u dha
+      lidhja: snLidhur.rows.length > 0,                 // te pakten nje snippet reklame aktiv
+      konvertimi: konvertimIPlote,                       // snippet + (URL ose kod) i lidhur
+      reklama: p.rows.length > 0,                        // reklama u krijua
+      biznesiAuto: !!row.biznesi_auto,
+      pershkrimiAuto: !!row.pershkrimi_auto,
+      ditet: ditet,
+      planiSkaduar: planiSkaduar
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ═══ REGJISTRIMI "AUTOMATIC" — 1 URL, gjithcka tjeter ndodh vete, HAP PAS HAPI (jo paralel) ═══
+app.post('/api/zgjedhja-automatike', iLoguar, async (req, res) => {
+  let url = (req.body && req.body.url || '').trim();
+  if (!url) return res.status(400).json({ error: 'Fut URL-në e biznesit tënd.' });
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) return res.status(500).json({ error: "AI s'është konfiguruar te serveri (mungon OPENAI_API_KEY)." });
+  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+
+  try {
+    // HAPI 1 — merr faqen NJE HERE, ripërdoret te të dy thirrjet AI poshtë (s'e rifetch-on)
+    let webTekst = '';
+    try { const f = await merrFaqen(url); webTekst = pastroHtml(f.body).slice(0, 4000); } catch (e) {}
+    if (!webTekst) return res.status(400).json({ error: "S'u arrit të lexohej faqja — sigurohu që URL-ja është e saktë dhe publike." });
+
+    // HAPI 2 — THIRRJA E PARE AI: vetem emri + tipi (b2b/b2c/b2b2c)
+    const sys1 = 'Je analist qe identifikon emrin dhe tipin e nje biznesi SaaS nga teksti i faqes se tij. Kthe VETEM JSON, pa asnje tekst tjeter.';
+    const user1 =
+      'Teksti i nxjerre nga faqja e biznesit:\n' + webTekst + '\n\n' +
+      'Kthe JSON: {"emri": string (emri i shkurter i biznesit/produktit), ' +
+      '"tipi": string (SAKTESISHT nje nga: "b2b", "b2c", "b2b2c" — b2b nese u sherben bizneseve, ' +
+      'b2c nese u sherben individeve, b2b2c nese te dyjave)}';
+
+    const r1 = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({ model, response_format: { type: 'json_object' },
+        messages: [{ role: 'system', content: sys1 }, { role: 'user', content: user1 }] })
+    });
+    const d1 = await r1.json();
+    if (d1.error) return res.status(500).json({ error: 'AI: ' + d1.error.message });
+    const p1 = JSON.parse(d1.choices[0].message.content);
+    const emri = (p1.emri || '').trim().slice(0, 120) || 'Biznesi im';
+    const tipi = ['b2b','b2c','b2b2c'].includes(p1.tipi) ? p1.tipi : 'b2b';
+
+    // HAPI 3 — ruaj emrin/tipin/website + logjika_shperndarjes + flamuri i konfirmimit
+    const logjikaPreferuar = (req.body && req.body.logjika === 'barazi') ? 'barazi' : 'ankand';
+    const kolonaKonfirmimi = (logjikaPreferuar === 'barazi') ? 'balance_krijuar' : 'ankand_krijuar';
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS biznesi_auto BOOLEAN NOT NULL DEFAULT false`);
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pershkrimi_auto BOOLEAN NOT NULL DEFAULT false`);
+    await pool.query(
+      `UPDATE bizneset SET emri=$2, tipi=$3, website=$4, logjika_shperndarjes=$5, biznesi_auto=true, ${kolonaKonfirmimi}=true WHERE id=$1`,
+      [req.biznesId, emri, tipi, url, logjikaPreferuar]);
+
+    // HAPI 4 — THIRRJA E DYTE AI (VETEM pasi e para te ket perfunduar): kategoria + permbledhje,
+    // e njejta logjike si /api/analizo, thjesht automatike, duke ripërdorur TE NJEJTIN webTekst.
+    const sys2 = 'You are an analyst who classifies SaaS businesses for a cross-promotion network. Respond ONLY with JSON, in English, no other text.';
+    const user2 =
+      'Choose EXACTLY one main category from this list: ' + KATEGORITE.join('; ') + '.\n\n' +
+      'A few easily-confused pairs — pick based on what the tool actually DOES, not just its topic:\n' +
+      '- SEO Tools (ranks a site HIGHER in Google) vs Site Search Tools (search box INSIDE a site/app).\n' +
+      '- Affiliate Marketing Software (pays outside partners/influencers per sale) vs Referral Program Software (rewards a customer for referring another customer).\n' +
+      '- A/B Testing Tools (marketing experiments on a live site) vs Software Testing/QA Automation (testing code before release).\n' +
+      '- Document Management (storing/organizing files) vs E-signature/Document Signing (legally signing a document).\n' +
+      '- Localization/Translation Software (translates a product/app into other languages) — not the same as general Content Marketing.\n\n' +
+      'Text extracted from the business website:\n' + webTekst + '\n\n' +
+      'Task: explain CLEARLY what this business offers, in simple, easy-to-understand English.\n\n' +
+      'Return JSON with these fields (all text values in English):\n' +
+      '{"kategoria_kryesore": string (EXACTLY one from the list), ' +
+      '"kategori_dytesore": string[] (DEFAULT: empty array — most businesses do ONE thing well and should get NOTHING here. Only add an item if the business CLEARLY, OBVIOUSLY spans a genuinely SEPARATE market, e.g. a people-search tool used for BOTH "Recruiting/ATS Software" AND "Sales Intelligence" AND "Lead Generation Tools" — distinct use-cases, distinct buyers. Do NOT add a category just because it is CLOSELY RELATED or a natural feature of the main one — e.g. a subscription-billing tool doing "Payment Processing" is NORMAL, EXPECTED overlap, not a second category; a project-management tool having basic chat is NOT "Team Chat/Communication". When in doubt, leave this empty), ' +
+      '"nenkategorite": string[] (2-4 specific subcategories, in English — these must be narrower DETAILS/ASPECTS OF "kategoria_kryesore" itself, NOT separate categories from the list — never repeat something that belongs in "kategori_dytesore" here), ' +
+      '"permbledhje": string (2-4 clear sentences, in English, explaining what the business offers and who it serves)}\n\n' +
+      'IMPORTANT: write every text value in ENGLISH, even if the website text above is in another language. Translate as needed — never output Albanian or any other language.';
+
+    const r2 = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({ model, response_format: { type: 'json_object' },
+        messages: [{ role: 'system', content: sys2 }, { role: 'user', content: user2 }] })
+    });
+    const d2 = await r2.json();
+    if (d2.error) return res.status(500).json({ error: 'AI: ' + d2.error.message });
+    const p2 = JSON.parse(d2.choices[0].message.content);
+    const kk = p2.kategoria_kryesore && KATEGORITE.find(k => k.toLowerCase() === p2.kategoria_kryesore.toLowerCase()) || null;
+    const nk = Array.isArray(p2.nenkategorite) ? p2.nenkategorite.join(', ') : (p2.nenkategorite || null);
+    const kd = Array.isArray(p2.kategori_dytesore) ? p2.kategori_dytesore.join(', ') : (p2.kategori_dytesore || null);
+    const perm = p2.permbledhje || null;
+
+    // HAPI 5 — ruaj pershkrimin (vetem PASI hapi 4 te kete perfunduar plotesisht)
+    await pool.query(
+      'UPDATE bizneset SET kategoria_kryesore=$2, kategori_dytesore=$3, nenkategorite=$4, permbledhje=$5, kategoria=$2, pershkrimi_auto=true WHERE id=$1',
+      [req.biznesId, kk, kd, nk, perm]);
+
+    res.json({ ok: true, emri, tipi, kategoria_kryesore: kk, permbledhje: perm });
+
+    // Nis kombinimin AI MENJEHERE pas pershkrimit (i njejti moment si rruga manuale) —
+    // jo me pas snippet-it, dhe PARA gjenerimit te reklamës, per te ndjekur te njejten
+    // rradhe si nje plotesim manual: emri/kategoria/pershkrimi → kombinimi → reklama.
+    kombinimi.kombinoBiznesin(req.biznesId).catch(() => {});
+
+    // HAPI 6 — (fire-and-forget, ndodh VETEM pasi pergjigja e mesiperme eshte derguar tashme —
+    // Fal.ai eshte API krejt tjeter nga OpenAI, s'konfliktohet me hapat 2/4 me larte)
+    (async () => {
       try {
-        const r = await fetch(baza + rruga, { method: 'POST', headers, body: JSON.stringify(trupi) });
-        if ((r.status === 429 || r.status >= 500) && prove === 0) {
-          await new Promise(z => setTimeout(z, 2000));
-          continue;
+        await pool.query(`ALTER TABLE kreativitetet ADD COLUMN IF NOT EXISTS auto_krijuar BOOLEAN NOT NULL DEFAULT false`);
+        const ekzistuese = await pool.query(`SELECT 1 FROM kreativitetet WHERE biznes_id=$1 LIMIT 1`, [req.biznesId]);
+        if (ekzistuese.rows.length) return;
+        const falKlient = require('./fal-klient');
+        const falImgUrl = await falKlient.gjeneroImazh(perm || webTekst.slice(0,300), null, null, true);
+        // R2: shkarko nga fal.ai dhe ngarko te R2 jone — njesoj si rruga tjeter e krijimit auto.
+        const imgResp2 = await fetch(falImgUrl);
+        const buf2 = Buffer.from(await imgResp2.arrayBuffer());
+        const key2 = 'kreative/' + req.biznesId + '_' + Date.now() + '.png';
+        await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key2, Body: buf2, ContentType: 'image/png' }));
+        const imgUrl = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + key2;
+        await pool.query(
+          `INSERT INTO kreativitetet (biznes_id, lloji, emri, pershkrimi, output_url, status, auto_krijuar)
+           VALUES ($1,'imazh','Automatically created ad',$2,$3,'gati',true)`,
+          [req.biznesId, perm || webTekst.slice(0,300), imgUrl]);
+        await pool.query(
+          `INSERT INTO promovimet (biznes_id, titulli, imazh_url, link, aktiv, logjika_shperndarjes, auto_krijuar)
+           VALUES ($1,'Automatically created ad',$2,$3,true,$4,true)`,
+          [req.biznesId, imgUrl, url, logjikaPreferuar]);
+        // Krijo NJE KOPJE, JOAKTIVE, per pishinen TJETER — kur klienti me vone konfirmon
+        // llogarine tjeter (butoni "Create account"), reklama eshte TASHME gati, thjesht
+        // aktivizohet, ne vend qe te kerkohet nga e para. VETEM per reklamen automatike
+        // fillestare — s'prek reklama te tjera, te krijuara manualisht me vone.
+        const pishinaTjeter = (logjikaPreferuar === 'barazi') ? 'ankand' : 'barazi';
+        await pool.query(
+          `INSERT INTO promovimet (biznes_id, titulli, imazh_url, link, aktiv, logjika_shperndarjes, auto_krijuar)
+           VALUES ($1,'Automatically created ad',$2,$3,false,$4,true)`,
+          [req.biznesId, imgUrl, url, pishinaTjeter]);
+      } catch (e) { console.error('Gjenerim automatik reklame (zgjedhja-automatike) deshtoi:', e.message); }
+    })();
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// A ka reklamë, dhe a është vetëm AUTOMATIKE apo edhe MANUALE (krijuar/miratuar nga klienti)
+app.get('/api/kreative/statusi-krijimit', iLoguar, async (req, res) => {
+  try {
+    // Kontrollon REKLAMAT REALE (promovimet), FILTRUAR sipas pishines (Ankand/Balance) —
+    // JO 'kreativitetet' (asetet krijuese, qe s'kane fare pishine — nje aset mund te
+    // perdoret ne te dyja). Kjo garanton qe Ankand dhe Balance kane statuse TE NDARA.
+    const logjika = (req.query.logjika === 'barazi') ? 'barazi' : 'ankand';
+    const manual = await pool.query(
+      `SELECT 1 FROM promovimet WHERE biznes_id=$1 AND aktiv=true
+         AND COALESCE(logjika_shperndarjes,'ankand')=$2 AND auto_krijuar=false LIMIT 1`, [req.biznesId, logjika]);
+    if (manual.rows.length) return res.json({ gjendja: 'manual' });
+    const auto = await pool.query(
+      `SELECT 1 FROM promovimet WHERE biznes_id=$1 AND aktiv=true
+         AND COALESCE(logjika_shperndarjes,'ankand')=$2 AND auto_krijuar=true LIMIT 1`, [req.biznesId, logjika]);
+    if (auto.rows.length) return res.json({ gjendja: 'auto' });
+    res.json({ gjendja: 'asnje' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- VESHTRIME: benchmark-e (yti vs mesatarja e rrjetit), per 3 metrika ---
+app.get('/api/vshtrime', iLoguar, async (req, res) => {
+  try {
+    const ctrYti = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE lloji='click')::float / NULLIF(COUNT(*) FILTER (WHERE lloji='shikim'),0) * 100 AS v
+       FROM ngjarjet WHERE reklamues_id=$1`, [req.biznesId]);
+    const ctrRrjeti = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE lloji='click')::float / NULLIF(COUNT(*) FILTER (WHERE lloji='shikim'),0) * 100 AS v
+       FROM ngjarjet`);
+
+    const konvYti = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE lloji='konvertim')::float / NULLIF(COUNT(*) FILTER (WHERE lloji='shikim'),0) * 100 AS v
+       FROM ngjarjet WHERE reklamues_id=$1`, [req.biznesId]);
+    const konvRrjeti = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE lloji='konvertim')::float / NULLIF(COUNT(*) FILTER (WHERE lloji='shikim'),0) * 100 AS v
+       FROM ngjarjet`);
+
+    const cvrYti = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE lloji='konvertim')::float / NULLIF(COUNT(*) FILTER (WHERE lloji='click'),0) * 100 AS v
+       FROM ngjarjet WHERE reklamues_id=$1`, [req.biznesId]);
+    const cvrRrjeti = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE lloji='konvertim')::float / NULLIF(COUNT(*) FILTER (WHERE lloji='click'),0) * 100 AS v
+       FROM ngjarjet`);
+
+    const aiYti = await pool.query(
+      `SELECT AVG(skori)::float AS v FROM perputhjet WHERE reklamues_id=$1 AND skori IS NOT NULL`, [req.biznesId]);
+    const aiYtiHost = await pool.query(
+      `SELECT AVG(skori)::float AS v FROM perputhjet WHERE host_id=$1 AND skori IS NOT NULL`, [req.biznesId]);
+
+    // Mesatarja e rrjetit: mesatarja E SECILIT biznes SE PARI, pastaj mesatarja e atyre —
+    // JO mesatarja e sheshte e te gjitha rreshtave (qe do te ishte i njejti numer per te dyja drejtimet).
+    const aiRrjetiReklamues = await pool.query(
+      `SELECT AVG(mesatarja_biznesi)::float AS v FROM (
+         SELECT reklamues_id, AVG(skori) AS mesatarja_biznesi
+         FROM perputhjet WHERE skori IS NOT NULL GROUP BY reklamues_id
+       ) sub`);
+    const aiRrjetiHost = await pool.query(
+      `SELECT AVG(mesatarja_biznesi)::float AS v FROM (
+         SELECT host_id, AVG(skori) AS mesatarja_biznesi
+         FROM perputhjet WHERE skori IS NOT NULL GROUP BY host_id
+       ) sub`);
+
+    const rr = n => n === null || n === undefined || isNaN(n) ? null : Math.round(n * 10) / 10;
+
+    // Numra te papercaktuar (jo raporte) — sa ka marre GJITHSEJ (si reklamues), yti vs mesatarja PER BIZNES
+    async function numriMarre(lloji){
+      const yti = await pool.query(
+        `SELECT COUNT(*)::int AS v FROM ngjarjet WHERE reklamues_id=$1 AND lloji=$2`, [req.biznesId, lloji]);
+      const rrjeti = await pool.query(
+        `SELECT AVG(n)::float AS v FROM (
+           SELECT reklamues_id, COUNT(*) AS n FROM ngjarjet WHERE lloji=$1 GROUP BY reklamues_id
+         ) sub`, [lloji]);
+      return { yti: yti.rows[0].v, mesatarja: rr(rrjeti.rows[0].v) };
+    }
+    async function numriDhene(lloji){
+      const yti = await pool.query(
+        `SELECT COUNT(*)::int AS v FROM ngjarjet WHERE biznes_id=$1 AND lloji=$2`, [req.biznesId, lloji]);
+      const rrjeti = await pool.query(
+        `SELECT AVG(n)::float AS v FROM (
+           SELECT biznes_id, COUNT(*) AS n FROM ngjarjet WHERE lloji=$1 GROUP BY biznes_id
+         ) sub`, [lloji]);
+      return { yti: yti.rows[0].v, mesatarja: rr(rrjeti.rows[0].v) };
+    }
+    const shfaqjeMarre = await numriMarre('view');
+    const shikimeMarre = await numriMarre('shikim');
+    const klikimeMarre = await numriMarre('click');
+    const konvertimeMarre = await numriMarre('konvertim');
+    const shfaqjeDhene = await numriDhene('view');
+    const shikimeDhene = await numriDhene('shikim');
+    const klikimeDhene = await numriDhene('click');
+    const konvertimeDhene = await numriDhene('konvertim');
+
+    res.json({
+      ctr:       { yti: rr(ctrYti.rows[0].v),  mesatarja: rr(ctrRrjeti.rows[0].v) },
+      konvertimi:{ yti: rr(konvYti.rows[0].v),  mesatarja: rr(konvRrjeti.rows[0].v) },
+      cvr:       { yti: rr(cvrYti.rows[0].v),  mesatarja: rr(cvrRrjeti.rows[0].v) },
+      pikeAIReklamues: { yti: rr(aiYti.rows[0].v),     mesatarja: rr(aiRrjetiReklamues.rows[0].v) },
+      pikeAIHost:       { yti: rr(aiYtiHost.rows[0].v), mesatarja: rr(aiRrjetiHost.rows[0].v) },
+      shfaqjeMarre, shikimeMarre, klikimeMarre, konvertimeMarre,
+      shfaqjeDhene, shikimeDhene, klikimeDhene, konvertimeDhene
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/analytics/reklamat', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const ngaD=new Date(nga), deriD=new Date(deri);
+    if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+    const logjika = ['ankand','barazi'].includes(req.query.logjika) ? req.query.logjika : 'ankand';
+    const rekIds = (req.query.reklama_ids || '').split(',').map(x => parseInt(x, 10)).filter(x => !isNaN(x));
+    const filtroRek = rekIds.length ? ' AND reklama_id = ANY($5::int[])' : '';
+    const params = rekIds.length ? [req.biznesId, nga, deri, logjika, rekIds] : [req.biznesId, nga, deri, logjika];
+
+    const r = await pool.query(`
+      SELECT gs::date AS data,
+        COALESCE(v.n,0)::int  AS shfaqje,
+        COALESCE(sh.n,0)::int AS shikime,
+        COALESCE(k.n,0)::int  AS klikime,
+        COALESCE(kv.n,0)::int AS konvertime
+      FROM generate_series($2::date, $3::date, '1 day') AS gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='view' AND burimi=$4${filtroRek} GROUP BY d) v ON v.d=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='shikim' AND burimi=$4${filtroRek} GROUP BY d) sh ON sh.d=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='click' AND burimi=$4${filtroRek} GROUP BY d) k ON k.d=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='konvertim' AND burimi=$4${filtroRek} GROUP BY d) kv ON kv.d=gs
+      ORDER BY gs`, params);
+    res.json({ nga, deri, rows: r.rows.map(x => ({
+      data: x.data.toISOString().slice(0,10),
+      shfaqje: x.shfaqje, shikime: x.shikime, klikime: x.klikime, konvertime: x.konvertime
+    })) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- ANALYTICS: ecuria e reklamave, ndare sipas KATEGORISE se biznesit qe i shfaqi (host) ---
+app.get('/api/analytics/kategorite', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const ngaD=new Date(nga), deriD=new Date(deri);
+    if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+    const logjika = ['ankand','barazi'].includes(req.query.logjika) ? req.query.logjika : 'ankand';
+
+    // Kategoria e vet biznesit — s'duhet shfaqur (asnjeherë s'shfaqet konkurrenca e vet)
+    const vetja = await pool.query('SELECT kategoria_kryesore FROM bizneset WHERE id=$1', [req.biznesId]);
+    const vetjaKat = vetja.rows.length ? vetja.rows[0].kategoria_kryesore : null;
+
+    const rekIds = (req.query.reklama_ids || '').split(',').map(x => parseInt(x, 10)).filter(x => !isNaN(x));
+    const filtroRek = rekIds.length ? ' AND e.reklama_id = ANY($5::int[])' : '';
+    const baseParams = rekIds.length ? [req.biznesId, nga, deri, logjika, rekIds] : [req.biznesId, nga, deri, logjika];
+
+    // 1) Kategorite qe kane te pakten 1 ngjarje (cfaredo lloji) ne kete periudhe/filtrim
+    const katQ = await pool.query(`
+      SELECT DISTINCT b.kategoria_kryesore AS kategoria
+      FROM ngjarjet e JOIN bizneset b ON b.id = e.biznes_id
+      WHERE e.reklamues_id=$1 AND e.created_at::date BETWEEN $2 AND $3
+        AND e.lloji IN ('view','shikim','click','konvertim') AND e.burimi=$4
+        AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''
+        ${filtroRek}`, baseParams);
+    let kategorite = katQ.rows.map(r => r.kategoria);
+    if (vetjaKat) kategorite = kategorite.filter(k => k !== vetjaKat);
+
+    const rezultat = [];
+    for (const kat of kategorite) {
+      const filtroRek2 = rekIds.length ? ' AND e.reklama_id = ANY($5::int[])' : '';
+      const katIdx = rekIds.length ? 6 : 5;
+      const params2 = rekIds.length ? [req.biznesId, nga, deri, logjika, rekIds, kat] : [req.biznesId, nga, deri, logjika, kat];
+      const r = await pool.query(`
+        SELECT gs::date AS data,
+          COALESCE(v.n,0)::int  AS shfaqje,
+          COALESCE(sh.n,0)::int AS shikime,
+          COALESCE(k.n,0)::int  AS klikime,
+          COALESCE(kv.n,0)::int AS konvertime
+        FROM generate_series($2::date, $3::date, '1 day') AS gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.biznes_id WHERE e.reklamues_id=$1 AND e.lloji='view' AND e.burimi=$4${filtroRek2} AND b.kategoria_kryesore=$${katIdx} GROUP BY d) v ON v.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.biznes_id WHERE e.reklamues_id=$1 AND e.lloji='shikim' AND e.burimi=$4${filtroRek2} AND b.kategoria_kryesore=$${katIdx} GROUP BY d) sh ON sh.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.biznes_id WHERE e.reklamues_id=$1 AND e.lloji='click' AND e.burimi=$4${filtroRek2} AND b.kategoria_kryesore=$${katIdx} GROUP BY d) k ON k.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.biznes_id WHERE e.reklamues_id=$1 AND e.lloji='konvertim' AND e.burimi=$4${filtroRek2} AND b.kategoria_kryesore=$${katIdx} GROUP BY d) kv ON kv.d=gs
+        ORDER BY gs`, params2);
+      rezultat.push({ emri: kat, pikat: r.rows.map(x => ({
+        data: x.data.toISOString().slice(0,10),
+        shfaqje: x.shfaqje, shikime: x.shikime, klikime: x.klikime, konvertime: x.konvertime
+      })) });
+    }
+
+    res.json({ nga, deri, kategorite: rezultat });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- ANALYTICS: cfare u ke DHENE bizneseve te tjera, per SECILIN snippet te tend (host-side) ---
+app.get('/api/analytics/snippetet-dhene', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const ngaD=new Date(nga), deriD=new Date(deri);
+    if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+    const logjika = ['ankand','barazi'].includes(req.query.logjika) ? req.query.logjika : 'ankand';
+
+    const r = await pool.query(`
+      SELECT s.id, s.emri, s.snippet_active, s.pauzuar,
+        COALESCE(v.n,0)::int  AS shfaqje,
+        COALESCE(sh.n,0)::int AS shikime,
+        COALESCE(k.n,0)::int  AS klikime,
+        COALESCE(kv.n,0)::int AS konvertime
+      FROM snippetet s
+      LEFT JOIN (SELECT snippet_id, COUNT(*) n FROM ngjarjet WHERE lloji='view'      AND burimi=$4 AND created_at::date BETWEEN $2 AND $3 GROUP BY snippet_id) v  ON v.snippet_id=s.id
+      LEFT JOIN (SELECT snippet_id, COUNT(*) n FROM ngjarjet WHERE lloji='shikim'    AND burimi=$4 AND created_at::date BETWEEN $2 AND $3 GROUP BY snippet_id) sh ON sh.snippet_id=s.id
+      LEFT JOIN (SELECT snippet_id, COUNT(*) n FROM ngjarjet WHERE lloji='click'     AND burimi=$4 AND created_at::date BETWEEN $2 AND $3 GROUP BY snippet_id) k  ON k.snippet_id=s.id
+      LEFT JOIN (SELECT snippet_id, COUNT(*) n FROM ngjarjet WHERE lloji='konvertim' AND burimi=$4 AND created_at::date BETWEEN $2 AND $3 GROUP BY snippet_id) kv ON kv.snippet_id=s.id
+      WHERE s.biznes_id=$1
+      ORDER BY s.id ASC`, [req.biznesId, nga, deri, logjika]);
+
+    res.json({ nga, deri, snippetet: r.rows });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- ANALYTICS: cfare u ke DHENE secilës KATEGORI (host-side, drejtim i kundert nga /kategorite) ---
+app.get('/api/analytics/kategorite-dhene', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const ngaD=new Date(nga), deriD=new Date(deri);
+    if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+    const logjika = ['ankand','barazi'].includes(req.query.logjika) ? req.query.logjika : 'ankand';
+    // Filtri OPSIONAL sipas nje snippet-i te caktuar (nese s'jepet, mblidhen te GJITHA snippet-et e biznesit).
+    const snipRaw = parseInt(req.query.snippet_id, 10);
+    const snipFiltri = (snipRaw > 0) ? snipRaw : null;
+    const snipCond = snipFiltri ? ' AND e.snippet_id=$6' : '';
+    const snipParam = snipFiltri ? [snipFiltri] : [];
+
+    const vetja = await pool.query('SELECT kategoria_kryesore FROM bizneset WHERE id=$1', [req.biznesId]);
+    const vetjaKat = vetja.rows.length ? vetja.rows[0].kategoria_kryesore : null;
+
+    const katQ = await pool.query(`
+      SELECT DISTINCT b.kategoria_kryesore AS kategoria
+      FROM ngjarjet e JOIN bizneset b ON b.id = e.reklamues_id
+      WHERE e.biznes_id=$1 AND e.created_at::date BETWEEN $2 AND $3
+        AND e.lloji IN ('view','shikim','click','konvertim') AND e.burimi=$4
+        AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''${snipCond}`,
+      [req.biznesId, nga, deri, logjika, ...snipParam]);
+    let kategorite = katQ.rows.map(r => r.kategoria);
+    if (vetjaKat) kategorite = kategorite.filter(k => k !== vetjaKat);
+
+    const rezultat = [];
+    for (const kat of kategorite) {
+      const r = await pool.query(`
+        SELECT gs::date AS data,
+          COALESCE(v.n,0)::int  AS shfaqje,
+          COALESCE(sh.n,0)::int AS shikime,
+          COALESCE(k.n,0)::int  AS klikime,
+          COALESCE(kv.n,0)::int AS konvertime
+        FROM generate_series($2::date, $3::date, '1 day') AS gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='view'      AND e.burimi=$4 AND b.kategoria_kryesore=$5${snipCond} GROUP BY d) v  ON v.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='shikim'    AND e.burimi=$4 AND b.kategoria_kryesore=$5${snipCond} GROUP BY d) sh ON sh.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='click'     AND e.burimi=$4 AND b.kategoria_kryesore=$5${snipCond} GROUP BY d) k  ON k.d=gs
+        LEFT JOIN (SELECT date_trunc('day',e.created_at)::date d, COUNT(*) n FROM ngjarjet e JOIN bizneset b ON b.id=e.reklamues_id WHERE e.biznes_id=$1 AND e.lloji='konvertim' AND e.burimi=$4 AND b.kategoria_kryesore=$5${snipCond} GROUP BY d) kv ON kv.d=gs
+        ORDER BY gs`, [req.biznesId, nga, deri, logjika, kat, ...snipParam]);
+      rezultat.push({ emri: kat, pikat: r.rows.map(x => ({
+        data: x.data.toISOString().slice(0,10),
+        shfaqje: x.shfaqje, shikime: x.shikime, klikime: x.klikime, konvertime: x.konvertime
+      })) });
+    }
+
+    res.json({ nga, deri, kategorite: rezultat });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- ANALYTICS: DEFICITI — sa ke DHENE (si host) kundrejt sa ke MARRE (si reklamues),
+// PER DHOGARINE AKTUALE (respekton ?logjika=, njesoj si te 4 endpoint-et e tjera). ---
+app.get('/api/analytics/deficiti', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const ngaD=new Date(nga), deriD=new Date(deri);
+    if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+    const logjika = ['ankand','barazi'].includes(req.query.logjika) ? req.query.logjika : 'ankand';
+    const reklamaId = req.query.reklama_id ? parseInt(req.query.reklama_id, 10) : null;
+    const params = [req.biznesId, nga, deri, logjika, reklamaId];
+
+    // Per secilen prej 4 metrikave: diferenca = MARRE - DHENE (pozitiv = ka marre me shume,
+    // negativ = ka dhene me shume) — njesoj per te 4 llojet e ngjarjes. Kthehen edhe vlerat
+    // e papërpunuara (dhene/marre) veç e veç, per grafiket "vetem Dhënë"/"vetem Marrë".
+    const r = await pool.query(`
+      SELECT gs::date AS data,
+        COALESCE(m1.n,0)::int - COALESCE(d1.n,0)::int AS shfaqje,
+        COALESCE(m2.n,0)::int - COALESCE(d2.n,0)::int AS shikime,
+        COALESCE(m3.n,0)::int - COALESCE(d3.n,0)::int AS klikime,
+        COALESCE(m4.n,0)::int - COALESCE(d4.n,0)::int AS konvertime,
+        COALESCE(d1.n,0)::int AS shfaqje_dhene,    COALESCE(m1.n,0)::int AS shfaqje_marre,
+        COALESCE(d2.n,0)::int AS shikime_dhene,    COALESCE(m2.n,0)::int AS shikime_marre,
+        COALESCE(d3.n,0)::int AS klikime_dhene,    COALESCE(m3.n,0)::int AS klikime_marre,
+        COALESCE(d4.n,0)::int AS konvertime_dhene, COALESCE(m4.n,0)::int AS konvertime_marre
+      FROM generate_series($2::date, $3::date, '1 day') AS gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='view'      AND burimi=$4 AND ($5::int IS NULL OR reklama_id=$5) GROUP BY dt) m1 ON m1.dt=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1    AND lloji='view'      AND burimi=$4 AND ($5::int IS NULL OR reklama_id=$5) GROUP BY dt) d1 ON d1.dt=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='shikim'    AND burimi=$4 AND ($5::int IS NULL OR reklama_id=$5) GROUP BY dt) m2 ON m2.dt=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1    AND lloji='shikim'    AND burimi=$4 AND ($5::int IS NULL OR reklama_id=$5) GROUP BY dt) d2 ON d2.dt=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='click'     AND burimi=$4 AND ($5::int IS NULL OR reklama_id=$5) GROUP BY dt) m3 ON m3.dt=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1    AND lloji='click'     AND burimi=$4 AND ($5::int IS NULL OR reklama_id=$5) GROUP BY dt) d3 ON d3.dt=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND lloji='konvertim' AND burimi=$4 AND ($5::int IS NULL OR reklama_id=$5) GROUP BY dt) m4 ON m4.dt=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1    AND lloji='konvertim' AND burimi=$4 AND ($5::int IS NULL OR reklama_id=$5) GROUP BY dt) d4 ON d4.dt=gs
+      ORDER BY gs`, params);
+
+    // Kategorite (dhene, per pishinen aktuale) — SHTUAR KETU (jo endpoint i ri i veçantë) —
+    // perdor te njejtin biznesId/nga/deri/logjika, tashme te verifikuar te punojne saktë.
+    const katR = await pool.query(`
+      SELECT COALESCE(NULLIF(b.kategoria_kryesore,''),'Uncategorized') AS kategoria,
+        COUNT(*) FILTER (WHERE e.lloji='view')::int AS dhene_ngarkime,
+        COUNT(*) FILTER (WHERE e.lloji='shikim')::int AS dhene
+      FROM ngjarjet e
+      LEFT JOIN bizneset b ON b.id = e.reklamues_id
+      WHERE e.biznes_id=$1 AND e.lloji IN ('view','shikim') AND e.burimi=$4
+        AND e.created_at::date BETWEEN $2 AND $3
+      GROUP BY 1
+      ORDER BY 1`, [req.biznesId, nga, deri, logjika]);
+
+    res.json({ nga, deri, rows: r.rows.map(x => ({
+      data: x.data.toISOString().slice(0,10),
+      shfaqje: x.shfaqje, shikime: x.shikime, klikime: x.klikime, konvertime: x.konvertime,
+      shfaqje_dhene: x.shfaqje_dhene, shfaqje_marre: x.shfaqje_marre,
+      shikime_dhene: x.shikime_dhene, shikime_marre: x.shikime_marre,
+      klikime_dhene: x.klikime_dhene, klikime_marre: x.klikime_marre,
+      konvertime_dhene: x.konvertime_dhene, konvertime_marre: x.konvertime_marre
+    })), kategorite: katR.rows.map(x => ({ kategoria: x.kategoria, dhene: x.dhene, dhene_ngarkime: x.dhene_ngarkime })) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- ANALYTICS: SIPAS ORES SE DITES — nje metrike e vetme, shume dite (ose 1),
+// qirinjte (bare) tregojne shumen e te gjitha diteve te zgjedhura ne ate ore. ---
+app.get('/api/analytics/ore', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const ngaD=new Date(nga), deriD=new Date(deri);
+    if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+    const logjika = ['ankand','barazi'].includes(req.query.logjika) ? req.query.logjika : 'ankand';
+    const metrikaKerkuar = req.query.metrika || 'shfaqje';
+
+    // Metrikat e REJA (perqindje) — kerkojne 2 numerime (numerues+emerues) per ore, jo 1
+    const RAPORTET = {
+      ctr:           { numerues: 'click', emerues: 'shikim' },
+      konvPerShikim: { numerues: 'konvertim', emerues: 'shikim' },
+      cvr:           { numerues: 'konvertim', emerues: 'click' }
+    };
+
+    if (RAPORTET[metrikaKerkuar]) {
+      const { numerues, emerues } = RAPORTET[metrikaKerkuar];
+      const r = await pool.query(`
+        SELECT EXTRACT(HOUR FROM created_at)::int AS ora,
+          COUNT(*) FILTER (WHERE lloji=$4)::float AS num,
+          COUNT(*) FILTER (WHERE lloji=$5)::float AS emr
+        FROM ngjarjet
+        WHERE reklamues_id=$1 AND burimi=$6 AND created_at::date BETWEEN $2 AND $3
+          AND lloji IN ($4,$5)
+        GROUP BY ora`, [req.biznesId, nga, deri, numerues, emerues, logjika]);
+
+      const oret = new Array(24).fill(0);
+      r.rows.forEach(x => { oret[x.ora] = x.emr > 0 ? Math.round((x.num / x.emr) * 1000) / 10 : 0; });
+      return res.json({ nga, deri, metrika: metrikaKerkuar, oret, perqindje: true });
+    }
+
+    const metrikaMap = { shfaqje:'view', shikime:'shikim', klikime:'click', konvertime:'konvertim' };
+    const lloji = metrikaMap[metrikaKerkuar] || 'view';
+
+    const r = await pool.query(`
+      SELECT EXTRACT(HOUR FROM created_at)::int AS ora, COUNT(*)::int AS n
+      FROM ngjarjet
+      WHERE reklamues_id=$1 AND lloji=$4 AND burimi=$5 AND created_at::date BETWEEN $2 AND $3
+      GROUP BY ora`, [req.biznesId, nga, deri, lloji, logjika]);
+
+    const oret = new Array(24).fill(0);
+    r.rows.forEach(x => { oret[x.ora] = x.n; });
+    res.json({ nga, deri, metrika: metrikaKerkuar, oret });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- ANALYTICS: ANKAND — sa here ka marre pjese vs sa here e ka fituar, sipas
+// kategorise se HOST-it (biznesi qe e priti gaën), per karuselin vertikal + raportin. ---
+app.get('/api/analytics/ankand-kategorite', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const ngaD=new Date(nga), deriD=new Date(deri);
+    if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+
+    const r = await pool.query(`
+      SELECT b.kategoria_kryesore AS kategoria,
+        COUNT(*)::int AS pjesemarrje,
+        COUNT(*) FILTER (WHERE g.fitoi=true)::int AS fitore
+      FROM garat g JOIN bizneset b ON b.id = g.host_id
+      WHERE g.reklamues_id=$1 AND g.created_at::date BETWEEN $2 AND $3
+        AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''
+      GROUP BY b.kategoria_kryesore
+      ORDER BY pjesemarrje DESC`, [req.biznesId, nga, deri]);
+
+    res.json({ nga, deri, kategorite: r.rows });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- ANALYTICS: ANKAND DETAJE — pjesemarrjet individuale, te filtrueshme sipas
+// dates/peshes/kategorise (reklama+pozicioni kerkojne kolona shtese, PENDING). ---
+app.get('/api/analytics/ankand-detaje', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const ngaD=new Date(nga), deriD=new Date(deri);
+    if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+
+    // "marre" (parazgjedhje) = kam pjesemarrje/perfitim UNE (si reklamues, reklamues_id=une)
+    // "dhene" = TE TJERET kane perfituar nga hapesira IME (si host, host_id=une)
+    const perspektiv = req.query.perspektiv === 'dhene' ? 'dhene' : 'marre';
+    const fushaFiks = perspektiv === 'dhene' ? 'host_id' : 'reklamues_id';
+    const fushaKategori = perspektiv === 'dhene' ? 'reklamues_id' : 'host_id';
+
+    const kategoria = (req.query.kategoria || '').trim();
+    const peshaMode = (req.query.pesha_mode || 'te_gjitha').trim(); // 'te_gjitha'|'fiks'|'interval'
+    const peshaFiks = req.query.pesha_fiks != null ? parseFloat(req.query.pesha_fiks) : null;
+    let peshaMin = req.query.pesha_min != null ? parseFloat(req.query.pesha_min) : null;
+    let peshaMax = req.query.pesha_max != null ? parseFloat(req.query.pesha_max) : null;
+    if (peshaMin != null) peshaMin = Math.max(0, Math.min(1500, peshaMin));
+    if (peshaMax != null) peshaMax = Math.max(0, Math.min(1500, peshaMax));
+    const pozicioni = req.query.pozicioni && req.query.pozicioni !== 'te_gjitha' ? parseInt(req.query.pozicioni, 10) : null;
+    const reklamaId = req.query.reklama_id ? parseInt(req.query.reklama_id, 10) : null;
+
+    const params = [req.biznesId, nga, deri];
+    let filtri = '';
+    if (kategoria) { params.push(kategoria); filtri += ` AND b.kategoria_kryesore=$${params.length}`; }
+    if (peshaMode === 'fiks' && peshaFiks != null) { params.push(peshaFiks); filtri += ` AND mp.pesha=$${params.length}`; }
+    else if (peshaMode === 'interval' && peshaMin != null && peshaMax != null) {
+      params.push(peshaMin); const i1=params.length;
+      params.push(peshaMax); const i2=params.length;
+      filtri += ` AND mp.pesha BETWEEN $${i1} AND $${i2}`;
+    }
+    if (pozicioni != null && !isNaN(pozicioni)) { params.push(pozicioni); filtri += ` AND mp.pozicioni=$${params.length}`; }
+    if (reklamaId && !isNaN(reklamaId)) { params.push(reklamaId); filtri += ` AND mp.reklama_id=$${params.length}`; }
+
+    const r = await pool.query(`
+      WITH mp AS (
+        SELECT g.*,
+          CASE WHEN g.vendim_id IS NOT NULL THEN RANK() OVER (PARTITION BY g.vendim_id ORDER BY g.pesha DESC) ELSE NULL END AS pozicioni
+        FROM garat g
+        WHERE g.${fushaFiks}=$1 AND g.created_at::date BETWEEN $2 AND $3
+      )
+      SELECT mp.id, mp.created_at, mp.pesha, mp.ai, mp.profili, mp.ndihma, mp.fitoi, mp.pozicioni, mp.reklama_id,
+        b.kategoria_kryesore AS kategoria
+      FROM mp JOIN bizneset b ON b.id = mp.${fushaKategori}
+      WHERE 1=1 ${filtri}
+      ORDER BY mp.created_at DESC
+      LIMIT 500`, params);
+
+    // Kategoritë e disponueshme (per butonat e filtrit) — te pavarura nga filtri i kategorise vete
+    const katOpt = await pool.query(`
+      SELECT DISTINCT b.kategoria_kryesore AS kategoria
+      FROM garat g JOIN bizneset b ON b.id = g.${fushaKategori}
+      WHERE g.${fushaFiks}=$1 AND g.created_at::date BETWEEN $2 AND $3
+        AND b.kategoria_kryesore IS NOT NULL AND b.kategoria_kryesore <> ''
+      ORDER BY 1`, [req.biznesId, nga, deri]);
+
+    // Reklamat e disponueshme (per filtrin "Reklama") — Ankand: vetem ato qe kane fituar te
+    // pakten 1 here (nga garat); Balance: TE GJITHA reklamat aktive te ketij biznesi per kete
+    // pishine (garat s'e mban kete detaj per Balance, keshtu perdorim burimin e drejtperdrejte).
+    const eshteBalanceReq = (req.query.logjika === 'barazi');
+    const rekOpt = eshteBalanceReq
+      ? await pool.query(
+          `SELECT id, titulli FROM promovimet
+           WHERE biznes_id=$1 AND COALESCE(logjika_shperndarjes,'ankand')='barazi'
+           ORDER BY titulli`, [req.biznesId])
+      : await pool.query(`
+      SELECT DISTINCT p.id, p.titulli
+      FROM garat g JOIN promovimet p ON p.id = g.reklama_id
+      WHERE g.${fushaFiks}=$1 AND g.created_at::date BETWEEN $2 AND $3 AND g.reklama_id IS NOT NULL
+      ORDER BY 2`, [req.biznesId, nga, deri]);
+
+    res.json({
+      nga, deri, perspektiv,
+      rreshtat: r.rows.map(x => ({
+        id: x.id, data: x.created_at.toISOString().slice(0,10),
+        pesha: x.pesha, ai: x.ai, profili: x.profili, ndihma: x.ndihma,
+        fitoi: x.fitoi, kategoria: x.kategoria, pozicioni: x.pozicioni, reklama_id: x.reklama_id
+      })),
+      kategorite_disponueshme: katOpt.rows.map(x => x.kategoria),
+      reklamat_disponueshme: rekOpt.rows.map(x => ({ id: x.id, emri: x.titulli }))
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- ANALYTICS: HISTOGRAM I PESHES — boshti X: intervale peshe (0-1500, hapa 100),
+// boshti Y: sa here eshte FITUAR ne ate interval, brenda dates se zgjedhur. ---
+app.get('/api/analytics/ankand-pesha-histogram', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const perspektiv = req.query.perspektiv === 'dhene' ? 'dhene' : 'marre';
+    const fushaFiks = perspektiv === 'dhene' ? 'host_id' : 'reklamues_id';
+
+    const r = await pool.query(`
+      SELECT LEAST(14, FLOOR(pesha/100))::int AS kosh, COUNT(*)::int AS n
+      FROM garat
+      WHERE ${fushaFiks}=$1 AND fitoi=true AND created_at::date BETWEEN $2 AND $3
+      GROUP BY kosh`, [req.biznesId, nga, deri]);
+
+    const koshat = new Array(15).fill(0); // 0-99,100-199,...,1400-1500
+    r.rows.forEach(x => { koshat[x.kosh] = x.n; });
+    const etiketa = koshat.map((_, i) => (i*100) + '-' + (i===14 ? 1500 : (i*100+99)));
+    res.json({ nga, deri, perspektiv, etiketa, koshat });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- ANALYTICS: POZICIONET E FITUARA — vetem nivelet e pozicionit qe kane fituar
+// te pakten 1 here (jo te gjitha pozicionet teorike). ---
+app.get('/api/analytics/ankand-pozicionet-fituara', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const perspektiv = req.query.perspektiv === 'dhene' ? 'dhene' : 'marre';
+    const fushaFiks = perspektiv === 'dhene' ? 'host_id' : 'reklamues_id';
+
+    const r = await pool.query(`
+      WITH mp AS (
+        SELECT g.*, CASE WHEN g.vendim_id IS NOT NULL THEN RANK() OVER (PARTITION BY g.vendim_id ORDER BY g.pesha DESC) ELSE NULL END AS pozicioni
+        FROM garat g WHERE g.${fushaFiks}=$1 AND g.created_at::date BETWEEN $2 AND $3
+      )
+      SELECT DISTINCT pozicioni, COUNT(*)::int AS n
+      FROM mp WHERE fitoi=true AND pozicioni IS NOT NULL
+      GROUP BY pozicioni ORDER BY pozicioni`, [req.biznesId, nga, deri]);
+
+    res.json({ nga, deri, perspektiv, pozicionet: r.rows.map(x => ({ pozicioni: x.pozicioni, n: x.n })) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- ANALYTICS: DETAJET E FITOREVE NE NJE POZICION SPECIFIK ---
+app.get('/api/analytics/ankand-pozicion-detaje', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const pozicioni = parseInt(req.query.pozicioni, 10);
+    if (isNaN(pozicioni)) return res.status(400).json({ error: 'pozicioni kërkohet' });
+    const perspektiv = req.query.perspektiv === 'dhene' ? 'dhene' : 'marre';
+    const fushaFiks = perspektiv === 'dhene' ? 'host_id' : 'reklamues_id';
+    const fushaKategori = perspektiv === 'dhene' ? 'reklamues_id' : 'host_id';
+
+    const r = await pool.query(`
+      WITH mp AS (
+        SELECT g.*, CASE WHEN g.vendim_id IS NOT NULL THEN RANK() OVER (PARTITION BY g.vendim_id ORDER BY g.pesha DESC) ELSE NULL END AS pozicioni
+        FROM garat g WHERE g.${fushaFiks}=$1 AND g.created_at::date BETWEEN $2 AND $3
+      )
+      SELECT mp.created_at, mp.pesha, mp.ai, b.kategoria_kryesore AS kategoria, p.titulli AS reklama
+      FROM mp
+      JOIN bizneset b ON b.id = mp.${fushaKategori}
+      LEFT JOIN promovimet p ON p.id = mp.reklama_id
+      WHERE mp.fitoi=true AND mp.pozicioni=$4
+      ORDER BY mp.created_at DESC`, [req.biznesId, nga, deri, pozicioni]);
+
+    res.json({ nga, deri, pozicioni, perspektiv, fitoret: r.rows.map(x => ({
+      data: x.created_at.toISOString().slice(0,10), pesha: x.pesha, ai: x.ai,
+      kategoria: x.kategoria, reklama: x.reklama || '(pa emër)'
+    })) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- BALANCE: "Bilanci sipas kategorisë" — per çdo kategori biznesi kundrejt të cilit
+// ke marrë pjesë në Balance, sa ke DHËNË vs sa ke MARRË (per shfaqje). Gjithmonë
+// burimi='barazi' (hardcoded) — koncepti i katrorëve VETËM per dhogarinë Balance. ---
+app.get('/api/analytics/balance-kategorite-katror', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const ngaD=new Date(nga), deriD=new Date(deri);
+    if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+
+    const vetja = await pool.query('SELECT kategoria_kryesore FROM bizneset WHERE id=$1', [req.biznesId]);
+    const vetjaKat = vetja.rows.length ? vetja.rows[0].kategoria_kryesore : null;
+
+    const r = await pool.query(`
+      SELECT COALESCE(NULLIF(b.kategoria_kryesore,''),'Uncategorized') AS kategoria,
+        COUNT(*) FILTER (WHERE e.lloji='view')::int AS dhene_ngarkime,
+        COUNT(*) FILTER (WHERE e.lloji='shikim')::int AS dhene
+      FROM ngjarjet e
+      LEFT JOIN bizneset b ON b.id = e.reklamues_id
+      WHERE e.biznes_id=$1 AND e.lloji IN ('view','shikim') AND e.burimi='barazi'
+        AND e.created_at::date BETWEEN $2 AND $3
+      GROUP BY 1
+      ORDER BY 1`, [req.biznesId, nga, deri]);
+
+    res.json({ nga, deri, vetjaKat, kategorite: r.rows.map(x => ({
+      kategoria: x.kategoria, dhene: x.dhene, dhene_ngarkime: x.dhene_ngarkime
+    })) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- AUTOMATIKU: si eshte ndare hapesira jote (si host) mes pishines Ankand dhe
+// Balance, dite-per-dite. Bazuar te vet hosting_mode i biznesit + te dhenat reale. ---
+app.get('/api/analytics/automatik-ndarja', iLoguar, async (req, res) => {
+  try {
+    let nga = req.query.nga, deri = req.query.deri;
+    const sot = new Date();
+    if (!nga || !/^\d{4}-\d{2}-\d{2}$/.test(nga)) { const d=new Date(sot); d.setDate(d.getDate()-29); nga=d.toISOString().slice(0,10); }
+    if (!deri || !/^\d{4}-\d{2}-\d{2}$/.test(deri)) { deri=sot.toISOString().slice(0,10); }
+    if (nga > deri) { const t=nga; nga=deri; deri=t; }
+    const ngaD=new Date(nga), deriD=new Date(deri);
+    if ((deriD-ngaD)/(1000*60*60*24) > 366) { const d=new Date(deriD); d.setDate(d.getDate()-366); nga=d.toISOString().slice(0,10); }
+
+    const b = await pool.query('SELECT hosting_mode, barazi_perqindje FROM bizneset WHERE id=$1', [req.biznesId]);
+    const hostingMode = (b.rows[0] && b.rows[0].hosting_mode) || 'automatik';
+    const baraziPerqindje = (b.rows[0] && b.rows[0].barazi_perqindje) != null ? b.rows[0].barazi_perqindje : null;
+
+    const r = await pool.query(`
+      SELECT gs::date AS data,
+        COALESCE(a.n,0)::int AS ankand,
+        COALESCE(asr.n,0)::int AS ankand_shikime,
+        COALESCE(bl.n,0)::int AS balance,
+        COALESCE(blsr.n,0)::int AS balance_shikime,
+        (av.dt IS NOT NULL) AS ishte_automatik
+      FROM generate_series($2::date, $3::date, '1 day') AS gs
+      LEFT JOIN (SELECT created_at::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1 AND lloji='view' AND burimi='ankand' GROUP BY dt) a  ON a.dt=gs
+      LEFT JOIN (SELECT created_at::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1 AND lloji='shikim' AND burimi='ankand' GROUP BY dt) asr ON asr.dt=gs
+      LEFT JOIN (SELECT created_at::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1 AND lloji='view' AND burimi='barazi' GROUP BY dt) bl ON bl.dt=gs
+      LEFT JOIN (SELECT created_at::date dt, COUNT(*) n FROM ngjarjet WHERE biznes_id=$1 AND lloji='shikim' AND burimi='barazi' GROUP BY dt) blsr ON blsr.dt=gs
+      LEFT JOIN (SELECT DISTINCT created_at::date dt FROM automatik_vendime WHERE host_id=$1) av ON av.dt=gs
+      ORDER BY gs`, [req.biznesId, nga, deri]);
+
+    res.json({ nga, deri, hostingMode, baraziPerqindje, rows: r.rows.map(x => ({
+      data: x.data.toISOString().slice(0,10), ankand: x.ankand, balance: x.balance, automatik: x.ishte_automatik,
+      ankand_shikime: x.ankand_shikime, balance_shikime: x.balance_shikime
+    })) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- PROFILI I ZGJERUAR: pikët e profilit + analitika për çdo snippet ---
+app.get('/api/profili', iLoguar, async (req, res) => {
+  try {
+    const bq = await pool.query(
+      'SELECT emri, email, tipi, url_konvertimi, created_at, logo_url, logjika_shperndarjes, website FROM bizneset WHERE id=$1', [req.biznesId]);
+    const biz = bq.rows[0] || {};
+    const tipi = biz.tipi || 'b2c';
+
+    const perSnippet = await pool.query(
+      `SELECT COALESCE(origjina,'(pa origjinë)') AS origjina,
+              COUNT(*) FILTER (WHERE lloji='view')::int      AS shfaqje,
+              COUNT(*) FILTER (WHERE lloji='click')::int     AS klikime,
+              COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
+       FROM ngjarjet WHERE biznes_id=$1
+         AND COALESCE(origjina,'') NOT LIKE 'zona:%'
+         AND COALESCE(origjina,'') <> 'PROVE'
+       GROUP BY origjina ORDER BY shfaqje DESC`, [req.biznesId]);
+
+    const tot = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE lloji='view')::int      AS shfaqje,
+              COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
+       FROM ngjarjet WHERE biznes_id=$1`, [req.biznesId]);
+    const shfaqje = tot.rows[0].shfaqje, konvertime = tot.rows[0].konvertime;
+
+    const rate = pesha.PARAM.RATE[tipi] || pesha.PARAM.RATE.b2c;
+    const pikeShfaqje = shfaqje / rate;
+    const pikeTotal = pikeShfaqje + konvertime;
+
+    // Marra: shfaqje/klikime/konvertime qe kane marre REKLAMAT E TIJ (si reklamues, te te tjeret)
+    const marraQ = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE lloji='view')::int      AS shfaqje,
+              COUNT(*) FILTER (WHERE lloji='click')::int     AS klikime,
+              COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
+       FROM ngjarjet WHERE reklamues_id=$1`, [req.biznesId]);
+
+    res.json({
+      emri: biz.emri, email: biz.email, tipi, logo_url: biz.logo_url || null, website: biz.website || null,
+      logjika_shperndarjes: biz.logjika_shperndarjes || 'ankand',
+      pike_profili: Math.round(pikeTotal * 10) / 10,
+      pike: {
+        shfaqje, pike_nga_shfaqjet: Math.round(pikeShfaqje * 10) / 10, rate,
+        konvertime, pike_nga_konvertimet: konvertime
+      },
+      marra: marraQ.rows[0],
+      snippets: perSnippet.rows
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- PROFILI-BALANCE: sa ka dhene / sa ka marre, VETEM per burimin 'barazi' ---
+// (0 legjitimisht derisa te ndertohet mekanizmi real i shperndarjes Balance ne /ad)
+app.get('/api/profili-balance', iLoguar, async (req, res) => {
+  try {
+    const dheneQ = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE lloji='view')::int      AS ngarkime,
+              COUNT(*) FILTER (WHERE lloji='shikim')::int    AS shfaqje,
+              COUNT(*) FILTER (WHERE lloji='click')::int     AS klikime,
+              COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
+       FROM ngjarjet WHERE biznes_id=$1 AND burimi='barazi'`, [req.biznesId]);
+    const marraQ = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE lloji='view')::int      AS ngarkime,
+              COUNT(*) FILTER (WHERE lloji='shikim')::int    AS shfaqje,
+              COUNT(*) FILTER (WHERE lloji='click')::int     AS klikime,
+              COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
+       FROM ngjarjet WHERE reklamues_id=$1 AND burimi='barazi'`, [req.biznesId]);
+    res.json({ dhene: dheneQ.rows[0], marra: marraQ.rows[0] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- NJOFTIMET (llogariten në çast: gjendja + ditët nga regjistrimi) ---
+app.get('/api/njoftimet', iLoguar, async (req, res) => {
+  try {
+    const b = await pool.query(
+      'SELECT created_at, snippet_active, track_active, url_konvertimi, biznesi_auto FROM bizneset WHERE id=$1', [req.biznesId]);
+    const p = await pool.query('SELECT COUNT(*)::int n FROM promovimet WHERE biznes_id=$1 AND aktiv=true AND pauzuar=false', [req.biznesId]);
+    const uLidhur = await pool.query('SELECT 1 FROM konvertimet WHERE biznes_id=$1 AND track_active=true LIMIT 1', [req.biznesId]);
+    const zLidhur = await pool.query('SELECT 1 FROM zonat WHERE biznes_id=$1 AND track_active=true AND fshire=false LIMIT 1', [req.biznesId]);
+    const snLidhur = await pool.query('SELECT 1 FROM snippetet WHERE biznes_id=$1 AND snippet_active=true AND pauzuar=false LIMIT 1', [req.biznesId]);
+    const kaSnippetAktiv = snLidhur.rows.length > 0;
+    const row = b.rows[0] || {};
+    const ditet = Math.floor((Date.now() - new Date(row.created_at).getTime()) / 86400000);
+    const neGraceperiodAuto = !!row.biznesi_auto && ditet < 7;
+    const kaReklame = p.rows[0].n > 0;
+    const kaKonvertimTeLidhur = !!row.track_active && (uLidhur.rows.length > 0 || zLidhur.rows.length > 0);
+    const njf = [];
+
+    if (!kaSnippetAktiv && !neGraceperiodAuto) {
+      njf.push({ tip: 'snippet', titull: 'Your ads aren\'t showing',
+        teksti: "You don't have any active ad space. Since you aren't showing others' ads, your own ads aren't getting shown across the network either. Connect a space to get everything back to normal.", veprim: 'lidhja' });
+    }
+    if (!kaReklame) {
+      njf.push({ tip: 'reklama', titull: 'Your ads aren\'t showing',
+        teksti: "You don't have any active ad. Create a new one or reactivate a paused one to start showing across the network.", veprim: 'reklamat' });
+    }
+    if (!kaKonvertimTeLidhur) {
+      njf.push({ tip: 'konvertim', titull: 'Activate conversion tracking',
+        teksti: "Lead tracking isn't active. Turn it on — conversions raise your profile points, which increase how often your ad gets shown.", veprim: 'konvertimi' });
+    }
+    if (ditet >= 3 && !kaKonvertimTeLidhur) {
+      njf.push({ tip: 'kujtese', titull: 'A few days have passed',
+        teksti: "Conversion tracking still hasn't been set up. It's the main way to earn points if you have low traffic.", veprim: 'konvertimi' });
+    }
+
+    // Njoftimet manuale nga admin (shtohen ne fillim — jane te rendesishme)
+    try {
+      const njAdmin = await require('./njoftime-admin').merrPerBiznes(pool, req.biznesId);
+      njAdmin.forEach(a => {
+        njf.unshift({
+          tip: 'admin', id: a.id, titull: a.titulli, teksti: a.teksti,
+          veprim: a.veprim || null, veprim_label: a.veprim_label || null, nga_admin: true
+        });
+      });
+    } catch (e) {}
+
+    res.json({ ditet, njoftimet: njf });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- RUAJ URL-EN E KONVERTIMIT (faqja qe shfaqet VETEM pas konvertimit) ---
+app.post('/api/url-konvertimi', iLoguar, async (req, res) => {
+  let u = (req.body.url || '').trim();
+  if (!u) {
+    await pool.query('UPDATE bizneset SET url_konvertimi=NULL WHERE id=$1', [req.biznesId]);
+    return res.json({ ok: true, url: null });
+  }
+  try { if (/^https?:\/\//i.test(u)) { const p = new URL(u); u = p.pathname + p.search; } } catch (e) {}
+  if (u[0] !== '/') u = '/' + u;
+  if (u === '/') {
+    return res.status(400).json({ error: "Ballina s'mund të jetë faqe konvertimi — çdo vizitor do të numërohej. Jep një adresë që hapet vetëm pas regjistrimit." });
+  }
+  try {
+    await pool.query('UPDATE bizneset SET url_konvertimi=$2 WHERE id=$1', [req.biznesId, u]);
+    res.json({ ok: true, url: u });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- KLIKIMI: sheno klikimin me nje kod, pastaj ridrejto te reklamuesi ---
+app.get('/klik', async (req, res) => {
+  const key = req.query.key;
+  const rid = parseInt(req.query.rid, 10) || null;
+  let dest = null;
+  try {
+    const snK = await snippetet.ngaCelesi(pool, key);
+    const h = { rows: snK ? [{ id: snK.biznes_id }] : [] };
+    if (h.rows.length && rid) {
+      const p = await pool.query(
+        `SELECT p.id, p.biznes_id, p.logjika_shperndarjes, COALESCE(p.link, b.website) AS dest
+         FROM promovimet p JOIN bizneset b ON b.id = p.biznes_id
+         WHERE p.id=$1 AND p.aktiv=true`, [rid]);
+      if (p.rows.length) {
+        const kod = crypto.randomBytes(9).toString('hex');
+        await pool.query(
+          `INSERT INTO ngjarjet (biznes_id, lloji, origjina, reklama_id, reklamues_id, klik_kod, snippet_id, burimi)
+           VALUES ($1,'click',$2,$3,$4,$5,$6,$7)`,
+          [h.rows[0].id, req.headers.referer || null, p.rows[0].id, p.rows[0].biznes_id, kod, snK ? snK.snippet_id : null, p.rows[0].logjika_shperndarjes || 'ankand']);
+        dest = p.rows[0].dest;
+        if (dest) {
+          if (!/^https?:\/\//i.test(dest)) dest = 'https://' + dest;
+          dest += (dest.indexOf('?') === -1 ? '?' : '&') + 'imyr=' + kod;
         }
-        let d = null;
-        try { d = await r.json(); } catch (e) { d = null; }
-        return { ok: r.ok, status: r.status, d };
-      } catch (e) {
-        if (prove === 0) { await new Promise(z => setTimeout(z, 2000)); continue; }
-        return { ok: false, status: 0, d: null };
       }
     }
-    return { ok: false, status: 0, d: null };
-  }
+  } catch (e) {}
+  res.redirect(302, dest || '/');
+});
 
-  const c = await thirr('/enrich/database/company/', { domain });
-  if (c.status === 404) return { email: null, arsyeja: 'pa_kompani' };
-  if (!c.ok) return { email: null, arsyeja: 'gabim' };
-  const komp = c.d && c.d.data;
-  const link = komp && (komp.linkedin_link || komp.linkedin_url || (komp.linkedin_urn ? ('https://www.linkedin.com/company/' + komp.linkedin_urn + '/') : null));
-  if (!link) return { email: null, arsyeja: 'pa_kompani' };
-
-  const s = await thirr('/search/database/leads/', { job_titles: ['CEO', 'Founder', 'Owner', 'Co-Founder'], company_link: link, limit_by: 3 });
-  if (!s.ok) return { email: null, arsyeja: 'gabim' };
-  const dd = s.d && s.d.data;
-  const leads = (dd && dd.leads) || (Array.isArray(dd) ? dd : []);
-  const identifikues = identifikuesPersoni(zgjidhPersonin(leads));
-  if (!identifikues) return { email: null, arsyeja: 'pa_person' };
-
-  const e = await thirr('/email/find/', identifikues);
-  if (e.status === 404) return { email: null, arsyeja: 'pa_email' };
-  if (!e.ok) return { email: null, arsyeja: 'gabim' };
-  const email = nxjerrEmail(e.d && e.d.data);
-  return email ? { email, arsyeja: 'gjetur' } : { email: null, arsyeja: 'pa_email' };
-}
-
-// Ekzekuton fn per cdo element, me maksimumi "kufi" njekohesisht.
-async function punoMeKonkurrence(elementet, kufi, fn) {
-  let i = 0;
-  const punetoret = Array.from({ length: Math.min(kufi, elementet.length) }, async () => {
-    while (i < elementet.length) {
-      const idx = i++;
-      await fn(elementet[idx], idx);
-    }
-  });
-  await Promise.all(punetoret);
-}
-
-// ===== BISEDAT: gjetja e bisedave/temave ne internet =====
-// Rrjedha: pershkrim nga ti -> OpenAI e kthen ne kerkesa Google -> dergohen te Serper.
-// Variabla te nevojshme te Railway: SERPER_API_KEY (e re), OPENAI_API_KEY (ekziston tashme).
-const OPENAI_MODELI = 'gpt-5-nano'; // i njejti model qe perdor tashme filtroMeAI
-const KOHET_E_LEJUARA = ['h', 'd', 'w', 'm', 'y'];
-
-async function fetchMeKohe(url, opsionet, ms) {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), ms);
-  try { return await fetch(url, Object.assign({}, opsionet, { signal: ctrl.signal })); }
-  finally { clearTimeout(t); }
-}
-
-// Nxjerr listen JSON nga pergjigja e AI-se (edhe nese e rrethon me tekst apo ```).
-function nxirrListeJSON(tekst) {
-  const i = tekst.indexOf('['), j = tekst.lastIndexOf(']');
-  if (i === -1 || j <= i) return null;
-  try { const a = JSON.parse(tekst.slice(i, j + 1)); return Array.isArray(a) ? a : null; }
-  catch (e) { return null; }
-}
-
-// AI-ja e shenon frazat kyce me <<...>> (pa thonjeza, qe JSON-i te mos prishet).
-// Ketu kthehen ne thonjeza te sakta, qe Google te detyrohet t'i permbaje.
-function kthejFrazatNeThonjeza(q) {
-  return q.replace(/<<\s*([^<>]+?)\s*>>/g, '"$1"').replace(/\s+/g, ' ').trim();
-}
-
-// Mbrojtje ne kod (modeli i vogel nuk i ndjek gjithmone rregullat e prompt-it):
-// 1) maksimumi 2 fraza me thonjeza per kerkese; me shume, Google kthen shume pak rezultate.
-function limitoThonjezat(q, maks) {
-  let i = 0;
-  return q.replace(/"([^"]*)"/g, (m, fraza) => (++i <= maks ? m : fraza));
-}
-// 2) maksimumi 8 fjale; kerkesat e gjata japin pak rezultate. Nje fraze brenda thonjezave nuk ndahet kurre.
-function shkurtoKerkesen(q, maksFjale) {
-  const njesite = q.match(/"[^"]*"|\S+/g) || [];
-  const dalja = [];
-  let fjale = 0;
-  for (const n of njesite) {
-    const nr = n.replace(/"/g, ' ').trim().split(/\s+/).filter(Boolean).length || 1;
-    if (dalja.length && fjale + nr > maksFjale) break;
-    dalja.push(n); fjale += nr;
-  }
-  return dalja.join(' ');
-}
-function pergatitKerkesen(q) { return shkurtoKerkesen(limitoThonjezat(kthejFrazatNeThonjeza(q), 2), 8); }
-
-const SHEMBULL_AI = JSON.stringify([
-  '<<delivery apps>> fees restaurant owner <<any advice>>',
-  'how do I lower <<delivery app>> commission restaurant',
-  '<<delivery apps>> eating my margins restaurant',
-  'restaurant owner dropping <<delivery apps>> worth it'
-]);
-
-async function formuloKerkesatMeAI(pershkrim, numri) {
-  if (!OPENAI_KEY) throw new Error('OPENAI_API_KEY mungon te Railway → Variables.');
-  const prompt =
-    'You turn a business owner\'s plain-language description into Google search queries that find real people\'s posts ' +
-    'in forums and communities (not articles, not marketing copy).\n\n' +
-    'Rules:\n' +
-    '1. Write the way a person writes when asking for help in first person: "I", "my", "how do I", "any advice", ' +
-    '"anyone", "struggling". Marketers write sales copy ("costs keep rising", "frustrated that your..."): never write like that.\n' +
-    '2. Every query includes the audience words from the description (for example SaaS, founder, startup, developer). ' +
-    'Use the most specific audience in the description. Never broaden it (do not turn SaaS founders into small business owners).\n' +
-    '3. Every query has at most 8 words in total.\n' +
-    '4. Wrap 1 or 2 short key phrases (2-3 words each) in double angle brackets, like <<first users>>. ' +
-    'Never wrap more than 2 phrases. Never use quotation marks. The brackets become exact-match phrases.\n' +
-    '5. Do NOT write article-style queries. Avoid the words: best, top, guide, tips, strategies, tools, 2026.\n' +
-    '6. Do not use operators (no site:, no minus signs).\n' +
-    '7. Vary the angles: stating the problem, asking for help, looking for alternatives, sharing a failed attempt.\n' +
-    '8. Write the queries in the language most likely used by the people posting (default: English).\n\n' +
-    'Example. Description: restaurant owners frustrated with delivery app commissions\n' +
-    'Output: ' + SHEMBULL_AI + '\n\n' +
-    'Return ONLY a JSON array of ' + numri + ' strings: no prose, no code fences.\n\n' +
-    'Description: ' + pershkrim;
-  const r = await fetchMeKohe('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + OPENAI_KEY },
-    body: JSON.stringify({ model: OPENAI_MODELI, messages: [{ role: 'user', content: prompt }] })
-  }, 60000);
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error('OpenAI: ' + ((data.error && data.error.message) || r.status));
-  const tekst = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
-  const lista = nxirrListeJSON(tekst);
-  if (!lista) throw new Error('AI nuk ktheu format te vlefshem. Provo perseri, ose shkruaj kerkesat vete.');
-  const pastro = Array.from(new Set(lista.filter(x => typeof x === 'string').map(pergatitKerkesen).filter(Boolean)));
-  if (!pastro.length) throw new Error('AI nuk ktheu asnje kerkese. Provo perseri me pershkrim me te qarte.');
-  return pastro.slice(0, numri);
-}
-
-// Faqet opsionale: pranon domain-e ose URL-e, i pastron dhe mban maksimumi 6.
-function pastroFaqet(lista) {
-  const dalja = [];
-  (Array.isArray(lista) ? lista : []).forEach(x => {
-    if (typeof x !== 'string') return;
-    const d = x.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].split('?')[0];
-    if (/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$/.test(d) && !dalja.includes(d)) dalja.push(d);
-  });
-  return dalja.slice(0, 6);
-}
-function shtoFiltrinEFaqeve(q, faqet) {
-  return faqet.length ? q + ' (' + faqet.map(f => 'site:' + f).join(' OR ') + ')' : q;
-}
-
-async function kerkoSerper(q, koha) {
-  if (!SERPER_KEY) throw new Error('SERPER_API_KEY mungon te Railway → Variables.');
-  const trupi = { q, num: 10 };
-  if (KOHET_E_LEJUARA.includes(koha)) trupi.tbs = 'qdr:' + koha;
-  const r = await fetchMeKohe('https://google.serper.dev/search', {
-    method: 'POST',
-    headers: { 'X-API-KEY': SERPER_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify(trupi)
-  }, 30000);
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error('Serper: ' + (data.message || r.status));
-  return data;
-}
-
-// ===== KOMPANI TE REJA: kerkim te Crustdata (kompani te themeluara rishtas) =====
-// Variabel Railway: CRUSTDATA_API_KEY. Nuk ruan asgje dhe nuk gjen email; shfaq vetem cfare kthen Crustdata.
-// Sipas dokumentimit zyrtar: POST https://api.crustdata.com/company/search, "authorization: Bearer <celesi>"
-// dhe "x-api-version: 2025-11-01". Kerkimi kushton 0.03 kredite per rezultat + filtrat/fushat premium.
-const CRUSTDATA_KEY = process.env.CRUSTDATA_API_KEY;
-const CRUSTDATA_BAZA = 'https://api.crustdata.com';
-// Vetem fusha baze (pa grupe premium), qe kostoja te mbetet 0.03 per rezultat.
-const FUSHAT_KOMPANI = [
-  'crustdata_company_id',
-  'basic_info.name', 'basic_info.primary_domain', 'basic_info.website', 'basic_info.year_founded',
-  'basic_info.employee_count_range', 'basic_info.professional_network_url',
-  'locations.country', 'locations.headquarters',
-  'social_profiles.twitter_url'
-];
-
-async function crustdataThirr(metoda, rruga, trupi) {
-  const koka = { 'authorization': 'Bearer ' + CRUSTDATA_KEY, 'x-api-version': '2025-11-01' };
-  const opsione = { method: metoda, headers: koka };
-  if (trupi) { koka['content-type'] = 'application/json'; opsione.body = JSON.stringify(trupi); }
-  const r = await fetchMeKohe(CRUSTDATA_BAZA + rruga, opsione, 30000);
-  const data = await r.json().catch(() => ({}));
-  const k = parseFloat(r.headers && r.headers.get ? r.headers.get('x-credits-used') : null);
-  return { ok: r.ok, status: r.status, data, kredite: Number.isFinite(k) ? k : null };
-}
-
-function mesazhGabimiCrustdata(r) {
-  const msg = (r.data && r.data.error && r.data.error.message) || (r.data && r.data.message) || '';
-  if (r.status === 401) return 'Crustdata: celesi API mungon ose eshte i pavlefshem.';
-  if (r.status === 403) return 'Crustdata: leje e mohuar ose kredite te pamjaftueshme' + (msg ? ' (' + msg + ')' : '') + '. Kontrollo balancen te app.crustdata.com; nese eshte per nje filter premium, hiqe filtrin e industrise ose te punonjesve.';
-  if (r.status === 429) return 'Crustdata: shume kerkesa. Prit nje minute (kufiri per kerkimin e kompanive eshte 15 ne minute).';
-  return 'Crustdata ' + r.status + (msg ? ': ' + msg : '');
-}
-
-// Operatoret sipas dokumentimit: "=>" eshte >= (jo ">="), "=<" eshte <=, "(.)" eshte perputhje e perafert e fjaleve.
-function ndertoFiltratKompani(p) {
-  // Kufi i siperm per vitin: pa te, vlera te pavlefshme ne bazen e Crustdata (p.sh. 3027, 4202) dalin te para ne renditjen
-  // sipas vitit. Kerkohet edhe nje faqe interneti, sepse pa te s'ka si te kontaktohet kompania.
-  const kushte = [
-    { field: 'basic_info.year_founded', type: '=>', value: p.viti },
-    { field: 'basic_info.year_founded', type: '=<', value: p.vitiMax },
-    { field: 'basic_info.primary_domain', type: 'is_not_null', value: null }
-  ];
-  if (p.perjashto && p.perjashto.length) kushte.push({ field: 'basic_info.primary_domain', type: 'not_in', value: p.perjashto });
-  if (p.industria) kushte.push({ field: 'taxonomy.professional_network_industry', type: '(.)', value: p.industria });
-  if (p.shteti) kushte.push({ field: 'locations.country', type: '=', value: p.shteti });
-  if (p.maksPunonjes) kushte.push({ field: 'headcount.total', type: '=<', value: p.maksPunonjes });
-  return kushte.length === 1 ? kushte[0] : { op: 'and', conditions: kushte };
-}
-
-function normalizoDomain(d) { return String(d || '').trim().toLowerCase().replace(/^www\./, ''); }
-
-// Domain-et qe nuk duhet te dalin serish: ato qe ky tab ia ka treguar me pare perdoruesit + ato te ruajtura nga Exa ose manualisht.
-// Kufi 5,000: sipas dokumentimit te Crustdata nje liste "not_in" deri ne ~5,000-10,000 vlera kthehet shpejt.
-// Te vogla (lowercase) sepse per liste mbi 100 vlera krahasimi eshte i ndjeshem ndaj shkronjave.
-async function merrDomainetePara() {
-  const kufi = 5000;
-  const teGjitha = new Set();
-  const pare = await pool.query('SELECT domain FROM kompani_pare WHERE fshih = true ORDER BY gjetur_at DESC LIMIT ' + kufi);
-  pare.rows.forEach(r => { const d = normalizoDomain(r.domain); if (d) teGjitha.add(d); });
-  const ruajtura = await pool.query('SELECT domain FROM bizneset_gjetur');
-  ruajtura.rows.forEach(r => { const d = normalizoDomain(r.domain); if (d) teGjitha.add(d); });
-  return Array.from(teGjitha).slice(0, kufi);
-}
-
-// Ruan kompanite me te dhenat e plota. Nese ekzistojne (p.sh. ruajtur me pare me email), te dhenat e vjetra MBETEN dhe
-// plotesohen vetem fushat bosh; "fshih" behet perseri true. Kthen gjendjen e email-it per secilen dhe e shton te objekti.
-async function ruajKompanite(kompanite, kategoria) {
-  const A = { d: [], emri: [], web: [], viti: [], pun: [], shteti: [], qyteti: [], li: [], tw: [] }, pare = new Set(), objekte = {};
-  for (const k of kompanite) {
-    const d = normalizoDomain(k.domain);
-    if (!d || pare.has(d)) continue;
-    pare.add(d); objekte[d] = k;
-    A.d.push(d); A.emri.push(k.emri || ''); A.web.push(k.website || null); A.viti.push(Number.isInteger(k.viti) ? k.viti : null);
-    A.pun.push(k.punonjes || null); A.shteti.push(k.shteti || null); A.qyteti.push(k.qyteti || null); A.li.push(k.linkedin || null); A.tw.push(k.twitter || null);
-  }
-  if (!A.d.length) return 0;
-  const r = await pool.query(
-    'INSERT INTO kompani_pare (domain, emri, website, viti, punonjes, shteti, qyteti, linkedin, twitter, kategoria) ' +
-    'SELECT u.d, u.e, u.w, u.v, u.p, u.s, u.q, u.l, u.t, $10::text FROM UNNEST($1::text[], $2::text[], $3::text[], $4::int[], $5::text[], $6::text[], $7::text[], $8::text[], $9::text[]) AS u(d, e, w, v, p, s, q, l, t) ' +
-    'ON CONFLICT (domain) DO UPDATE SET emri = COALESCE(NULLIF(kompani_pare.emri, \'\'), EXCLUDED.emri), website = COALESCE(kompani_pare.website, EXCLUDED.website), ' +
-    'viti = COALESCE(kompani_pare.viti, EXCLUDED.viti), punonjes = COALESCE(kompani_pare.punonjes, EXCLUDED.punonjes), shteti = COALESCE(kompani_pare.shteti, EXCLUDED.shteti), ' +
-    'qyteti = COALESCE(kompani_pare.qyteti, EXCLUDED.qyteti), linkedin = COALESCE(kompani_pare.linkedin, EXCLUDED.linkedin), twitter = COALESCE(kompani_pare.twitter, EXCLUDED.twitter), kategoria = COALESCE(kompani_pare.kategoria, EXCLUDED.kategoria), fshih = true ' +
-    'RETURNING domain, email, email_lloji, email_mx, email_burimi, email_gjendja, kategoria',
-    [A.d, A.emri, A.web, A.viti, A.pun, A.shteti, A.qyteti, A.li, A.tw, kategoria || null]);
-  (r.rows || []).forEach(x => { const k = objekte[normalizoDomain(x.domain)]; if (k) Object.assign(k, { email: x.email || null, email_lloji: x.email_lloji || null, email_mx: x.email_mx == null ? null : x.email_mx, email_burimi: x.email_burimi || null, email_gjendja: x.email_gjendja || null, kategoria: x.kategoria || null }); });
-  return A.d.length;
-}
-
-// Kerkesa qe i kthehet faqes per shfaqje: lista e gjate e domain-eve te perjashtuara zevendesohet me nje permbledhje.
-function kerkesePerShfaqje(trupi) {
-  const kopje = JSON.parse(JSON.stringify(trupi));
-  const trego = k => { if (k && k.type === 'not_in' && Array.isArray(k.value)) k.value = '[' + k.value.length + ' domain-e te perjashtuara]'; };
-  if (kopje.filters) { trego(kopje.filters); (kopje.filters.conditions || []).forEach(trego); }
-  return kopje;
-}
-
-// ===== GJETJA E EMAIL-IT NGA FAQJA E KOMPANISE (pa Generect) =====
-// Lexon faqen kryesore + faqet e kontaktit/rreth nesh (maks. 4 faqe per kompani), nxjerr adresat qe jane SHKRUAR atje
-// (mailto: dhe tekst) dhe zgjedh me te miren (AI kur ka disa). Nuk hamendeson kurre adresa: nje adrese pranohet vetem nese
-// ndodhet fjale per fjale ne faqe. Faqet merren vetem per domain-e te ruajtura nga Crustdata, me mbrojtje SSRF.
-const dnsP = require('dns').promises;
-const net = require('net');
-
-function ipPublike(ip) {
-  if (net.isIPv4(ip)) {
-    const [a, b, c] = ip.split('.').map(Number);
-    if (a === 0 || a === 10 || a === 127 || a >= 224) return false;
-    if (a === 169 && b === 254) return false;                  // link-local (p.sh. 169.254.169.254, metadata cloud)
-    if (a === 172 && b >= 16 && b <= 31) return false;
-    if (a === 192 && b === 168) return false;
-    if (a === 100 && b >= 64 && b <= 127) return false;        // CGNAT
-    if (a === 192 && b === 0 && (c === 0 || c === 2)) return false;
-    if (a === 198 && (b === 18 || b === 19)) return false;
-    return true;
-  }
-  if (net.isIPv6(ip)) {
-    const x = ip.toLowerCase();
-    if (x === '::' || x === '::1') return false;
-    if (x.startsWith('fc') || x.startsWith('fd')) return false;
-    if (/^fe[89ab]/.test(x)) return false;
-    const m = x.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
-    if (m) return ipPublike(m[1]);
-    return true;
-  }
-  return false;
-}
-
-async function adreseESigurt(host) {
-  const h = String(host).replace(/^\[|\]$/g, '');
-  if (net.isIP(h)) { if (!ipPublike(h)) throw new Error('adrese e brendshme e bllokuar'); return; }
-  let adresat;
-  try { adresat = await dnsP.lookup(h, { all: true }); } catch (e) { throw new Error('domain-i nuk zgjidhet'); }
-  if (!adresat.length || !adresat.every(a => ipPublike(a.address))) throw new Error('domain-i shpie te nje adrese e brendshme: bllokuar');
-}
-
-async function lexoTrupin(r, kufi) {
-  if (r.body && typeof r.body.getReader === 'function') {
-    const lexues = r.body.getReader(), dekoder = new TextDecoder('utf-8');
-    let tekst = '', total = 0;
-    while (total < kufi) {
-      const { done, value } = await lexues.read();
-      if (done) break;
-      total += value.length; tekst += dekoder.decode(value, { stream: true });
-    }
-    try { await lexues.cancel(); } catch (e) { /* tashme e mbyllur */ }
-    return tekst;
-  }
-  return String(await r.text()).slice(0, kufi);
-}
-
-// Merr nje faqe te sigurt: vetem http(s) ne portet 80/443, pa kredenciale, ridrejtimet ndiqen dorazi (maks. 3) dhe
-// secili kalon perseri kontrollin e adreses; vetem HTML; maks. ~400 KB.
-async function marrFaqen(url, afati) {
-  let aktual = url;
-  for (let hop = 0; hop < 4; hop++) {
-    const u = new URL(aktual);
-    if (!/^https?:$/.test(u.protocol) || u.username || u.password) throw new Error('adrese e palejuar');
-    if (u.port && u.port !== '80' && u.port !== '443') throw new Error('port i palejuar');
-    await adreseESigurt(u.hostname);
-    const r = await fetchMeKohe(u.toString(), { redirect: 'manual', headers: { 'user-agent': 'Mozilla/5.0 (compatible; emailet)', 'accept': 'text/html,application/xhtml+xml' } }, afati || 7000);
-    const vendndodhja = r.headers && r.headers.get ? r.headers.get('location') : null;
-    if (r.status >= 300 && r.status < 400 && vendndodhja) { aktual = new URL(vendndodhja, u).toString(); continue; }
-    if (!r.ok) return { ok: false, status: r.status, html: '', url: u.toString() };
-    const tipi = String((r.headers && r.headers.get && r.headers.get('content-type')) || '').toLowerCase();
-    if (tipi && !/text\/html|application\/xhtml/.test(tipi)) return { ok: false, status: r.status, html: '', url: u.toString() };
-    return { ok: true, status: r.status, html: await lexoTrupin(r, 400000), url: u.toString() };
-  }
-  throw new Error('shume ridrejtime');
-}
-
-function dekodoHtml(s) {
-  return dekodoXml(String(s || '')
-    .replace(/&#x([0-9a-f]+);/gi, (m, h) => { try { return String.fromCodePoint(parseInt(h, 16)); } catch (e) { return ''; } })
-    .replace(/&commat;/gi, '@').replace(/&nbsp;/gi, ' '));
-}
-
-// Lidhjet e brendshme drejt faqeve te kontaktit/rreth nesh/ekipit (maks. 3).
-function gjejLidhjetKontakt(html, baza) {
-  const dalja = [], pare = new Set();
-  let b; try { b = new URL(baza); } catch (e) { return dalja; }
-  const emriHost = h => h.replace(/^www\./, '');
-  for (const m of String(html || '').matchAll(/<a\b[^>]*\bhref\s*=\s*["']([^"'#]+)["'][^>]*>([\s\S]{0,120}?)<\/a>/gi)) {
-    const tekst = m[2].replace(/<[^>]+>/g, ' ');
-    if (!/contact|about|team|impressum|partner|advertis|get-in-touch|reach-us/i.test(m[1] + ' ' + tekst)) continue;
-    let u; try { u = new URL(dekodoXml(m[1]), b); } catch (e) { continue; }
-    if (!/^https?:$/.test(u.protocol) || emriHost(u.hostname) !== emriHost(b.hostname)) continue;
-    u.hash = '';
-    const k = u.toString();
-    if (k !== b.toString() && !pare.has(k)) { pare.add(k); dalja.push(k); }
-  }
-  return dalja.slice(0, 3);
-}
-
-const EMAIL_RE = /[A-Za-z0-9][A-Za-z0-9._%+-]*@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g;
-const EMAIL_SKEDAR = /\.(png|jpe?g|gif|svg|webp|avif|ico|css|js|json|woff2?|ttf|eot|pdf|zip|mp4|webm)$/i;
-const DOMAIN_ANASHKALO = /(^|\.)(example\.(com|org|net)|domain\.com|yourdomain\.com|yourcompany\.com|email\.com|test\.com|sentry\.io|wixpress\.com|godaddy\.com|schema\.org|w3\.org|gravatar\.com|cloudflare\.com|googleusercontent\.com)$/i;
-const LOCAL_ANASHKALO = /^(noreply|no-reply|donotreply|do-not-reply|mailer-daemon|postmaster|abuse|webmaster|hostmaster|privacy|legal|dpo|gdpr|unsubscribe|bounce|bounces|root|email|name|you|your|yourname|user|username|example|test)$/i;
-function emailIVlefshem(e) {
-  const [l, d] = e.split('@');
-  if (!l || !d || EMAIL_SKEDAR.test(e) || DOMAIN_ANASHKALO.test(d) || LOCAL_ANASHKALO.test(l)) return false;
-  if (/\dx$/.test(l) || l.length > 64 || e.length > 120) return false;
-  return true;
-}
-
-// Nxjerr adresat e SHKRUARA ne faqe: mailto:, teksti i dukshem dhe JSON-LD. Kthen [{ email, kontekst }].
-function nxirrEmailet(html) {
-  let t = String(html || '');
-  const ld = (t.match(/<script[^>]+application\/ld\+json[^>]*>[\s\S]*?<\/script>/gi) || []).map(s => s.replace(/<[^>]+>/g, ' ')).join(' ');
-  t = t.replace(/<(script|style|noscript)\b[\s\S]*?<\/\1>/gi, ' ');
-  const gjetur = new Map();
-  const shto = (em, ktx) => {
-    const e = String(em).trim().replace(/[.,;:)\]>]+$/, '').toLowerCase();
-    if (/^[a-z0-9][a-z0-9._%+-]*@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/.test(e) && !gjetur.has(e)) gjetur.set(e, ktx || '');
-  };
-  for (const m of t.matchAll(/href\s*=\s*["']mailto:([^"'?#\s>]+)/gi)) {
-    let v = dekodoHtml(m[1]); try { v = decodeURIComponent(v); } catch (e) { /* mbetet siç eshte */ }
-    shto(v, 'mailto');
-  }
-  const tekst = dekodoHtml(t.replace(/<[^>]+>/g, ' ') + ' ' + ld).replace(/\s+/g, ' ');
-  for (const m of tekst.matchAll(EMAIL_RE)) shto(m[0], tekst.slice(Math.max(0, m.index - 50), m.index + m[0].length + 50).trim());
-  return Array.from(gjetur.entries()).filter(([e]) => emailIVlefshem(e)).map(([email, kontekst]) => ({ email, kontekst }));
-}
-
-// Rangu per bashkepunim: person (0) > partner/marketing/founder (1) > hello/contact/info (2) > support/sales (3) > press/jobs (4).
-const ROL_PRIORITET = [
-  ['partner', 'partners', 'partnership', 'partnerships', 'marketing', 'growth', 'founder', 'founders', 'ceo', 'owner', 'bd', 'business'],
-  ['hello', 'hi', 'hey', 'contact', 'info', 'team', 'mail', 'office', 'general', 'enquiries', 'inquiries', 'contacto'],
-  ['support', 'help', 'sales', 'admin', 'billing', 'service', 'accounts'],
-  ['press', 'media', 'pr', 'jobs', 'careers', 'hr', 'recruiting', 'recruitment']
-];
-function rangEmail(email) {
-  const l = email.split('@')[0].toLowerCase().replace(/[^a-z]/g, '');
-  const i = ROL_PRIORITET.findIndex(g => g.includes(l));
-  return i === -1 ? { lloji: 'person', rang: 0 } : { lloji: 'role', rang: i + 1 };
-}
-
-// AI zgjedh VETEM nga lista e dhene (kthen numrin e kandidatit), keshtu nuk mund te shpik adrese.
-async function zgjidhEmailMeAI(domain, kandidatet) {
-  const lista = kandidatet.slice(0, 8).map((k, i) => (i + 1) + '. ' + k.email + (k.kontekst && k.kontekst !== 'mailto' ? ' — "' + k.kontekst.slice(0, 100) + '"' : '')).join('\n');
-  const prompt =
-    'You pick the best contact email address for a first outreach message to the owner or founder of a small software company, about a partnership (cross-promotion of each other\'s products).\n' +
-    'Company website: ' + domain + '\nCandidate addresses found written on its website (with the text around each):\n' + lista + '\n\n' +
-    'Rules: prefer a named person (founder, CEO, owner) over a shared mailbox; prefer partnerships, marketing, hello or contact over support, billing, jobs or press. Never invent an address. ' +
-    'Answer ONLY with JSON: {"index": N} where N is the number of the best candidate, or {"index": null} if none is suitable.';
-  const r = await fetchMeKohe('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + OPENAI_KEY },
-    body: JSON.stringify({ model: OPENAI_MODELI, messages: [{ role: 'user', content: prompt }] })
-  }, 30000);
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error('OpenAI: ' + ((data.error && data.error.message) || r.status));
-  const tekst = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
-  const m = tekst.match(/"index"\s*:\s*(null|\d+)/);
-  if (!m) throw new Error('AI nuk ktheu format te vlefshem');
-  if (m[1] === 'null') return null;
-  const k = kandidatet.slice(0, 8)[Number(m[1]) - 1];
-  if (!k) throw new Error('AI ktheu numer jashte liste');
-  return k;
-}
-
-// Kthen { email, lloji, metoda } ose null (asnje adrese e pershtatshme).
-async function zgjidhEmail(domain, kandidatet) {
-  const me = kandidatet.map(k => {
-    const d = k.email.split('@')[1];
-    return Object.assign({}, k, rangEmail(k.email), { nedomain: d === domain || d.endsWith('.' + domain) });
-  });
-  const pool_ = me.some(k => k.nedomain) ? me.filter(k => k.nedomain) : me; // adresat e domain-it te kompanise kane perparesi
-  if (pool_.length === 1) return { email: pool_[0].email, lloji: pool_[0].lloji, metoda: 'e vetme' };
-  if (OPENAI_KEY) {
-    try {
-      const k = await zgjidhEmailMeAI(domain, pool_);
-      return k ? { email: k.email, lloji: rangEmail(k.email).lloji, metoda: 'AI' } : null;
-    } catch (e) { /* AI s'punoi: bie te rregulli i thjeshte */ }
-  }
-  const h = pool_.slice().sort((a, b) => a.rang - b.rang || a.email.localeCompare(b.email))[0];
-  return { email: h.email, lloji: h.lloji, metoda: 'rregull' };
-}
-
-async function kontrolloMX(email) {
-  try { const r = await dnsP.resolveMx(email.split('@')[1]); return Array.isArray(r) && r.length > 0; }
-  catch (e) { return (e && (e.code === 'ENODATA' || e.code === 'ENOTFOUND')) ? false : null; } // null = e panjohur (p.sh. DNS i zene)
-}
-
-// Gjen email-in per nje domain. Kthen { gjendja: 'u-gjet'|'pa-email'|'gabim', email, lloji, mx, burimi, mesazh }.
-async function gjejEmailPerKompani(domain) {
-  const afati = Date.now() + 25000;
-  const baza = 'https://' + domain + '/';
-  const faqet = [], gabime = [];
-  const merr = async u => {
-    try { const f = await marrFaqen(u, 7000); if (f.ok) faqet.push(f); else gabime.push('HTTP ' + f.status); }
-    catch (e) { gabime.push(String(e.message).replace(/https?:\/\/\S+/g, '[adrese]')); }
-  };
-  await merr(baza);
-  if (!faqet.length) return { gjendja: 'gabim', mesazh: 'Faqja nuk u hap (' + (gabime[0] || 'pa pergjigje') + ')' };
-  const planifikuar = gjejLidhjetKontakt(faqet[0].html, faqet[0].url).concat(['/contact', '/contact-us', '/about'].map(p => baza.replace(/\/$/, '') + p));
-  for (const u of planifikuar) {
-    if (faqet.length >= 4 || Date.now() > afati) break;
-    if (faqet.some(f => f.url === u)) continue;
-    await merr(u);
-  }
-  const kandidatet = [], pare = new Set();
-  for (const f of faqet) for (const k of nxirrEmailet(f.html)) if (!pare.has(k.email)) { pare.add(k.email); kandidatet.push(Object.assign({ burimi: f.url }, k)); }
-  if (!kandidatet.length) return { gjendja: 'pa-email', mesazh: 'Asnje email i shkruar ne ' + faqet.length + ' faqe te lexuara' };
-  const zgj = await zgjidhEmail(domain, kandidatet);
-  if (!zgj) return { gjendja: 'pa-email', mesazh: 'Asnje nga adresat e gjetura nuk duket e pershtatshme' };
-  const burimi = (kandidatet.find(k => k.email === zgj.email) || {}).burimi || null;
-  return { gjendja: 'u-gjet', email: zgj.email, lloji: zgj.lloji, mx: await kontrolloMX(zgj.email), burimi, mesazh: 'Zgjedhur me: ' + zgj.metoda + ' (nga ' + kandidatet.length + ' adresa)' };
-}
-let emailNeVazhdim = 0;
-
-function sheshoKompanine(c) {
-  const b = c.basic_info || {}, l = c.locations || {}, s = c.social_profiles || {};
-  return {
-    id: c.crustdata_company_id || null, emri: b.name || null, domain: b.primary_domain || null, website: b.website || null,
-    viti: b.year_founded || null, punonjes: b.employee_count_range || null, shteti: l.country || null, qyteti: l.headquarters || null,
-    linkedin: b.professional_network_url || null, twitter: s.twitter_url || null
-  };
-}
-
-// Dokumentimi permend dy emra per celesin e renditjes ("column" ne shembuj, "field" ne nje shembull tjeter).
-// Provohen me radhe; nje gabim 400 nuk kushton kredite. Gabimet e tjera ndalojne menjehere.
-async function kerkoKompani(trupiBaze) {
-  // Kerkim semantik (me pershkrim): renditja eshte sipas perputhjes dhe dokumentimi nuk lejon "sorts" bashke me "search".
-  if (trupiBaze.search) {
-    const r = await crustdataThirr('POST', '/company/search', trupiBaze);
-    return { r, perdorur: { sorts: 'sipas pershtatshmerise me pershkrimin', trupi: trupiBaze } };
-  }
-  const variantet = [
-    { emri: 'column', sorts: [{ column: 'basic_info.year_founded', order: 'desc' }] },
-    { emri: 'field', sorts: [{ field: 'basic_info.year_founded', order: 'desc' }] },
-    { emri: 'pa renditje', sorts: null }
-  ];
-  let r = null, perdorur = null;
-  for (const v of variantet) {
-    const trupi = Object.assign({}, trupiBaze);
-    if (v.sorts) trupi.sorts = v.sorts;
-    r = await crustdataThirr('POST', '/company/search', trupi);
-    perdorur = { sorts: v.emri, trupi };
-    if (r.status !== 400 || !/sort|order/i.test(JSON.stringify(r.data))) break;
-  }
-  return { r, perdorur };
-}
-
-// ===== ALERTE: Google Alerts te dorezuara si RSS (Atom) feed =====
-// Variabel Railway: GOOGLE_ALERTS_FEEDS = adresat e feed-eve (https), te ndara me presje ose rresht te ri.
-// Ato jane sekrete (lidhen me llogarine Google) dhe nuk i kthehen kurre faqes. Ruhen vetem lidhja, titulli, copa e tekstit dhe data.
-const ALERTE_STATUSET = ['i ri', 'u pergjigj', 'e lashe'];
-const ALERTE_KOLONAT = 'id, url, titulli, fragmenti, burimi, alerti, publikuar, gjetur_at, statusi';
-const alerteGjendja = { fundit: null, feedet: 0, te_reja: 0, gabime: [] };
-let alertePoll = false;
-
-function alerteFeedet() {
-  return String(process.env.GOOGLE_ALERTS_FEEDS || '').split(/[\n,]+/).map(s => s.trim()).filter(s => /^https:\/\//i.test(s));
-}
-
-function dekodoXml(s) {
-  return String(s || '')
-    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'")
-    .replace(/&#(\d+);/g, (m, n) => { try { return String.fromCodePoint(parseInt(n, 10)); } catch (e) { return ''; } })
-    .replace(/&amp;/g, '&');
-}
-
-// HTML i futur ne XML -> tekst i thjeshte. Etiketat hiqen pa hapesire, qe "I-<b>66</b>" te mbetet "I-66".
-function pastroTekstinAlerte(s) {
-  const pa = String(s || '').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1');
-  return dekodoXml(dekodoXml(pa).replace(/<[^>]*>/g, '')).replace(/\s+/g, ' ').trim();
-}
-
-// Lidhjet ne feed jane te mbeshtjella nga Google (google.com/url?...&url=ADRESA_E_VERTETE). Kthen adresen e vertete.
-function demaskoUrlGoogle(href) {
+// --- DIAGNOSTIK I PERKOHSHEM: shiko klikun/konvertimin per nje kod (fshije me pas) ---
+app.get('/diag/:kod', async (req, res) => {
   try {
-    const u = new URL(dekodoXml(href));
-    if (/(^|\.)google\.[a-z.]+$/i.test(u.hostname) && u.pathname === '/url') {
-      const real = u.searchParams.get('url') || u.searchParams.get('q');
-      if (real && /^https?:\/\//i.test(real)) return real;
-    }
-    return /^https?:$/.test(u.protocol) ? u.toString() : null;
-  } catch (e) { return null; }
-}
+    const r = await pool.query(
+      `SELECT lloji, origjina, reklama_id, reklamues_id, created_at
+       FROM ngjarjet WHERE klik_kod=$1 ORDER BY created_at ASC`, [req.params.kod]);
+    res.json({ kod: req.params.kod, ngjarje: r.rows });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
-// Per te shmangur dublikatat: pa fragment (#), pa parametra utm_, pa "/" ne fund.
-function normalizoUrlAlerte(u) {
+// --- DIAGNOSTIK: shiko zonat e nje biznesi (p.sh. /diag-zonat/55) ---
+app.get('/diag-zonat/:bizId', async (req, res) => {
   try {
-    const x = new URL(u);
-    x.hash = '';
-    Array.from(x.searchParams.keys()).forEach(k => { if (/^utm_/i.test(k)) x.searchParams.delete(k); });
-    let s = x.toString();
-    if (s.endsWith('/') && x.pathname !== '/') s = s.slice(0, -1);
-    return s;
-  } catch (e) { return null; }
-}
+    const r = await pool.query('SELECT id, emri, track_active FROM zonat WHERE biznes_id=$1 ORDER BY id', [req.params.bizId]);
+    res.json({ biznes_id: req.params.bizId, zonat: r.rows });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
-// Lexon nje feed Atom te Google Alerts pa biblioteke XML (regex). Hyrjet pa lidhje te vlefshme anashkalohen.
-function lexoAtom(xml) {
-  const tekst = String(xml || '');
-  const fillimi = tekst.search(/<entry[\s>]/i);
-  const koka = fillimi === -1 ? tekst : tekst.slice(0, fillimi);
-  const titulliFeed = pastroTekstinAlerte((koka.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || '');
-  const alerti = titulliFeed.replace(/^Google Alert\s*-\s*/i, '');
-  const hyrjet = [];
-  (tekst.match(/<entry[\s>][\s\S]*?<\/entry>/gi) || []).forEach(h => {
-    const href = (h.match(/<link[^>]*\bhref=["']([^"']+)["']/i) || [])[1];
-    const url = href ? demaskoUrlGoogle(href) : null;
-    if (!url) return;
-    const titulli = pastroTekstinAlerte((h.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || '');
-    const fragmenti = pastroTekstinAlerte((h.match(/<content[^>]*>([\s\S]*?)<\/content>/i) || [])[1] || '');
-    const dataTekst = (h.match(/<published>\s*([^<]+?)\s*<\/published>/i) || h.match(/<updated>\s*([^<]+?)\s*<\/updated>/i) || [])[1];
-    const d = dataTekst ? new Date(dataTekst) : null;
-    let burimi = '';
-    try { burimi = new URL(url).hostname.replace(/^www\./, ''); } catch (e) { burimi = ''; }
-    hyrjet.push({ url, titulli, fragmenti, burimi, publikuar: d && !isNaN(d) ? d.toISOString() : null });
-  });
-  return { alerti, hyrjet };
-}
+// --- KRIJO NJE KLIK PROVE (per verifikimin e zones me kod) ---
+app.post('/api/zona-prove', iLoguar, async (req, res) => {
+  try {
+    const kod = crypto.randomBytes(9).toString('hex');
+    // klik "prove" — origjina e shenon si test qe te mos ndotet statistika
+    await pool.query(
+      `INSERT INTO ngjarjet (biznes_id, lloji, origjina, reklama_id, reklamues_id, klik_kod)
+       VALUES ($1,'click','PROVE',NULL,$1,$2)`, [req.biznesId, kod]);
+    let faqja = req.biznesId ? null : null;
+    const b = await pool.query('SELECT website FROM bizneset WHERE id=$1', [req.biznesId]);
+    faqja = b.rows.length ? b.rows[0].website : null;
+    if (faqja && !/^https?:\/\//i.test(faqja)) faqja = 'https://' + faqja;
+    res.json({ kod, faqja });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
-// Ruan hyrjet e reja (dublikatet sipas URL-se anashkalohen nga baza). Kthen sa ishin vertet te reja.
-async function ruajHyrjetAlerte(hyrjet, alerti) {
-  const pare = new Set(), urls = [], titujt = [], fragmentet = [], burimet = [], alertet = [], datat = [];
-  for (const h of hyrjet) {
-    const u = normalizoUrlAlerte(h.url);
-    if (!u || pare.has(u)) continue;
-    pare.add(u); urls.push(u); titujt.push(h.titulli || ''); fragmentet.push(h.fragmenti || ''); burimet.push(h.burimi || ''); alertet.push(alerti || ''); datat.push(h.publikuar || null);
-  }
-  if (!urls.length) return 0;
-  const r = await pool.query(
-    'INSERT INTO alerte_rezultate (url, titulli, fragmenti, burimi, alerti, publikuar) SELECT * FROM UNNEST($1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::timestamptz[]) ON CONFLICT (url) DO NOTHING',
-    [urls, titujt, fragmentet, burimet, alertet, datat]);
-  return r.rowCount || 0;
-}
-
-async function lexoFeedetAlerte() {
-  const feedet = alerteFeedet();
-  const gjendje = { fundit: new Date().toISOString(), feedet: feedet.length, te_reja: 0, gabime: [] };
-  for (let i = 0; i < feedet.length; i++) {
-    try {
-      const r = await fetchMeKohe(feedet[i], { headers: { 'user-agent': 'Mozilla/5.0 (compatible; emailet)' } }, 20000);
-      if (!r.ok) { gjendje.gabime.push('Feed ' + (i + 1) + ': HTTP ' + r.status); continue; }
-      const { alerti, hyrjet } = lexoAtom(await r.text());
-      gjendje.te_reja += await ruajHyrjetAlerte(hyrjet, alerti);
-    } catch (e) {
-      // adresat e feed-eve jane sekrete: hiqen nga cdo mesazh gabimi
-      gjendje.gabime.push('Feed ' + (i + 1) + ': ' + String(e.message).replace(/https?:\/\/\S+/g, '[adrese]'));
+// --- KONVERTIMI: numerohet vetem nese ekziston nje klikim i vlefshem ---
+// --- VERIFIKIMI I ZONES ME KOD (provë, s'numërohet si konvertim) ---
+app.all('/konvertim-verifiko', async (req, res) => {
+  cors(res);
+  const key = req.query.key || (req.body && req.body.key);
+  const zona = req.query.zona || (req.body && req.body.zona) || '';
+  if (!key) return res.status(204).end();
+  try {
+    const b = await pool.query('SELECT id FROM bizneset WHERE celes=$1', [key]);
+    if (b.rows.length) {
+      await pool.query(
+        'UPDATE zonat SET track_active=true, track_seen_at=now() WHERE biznes_id=$1 AND emri=$2',
+        [b.rows[0].id, zona]);
     }
+  } catch (e) {}
+  res.status(204).end();
+});
+
+app.all('/konvertim', async (req, res) => {
+  cors(res);
+  const kod = req.query.kod || (req.body && req.body.kod);
+  const zona = req.query.zona || (req.body && req.body.zona) || null;
+  if (!kod) return res.status(204).end();
+  try {
+    const k = await pool.query(
+      `SELECT reklama_id, reklamues_id, created_at, origjina, snippet_id, burimi FROM ngjarjet
+       WHERE klik_kod=$1 AND lloji='click' LIMIT 1`, [kod]);
+    if (!k.rows.length) return res.status(204).end();           // kod i panjohur
+    const kl = k.rows[0];
+    const DITE = 30 * 24 * 3600 * 1000;
+    if (Date.now() - new Date(kl.created_at).getTime() > DITE) return res.status(204).end();
+
+    // KLIK PROVE (verifikim): lidh zonen (krijo nese s'ekziston) POR mos regjistro konvertim te vertete
+    if (kl.origjina === 'PROVE') {
+      if (zona) {
+        const z = await pool.query('SELECT id, fshire FROM zonat WHERE biznes_id=$1 AND emri=$2', [kl.reklamues_id, zona]);
+        if (z.rows.length) {
+          await pool.query('UPDATE zonat SET track_active=true, track_seen_at=now(), fshire=false WHERE id=$1', [z.rows[0].id]);
+        } else {
+          await pool.query('INSERT INTO zonat (biznes_id, emri, track_active, track_seen_at) VALUES ($1,$2,true,now())', [kl.reklamues_id, zona]);
+        }
+      } else {
+        await pool.query("UPDATE zonat SET track_active=true, track_seen_at=now() WHERE biznes_id=$1 AND emri=''", [kl.reklamues_id]);
+      }
+      return res.status(204).end();
+    }
+
+    // Nese konvertimi vjen me KOD ME EMER (zona jo bosh):
+    //  - nese zona eshte shenuar E FSHIRE → lidhja shkeputet → injoro konvertimin
+    //  - nese ekziston (jo e fshire) → vazhdo dhe lidhe
+    //  - nese s'ekziston fare → krijohet me poshte dhe lidhet (sjellja qe punonte)
+    if (zona) {
+      const zr = await pool.query('SELECT id, fshire, pauzuar FROM zonat WHERE biznes_id=$1 AND emri=$2 LIMIT 1', [kl.reklamues_id, zona]);
+      if (zr.rows.length && zr.rows[0].fshire) return res.status(204).end();   // e fshire → injoro
+      if (zr.rows.length && zr.rows[0].pauzuar) return res.status(204).end();  // e pauzuar → injoro (s'regjistrohet)
+    }
+    if (!zona) {
+      const origjinaFaqe = req.headers.origin || req.headers.referer || null;
+      if (origjinaFaqe) {
+        try {
+          let shteg = origjinaFaqe;
+          try { const p = new URL(origjinaFaqe); shteg = (p.origin + p.pathname).replace(/\/+$/, ''); } catch(e){}
+          const pz = await pool.query(
+            "SELECT 1 FROM konvertimet WHERE biznes_id=$1 AND pauzuar=true AND ($2 LIKE rtrim(url,'/') || '%') LIMIT 1",
+            [kl.reklamues_id, shteg]);
+          if (pz.rows.length) return res.status(204).end();
+        } catch(e){}
+      }
+    }
+    // nje konvertim per klikim PER ZONE (zona te ndryshme numerohen veç)
+    const ekz = await pool.query(
+      `SELECT 1 FROM ngjarjet WHERE klik_kod=$1 AND lloji='konvertim'
+       AND COALESCE(origjina,'') = COALESCE($2,'') LIMIT 1`, [kod, zona ? ('zona:' + zona) : '']);
+    if (ekz.rows.length) return res.status(204).end();
+    await pool.query(
+      `INSERT INTO ngjarjet (biznes_id, lloji, origjina, reklama_id, reklamues_id, klik_kod, snippet_id, burimi)
+       VALUES ($1,'konvertim',$2,$3,$4,$5,$6,$7)`,
+      [kl.reklamues_id, zona ? ('zona:' + zona) : (req.headers.origin || req.headers.referer || null),
+       kl.reklama_id, kl.reklamues_id, kod, kl.snippet_id, kl.burimi]);
+    // Nje konvertim REAL eshte prova qe snippet-i i gjurmimit eshte aktiv → rivendos track_active.
+    await pool.query('UPDATE bizneset SET track_active=true, track_seen_at=now() WHERE id=$1', [kl.reklamues_id]);
+    // Nje konvertim REAL me zone → lidhe. Nese s'ekziston, krijoje si te lidhur (por jo e fshire).
+    if (zona) {
+      const z = await pool.query('SELECT id FROM zonat WHERE biznes_id=$1 AND emri=$2', [kl.reklamues_id, zona]);
+      if (z.rows.length) {
+        await pool.query('UPDATE zonat SET track_active=true, track_seen_at=now() WHERE id=$1', [z.rows[0].id]);
+      } else {
+        await pool.query('INSERT INTO zonat (biznes_id, emri, track_active, track_seen_at) VALUES ($1,$2,true,now())', [kl.reklamues_id, zona]);
+      }
+    }
+  } catch (e) {}
+  res.status(204).end();
+});
+
+// --- RUAJ PERMBLEDHJEN (klienti editon vetem permbledhjen; kategoria mbetet nga AI) ---
+app.post('/api/permbledhje', iLoguar, async (req, res) => {
+  const perm = (req.body.permbledhje || '').trim() || null;
+  const rikombinim = !!req.body.rikombinim;
+  try {
+    await pool.query('UPDATE bizneset SET permbledhje=$2 WHERE id=$1', [req.biznesId, perm]);
+    if (!rikombinim) return res.json({ ok: true });
+
+    // Rikombinim vetem nese kerkohet eksplicit (Cilesimet / Dashboard-pershkrimi standalone,
+    // jo wizard-i i pare) DHE vetem nese ka snippet aktiv (qe u shfaq REKLAMAT E TE TJEREVE).
+    const b = await pool.query('SELECT snippet_active FROM bizneset WHERE id=$1', [req.biznesId]);
+    const kaSnippetAktiv = !!(b.rows[0] && b.rows[0].snippet_active);
+    if (!kaSnippetAktiv) {
+      return res.json({ ok: true, kombinim: false, arsyeja: 'snippet' });
+    }
+    kombinimi.rikombinoBiznesin(req.biznesId).catch(() => {});
+    res.json({ ok: true, kombinim: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- RUAJ PROMOVIMIN (teksti qe do shfaqet ne snippet) ---
+app.post('/api/promovimi', iLoguar, async (req, res) => {
+  const teksti = (req.body.teksti || '').trim();
+  if (!teksti) return res.status(400).json({ error: 'Shkruaj tekstin e promovimit.' });
+  try {
+    // per tani: nje promovim aktiv per biznes
+    await pool.query('DELETE FROM promovimet WHERE biznes_id=$1', [req.biznesId]);
+    await pool.query(
+      'INSERT INTO promovimet (biznes_id, teksti, aktiv) VALUES ($1,$2,true)',
+      [req.biznesId, teksti]
+    );
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- NGARKO SKEDAR (imazh/video/zip) te R2 dhe ruaj si reklame ---
+app.post('/api/ngarko', iLoguar, upload.single('file'), async (req, res) => {
+  const creativeId = (req.body.creative_id || '').trim();
+  let url;
+  if (req.file) {
+    // Rruga normale: file i ngarkuar direkt
+    if (!s3) return res.status(500).json({ error: "Ruajtja (R2) s'është konfiguruar te serveri." });
+    const ext = (req.file.originalname.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const key = 'ads/' + req.biznesId + '_' + Date.now() + '.' + ext;
+    try {
+      await s3.send(new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET,
+        Key: key,
+        Body: req.file.buffer,
+        ContentType: req.file.mimetype
+      }));
+      const base = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '');
+      url = base + '/' + key;
+    } catch (e) { return res.status(500).json({ error: e.message }); }
+  } else if (creativeId) {
+    // Rruga "From my Creatives": perdor URL-ne EKZISTUESE, pa ngarkim te ri —
+    // asetii tashme ekziston ne R2 qe kur u gjenerua nga AI/u ngarkua fillimisht.
+    try {
+      const kr = await pool.query(
+        `SELECT output_url FROM kreativitetet WHERE id=$1 AND biznes_id=$2 AND status='gati'`,
+        [creativeId, req.biznesId]);
+      if (!kr.rows.length || !kr.rows[0].output_url) return res.status(400).json({ error: 'Creative not found.' });
+      url = kr.rows[0].output_url;
+    } catch (e) { return res.status(500).json({ error: e.message }); }
+  } else {
+    return res.status(400).json({ error: "S'ka skedar." });
   }
-  Object.assign(alerteGjendja, gjendje);
-  return gjendje;
+  try {
+    const titulli = (req.body.titulli || '').trim() || null;
+    let link = (req.body.link || '').trim();
+    if (!link) return res.status(400).json({ error: 'Fut linkun e destinacionit.' });
+    if (!/^https?:\/\//i.test(link)) link = 'https://' + link;
+    let logjika = 'ankand';
+    try { const b = await pool.query('SELECT logjika_shperndarjes FROM bizneset WHERE id=$1', [req.biznesId]); logjika = (b.rows[0] && b.rows[0].logjika_shperndarjes) || 'ankand'; } catch (e) {}
+    if (['ankand','barazi'].includes(req.body.logjika_shperndarjes)) logjika = req.body.logjika_shperndarjes;
+    await pool.query(
+      'INSERT INTO promovimet (biznes_id, titulli, imazh_url, link, aktiv, logjika_shperndarjes) VALUES ($1,$2,$3,$4,true,$5)',
+      [req.biznesId, titulli, url, link, logjika]);
+    res.json({ ok: true, url });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- NGARKO LOGON E BIZNESIT ---
+app.post('/api/ngarko-logo', iLoguar, upload.single('file'), async (req, res) => {
+  if (!s3) return res.status(500).json({ error: "Ruajtja (R2) s'është konfiguruar te serveri." });
+  if (!req.file) return res.status(400).json({ error: "S'ka skedar." });
+  const ext = (req.file.originalname.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const key = 'logos/' + req.biznesId + '_' + Date.now() + '.' + ext;
+  try {
+    await s3.send(new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET, Key: key,
+      Body: req.file.buffer, ContentType: req.file.mimetype
+    }));
+    const base = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '');
+    const url = base + '/' + key;
+    await pool.query('UPDATE bizneset SET logo_url=$2 WHERE id=$1', [req.biznesId, url]);
+    res.json({ ok: true, url });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- LISTA E REKLAMAVE TE BIZNESIT (Creatives) ---
+app.get('/api/reklamat', iLoguar, async (req, res) => {
+  try {
+    const logjikaFiltri = ['ankand','barazi'].includes(req.query.logjika) ? req.query.logjika : null;
+    const params = logjikaFiltri ? [req.biznesId, logjikaFiltri] : [req.biznesId];
+    const filtriSql = logjikaFiltri ? ' AND COALESCE(logjika_shperndarjes,\'ankand\')=$2' : '';
+    const r = await pool.query(
+      'SELECT id, titulli, teksti, imazh_url, video_url, html5_url, link, pauzuar, logjika_shperndarjes, created_at FROM promovimet WHERE biznes_id=$1 AND aktiv=true' + filtriSql + ' ORDER BY id DESC',
+      params);
+    const idet = r.rows.map(x => x.id);
+    const m = await pikeReklamaModul.statPerReklama(pool, idet);
+    const rows = r.rows.map(x => {
+      const st = m[x.id] || {};
+      const shikime = st.shikime || 0;
+      const nePergatitje = shikime < pikeReklamaModul.SHIKIME_FAZA;
+      const pike = Math.round(Math.max(0, pikeReklamaModul.pikeReklame(st)));
+      return {
+        id: x.id,
+        emri: x.titulli || (x.teksti ? x.teksti.slice(0, 40) : 'Ad'),
+        imazh_url: x.imazh_url || null,
+        video_url: x.video_url || null,
+        html5_url: x.html5_url || null,
+        link: x.link || null,
+        teksti: x.teksti || null,
+        pauzuar: x.pauzuar,
+        logjika_shperndarjes: x.logjika_shperndarjes || 'ankand',
+        shikime: shikime,
+        klikime: st.klikime || 0,
+        konvertime: st.konvertime || 0,
+        pike: pike,
+        ne_pergatitje: nePergatitje,        // ne fazen "mbledh 5 shikimet"
+        deshtuar: !nePergatitje && pike <= 0 // pikët arritën 0 (kurre negative)
+      };
+    });
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- PERDITESO EMRIN + URL-NE E DESTINACIONIT PER NJE REKLAME ---
+app.patch('/api/reklamat/:id', iLoguar, async (req, res) => {
+  const b = req.body || {};
+  const titulli = (b.emri || b.titulli || '').trim();
+  let link = (b.link || '').trim();
+  if (!titulli) return res.status(400).json({ error: 'Name is required.' });
+  if (!link) return res.status(400).json({ error: 'Destination URL is required.' });
+  if (!/^https?:\/\//i.test(link)) link = 'https://' + link;
+  try {
+    const r = await pool.query(
+      'UPDATE promovimet SET titulli=$1, link=$2 WHERE id=$3 AND biznes_id=$4 RETURNING id',
+      [titulli, link, req.params.id, req.biznesId]);
+    if (!r.rows.length) return res.status(404).json({ error: 'Ad not found.' });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- ECURIA DITORE E NJE REKLAME SPECIFIKE (per grafikun te faqja e detajeve) ---
+app.get('/api/reklamat/:id/ecuria', iLoguar, async (req, res) => {
+  try {
+    const nga = req.query.nga ? new Date(req.query.nga) : null;
+    const deri = req.query.deri ? new Date(req.query.deri) : null;
+    const dite = parseInt(req.query.dite, 10) || 30;
+    const ngaFinal = nga || new Date(Date.now() - dite*86400000);
+    const deriFinal = deri || new Date();
+    const r = await pool.query(`
+      SELECT gs::date AS dita,
+        COALESCE(v.n,0)::int  AS shfaqje,
+        COALESCE(sh.n,0)::int AS shikime,
+        COALESCE(k.n,0)::int  AS klikime,
+        COALESCE(kv.n,0)::int AS konvertime
+      FROM generate_series($3::date, $4::date, '1 day') AS gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND reklama_id=$2 AND lloji='view' GROUP BY d) v ON v.d=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND reklama_id=$2 AND lloji='shikim' GROUP BY d) sh ON sh.d=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND reklama_id=$2 AND lloji='click' GROUP BY d) k ON k.d=gs
+      LEFT JOIN (SELECT date_trunc('day',created_at)::date d, COUNT(*) n FROM ngjarjet WHERE reklamues_id=$1 AND reklama_id=$2 AND lloji='konvertim' GROUP BY d) kv ON kv.d=gs
+      ORDER BY gs`,
+      [req.biznesId, req.params.id, ngaFinal, deriFinal]);
+    res.json(r.rows.map(x => ({
+      dita: x.dita.toISOString().slice(0,10),
+      shfaqje: x.shfaqje, shikime: x.shikime, klikime: x.klikime, konvertime: x.konvertime
+    })));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- TARGETIMI (shtet + pajisje) PER NJE REKLAME SPECIFIKE — GDPR-miqesor, momentar, jo i ruajtur per vizitor ---
+app.get('/api/reklamat/:id/audienca', iLoguar, async (req, res) => {
+  try {
+    await pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS target_vendet TEXT[]`);
+    await pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS target_pajisje TEXT[]`);
+    const r = await pool.query(
+      'SELECT target_vendet, target_pajisje FROM promovimet WHERE id=$1 AND biznes_id=$2',
+      [req.params.id, req.biznesId]);
+    if (!r.rows.length) return res.status(404).json({ error: 'Reklama s\'u gjet.' });
+    res.json({ vendet: r.rows[0].target_vendet || [], pajisjet: r.rows[0].target_pajisje || [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.post('/api/reklamat/:id/audienca', iLoguar, async (req, res) => {
+  const vendet = Array.isArray(req.body.vendet) ? req.body.vendet : [];
+  const pajisjet = Array.isArray(req.body.pajisjet) ? req.body.pajisjet : [];
+  try {
+    await pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS target_vendet TEXT[]`);
+    await pool.query(`ALTER TABLE promovimet ADD COLUMN IF NOT EXISTS target_pajisje TEXT[]`);
+    await pool.query(
+      'UPDATE promovimet SET target_vendet=$1, target_pajisje=$2 WHERE id=$3 AND biznes_id=$4',
+      [vendet.length ? vendet : null, pajisjet.length ? pajisjet : null, req.params.id, req.biznesId]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- STATUSI (a u lidh snippet-i te dyqani) ---
+// Dritarja e "gjalle": nese e kemi pare snippet-in brenda kesaj kohe, quhet aktiv tani.
+const DRITARJA_LIVE_MS = 10 * 60 * 1000; // 10 minuta
+app.get('/api/status', iLoguar, async (req, res) => {
+  try {
+    const b = await pool.query(
+      'SELECT snippet_active, origjina, last_seen_at FROM bizneset WHERE id=$1', [req.biznesId]);
+    const p = await pool.query('SELECT teksti FROM promovimet WHERE biznes_id=$1 ORDER BY id DESC LIMIT 1', [req.biznesId]);
+    const row = b.rows[0] || {};
+    const lastSeen = row.last_seen_at ? new Date(row.last_seen_at).getTime() : 0;
+    const live = lastSeen > 0 && (Date.now() - lastSeen) < DRITARJA_LIVE_MS;
+    res.json({
+      active: !!row.snippet_active,             // a u lidh ndonjehere (kerkese reale, jo preview)
+      live: live,                               // a po e shohim tani (i fresket)
+      origjina: row.origjina || null,
+      last_seen_at: row.last_seen_at || null,
+      teksti: p.rows.length ? p.rows[0].teksti : null
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- Ndihmes: merr HTML-in e nje faqeje (server-ane, pa varesi shtese) ---
+function merrFaqen(url, thellesia = 0) {
+  return new Promise((resolve, reject) => {
+    if (thellesia > 4) return reject(new Error('shume ridrejtime'));
+    const lib = url.startsWith('https') ? https : http;
+    const opts = { headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml'
+    } };
+    const kerkesa = lib.get(url, opts, resp => {
+      if ([301,302,303,307,308].includes(resp.statusCode) && resp.headers.location) {
+        resp.resume();
+        return resolve(merrFaqen(new URL(resp.headers.location, url).toString(), thellesia + 1));
+      }
+      const status = resp.statusCode;
+      let data = '';
+      resp.on('data', c => { data += c; if (data.length > 2000000) resp.destroy(); });
+      resp.on('end', () => resolve({ status, body: data }));
+    });
+    kerkesa.on('error', reject);
+    kerkesa.setTimeout(8000, () => kerkesa.destroy(new Error('koha skadoi')));
+  });
 }
 
-// Leximi automatik: 30 sekonda pas nisjes, pastaj cdo ALERTS_POLL_MINUTES minuta (paracaktim 60, minimum 5).
-function nisAlertePoll() {
-  if (!alerteFeedet().length) return;
-  const minuta = Math.max(5, parseInt(process.env.ALERTS_POLL_MINUTES, 10) || 60);
-  const ekzekuto = async () => {
-    if (alertePoll) return;
-    alertePoll = true;
-    try { await lexoFeedetAlerte(); }
-    catch (e) { console.error('alerte:', String(e.message).replace(/https?:\/\/\S+/g, '[adrese]')); }
-    finally { alertePoll = false; }
-  };
-  setTimeout(ekzekuto, 30 * 1000).unref();
-  setInterval(ekzekuto, minuta * 60 * 1000).unref();
-}
+// --- VERIFIKO (server-ane): a eshte kodi i vendosur te faqja? (pa vizitore) ---
+app.post('/api/verifiko', iLoguar, async (req, res) => {
+  try {
+    const biz = await pool.query('SELECT celes, website FROM bizneset WHERE id=$1', [req.biznesId]);
+    if (!biz.rows.length) return res.status(400).json({ error: 'Biznes i panjohur.' });
+    const celes = biz.rows[0].celes;
+    let url = (req.body.url || biz.rows[0].website || '').trim();
+    if (!url) return res.status(400).json({ error: 'Jep URL-ne e faqes ku e vendose kodin.' });
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
 
-app.get('/', (req, res) => {
+    let faqja;
+    try { faqja = await merrFaqen(url); }
+    catch (e) { return res.json({ found: false, error: "S'u arrit faqja: " + e.message, url }); }
+
+    const found = faqja.body.includes(celes); // celes-i shfaqet te data-key i snippet-it
+    if (found) {
+      await pool.query(
+        `UPDATE bizneset SET snippet_active=true,
+           first_seen_at=COALESCE(first_seen_at, now()),
+           last_seen_at=now(), origjina=$2 WHERE id=$1`,
+        [req.biznesId, url]
+      );
+      return res.json({ found: true, url });
+    }
+    // Diagnostike me e qarte kur s'gjendet
+    let error;
+    if (faqja.status >= 400) {
+      error = 'Faqja u përgjigj me status ' + faqja.status + ' — ndoshta është me fjalëkalim ose e paarritshme publikisht.';
+    } else {
+      error = 'Faqja u arrit (status ' + faqja.status + ') por kodi s\'u gjet aty. Ndoshta tema është draft/e papublikuar, ose kodi s\'u ruajt te kjo faqe.';
+    }
+    res.json({ found: false, url, status: faqja.status, error });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- KONTROLLO (auto): kontrollon vete faqen e regjistruar, pa vizitore ---
+const kontrolliFundit = new Map(); // biznes_id -> timestamp (throttle)
+app.get('/api/kontrollo', iLoguar, async (req, res) => {
+  try {
+    const b = await pool.query(
+      'SELECT celes, website, kandidat_url, snippet_active, origjina, last_seen_at FROM bizneset WHERE id=$1', [req.biznesId]);
+    if (!b.rows.length) return res.status(400).json({ error: 'Biznes i panjohur.' });
+    const row = b.rows[0];
+    const lastSeen = row.last_seen_at ? new Date(row.last_seen_at).getTime() : 0;
+    const live = lastSeen > 0 && (Date.now() - lastSeen) < DRITARJA_LIVE_MS;
+
+    // Nese eshte tashme i lidhur, kthe statusin (mos e ngarko faqen kot).
+    if (row.snippet_active) {
+      return res.json({ active: true, live, origjina: row.origjina || null });
+    }
+
+    // URL per kontroll: fillimisht ajo qe u kap vete (kandidat), pastaj website-i i regjistruar.
+    let url = (row.kandidat_url || row.website || '').trim();
+    if (!url) return res.json({ active: false, live: false, siteMissing: true });
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+    // Throttle: nje ngarkim faqeje cdo 5s per biznes (edhe nese frontend-i pyet me shpesh).
+    const tani = Date.now();
+    if (tani - (kontrolliFundit.get(req.biznesId) || 0) >= 5000) {
+      kontrolliFundit.set(req.biznesId, tani);
+      try {
+        const faqja = await merrFaqen(url);
+        if (faqja.body.includes(row.celes)) {
+          await pool.query(
+            `UPDATE bizneset SET snippet_active=true,
+               first_seen_at=COALESCE(first_seen_at, now()),
+               last_seen_at=now(), origjina=$2 WHERE id=$1`,
+            [req.biznesId, url]);
+          // Pika e 3-te u plotesua → nis studimin/kombinimin me AI ne sfond
+          kombinimi.kombinoBiznesin(req.biznesId).catch(()=>{});
+          return res.json({ active: true, live: true, origjina: url });
+        }
+      } catch (e) { /* faqja s'u arrit — ende pa lidhur */ }
+    }
+    res.json({ active: false, live: false, url });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- TAG.JS (tag i vogel vetem per LIDHJE — firon nga cdo faqe, s'ka nevoje per slot) ---
+app.get('/tag.js', (req, res) => {
+  res.type('application/javascript');
+  res.send(`(function(){
+  var s = document.currentScript;
+  var key = s ? s.getAttribute('data-key') : null;
+  var base = s ? new URL(s.src).origin : '';
+  if(!key) return;
+  if(window.Shopify && window.Shopify.designMode) return; // mos numero preview-in e Shopify
+  function njofto(){
+    try {
+      var u = base + '/lidh?key=' + encodeURIComponent(key);
+      navigator.sendBeacon ? navigator.sendBeacon(u) : fetch(u, {mode:'no-cors'});
+    } catch(e){}
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', njofto);
+  else njofto();
+})();`);
+});
+
+// --- LIDH (sinjali i tag-ut: shenon lidhjen + URL-en, pa lidhje me slot-in) ---
+app.all('/lidh', async (req, res) => {
+  cors(res);
+  const key = req.query.key;
+  if (!key) return res.status(204).end();
+  try {
+    const snL = await snippetet.ngaCelesi(pool, key);
+    if (snL) {
+      const bizId = snL.biznes_id;
+      const faqja = req.headers.referer || req.headers.origin || null;
+      // Sheno active-n te snippet-i specifik
+      if (snL.snippet_id) {
+        await pool.query(
+          `UPDATE snippetet SET snippet_active=true,
+                  first_seen_at=COALESCE(first_seen_at, now()), last_seen_at=now()
+           WHERE id=$1`, [snL.snippet_id]);
+      }
+      if (!snL.snippet_active) {
+        await pool.query(
+          `UPDATE bizneset SET snippet_active=true, first_seen_at=now(), last_seen_at=now(),
+             origjina=$2, kandidat_url=COALESCE(kandidat_url,$2) WHERE id=$1`,
+          [bizId, faqja]);
+      } else {
+        await pool.query('UPDATE bizneset SET last_seen_at=now() WHERE id=$1', [bizId]);
+      }
+    }
+  } catch (e) {}
+  res.status(204).end();
+});
+
+// --- IMYR.JS (gjithcka ne nje rresht: lidhje + hapesire + reklame + gjurmim) ---
+// E emruar si funksion i vecante qe te sherbehet nga 2 rruge: /imyr.js (e vjeter, per
+// instalimet EKZISTUESE qe e kane tashme kete kod te ngjitur — s'duhet te thyhet KURRE)
+// dhe /phronexusai.js (emri i ri, per klientet e RINJ qe kopjojne kodin qe sot e tutje).
+function imyrJsHandler(req, res) {
+  res.type('application/javascript');
+  res.set('Cache-Control', 'no-cache, must-revalidate');
+  res.send(`(function(){
+  var s = document.currentScript;
+  var key = s ? s.getAttribute('data-key') : null;
+  var base = s ? new URL(s.src).origin : '';
+  if(!key) return;
+  var preview = !!(window.Shopify && window.Shopify.designMode);
+  function esc(t){ var d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+
+  // ---------- KODI I KLIKIMIT ----------
+  function ruajKod(kod){
+    try { localStorage.setItem('imyr_klik', kod); } catch(e){}
+    try {
+      var pjeset = location.hostname.split('.');
+      var rrenja = pjeset.length > 1 ? '.' + pjeset.slice(-2).join('.') : location.hostname;
+      document.cookie = 'imyr_klik=' + kod + ';path=/;max-age=2592000;SameSite=Lax';
+      document.cookie = 'imyr_klik=' + kod + ';path=/;max-age=2592000;domain=' + rrenja + ';SameSite=Lax';
+    } catch(e){}
+  }
+  function lexoKod(){
+    try { var v = localStorage.getItem('imyr_klik'); if(v) return v; } catch(e){}
+    var m = document.cookie.match(/(?:^|;\\s*)imyr_klik=([^;]+)/);
+    return m ? m[1] : null;
+  }
+  try { var qp = new URLSearchParams(location.search).get('imyr'); if(qp) ruajKod(qp); } catch(e){}
+
+  // Konvertimi menaxhohet nga snippet-i i gjurmimit (imyr-track.js), jo nga ky i reklamave.
+
+  // ---------- NJOFTO LIDHJEN E REKLAMES ----------
+  if(!preview){
+    try {
+      var pu = base + '/lidh?key=' + encodeURIComponent(key);
+      navigator.sendBeacon ? navigator.sendBeacon(pu) : fetch(pu, {mode:'no-cors'});
+    } catch(e){}
+  }
+
+  // ---------- HAPESIRA E REKLAMES ----------
+  // 1) Nese ekziston <div id="imyr-slot"> => reklama shfaqet aty (i pari qe s'eshte zene).
+  // 2) Perndryshe krijohet menjehere pas skriptit — cdo snippet ka slot-in e vet unik,
+  //    keshtu disa snippet-e ne te njejten faqe shfaqin secili reklamen e vet.
+  var _slotImyr = null;
+  function gjejSlot(){
+    if(_slotImyr) return _slotImyr;
+    // slot i vendosur nga klienti qe s'eshte zene ende nga nje snippet tjeter
+    var lista = document.querySelectorAll('#imyr-slot, .imyr-slot');
+    for(var i=0;i<lista.length;i++){ if(!lista[i].getAttribute('data-imyr-zene')){ lista[i].setAttribute('data-imyr-zene','1'); _slotImyr=lista[i]; return _slotImyr; } }
+    if(!s || !s.parentNode) return null;
+    // Reklama del pikerisht aty ku ndodhet ky rresht — slot i vetin, pa ID fikse.
+    var el = document.createElement('div'); el.className = 'imyr-slot'; el.setAttribute('data-imyr-zene','1');
+    s.parentNode.insertBefore(el, s.nextSibling);
+    _slotImyr = el;
+    return el;
+  }
+
+  function run(){
+    var slot = gjejSlot();
+    if(!slot){
+      // Vetem gjurmim shfaqjeje (skripti eshte te layout-i, pa hapesire reklame ketu).
+      // Konvertimin e menaxhon snippet-i i gjurmimit (imyr-track.js), jo ky.
+      return;
+    }
+    // Frequency capping per session — NJE cikel i vetem i perbashket per te gjithe
+    // snippet-et e kesaj faqeje (i njejti host). Kur nje reklame shfaqet nga cilido
+    // snippet, hiqet nga cikli; kur te gjitha jane shfaqur, cikli rifillon per te gjithe.
+    var _parKey = 'imyr_pare';
+    function lexoPare(){
+      try { var v = sessionStorage.getItem(_parKey); var a = v ? JSON.parse(v) : []; return Array.isArray(a) ? a.map(String) : []; } catch(e){ return []; }
+    }
+    function shtoPare(id){
+      try {
+        id = String(id);
+        var l = lexoPare(); if(l.indexOf(id) === -1){ l.push(id); sessionStorage.setItem(_parKey, JSON.stringify(l)); }
+      } catch(e){}
+    }
+    function rifilloCikel(id){
+      // I pa te gjitha → fillo listen nga e para, vetem me kete te re
+      try { sessionStorage.setItem(_parKey, JSON.stringify([String(id)])); } catch(e){}
+    }
+
+    function trajtoReklame(d){
+      if(!d) return;
+      if(d.imazh_url || d.teksti || d.video_url || d.html5_url){
+        var rid = d.id ? ('&rid=' + encodeURIComponent(d.id)) : '';
+        var mw = 210, mh = 261;
+        var eshteMobile = (window.innerWidth || document.documentElement.clientWidth || 9999) <= 600;
+        var madhStr = eshteMobile ? (d.madhesia_mobile || '290x260') : (d.madhesia || '210x261');
+        if(eshteMobile){ mw = 290; mh = 260; }
+        var pp = String(madhStr).split('x'); var a1=parseInt(pp[0],10), a2=parseInt(pp[1],10); if(a1>0 && a2>0){ mw=a1; mh=a2; }
+        var inner, sVideoHtml = false;
+        if(d.video_url){
+          sVideoHtml = true;
+          var ytId = d.video_url;
+          var src = 'https://www.youtube.com/embed/' + ytId
+            + '?autoplay=1&mute=1&controls=1&loop=1&playlist=' + ytId
+            + '&modestbranding=1&rel=0&fs=0&end=30&playsinline=1';
+          inner = '<iframe src="' + src + '" frameborder="0" allow="autoplay; encrypted-media" '
+            + 'style="display:block;width:100%;height:100%;border:0;border-radius:10px;"></iframe>';
+        } else if(d.html5_url){
+          sVideoHtml = true;
+          inner = '<iframe src="' + d.html5_url + '" frameborder="0" '
+            + 'style="display:block;width:100%;height:100%;border:0;border-radius:10px;"></iframe>';
+        } else if(d.imazh_url){
+          inner = '<img src="' + d.imazh_url + '" style="display:block;width:100%;height:100%;object-fit:contain;border-radius:10px;">';
+        } else {
+          inner = '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;box-sizing:border-box;'
+            + 'border:1px solid #e2c68a;background:#fbf6ea;color:#5a4a24;padding:12px 14px;border-radius:10px;'
+            + 'font:14px/1.5 system-ui,sans-serif;text-align:center;">' + esc(d.teksti) + '</div>';
+        }
+        if(!preview && !sVideoHtml){
+          var href = base + '/klik?key=' + encodeURIComponent(key) + rid;
+          inner = '<a href="' + href + '" target="_blank" rel="noopener"'
+            + ' style="text-decoration:none;display:block;width:100%;height:100%;cursor:pointer;">' + inner + '</a>';
+        }
+        var poz = d.pozicioni || 'qender';
+        var align = poz==='majtas' ? 'flex-start' : (poz==='djathtas' ? 'flex-end' : 'center');
+        var badge = (d.plani_host !== 'premium')
+          ? '<a href="' + base + '" target="_blank" rel="noopener" style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font:9px/1 system-ui,sans-serif;color:rgba(0,0,0,.45);text-decoration:none;background:rgba(255,255,255,.75);padding:2px 6px;border-radius:4px;white-space:nowrap;">Powered by PhronexusAI</a>'
+          : '';
+        var kutia = '<div style="width:' + mw + 'px;height:' + mh + 'px;max-width:100%;position:sticky;top:10px;overflow:hidden;">'
+          + '<div style="position:relative;width:100%;height:100%;">' + inner + badge + '</div></div>';
+        slot.innerHTML = '<div style="display:flex;justify-content:' + align + ';width:100%;">' + kutia + '</div>';
+        if(d.id){ if(d.cikel_ri){ rifilloCikel(d.id); } else { shtoPare(d.id); } }
+        if(!preview){
+          // Ngarkim (view): reklama u vendos ne faqe
+          try { var v = base + '/track?key=' + encodeURIComponent(key) + '&event=view' + rid;
+            navigator.sendBeacon ? navigator.sendBeacon(v) : fetch(v); } catch(e){}
+          // Shikim real: 50% e reklames ne ekran per >=1 sekonde (Intersection Observer)
+          try {
+            var elKutia = slot.querySelector('div'); // kutia e reklames
+            if (elKutia && 'IntersectionObserver' in window) {
+              var pare = false, timer = null;
+              var obs = new IntersectionObserver(function(entries){
+                entries.forEach(function(en){
+                  if (!pare && en.isIntersecting && en.intersectionRatio >= 0.5) {
+                    if (!timer) timer = setTimeout(function(){
+                      if (pare) return; pare = true;
+                      try { var s = base + '/track?key=' + encodeURIComponent(key) + '&event=shikim' + rid;
+                        navigator.sendBeacon ? navigator.sendBeacon(s) : fetch(s); } catch(e){}
+                      obs.disconnect();
+                    }, 1000); // 1 sekonde
+                  } else {
+                    if (timer) { clearTimeout(timer); timer = null; } // doli para 1 sek → rifillo
+                  }
+                });
+              }, { threshold: [0, 0.5, 1] });
+              obs.observe(elKutia);
+            }
+          } catch(e){}
+        }
+      }
+    }
+
+    // Koordinim ndër-snippet: reklamat e shfaqura nga snippet-et e tjera NE KETE NGARKIM
+    // perjashtohen vetem per kete shfaqje (jo per ciklin/capping-un), qe dy snippet-e
+    // te mos nxjerrin te njejten. Radhe sekuenciale me nje zinxhir global;
+    // vonesat prej milisekondash jane te padukshme per vizitorin.
+    window.__imyrTani = window.__imyrTani || [];
+    window.__imyrZinxhir = window.__imyrZinxhir || Promise.resolve();
+    window.__imyrZinxhir = window.__imyrZinxhir.then(function(){
+      // Lexo ciklin e perbashket TANI (pasi snippet-et e meparshme kane shkruar),
+      // qe cikli i vetem te respektohet nga te gjithe snippet-et.
+      var pare = lexoPare();
+      var perjashto = pare.concat(window.__imyrTani);
+      var qp = perjashto.length ? ('&pare=' + encodeURIComponent(perjashto.join(','))) : '';
+      return fetch(base + '/ad?key=' + encodeURIComponent(key) + qp + (preview?'&preview=1':''))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if(d && d.id){ window.__imyrTani.push(String(d.id)); }
+          trajtoReklame(d);
+        })
+        .catch(function(){});
+    });
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+  else run();
+})();`);
+}
+app.get('/sitemap.xml', (req, res) => {
+  res.type('application/xml');
+  const faqet = ['/', '/si-funksionon', '/about', '/ai-matching', '/formate-ai', '/gjurmimi-analitika', '/ekipet-rolet', '/blog', '/contact', '/terms', '/privacy', '/refund'];
+  const sot = new Date().toISOString().slice(0, 10);
+  // Artikujt e blogut (vetem ata te publikuar); nese blog.js mungon, sitemap-i mbetet si me pare.
+  let blogRreshta = [];
+  try { blogRreshta = require('./blog').sitemapRreshta(); } catch (e) { blogRreshta = []; }
+  res.send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${faqet.map(f => `  <url><loc>https://phronexusai.com${f}</loc><lastmod>${sot}</lastmod></url>`).join('\n')}${blogRreshta.length ? '\n' + blogRreshta.join('\n') : ''}
+</urlset>`);
+});
+
+// --- APPSUMO: seed i kodeve (thirret 1 here, manualisht, nga admini, pas deploy-it) ---
+app.post('/api/admin/appsumo-seed', iAdmin, async (req, res) => {
+  const kodet = Array.isArray(req.body.kodet) ? req.body.kodet : [];
+  if (!kodet.length) return res.status(400).json({ error: 'Duhet nje array "kodet".' });
+  try {
+    let futur = 0;
+    for (const k of kodet) {
+      const r = await pool.query('INSERT INTO appsumo_kodet (kodi) VALUES ($1) ON CONFLICT (kodi) DO NOTHING', [String(k).trim()]);
+      if (r.rowCount) futur++;
+    }
+    res.json({ ok: true, futur, gjithsej: kodet.length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- APPSUMO: rimbursimi/aktivizimi i kodit — publik, pa login (blerësi mund te mos kete llogari ende) ---
+app.post('/api/appsumo-redeem', async (req, res) => {
+  const email = (req.body.email || '').toLowerCase().trim();
+  const kodi = (req.body.kodi || '').trim();
+  if (!email || !kodi) return res.status(400).json({ error: 'Email dhe kodi jane te detyrueshem.' });
+  try {
+    const k = await pool.query('SELECT id, perdorur FROM appsumo_kodet WHERE kodi=$1', [kodi]);
+    if (!k.rows.length) return res.status(400).json({ error: 'Kodi i pavlefshem.' });
+    if (k.rows[0].perdorur) return res.status(400).json({ error: 'Ky kod eshte perdorur tashme.' });
+
+    await pool.query('UPDATE appsumo_kodet SET perdorur=true, email=$1, perdorur_at=now() WHERE id=$2', [email, k.rows[0].id]);
+
+    // Nese llogaria EKZISTON tashme (u regjistrua PARA se te blinte), aktivizo menjehere.
+    const b = await pool.query('SELECT id FROM bizneset WHERE email=$1', [email]);
+    if (b.rows.length) {
+      await pool.query('UPDATE bizneset SET appsumo_lifetime=true WHERE id=$1', [b.rows[0].id]);
+      return res.json({ ok: true, ekzistonte: true });
+    }
+    // Perndryshe, kodi mbetet i lidhur me email-in — aktivizohet automatikisht kur te regjistrohet (poshte).
+    res.json({ ok: true, ekzistonte: false });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/affiliate-terms', (req, res) => {
   res.type('html').send(`<!DOCTYPE html>
-<html lang="sq"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Zbulim Bizneseh</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PhronexusAI — Affiliate Partner Terms</title>
 <style>
-  body{ margin:0; font:15px/1.6 system-ui,sans-serif; background:#0b0f17; color:#e6edf3; }
-  .wrap{ max-width:1000px; margin:0 auto; padding:24px 20px; }
-  h1{ font-size:20px; margin:0 0 16px; }
-  .tabs{ display:flex; gap:4px; margin-bottom:20px; border-bottom:1px solid #2a313c; }
-  .tab{ padding:10px 18px; cursor:pointer; color:#8b949e; font-size:14px; font-weight:600; border-bottom:2px solid transparent; }
-  .tab.aktiv{ color:#e6edf3; border-bottom:2px solid #3b6ef0; }
-  .sec-panel{ display:none; }
-  .sec-panel.aktiv{ display:block; }
-  p.mut{ color:#8b949e; font-size:13px; margin:0 0 20px; }
-  .row{ display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
-  input, select{ padding:10px 12px; border:1px solid #2a313c; border-radius:8px; background:#141b26; color:#e6edf3; font-size:14px; }
-  input[type=text]{ flex:1; min-width:240px; }
-  textarea{ width:100%; box-sizing:border-box; padding:10px 12px; border:1px solid #2a313c; border-radius:8px; background:#141b26; color:#e6edf3; font:14px/1.5 system-ui,sans-serif; resize:vertical; }
-  .bisChk{ display:inline-flex; align-items:center; gap:6px; margin:0 16px 8px 0; font-size:13px; color:#c9d1d9; cursor:pointer; }
-  .bisChk input{ width:16px; height:16px; padding:0; margin:0; accent-color:#3b6ef0; }
-  .fusha{ display:flex; flex-direction:column; gap:4px; font-size:12px; color:#8b949e; }
-  .kompChip{ padding:4px 10px; font-size:12px; font-weight:400; background:#1c2230; border:1px solid #2a313c; border-radius:14px; color:#c9d1d9; cursor:pointer; margin:0 4px 6px 0; }
-  button{ padding:10px 20px; border-radius:8px; border:none; background:#3b6ef0; color:#fff; font-weight:600; cursor:pointer; font-size:14px; }
-  button:disabled{ opacity:.5; cursor:default; }
-  table{ width:100%; border-collapse:collapse; margin-top:16px; }
-  th, td{ text-align:left; padding:8px 10px; border-bottom:1px solid #2a313c; font-size:13px; vertical-align:top; }
-  th{ color:#8b949e; font-weight:600; }
-  a{ color:#4a9eff; }
-  #status{ font-size:13px; color:#8b949e; margin-top:10px; }
-  #count{ font-size:13px; color:#3fb950; margin-top:6px; font-weight:600; }
-  #status2{ font-size:13px; color:#8b949e; margin-top:10px; }
-  #count2{ font-size:13px; color:#3fb950; margin-top:6px; font-weight:600; }
-  .badge{ font-size:11px; background:#2a313c; padding:2px 8px; border-radius:10px; color:#8b949e; }
+  body{ margin:0; font:16px/1.7 system-ui,sans-serif; background:#0b0f17; color:#e6edf3; }
+  .wrap{ max-width:720px; margin:0 auto; padding:48px 24px; }
+  h1{ font-size:26px; margin:0 0 6px; }
+  p.updated{ color:#8b949e; font-size:14px; margin:0 0 32px; }
+  h2{ font-size:18px; margin:32px 0 10px; color:#e6edf3; }
+  p, li{ color:#c9d1d9; }
+  ul{ padding-left:22px; }
 </style></head>
 <body><div class="wrap">
-  <h1>Zbulim Bizneseh</h1>
-  <div class="tabs">
-    <div class="tab aktiv" id="tabGjenerim" onclick="ndryshoTab('gjenerim')">Gjenerim</div>
-    <div class="tab" id="tabRuajtura" onclick="ndryshoTab('ruajtura')">Bizneset e ruajtura</div>
-    <div class="tab" id="tabShkarko" onclick="ndryshoTab('shkarko')">Shkarko</div>
-    <div class="tab" id="tabBisedat" onclick="ndryshoTab('bisedat')">Bisedat</div>
-    <div class="tab" id="tabKompani" onclick="ndryshoTab('kompani')">Kompani te reja</div>
-    <div class="tab" id="tabAlerte" onclick="ndryshoTab('alerte')">Alerte</div>
-  </div>
+<h1>PhronexusAI Affiliate Partner Terms</h1>
+<p class="updated">Last updated: September 2026</p>
 
-  <div class="sec-panel aktiv" id="panelGjenerim">
-    <p class="mut">Shkruaj kategorine dhe kliko Kerko. Kerkimi punon ne sfond dhe tregon progresin; rezultatet shfaqen kur perfundon (mund te marre 5-15 minuta). Nese e mbyll faqen, kerkimi vazhdon dhe e sheh rezultatin kur e hap sersish.</p>
-    <div class="row">
-      <input type="text" id="query" placeholder='p.sh. Recruiting and ATS software companies' />
-      <input type="text" id="kategoria" placeholder="Etikete kategorie (p.sh. recruiting-ats)" style="max-width:220px;" />
-      <input type="number" id="qeVitiEkziston" placeholder="Qe nga viti (p.sh. 2018)" style="max-width:170px;" min="2000" max="2026" />
-      <button id="btn" onclick="kerko()">Kerko (te reja)</button>
-    </div>
-    <div id="status"></div>
-    <div id="count"></div>
-    <table id="rez" style="display:none;">
-      <thead><tr><th>#</th><th>Emri</th><th>Domain</th><th>Pershkrim</th><th>Kategori</th><th>Status</th><th>Email</th></tr></thead>
-      <tbody id="rezBody"></tbody>
-    </table>
-  </div>
+<p>These are the terms and conditions applicable to affiliate partner agreements concluded through the Reditus partner management platform for PhronexusAI ("PhronexusAI", "we", "us"). By joining our affiliate program, you ("Partner", "you") agree to these terms.</p>
 
-  <div class="sec-panel" id="panelRuajtura">
-    <p class="mut">Vetem bizneset e pranuara (te reja), sipas kategorise se zgjedhur me poshte.</p>
-    <div class="row" style="border:1px solid #2a313c; border-radius:8px; padding:10px; margin-bottom:16px;">
-      <input type="text" id="manEmail" placeholder="Email (p.sh. test1@gmail.com)" style="max-width:220px;" />
-      <input type="text" id="manEmri" placeholder="Emer (opsionale)" style="max-width:180px;" />
-      <input type="text" id="manKategoria" placeholder="Kategori" value="emailet-e-proves" style="max-width:180px;" />
-      <button onclick="shtoManualisht()">Shto manualisht</button>
-    </div>
-    <div id="statusManual" class="status"></div>
-    <div class="row">
-      <select id="filterKategoria" onchange="shikoTeGjitha()"><option value="">Te gjitha kategorite</option></select>
-    </div>
-    <div id="status2"></div>
-    <div id="count2"></div>
-    <table id="rez2" style="display:none;">
-      <thead><tr><th>Email</th><th>Domain</th><th>Emri</th></tr></thead>
-      <tbody id="rez2Body"></tbody>
-    </table>
-  </div>
+<h2>1. The Program</h2>
+<p>PhronexusAI operates an affiliate program allowing approved partners to earn commission by referring new paying customers to PhronexusAI, a cross-promotion network for B2B SaaS businesses.</p>
 
-  <div class="sec-panel" id="panelShkarko">
-    <p class="mut">Zgjidh kategorine, shkarko nje skedar CSV gati per t'u importuar te Mailmeteor (Contacts &gt; Import contacts &gt; Import a CSV). Perfshihen vetem bizneset qe kane email real.</p>
-    <div class="row">
-      <select id="shkarkoKategoria"><option value="">Te gjitha kategorite</option></select>
-      <button onclick="shkarkoCSV()">Shkarko CSV</button>
-    </div>
-    <div id="statusShkarko"></div>
-  </div>
+<h2>2. Commission</h2>
+<p>Partners earn a commission on the recurring subscription revenue generated by customers they refer, for as long as the referred customer remains a paying subscriber. Exact commission rates and structure are shown in your Reditus partner dashboard and may vary by campaign.</p>
 
-  <div class="sec-panel" id="panelBisedat">
-    <p class="mut">Pershkruaj cfare kerkon: nje propozim, shqetesim ose kerkese per nje sherbim si yti. AI e kthen ne kerkesa Google, ti i shikon ose i ndryshon, dhe pastaj dergohen te Serper. Ketu shfaqet vetem cfare kthen Serper, pa filtrim ende.</p>
-    <p class="mut" style="margin-bottom:6px;">1. Pershkrimi: cfare kerkon</p>
-    <textarea id="bisPer" rows="3" placeholder="p.sh. biznese te vogla qe ankohen se reklamat jane te shtrenjta dhe s'kane klientet, ose pyesin si t'i gjejne perdoruesit e pare"></textarea>
-    <div class="row" style="margin-top:8px;">
-      <button onclick="bisFormulo(this)">Formulo kerkesat me AI</button>
-      <span id="bisFormStat" style="font-size:13px; color:#8b949e; align-self:center;"></span>
-    </div>
-    <p class="mut" style="margin:16px 0 6px;">2. Kerkesat qe dergohen te Serper (nje per rresht, maksimumi 8; mund t'i ndryshosh ose t'i shkruash vete)</p>
-    <textarea id="bisKer" rows="5" placeholder="Nje kerkese per rresht"></textarea>
-    <p class="mut" style="margin:14px 0 6px;">3. Faqet (opsionale): zgjidh ku te kerkohet. Asnje e zgjedhur = gjithe interneti. Maksimumi 6.</p>
-    <div>
-      <label class="bisChk"><input type="checkbox" class="bisFaqe" value="reddit.com"> Reddit</label>
-      <label class="bisChk"><input type="checkbox" class="bisFaqe" value="indiehackers.com"> Indie Hackers</label>
-      <label class="bisChk"><input type="checkbox" class="bisFaqe" value="news.ycombinator.com"> Hacker News</label>
-      <label class="bisChk"><input type="checkbox" class="bisFaqe" value="quora.com"> Quora</label>
-      <label class="bisChk"><input type="checkbox" class="bisFaqe" value="facebook.com"> Facebook</label>
-      <label class="bisChk"><input type="checkbox" class="bisFaqe" value="linkedin.com"> LinkedIn</label>
-    </div>
-    <input type="text" id="bisFaqeTjera" placeholder="Te tjera: domain-e te ndara me presje (p.sh. dev.to, lobste.rs)" style="width:100%; box-sizing:border-box; max-width:100%; margin-bottom:12px;" />
-    <div class="row">
-      <select id="bisKoha">
-        <option value="" selected>Cdo kohe</option>
-        <option value="m">1 muaj</option>
-        <option value="w">1 jave</option>
-        <option value="d">24 oret e fundit</option>
-      </select>
-      <button onclick="bisKerko(this)">Kerko te Serper</button>
-      <span id="bisKerStat" style="font-size:13px; color:#8b949e; align-self:center;"></span>
-    </div>
-    <p class="mut" style="margin-bottom:16px;">Cdo rresht eshte 1 kerkese, rreth 1 kredit Serper (10 rezultate). Ne rezultate shihet kerkesa e sakte qe shkoi te Google.</p>
-    <div id="bisRez"></div>
-  </div>
+<h2>3. Tracking &amp; Attribution</h2>
+<p>Referrals are tracked via a unique affiliate link and a 60-day cookie window. A customer is attributed to you if they sign up within this window of clicking your link, provided no other affiliate's link was clicked more recently.</p>
 
-  <div class="sec-panel" id="panelKompani">
-    <p class="mut">Gjen kompani te themeluara rishtas permes Crustdata dhe i ruan te databaza (emri, faqja, viti, punonjes, shteti, LinkedIn). Sipas dokumentimit, kerkimi kushton 0.03 kredite per rezultat, plus rreth 0.1 per filtrin e industrise dhe 0.2 per filtrin e punonjesve; kostoja e sakte shfaqet pas cdo kerkese. Fusha Fjale kyce kerkon sipas kuptimit (jo vetem sipas etiketes se industrise) dhe, kur eshte e mbushur, i rendit rezultatet sipas perputhjes, jo sipas vitit; filtrat e tjere mbeten kushte te forta. Butoni Gjej email lexon faqen e kompanise (kryesore, kontakt, rreth nesh) dhe merr email-in qe eshte SHKRUAR atje; kur ka disa, AI zgjedh me te mirin. Asnje adrese nuk hamendesohet, dhe kjo nuk shpenzon kredite Crustdata. Te gjitha te ruajturat shfaq edhe ato te gjeneruara me pare.</p>
-    <div class="row">
-      <div class="fusha"><span>Themeluar nga viti (perfshire)</span><input type="number" id="kompViti" value="2025" min="1990" max="2030" style="width:150px;" oninput="kompVleresim()" /></div>
-      <div class="fusha"><span>Industria (opsionale)</span><input type="text" id="kompIndustria" value="Software Development" style="width:230px; flex:none; min-width:0;" oninput="kompVleresim()" /></div>
-      <div class="fusha"><span>Fjale kyce / pershkrim (opsionale)</span><input type="text" id="kompPershkrim" placeholder="p.sh. B2B SaaS per ekipe marketingu" style="width:300px; flex:none; min-width:0;" /></div>
-      <div class="fusha"><span>Emri i kategorise (ruhet me kompanite)</span><input type="text" id="kompKategoria" placeholder="p.sh. payroll-software" maxlength="60" style="width:230px; flex:none; min-width:0;" /></div>
-      <div class="fusha"><span>Shteti (opsionale)</span><input type="text" id="kompShteti" placeholder="p.sh. USA" style="width:120px; flex:none; min-width:0;" /></div>
-      <div class="fusha"><span>Maks. punonjes (opsionale)</span><input type="number" id="kompMaks" placeholder="p.sh. 50" min="1" style="width:150px;" oninput="kompVleresim()" /></div>
-      <div class="fusha"><span>Sa rezultate</span><select id="kompLimit" onchange="kompVleresim()"><option value="5">5</option><option value="10" selected>10</option><option value="20">20</option><option value="50">50</option></select></div>
-    </div>
-    <div class="row">
-      <button onclick="kompKerko(this)">Kerko te Crustdata</button>
-      <button onclick="kompSugjerime(this)" style="background:#2a313c;">Sugjerime industrie (falas)</button>
-      <button onclick="kompKredite(this)" style="background:#2a313c;">Kreditet e mbetura (falas)</button>
-      <span id="kompKoste" style="font-size:13px; color:#8b949e; align-self:center;"></span>
-    </div>
-    <div class="row">
-      <label class="bisChk"><input type="checkbox" id="kompFshih" checked /> Fshih kompanite qe te jane dhene me pare</label>
-      <button onclick="kompPastro(this)" style="background:#2a313c;">Lejo rishfaqjen (te dhenat mbeten)</button>
-    </div>
-    <div class="row">
-      <button onclick="kompRuajtura(this)" style="background:#2a313c;">Te gjitha te ruajturat</button>
-      <select id="kompFiltri" onchange="kompRuajtura()"><option value="te-gjitha">Te gjitha</option><option value="me-email">Vetem me email</option><option value="pa-email">Vetem pa email</option></select>
-      <button onclick="kompGjejTeGjitha(this)" style="background:#2a313c;">Gjej email-et per ato qe s'i kam kerkuar (maks. 20)</button>
-    </div>
-    <div id="kompSugj" style="margin-bottom:8px;"></div>
-    <div id="kompStat" style="font-size:13px; color:#8b949e; margin-bottom:12px;"></div>
-    <div id="kompRez"></div>
-  </div>
+<h2>4. Payment</h2>
+<p>Commissions are calculated and payable once a referred customer's payment has been received and confirmed. Payouts are processed through Reditus according to the payout threshold and schedule shown in your partner dashboard. PhronexusAI reserves the right to withhold commission on refunded, charged-back, or fraudulent transactions.</p>
 
-  <div class="sec-panel" id="panelAlerte">
-    <p class="mut">Njoftimet e Google Alerts (te dorezuara si RSS) shfaqen ketu. Aplikacioni i lexon vete rreth cdo ore; mund ta shtysh me butonin. Ruhen vetem lidhja, titulli, copa e tekstit dhe data. Hape lidhjen dhe lexo postimin vete; dhe shenoje qe te dihet ku je.</p>
-    <div class="row">
-      <button onclick="alerteRifresko(this)">Rifresko tani</button>
-      <select id="alerteFiltri" onchange="alerteNgarko()">
-        <option value="i ri">Te reja</option>
-        <option value="u pergjigj">U pergjigj</option>
-        <option value="e lashe">E lashe</option>
-        <option value="">Te gjitha</option>
-      </select>
-    </div>
-    <div id="alerteInfo" style="font-size:13px; color:#8b949e; margin-bottom:8px;"></div>
-    <div id="alerteStat" style="font-size:13px; color:#8b949e; margin-bottom:12px;"></div>
-    <div id="alerteRez"></div>
-  </div>
+<h2>5. Prohibited Practices</h2>
+<p>Partners may not:</p>
+<ul>
+<li>Bid on PhronexusAI's brand name or close variations in paid search advertising;</li>
+<li>Use spam, misleading claims, or deceptive practices to generate referrals;</li>
+<li>Refer themselves, or create accounts to generate self-referral commissions;</li>
+<li>Misrepresent their relationship with PhronexusAI.</li>
+</ul>
+<p>Violation of these terms may result in forfeiture of pending commissions and removal from the program.</p>
 
+<h2>6. Term &amp; Termination</h2>
+<p>Either party may terminate this agreement at any time, for any reason, with notice. Commission earned on active, paying customers referred prior to termination remains payable, subject to these terms.</p>
+
+<h2>7. Changes</h2>
+<p>PhronexusAI may update these terms from time to time. Continued participation in the program after changes take effect constitutes acceptance of the updated terms.</p>
+
+<h2>8. Contact</h2>
+<p>Questions about the affiliate program can be sent to <a href="mailto:info@phronexusai.com" style="color:#4a9eff;">info@phronexusai.com</a>.</p>
+
+</div></body></html>`);
+});
+
+app.get('/redeem', (req, res) => {
+  res.type('html').send(`<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redeem your PhronexusAI code</title>
+<style>
+  body{ margin:0; font:16px/1.6 system-ui,sans-serif; background:#0b0f17; color:#e6edf3; display:flex; align-items:center; justify-content:center; min-height:100vh; padding:24px; }
+  .card{ max-width:420px; width:100%; background:#141b26; border:1px solid #2a313c; border-radius:14px; padding:32px; }
+  h1{ font-size:22px; margin:0 0 8px; }
+  p.lead{ color:#8b949e; font-size:14px; margin:0 0 24px; }
+  label{ display:block; font-size:13px; color:#8b949e; margin:14px 0 6px; font-weight:600; }
+  input{ width:100%; box-sizing:border-box; padding:11px 13px; border:1px solid #2a313c; border-radius:8px; background:#0b0f17; color:#e6edf3; font-size:15px; }
+  button{ width:100%; margin-top:22px; padding:13px; border-radius:8px; border:none; background:#3b6ef0; color:#fff; font-weight:700; font-size:15px; cursor:pointer; }
+  button:disabled{ opacity:.6; cursor:default; }
+  .msg{ margin-top:16px; font-size:14px; padding:12px 14px; border-radius:8px; display:none; }
+  .msg.ok{ background:rgba(63,185,80,.15); color:#3fb950; display:block; }
+  .msg.err{ background:rgba(248,81,73,.15); color:#f85149; display:block; }
+</style></head>
+<body>
+<div class="card">
+  <h1>Redeem your AppSumo code</h1>
+  <p class="lead">Enter the email you'll use for PhronexusAI and your AppSumo code below.</p>
+  <label>Email</label>
+  <input type="email" id="email" placeholder="you@company.com">
+  <label>AppSumo code</label>
+  <input type="text" id="kodi" placeholder="PHRX-XXXXXXXXXX">
+  <button id="btn" onclick="redeem()">Redeem</button>
+  <div class="msg" id="msg"></div>
 </div>
 <script>
-var pollTimer = null;
-function ndryshoTab(cila){
-  document.getElementById('tabGjenerim').className = cila === 'gjenerim' ? 'tab aktiv' : 'tab';
-  document.getElementById('tabRuajtura').className = cila === 'ruajtura' ? 'tab aktiv' : 'tab';
-  document.getElementById('tabShkarko').className = cila === 'shkarko' ? 'tab aktiv' : 'tab';
-  document.getElementById('tabBisedat').className = cila === 'bisedat' ? 'tab aktiv' : 'tab';
-  document.getElementById('tabKompani').className = cila === 'kompani' ? 'tab aktiv' : 'tab';
-  document.getElementById('tabAlerte').className = cila === 'alerte' ? 'tab aktiv' : 'tab';
-  document.getElementById('panelGjenerim').className = cila === 'gjenerim' ? 'sec-panel aktiv' : 'sec-panel';
-  document.getElementById('panelRuajtura').className = cila === 'ruajtura' ? 'sec-panel aktiv' : 'sec-panel';
-  document.getElementById('panelShkarko').className = cila === 'shkarko' ? 'sec-panel aktiv' : 'sec-panel';
-  document.getElementById('panelBisedat').className = cila === 'bisedat' ? 'sec-panel aktiv' : 'sec-panel';
-  document.getElementById('panelKompani').className = cila === 'kompani' ? 'sec-panel aktiv' : 'sec-panel';
-  if(cila === 'kompani'){ kompVleresim(); }
-  document.getElementById('panelAlerte').className = cila === 'alerte' ? 'sec-panel aktiv' : 'sec-panel';
-  if(cila === 'alerte'){ alerteNgarko(); }
-  if(cila === 'ruajtura'){ ngarkoKategorite('filterKategoria'); shikoTeGjitha(); }
-  if(cila === 'shkarko'){ ngarkoKategorite('shkarkoKategoria'); }
-}
-function bisNje(stil, tekst){ var e = document.createElement('div'); e.style.cssText = stil; e.textContent = tekst; return e; }
-async function bisFormulo(btn){
-  var stat = document.getElementById('bisFormStat');
-  var per = document.getElementById('bisPer').value.trim();
-  if(!per){ stat.textContent = 'Shkruaj fillimisht pershkrimin.'; return; }
-  btn.disabled = true; stat.textContent = 'AI po formulon...';
+async function redeem(){
+  const email=document.getElementById('email').value.trim();
+  const kodi=document.getElementById('kodi').value.trim();
+  const btn=document.getElementById('btn'), msg=document.getElementById('msg');
+  if(!email||!kodi){ msg.className='msg err'; msg.textContent='Please fill in both fields.'; return; }
+  btn.disabled=true; btn.textContent='Redeeming...';
   try{
-    var r = await fetch('/api/bisedat/formulo', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pershkrim: per, numri: 4 }) });
-    var d = await r.json();
-    if(d.error){ stat.textContent = 'Gabim: ' + d.error; }
-    else {
-      document.getElementById('bisKer').value = d.kerkesat.join(String.fromCharCode(10));
-      stat.textContent = d.kerkesat.length + ' kerkesa u formuluan. Shikoji dhe ndryshoji nese duhet.';
+    const r=await fetch('/api/appsumo-redeem',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,kodi})});
+    const d=await r.json();
+    if(!r.ok){ msg.className='msg err'; msg.textContent=d.error||'Something went wrong.'; btn.disabled=false; btn.textContent='Redeem'; return; }
+    if(d.ekzistonte){
+      msg.className='msg ok'; msg.textContent="You're all set! Your existing PhronexusAI account now has lifetime access. Log in to see it.";
+    } else {
+      msg.className='msg ok'; msg.textContent="Code accepted! Now create your PhronexusAI account with this same email — lifetime access will activate automatically.";
     }
-  }catch(e){ stat.textContent = 'Gabim rrjeti: ' + e.message; }
-  btn.disabled = false;
+    btn.style.display='none';
+  }catch(e){ msg.className='msg err'; msg.textContent='Network error, try again.'; btn.disabled=false; btn.textContent='Redeem'; }
 }
-async function bisKerko(btn){
-  var stat = document.getElementById('bisKerStat'), rez = document.getElementById('bisRez');
-  var kerkesat = document.getElementById('bisKer').value.split(String.fromCharCode(10)).map(function(x){ return x.trim(); }).filter(Boolean);
-  if(!kerkesat.length){ stat.textContent = 'Shkruaj te pakten 1 kerkese.'; return; }
-  if(kerkesat.length > 8){ stat.textContent = 'Maksimumi 8 kerkesa per here.'; return; }
-  var faqet = Array.prototype.slice.call(document.querySelectorAll('input.bisFaqe')).filter(function(c){ return c.checked; }).map(function(c){ return c.value; });
-  document.getElementById('bisFaqeTjera').value.split(',').forEach(function(x){ x = x.trim(); if(x){ faqet.push(x); } });
-  if(faqet.length > 6){ stat.textContent = 'Maksimumi 6 faqe per here.'; return; }
-  btn.disabled = true; stat.textContent = 'Po kerkoj...'; rez.innerHTML = '';
-  try{
-    var r = await fetch('/api/bisedat/kerko', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ kerkesat: kerkesat, koha: document.getElementById('bisKoha').value, faqet: faqet }) });
-    var d = await r.json();
-    if(d.error){ stat.textContent = 'Gabim: ' + d.error; }
-    else {
-      var ok = d.rezultatet.filter(function(x){ return x.ok; }).length;
-      stat.textContent = d.rezultatet.length + ' kerkesa derguar, ' + ok + ' me sukses (rreth ' + ok + ' kredite).';
-      bisShfaq(d.rezultatet);
-    }
-  }catch(e){ stat.textContent = 'Gabim rrjeti: ' + e.message; }
-  btn.disabled = false;
-}
-function bisShfaq(lista){
-  var rez = document.getElementById('bisRez'); rez.innerHTML = '';
-  lista.forEach(function(x){
-    var kuti = document.createElement('div');
-    kuti.style.cssText = 'border:1px solid #2a313c;border-radius:10px;margin-bottom:16px;overflow:hidden;';
-    kuti.appendChild(bisNje('padding:10px 14px;background:#161b22;font-size:13px;', 'Kerkesa: ' + (x.qFinal || x.q) + (x.ok ? '  |  ' + x.organic.length + ' rezultate' : '')));
-    if(!x.ok){ kuti.appendChild(bisNje('padding:12px 14px;color:#e5484d;font-size:13px;', 'Gabim: ' + x.error)); rez.appendChild(kuti); return; }
-    if(!x.organic.length){ kuti.appendChild(bisNje('padding:12px 14px;font-size:13px;color:#8b949e;', 'Pa rezultate per kete kerkese.')); }
-    x.organic.forEach(function(o){
-      var rr = document.createElement('div'); rr.style.cssText = 'padding:10px 14px;border-top:1px solid #1c2230;';
-      var a = document.createElement('a'); a.textContent = o.titulli || o.linku || '(pa titull)';
-      var lnk = o.linku || '';
-      if(lnk.indexOf('http://') === 0 || lnk.indexOf('https://') === 0){ a.href = lnk; a.target = '_blank'; a.rel = 'noopener noreferrer'; }
-      a.style.cssText = 'font-weight:600;font-size:14px;text-decoration:none;';
-      rr.appendChild(a);
-      rr.appendChild(bisNje('font-size:12px;color:#8b949e;margin:2px 0 4px;', [o.faqja, o.data].filter(Boolean).join('  |  ')));
-      rr.appendChild(bisNje('font-size:13px;color:#c9d1d9;line-height:1.45;', o.fragmenti || ''));
-      kuti.appendChild(rr);
-    });
-    var det = document.createElement('details'); det.style.cssText = 'border-top:1px solid #1c2230;padding:8px 14px;';
-    var sum = document.createElement('summary'); sum.textContent = 'JSON i plote nga Serper (per te pare te gjitha fushat)'; sum.style.cssText = 'cursor:pointer;font-size:12px;color:#8b949e;';
-    var pre = document.createElement('pre'); pre.style.cssText = 'max-height:320px;overflow:auto;font-size:11px;background:#0e1116;padding:10px;border-radius:6px;margin-top:8px;';
-    pre.textContent = JSON.stringify(x.raw, null, 2);
-    det.appendChild(sum); det.appendChild(pre); kuti.appendChild(det);
-    rez.appendChild(kuti);
-  });
-}
-function kompVleresim(){
-  var lim = parseInt(document.getElementById('kompLimit').value, 10) || 10;
-  var cmim = 0.03;
-  if(document.getElementById('kompIndustria').value.trim()){ cmim += 0.1; }
-  if(parseInt(document.getElementById('kompMaks').value, 10) > 0){ cmim += 0.2; }
-  document.getElementById('kompKoste').textContent = 'Kosto maksimale e vleresuar: rreth ' + (lim * cmim).toFixed(2) + ' kredite (cmimet e listes ne dokumentim)';
-}
-async function kompKredite(btn){
-  var stat = document.getElementById('kompStat');
-  btn.disabled = true; stat.textContent = 'Po kontrolloj...';
-  try{
-    var r = await fetch('/api/kompani-reja/kredite');
-    var d = await r.json();
-    stat.textContent = d.error ? ('Gabim: ' + d.error) : ('Kredite te mbetura: ' + d.kredite);
-  }catch(e){ stat.textContent = 'Gabim rrjeti: ' + e.message; }
-  btn.disabled = false;
-}
-async function kompSugjerime(btn){
-  var stat = document.getElementById('kompStat'), kuti = document.getElementById('kompSugj');
-  btn.disabled = true; stat.textContent = 'Po kerkoj vlera te industrise...'; kuti.innerHTML = '';
-  try{
-    var r = await fetch('/api/kompani-reja/sugjerime', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ teksti: document.getElementById('kompIndustria').value }) });
-    var d = await r.json();
-    if(d.error){ stat.textContent = 'Gabim: ' + d.error; }
-    else if(!d.sugjerime.length){ stat.textContent = 'Asnje sugjerim per kete tekst. Provo nje fjale me te shkurter.'; }
-    else {
-      stat.textContent = 'Kliko nje vlere per ta vendosur te Industria:';
-      d.sugjerime.forEach(function(v){
-        var chip = document.createElement('button'); chip.className = 'kompChip'; chip.textContent = v;
-        chip.onclick = function(){ document.getElementById('kompIndustria').value = v; kompVleresim(); };
-        kuti.appendChild(chip); kuti.appendChild(document.createTextNode(' '));
-      });
-    }
-  }catch(e){ stat.textContent = 'Gabim rrjeti: ' + e.message; }
-  btn.disabled = false;
-}
-async function kompKerko(btn){
-  var stat = document.getElementById('kompStat'), rez = document.getElementById('kompRez');
-  var trupi = {
-    viti: document.getElementById('kompViti').value,
-    industria: document.getElementById('kompIndustria').value.trim(),
-    pershkrim: document.getElementById('kompPershkrim').value.trim(),
-    kategoria: document.getElementById('kompKategoria').value.trim(),
-    shteti: document.getElementById('kompShteti').value.trim(),
-    maksPunonjes: document.getElementById('kompMaks').value,
-    limit: document.getElementById('kompLimit').value,
-    fshihTePara: document.getElementById('kompFshih').checked
-  };
-  btn.disabled = true; stat.textContent = 'Po kerkoj te Crustdata...'; rez.innerHTML = '';
-  try{
-    var r = await fetch('/api/kompani-reja/kerko', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(trupi) });
-    var d = await r.json();
-    if(d.error){ stat.textContent = 'Gabim: ' + d.error; }
-    else { stat.textContent = d.paralajmerim ? ('Kujdes: ' + d.paralajmerim) : ''; kompShfaq(d); }
-  }catch(e){ stat.textContent = 'Gabim rrjeti: ' + e.message; }
-  btn.disabled = false;
-}
-async function kompPastro(btn){
-  var stat = document.getElementById('kompStat');
-  if(!confirm('Kompanite e ruajtura dhe email-et e tyre MBETEN. Vetem do te lejohet qe te shfaqen serish te kerkimet. Vazhdo?')){ return; }
-  btn.disabled = true; stat.textContent = 'Po e lejoj...';
-  try{
-    var r = await fetch('/api/kompani-reja/pastro', { method:'POST' });
-    var d = await r.json();
-    stat.textContent = d.error ? ('Gabim: ' + d.error) : 'U lejuan te shfaqen serish; te dhenat mbeten te ruajtura.';
-  }catch(e){ stat.textContent = 'Gabim rrjeti: ' + e.message; }
-  btn.disabled = false;
-}
-function kompCel(tr, tekst, href){
-  var td = document.createElement('td');
-  if(href && (href.indexOf('http://') === 0 || href.indexOf('https://') === 0)){
-    var a = document.createElement('a'); a.textContent = tekst; a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer'; td.appendChild(a);
-  } else { td.textContent = tekst || ''; }
-  tr.appendChild(td);
-}
-function kompEmailCel(td, k){
-  td.innerHTML = '';
-  if(k.email){
-    var s = document.createElement('span'); s.textContent = k.email; s.style.cssText = 'font-weight:600;'; td.appendChild(s);
-    var m = document.createElement('div'); m.style.cssText = 'font-size:11px; color:#8b949e;';
-    m.textContent = (k.email_lloji === 'role' ? 'adrese roli' : 'person') + (k.email_mx === false ? ' | MX: jo' : (k.email_mx ? ' | MX ok' : ''));
-    td.appendChild(m);
-    if(k.email_burimi && (k.email_burimi.indexOf('http://') === 0 || k.email_burimi.indexOf('https://') === 0)){
-      var a = document.createElement('a'); a.textContent = 'burimi'; a.href = k.email_burimi; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.style.cssText = 'font-size:11px;';
-      td.appendChild(a);
-    }
-    return;
-  }
-  var tekst = k.email_gjendja === 'pa-email' ? 'pa email ne faqe ' : (k.email_gjendja === 'gabim' ? 'faqja nuk u hap ' : '');
-  if(tekst){ var t = document.createElement('span'); t.textContent = tekst; t.style.cssText = 'font-size:12px; color:#8b949e;'; td.appendChild(t); }
-  var b = document.createElement('button'); b.textContent = tekst ? 'Provo serish' : 'Gjej email'; b.style.cssText = 'padding:3px 9px; font-size:12px; background:#2a313c;';
-  b.onclick = function(){ kompGjejEmail(k.domain, td, !!tekst); };
-  td.appendChild(b);
-}
-async function kompGjejEmail(domain, td, rigjej){
-  td.textContent = 'po kerkoj...';
-  try{
-    var r = await fetch('/api/kompani-reja/email', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ domain: domain, rigjej: !!rigjej }) });
-    var d = await r.json();
-    if(d.error){ td.textContent = 'Gabim: ' + d.error; return null; }
-    kompEmailCel(td, { domain: domain, email: d.email, email_lloji: d.email_lloji, email_mx: d.email_mx, email_burimi: d.email_burimi, email_gjendja: d.email_gjendja });
-    var tr = td.parentNode;
-    if(tr && tr.setAttribute){ tr.setAttribute('data-gjendja', d.email_gjendja || ''); }
-    return d;
-  }catch(e){ td.textContent = 'Gabim rrjeti: ' + e.message; return null; }
-}
-async function kompGjejTeGjitha(btn){
-  var stat = document.getElementById('kompStat');
-  var rreshta = Array.prototype.slice.call(document.querySelectorAll('#kompRez tbody tr[data-domain]')).filter(function(tr){
-    var g = tr.getAttribute('data-gjendja');
-    return !g || g === 'pa-kerkuar';
-  }).slice(0, 20);
-  if(!rreshta.length){ stat.textContent = 'Asnje kompani pa email te pakerkuar ne tabelen qe po shfaqet.'; return; }
-  btn.disabled = true;
-  var gjetur = 0;
-  for(var i = 0; i < rreshta.length; i++){
-    stat.textContent = 'Po kerkoj email ' + (i + 1) + '/' + rreshta.length + '...';
-    var d = await kompGjejEmail(rreshta[i].getAttribute('data-domain'), rreshta[i].querySelector('td.kompEmail'), false);
-    if(d && d.email){ gjetur++; }
-  }
-  stat.textContent = 'U gjeten ' + gjetur + ' email nga ' + rreshta.length + ' faqe te lexuara.';
-  btn.disabled = false;
-}
-function kompTabela(rreshta){
-  var tbl = document.createElement('table');
-  var thead = document.createElement('thead'), hr = document.createElement('tr');
-  ['Emri', 'Domain', 'Viti', 'Punonjes', 'Shteti', 'Email', 'LinkedIn', 'X', 'Kategoria'].forEach(function(t){ var th = document.createElement('th'); th.textContent = t; hr.appendChild(th); });
-  thead.appendChild(hr); tbl.appendChild(thead);
-  var tbody = document.createElement('tbody');
-  rreshta.forEach(function(k){
-    var tr = document.createElement('tr');
-    tr.setAttribute('data-domain', k.domain || '');
-    tr.setAttribute('data-gjendja', k.email ? 'u-gjet' : (k.email_gjendja || 'pa-kerkuar'));
-    var sigurt = k.domain && /^[a-z0-9.-]+$/i.test(k.domain) ? ('https://' + k.domain) : null;
-    kompCel(tr, k.emri || '(pa emer)', null);
-    var webOk = k.website && (k.website.indexOf('http://') === 0 || k.website.indexOf('https://') === 0);
-    kompCel(tr, k.domain || k.website || '', webOk ? k.website : sigurt);
-    kompCel(tr, k.viti != null ? String(k.viti) : '', null);
-    kompCel(tr, k.punonjes || '', null);
-    kompCel(tr, k.shteti || '', null);
-    var tdE = document.createElement('td'); tdE.className = 'kompEmail';
-    if(k.domain){ kompEmailCel(tdE, k); }
-    tr.appendChild(tdE);
-    kompCel(tr, k.linkedin ? 'LinkedIn' : '', k.linkedin);
-    kompCel(tr, k.twitter ? 'X' : '', k.twitter);
-    kompCel(tr, k.kategoria || '', null);
-    tbody.appendChild(tr);
-  });
-  tbl.appendChild(tbody);
-  return tbl;
-}
-async function kompRuajtura(btn){
-  var stat = document.getElementById('kompStat'), rez = document.getElementById('kompRez');
-  var filtri = document.getElementById('kompFiltri').value;
-  if(btn){ btn.disabled = true; }
-  stat.textContent = 'Po ngarkoj te ruajturat...'; rez.innerHTML = '';
-  try{
-    var r = await fetch('/api/kompani-reja/ruajtura?filtri=' + encodeURIComponent(filtri) + '&limit=200');
-    var d = await r.json();
-    if(d.error){ stat.textContent = 'Gabim: ' + d.error; }
-    else { stat.textContent = ''; kompShfaqRuajtura(d); }
-  }catch(e){ stat.textContent = 'Gabim rrjeti: ' + e.message; }
-  if(btn){ btn.disabled = false; }
-}
-function kompShfaqRuajtura(d){
-  var rez = document.getElementById('kompRez'); rez.innerHTML = '';
-  var p = document.createElement('div');
-  p.style.cssText = 'font-size:13px; color:#3fb950; font-weight:600; margin-bottom:6px;';
-  var totali = d.filtri === 'me-email' ? d.me_email : (d.filtri === 'pa-email' ? d.pa_email : d.gjithsej);
-  p.textContent = d.gjithsej + ' kompani te ruajtura | me email: ' + d.me_email + ' | pa email: ' + d.pa_email + ' | shfaqen ' + d.rows.length + (totali > d.rows.length ? (' nga ' + totali) : '');
-  rez.appendChild(p);
-  if(!d.rows.length){
-    var bosh = document.createElement('div'); bosh.style.cssText = 'font-size:13px; color:#8b949e;';
-    bosh.textContent = 'Asnje kompani ne kete filter.';
-    rez.appendChild(bosh); return;
-  }
-  rez.appendChild(kompTabela(d.rows));
-}
-function kompShfaq(d){
-  var rez = document.getElementById('kompRez'); rez.innerHTML = '';
-  var permbledhje = document.createElement('div');
-  permbledhje.style.cssText = 'font-size:13px; color:#3fb950; font-weight:600; margin-bottom:6px;';
-  permbledhje.textContent = d.kompanite.length + ' rezultate' + (d.total_count != null ? (' nga ' + d.total_count + ' qe perputhen gjithsej') : '') +
-    ' | kredite te shpenzuara: ' + (d.kredite_perdorur != null ? d.kredite_perdorur : 'e panjohur') + ' | renditja: ' + d.renditja + (d.te_pare ? ' | u perjashtuan ' + d.te_pare + ' te pare me pare' : '') + (d.kategoria ? ' | kategoria: ' + d.kategoria : '');
-  rez.appendChild(permbledhje);
-  if(!d.kompanite.length){
-    var bosh = document.createElement('div'); bosh.style.cssText = 'font-size:13px; color:#8b949e;';
-    bosh.textContent = 'Asnje rezultat. Provo pa industri, ose me nje vlere nga Sugjerime industrie.';
-    rez.appendChild(bosh);
-  }
-  else { rez.appendChild(kompTabela(d.kompanite)); }
-  [['Kerkesa e derguar te Crustdata', d.kerkesa], ['JSON i plote nga Crustdata', d.raw]].forEach(function(p){
-    var det = document.createElement('details'); det.style.cssText = 'margin-top:14px;';
-    var sum = document.createElement('summary'); sum.textContent = p[0]; sum.style.cssText = 'cursor:pointer; font-size:12px; color:#8b949e;';
-    var pre = document.createElement('pre'); pre.style.cssText = 'max-height:320px; overflow:auto; font-size:11px; background:#0e1116; padding:10px; border-radius:6px; margin-top:8px;';
-    pre.textContent = JSON.stringify(p[1], null, 2);
-    det.appendChild(sum); det.appendChild(pre); rez.appendChild(det);
-  });
-}
-async function alerteNgarko(){
-  var stat = document.getElementById('alerteStat');
-  var filtri = document.getElementById('alerteFiltri').value;
-  stat.textContent = 'Po ngarkoj...';
-  try{
-    var r = await fetch('/api/alerte?statusi=' + encodeURIComponent(filtri) + '&limit=200');
-    var d = await r.json();
-    if(d.error){ stat.textContent = 'Gabim: ' + d.error; return; }
-    stat.textContent = '';
-    alerteShfaq(d);
-  }catch(e){ stat.textContent = 'Gabim rrjeti: ' + e.message; }
-}
-async function alerteRifresko(btn){
-  var stat = document.getElementById('alerteStat');
-  btn.disabled = true; stat.textContent = 'Po lexoj feed-et e Google Alerts...';
-  try{
-    var r = await fetch('/api/alerte/rifresko', { method:'POST' });
-    var d = await r.json();
-    if(d.error){ stat.textContent = 'Gabim: ' + d.error; }
-    else {
-      await alerteNgarko();
-      document.getElementById('alerteStat').textContent = 'U lexuan ' + d.feedet + ' feed, ' + d.te_reja + ' njoftime te reja' + (d.gabime.length ? (' | gabime: ' + d.gabime.join('; ')) : '') + '.';
-    }
-  }catch(e){ stat.textContent = 'Gabim rrjeti: ' + e.message; }
-  btn.disabled = false;
-}
-async function alerteStatusi(id, vlera){
-  var stat = document.getElementById('alerteStat');
-  try{
-    var r = await fetch('/api/alerte/statusi', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: id, statusi: vlera }) });
-    var d = await r.json();
-    if(d.error){ stat.textContent = 'Gabim: ' + d.error; return; }
-  }catch(e){ stat.textContent = 'Gabim rrjeti: ' + e.message; return; }
-  alerteNgarko();
-}
-function alerteShfaq(d){
-  var rez = document.getElementById('alerteRez'); rez.innerHTML = '';
-  var g = d.gjendja || {};
-  document.getElementById('alerteInfo').textContent = d.feedet + ' feed te konfiguruar | te reja: ' + d.numrat['i ri'] + ' | u pergjigj: ' + d.numrat['u pergjigj'] +
-    ' | e lashe: ' + d.numrat['e lashe'] + ' | leximi i fundit: ' + (g.fundit ? g.fundit.slice(0, 16).replace('T', ' ') : 'ende jo');
-  if(!d.feedet){
-    var pa = document.createElement('div'); pa.style.cssText = 'font-size:13px; color:#d29922;';
-    pa.textContent = 'Asnje feed i konfiguruar. Vendos GOOGLE_ALERTS_FEEDS te Railway, Variables (adresa RSS e alertit).';
-    rez.appendChild(pa); return;
-  }
-  if(g.gabime && g.gabime.length){
-    var gb = document.createElement('div'); gb.style.cssText = 'font-size:13px; color:#f85149; margin-bottom:8px;';
-    gb.textContent = 'Gabime gjate leximit: ' + g.gabime.join('; ');
-    rez.appendChild(gb);
-  }
-  if(!d.rows.length){
-    var bosh = document.createElement('div'); bosh.style.cssText = 'font-size:13px; color:#8b949e;';
-    bosh.textContent = 'Asnje njoftim ketu. Nese sapo e ngrite, prit ose shtyp Rifresko tani.';
-    rez.appendChild(bosh); return;
-  }
-  var tbl = document.createElement('table');
-  var thead = document.createElement('thead'), hr = document.createElement('tr');
-  ['Titulli', 'Burimi', 'Copa e tekstit', 'Data', 'Statusi'].forEach(function(t){ var th = document.createElement('th'); th.textContent = t; hr.appendChild(th); });
-  thead.appendChild(hr); tbl.appendChild(thead);
-  var tbody = document.createElement('tbody');
-  d.rows.forEach(function(k){
-    var tr = document.createElement('tr');
-    var tdT = document.createElement('td');
-    if(k.url && (k.url.indexOf('http://') === 0 || k.url.indexOf('https://') === 0)){
-      var a = document.createElement('a'); a.textContent = k.titulli || k.url; a.href = k.url; a.target = '_blank'; a.rel = 'noopener noreferrer'; tdT.appendChild(a);
-    } else { tdT.textContent = k.titulli || ''; }
-    tr.appendChild(tdT);
-    [k.burimi || '', (k.fragmenti || '').slice(0, 220), String(k.publikuar || k.gjetur_at || '').slice(0, 10)].forEach(function(t){
-      var td = document.createElement('td'); td.textContent = t; tr.appendChild(td);
-    });
-    var tdS = document.createElement('td'), sel = document.createElement('select');
-    [['i ri', 'I ri'], ['u pergjigj', 'U pergjigj'], ['e lashe', 'E lashe']].forEach(function(o){
-      var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; if(o[0] === k.statusi){ op.selected = true; } sel.appendChild(op);
-    });
-    sel.onchange = function(){ alerteStatusi(k.id, sel.value); };
-    tdS.appendChild(sel); tr.appendChild(tdS);
-    tbody.appendChild(tr);
-  });
-  tbl.appendChild(tbody); rez.appendChild(tbl);
-}
-function tekstArsyeja(a){
-  if(a === 'pa_kompani') return 'nuk u gjet kompania te Generect';
-  if(a === 'pa_person') return 'nuk u gjet CEO, Founder apo Owner';
-  if(a === 'pa_email') return 'personi u gjet, por email nuk u verifikua';
-  if(a === 'gabim') return 'gabim gjate kerkimit, kontrollo balancen';
-  return '';
-}
-function qelizaEmail(email, arsyeja){
-  if(email){ return esc(email); }
-  return '<span style="color:#8b949e;">— ' + esc(tekstArsyeja(arsyeja)) + '</span>';
-}
-async function kerko(){
-  var query = document.getElementById('query').value.trim();
-  var kategoria = document.getElementById('kategoria').value.trim() || 'pa-etikete';
-  var qeVitiEkziston = document.getElementById('qeVitiEkziston').value.trim();
-  var status = document.getElementById('status'), count = document.getElementById('count');
-  var btn = document.getElementById('btn');
-  if(!query){ status.textContent = 'Shkruaj nje query fillimisht.'; return; }
-  btn.disabled = true; count.textContent = ''; document.getElementById('rez').style.display = 'none';
-  status.textContent = 'Duke filluar...';
-  try{
-    var r = await fetch('/api/kerko', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ query: query, kategoria: kategoria, qeVitiEkziston: qeVitiEkziston }) });
-    var d = await r.json();
-    if(r.status === 409){ filloPolling(); return; }
-    if(!r.ok || d.error){ status.textContent = 'Gabim: ' + (d.error || 'kerkesa deshtoi'); btn.disabled = false; return; }
-    filloPolling();
-  }catch(e){ status.textContent = 'Gabim rrjeti: ' + e.message; btn.disabled = false; }
-}
-function filloPolling(){
-  if(pollTimer){ clearInterval(pollTimer); }
-  perditesoStatusin();
-  pollTimer = setInterval(perditesoStatusin, 3000);
-}
-async function perditesoStatusin(){
-  var status = document.getElementById('status'), count = document.getElementById('count'), btn = document.getElementById('btn');
-  try{
-    var r = await fetch('/api/statusi');
-    var d = await r.json();
-    var p = d.puna;
-    if(!p){ btn.disabled = false; if(pollTimer){ clearInterval(pollTimer); pollTimer = null; } return; }
-    if(p.statusi === 'duke_punuar'){ btn.disabled = true; status.textContent = p.mesazhi; return; }
-    if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
-    btn.disabled = false;
-    if(p.statusi === 'gabim'){ status.textContent = 'Gabim: ' + p.gabim; return; }
-    status.textContent = '';
-    count.textContent = p.permbledhje;
-    renderRreshtaMeStatus(p.teGjitha || []);
-  }catch(e){ }
-}
-async function ngarkoKategorite(idSelect){
-  try{
-    var r = await fetch('/api/kategorite');
-    var d = await r.json();
-    var sel = document.getElementById(idSelect);
-    var aktuale = sel.value;
-    sel.innerHTML = '<option value="">Te gjitha kategorite</option>' + d.kategorite.map(function(k){ return '<option value="'+esc(k)+'">'+esc(k)+'</option>'; }).join('');
-    sel.value = aktuale;
-  }catch(e){}
-}
-function shkarkoCSV(){
-  var kategoria = document.getElementById('shkarkoKategoria').value;
-  var statusShkarko = document.getElementById('statusShkarko');
-  statusShkarko.textContent = 'Duke pergatitur...';
-  var url = '/api/eksporto-csv' + (kategoria ? ('?kategoria=' + encodeURIComponent(kategoria)) : '');
-  window.location.href = url;
-  setTimeout(function(){ statusShkarko.textContent = ''; }, 2000);
-}
-async function shtoManualisht(){
-  var email = document.getElementById('manEmail').value.trim();
-  var emri = document.getElementById('manEmri').value.trim();
-  var kategoria = document.getElementById('manKategoria').value.trim() || 'emailet-e-proves';
-  var statusManual = document.getElementById('statusManual');
-  if(!email || !email.includes('@')){ statusManual.textContent = 'Shkruaj email te vlefshem.'; return; }
-  statusManual.textContent = 'Duke shtuar...';
-  try{
-    var r = await fetch('/api/shto-manualisht', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: email, emri: emri, kategoria: kategoria }) });
-    var d = await r.json();
-    if(d.error){ statusManual.textContent = 'Gabim: ' + d.error; return; }
-    statusManual.textContent = 'U shtua: ' + email;
-    document.getElementById('manEmail').value = '';
-    document.getElementById('manEmri').value = '';
-    ngarkoKategorite('filterKategoria');
-    shikoTeGjitha();
-  }catch(e){ statusManual.textContent = 'Gabim: ' + e.message; }
-}
-async function shikoTeGjitha(){
-  var status2 = document.getElementById('status2'), count2 = document.getElementById('count2');
-  var rez2 = document.getElementById('rez2'), rez2Body = document.getElementById('rez2Body');
-  var kategoria = document.getElementById('filterKategoria').value;
-  status2.textContent = 'Duke ngarkuar...'; rez2Body.innerHTML = '';
-  try{
-    var r = await fetch('/api/te-gjitha?burimi=exa' + (kategoria ? ('&kategoria=' + encodeURIComponent(kategoria)) : ''));
-    var d = await r.json();
-    status2.textContent = '';
-    count2.textContent = d.rows.length + ' total.';
-    if(d.rows.length){
-      rez2.style.display = 'table';
-      rez2Body.innerHTML = d.rows.map(function(x){ return '<tr><td>'+qelizaEmail(x.email, x.email_statusi)+'</td><td>'+esc(x.domain)+'</td><td>'+esc(x.emri||'')+'</td></tr>'; }).join('');
-    } else { rez2.style.display = 'none'; }
-  }catch(e){ status2.textContent = 'Gabim: ' + e.message; }
-}
-function renderRreshtaMeStatus(rows){
-  var rez = document.getElementById('rez'), rezBody = document.getElementById('rezBody');
-  if(rows.length){
-    rez.style.display = 'table';
-    rezBody.innerHTML = rows.map(function(x,i){
-      var emailCell = x.pranuar ? qelizaEmail(x.email, x.arsyeja) : '—';
-      return '<tr><td>'+(i+1)+'</td><td>'+esc(x.emri||'')+'</td><td><a href="'+esc(x.url)+'" target="_blank">'+esc(x.domain)+'</a></td><td>'+esc(x.pershkrimi||'')+'</td><td><span class="badge">'+esc(x.kategoria||'')+'</span></td><td>'+(x.pranuar?'🟢':'🔴')+'</td><td>'+emailCell+'</td></tr>';
-    }).join('');
-  }
-}
-function esc(s){ return String(s||'').replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
-(async function(){
-  try{
-    var r = await fetch('/api/statusi');
-    var d = await r.json();
-    if(d.puna){ filloPolling(); }
-  }catch(e){}
-})();
 </script>
 </body></html>`);
 });
 
-// Gjendja e punes se fundit (ne memorie). Kerkimi punon ne sfond; faqja pyet /api/statusi per progresin.
-let puna = null;
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain');
+  res.send(`# PhronexusAI — lejon te gjithe: kerkim, index, DHE agjentet/crawler-at AI.
+# Qellimi: ekspozim maksimal ne kerkim (Google) DHE ne pergjigje AI (ChatGPT, Claude, Perplexity, etj.)
+User-agent: *
+Allow: /
 
-async function punoKerkimin(p, params) {
-  const { query, kategoria, qeVitiEkziston } = params;
-  p.mesazhi = 'Hapi 1 nga 3: kerkim te Exa...';
-  const ekzistuese = await pool.query('SELECT domain FROM bizneset_gjetur');
-  const excludeDomains = ekzistuese.rows.map(r => r.domain);
+Sitemap: https://phronexusai.com/sitemap.xml
+`);
+});
 
-  const body = { query, numResults: 100, contents: { highlights: { numSentences: 2 } } };
-  if (excludeDomains.length) body.excludeDomains = excludeDomains.slice(0, 1200);
-  if (qeVitiEkziston && /^\d{4}$/.test(String(qeVitiEkziston))) {
-    body.startPublishedDate = qeVitiEkziston + '-01-01T00:00:00.000Z';
-  }
-  const r = await fetch('https://api.exa.ai/search', {
-    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + EXA_KEY }, body: JSON.stringify(body)
-  });
-  if (!r.ok) { const t = await r.text(); throw new Error('Exa ' + r.status + ': ' + t.slice(0, 300)); }
-  const data = await r.json();
-  const gjetur = data.results || [];
+app.get('/imyr.js', imyrJsHandler);
+app.get('/phronexusai.js', imyrJsHandler);
 
-  p.mesazhi = 'Hapi 2 nga 3: filtrim (rregulla + AI) i ' + gjetur.length + ' rezultateve...';
-  const kaluaFiltrinFiks = gjetur.filter(x => !eshteZhurme(x.url, x.title));
-  const vendimeAI = await filtroMeAI(kaluaFiltrinFiks);
-  const vendimPerUrl = new Map();
-  kaluaFiltrinFiks.forEach((x, i) => vendimPerUrl.set(x.url, vendimeAI[i]));
-
-  // Bashko dublikatet: nje domain i pranuar = nje biznes = nje kerkim email-i.
-  const teGjitha = [];
-  const tashmeTeParaqitur = new Set();
-  let dublikate = 0;
-  for (const x of gjetur) {
-    const domain = domainNga(x.url);
-    const pranuar = !eshteZhurme(x.url, x.title) && vendimPerUrl.get(x.url) !== false;
-    if (pranuar && tashmeTeParaqitur.has(domain)) { dublikate++; continue; }
-    if (pranuar) tashmeTeParaqitur.add(domain);
-    teGjitha.push({
-      domain,
-      emri: x.title || domain,
-      url: x.url,
-      pershkrimi: (x.highlights && x.highlights[0]) ? x.highlights[0].slice(0, 300) : '',
-      kategoria,
-      pranuar,
-      email: null,
-      arsyeja: null
-    });
-  }
-  const perPunuar = teGjitha.filter(x => x.pranuar);
-  const refuzuar = teGjitha.length - perPunuar.length;
-
-  let bere = 0, gjeturEmail = 0, gabime = 0;
-  p.mesazhi = 'Hapi 3 nga 3: kerkim email-esh (0 nga ' + perPunuar.length + ')...';
-  await punoMeKonkurrence(perPunuar, 3, async (rreshti) => {
-    const rez = await gjejEmailPerDomain(rreshti.domain);
-    rreshti.email = rez.email;
-    rreshti.arsyeja = rez.arsyeja;
+// --- KODI GJURMUES U NGARKUA (konfirmimi i lidhjes) ---
+app.all('/track-lidh', async (req, res) => {
+  cors(res);
+  try {
+    const faqja = req.headers.referer || req.headers.origin || null;
     await pool.query(
-      'INSERT INTO bizneset_gjetur (domain, emri, url, pershkrimi, kategoria, email, email_statusi) VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (domain) DO NOTHING',
-      [rreshti.domain, rreshti.emri, rreshti.url, rreshti.pershkrimi, kategoria, rez.email, rez.arsyeja]
-    );
-    bere++;
-    if (rez.email) gjeturEmail++;
-    if (rez.arsyeja === 'gabim') gabime++;
-    p.mesazhi = 'Hapi 3 nga 3: kerkim email-esh (' + bere + ' nga ' + perPunuar.length + ', te gjetura: ' + gjeturEmail + ')...';
-  });
+      `UPDATE bizneset SET track_active=true, track_seen_at=now(), track_url=$2 WHERE celes=$1`,
+      [req.query.key, faqja]);
+    // Shëno URL-në specifike të konvertimit nëse faqja aktuale përputhet me ndonjërën
+    const b = await pool.query('SELECT id FROM bizneset WHERE celes=$1', [req.query.key]);
+    if (b.rows.length && faqja) {
+      const faqjaPlote = faqja.replace(/\/+$/, '');
+      let shteg = faqja;
+      try { const p = new URL(faqja); shteg = p.pathname + p.search; } catch (e) {}
+      // perputh URL-en e plote OSE shtegun (per te dhena te vjetra)
+      await pool.query(
+        `UPDATE konvertimet SET track_active=true, track_seen_at=now()
+         WHERE biznes_id=$1 AND ($2 LIKE rtrim(url,'/') || '%' OR $3 LIKE url || '%')`,
+        [b.rows[0].id, faqjaPlote, shteg]);
+    }
+  } catch (e) {}
+  res.status(204).end();
+});
 
-  p.teGjitha = teGjitha;
-  p.permbledhje = perPunuar.length + ' biznese te reja u ruajten (Exa ktheu ' + gjetur.length + ' rezultate; '
-    + dublikate + ' faqe te tjera te te njejtit domain u bashkuan; ' + refuzuar + ' u perjashtuan nga filtri/AI). '
-    + 'Email u gjet per ' + gjeturEmail + ' nga ' + perPunuar.length + (gabime ? ('; ' + gabime + ' me gabim, kontrollo balancen e Generect') : '') + '.';
-  p.statusi = 'perfunduar';
+// --- STATUSI I KODIT GJURMUES ---
+app.get('/api/track-status', iLoguar, async (req, res) => {
+  try {
+    const r = await pool.query(
+      'SELECT track_active, track_seen_at, track_url FROM bizneset WHERE id=$1', [req.biznesId]);
+    res.json(r.rows[0] || { track_active: false });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- CILESIMET E GJURMIMIT (endpoint i lehte per imyr-track.js) ---
+app.get('/cil', async (req, res) => {
+  cors(res);
+  try {
+    const b = await pool.query('SELECT id, url_konvertimi FROM bizneset WHERE celes=$1', [req.query.key]);
+    if (!b.rows.length) return res.json({ konv_url: null, konv_urls: [] });
+    const urls = await konvertimet.urletPerBiznes(pool, b.rows[0].id);
+    // konv_url: e para (perputhshmeri me snippet-in e vjeter); konv_urls: te gjitha
+    res.json({ konv_url: urls.length ? urls[0] : null, konv_urls: urls });
+  } catch (e) { res.json({ konv_url: null, konv_urls: [] }); }
+});
+
+// --- IMYR-TRACK.JS (vetem gjurmim: vendoset ne CDO faqe, s'shfaq asgje) ---
+// Sherbehet nga 2 rruge: /imyr-track.js (e vjeter, per instalimet ekzistuese) dhe
+// /phronexus-track.js (emri i ri, per klientet qe kopjojne kodin qe sot e tutje).
+function imyrTrackJsHandler(req, res) {
+  res.type('application/javascript');
+  res.send(`(function(){
+  var s = document.currentScript;
+  var key = s ? s.getAttribute('data-key') : null;
+  var base = s ? new URL(s.src).origin : '';
+  if(!key) return;
+  var preview = !!(window.Shopify && window.Shopify.designMode);
+
+  function ruajKod(kod){
+    try { localStorage.setItem('imyr_klik', kod); } catch(e){}
+    try {
+      var pjeset = location.hostname.split('.');
+      var rrenja = pjeset.length > 1 ? '.' + pjeset.slice(-2).join('.') : location.hostname;
+      document.cookie = 'imyr_klik=' + kod + ';path=/;max-age=2592000;SameSite=Lax';
+      document.cookie = 'imyr_klik=' + kod + ';path=/;max-age=2592000;domain=' + rrenja + ';SameSite=Lax';
+    } catch(e){}
+  }
+  function lexoKod(){
+    try { var v = localStorage.getItem('imyr_klik'); if(v) return v; } catch(e){}
+    var m = document.cookie.match(/(?:^|;\\s*)imyr_klik=([^;]+)/);
+    return m ? m[1] : null;
+  }
+  try {
+    var qp = new URLSearchParams(location.search).get('imyr');
+    if(qp) ruajKod(qp);
+  } catch(e){}
+
+  function dergo(zona){
+    // MENYRA E VERIFIKIMIT: nese faqja ka ?imyr_test=1 (ose eshte ruajtur ne kete skede) → sinjal verifikimi, JO konvertim.
+    var testo = false;
+    try {
+      if(new URLSearchParams(location.search).get('imyr_test') === '1'){ testo = true; try{ sessionStorage.setItem('imyr_test','1'); }catch(e){} }
+      else { try{ testo = sessionStorage.getItem('imyr_test') === '1'; }catch(e){} }
+    } catch(e){}
+    if(testo){
+      try {
+        var uv = base + '/konvertim-verifiko?key=' + encodeURIComponent(key) + (zona ? ('&zona=' + encodeURIComponent(zona)) : '');
+        navigator.sendBeacon ? navigator.sendBeacon(uv) : fetch(uv, {mode:'no-cors'});
+      } catch(e){}
+      return;  // mos regjistro konvertim gjate verifikimit
+    }
+    var kod = lexoKod(); if(!kod || preview) return;
+    var celes = 'imyr_konv_' + kod + (zona ? ('_' + zona) : '');
+    try { if(localStorage.getItem(celes)) return; } catch(e){}
+    try {
+      var u = base + '/konvertim?kod=' + encodeURIComponent(kod) + (zona ? ('&zona=' + encodeURIComponent(zona)) : '');
+      navigator.sendBeacon ? navigator.sendBeacon(u) : fetch(u, {mode:'no-cors'});
+      localStorage.setItem(celes, '1');
+    } catch(e){}
+  }
+  window.imyr = window.imyr || {};
+  window.imyr.konvertim = dergo;
+
+  // Njofto nje here qe kodi u ngarkua (per konfirmimin te profili)
+  if(!preview){
+    try {
+      var pu = base + '/track-lidh?key=' + encodeURIComponent(key);
+      navigator.sendBeacon ? navigator.sendBeacon(pu) : fetch(pu, {mode:'no-cors'});
+    } catch(e){}
+  }
+
+  // A eshte kjo faqja e suksesit? (vetem nese ka kod te ruajtur)
+  if(!lexoKod() || preview) return;
+  // Gjate verifikimit (?imyr_test=1) mos kontrollo URL-t — verifikimi behet vetem nga thirrja e drejtperdrejte imyr.konvertim()
+  try { if(new URLSearchParams(location.search).get('imyr_test') === '1') return; } catch(e){}
+  fetch(base + '/cil?key=' + encodeURIComponent(key))
+    .then(function(r){ return r.json(); })
+    .then(function(c){
+      var lista = (c && c.konv_urls && c.konv_urls.length) ? c.konv_urls : ((c && c.konv_url) ? [c.konv_url] : []);
+      if(!lista.length) return;
+      var tani = (location.origin + location.pathname + location.search).replace(/\\/+$/,'');
+      var taniShteg = location.pathname + location.search;
+      for(var i=0;i<lista.length;i++){
+        var konvUrl = lista[i]; if(!konvUrl) continue;
+        // Perputh URL-en e plote OSE shtegun (per perputhshmeri me te dhena te vjetra si "/welcome")
+        var full = /^https?:\\/\\//i.test(konvUrl);
+        var baze = full ? tani : taniShteg;
+        var kU = konvUrl.replace(/\\/+$/,'');
+        var pos = baze.indexOf(kU); if(pos === -1) continue;
+        var pas = baze.charAt(pos + kU.length);
+        if(pas !== '' && pas !== '?' && pas !== '#' && pas !== '/' && pas !== '&') continue;
+        dergo(); return;  // perputhet me nje URL → konvertim
+      }
+    })
+    .catch(function(){});
+})();`);
+}
+app.get('/imyr-track.js', imyrTrackJsHandler);
+app.get('/phronexus-track.js', imyrTrackJsHandler);
+
+// --- WIDGET.JS (snippet-i qe vendoset te dyqani) ---
+app.get('/widget.js', (req, res) => {
+  res.type('application/javascript');
+  res.send(`(function(){
+  var s = document.currentScript;
+  var key = s ? s.getAttribute('data-key') : null;
+  var base = s ? new URL(s.src).origin : '';
+  // Preview i Shopify (editori): shfaqe reklamen, por MOS e numero si lidhje reale.
+  var preview = !!(window.Shopify && window.Shopify.designMode);
+  var pq = preview ? '&preview=1' : '';
+  function esc(t){ var d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+  function run(){
+    var slot = document.getElementById('imyr-slot');
+    if(!slot || !key) return;
+    fetch(base + '/ad?key=' + encodeURIComponent(key) + pq)
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(d && d.teksti){
+          slot.innerHTML = '<div style="border:1px solid #e2c68a;background:#fbf6ea;color:#5a4a24;'
+            + 'padding:12px 14px;border-radius:10px;font:14px/1.5 system-ui,sans-serif;cursor:pointer;">'
+            + esc(d.teksti) + '</div>';
+          if(!preview){
+            try {
+              var u = base + '/track?key=' + encodeURIComponent(key) + '&event=view';
+              navigator.sendBeacon ? navigator.sendBeacon(u) : fetch(u);
+            } catch(e){}
+          }
+          slot.addEventListener('click', function(){
+            if(preview) return;
+            try { fetch(base + '/track?key=' + encodeURIComponent(key) + '&event=click'); } catch(e){}
+          });
+        }
+      })
+      .catch(function(){});
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+  else run();
+})();`);
+});
+
+// --- AD (kthen permbajtjen + shenon lidhjen ne kerkesen e pare) ---
+app.get('/ad', async (req, res) => {
+  cors(res);
+  const key = req.query.key;
+  if (!key) return res.json({ teksti: null });
+  const preview = req.query.preview === '1';
+  try {
+    // Gjej snippet-in (ose biznesin per celesa te vjeter) nga celesi
+    const sn = await snippetet.ngaCelesi(pool, key);
+    if (!sn) return res.json({ teksti: null });
+    if (sn.pauzuar) return res.json({ teksti: null });   // snippet ne pauze → asgje (s'shfaqet, s'mat, s'konkurron)
+    const bizId = sn.biznes_id;
+    // Merr url_konvertimi te biznesit (konvertimi eshte per biznes)
+    const bkonv = await pool.query('SELECT url_konvertimi, snippet_active, plani FROM bizneset WHERE id=$1', [bizId]);
+    const b = { rows: [{
+      id: bizId,
+      snippet_active: sn.snippet_active,
+      url_konvertimi: bkonv.rows.length ? bkonv.rows[0].url_konvertimi : null,
+      plani_host: bkonv.rows.length ? bkonv.rows[0].plani : 'falas',
+      madhesia_desktop: sn.madhesia_desktop,
+      madhesia_mobile: sn.madhesia_mobile,
+      pozicioni_reklames: sn.pozicioni,
+      snippet_id: sn.snippet_id
+    }] };
+    const origin = req.headers.origin || req.headers.referer || null;
+    // URL e plote e faqes ku u ngarkua widget-i (per te kontrolluar pikerisht ate faqe, jo vetem homepage-in)
+    const faqjaPlote = req.headers.referer || req.headers.origin || null;
+
+    // Kap faqen ku ndodhet kodi (edhe ne preview) — PA e shenuar te lidhur.
+    // Ruajme URL-en e plote me te fundit ku u pa widget-i; kjo perdoret per kontrollin server-ane.
+    if (faqjaPlote) {
+      await pool.query('UPDATE bizneset SET kandidat_url=$2 WHERE id=$1', [bizId, faqjaPlote]);
+    }
+
+    // VETEM per kerkesa reale (jo preview i Shopify): sheno lidhjen + heartbeat.
+    if (!preview) {
+      // Sheno active-n te snippet-i specifik (nese eshte nga tabela snippetet)
+      if (b.rows[0].snippet_id) {
+        await pool.query(
+          `UPDATE snippetet SET snippet_active=true,
+                  first_seen_at=COALESCE(first_seen_at, now()), last_seen_at=now()
+           WHERE id=$1`, [b.rows[0].snippet_id]);
+      }
+      if (!b.rows[0].snippet_active) {
+        // ngarkim real (faqe e ruajtur/live): shenim i lidhjes
+        await pool.query(
+          'UPDATE bizneset SET snippet_active=true, first_seen_at=now(), last_seen_at=now(), origjina=$2 WHERE id=$1',
+          [bizId, origin]
+        );
+      } else {
+        // heartbeat: e pame perseri tani (per statusin "live")
+        await pool.query('UPDATE bizneset SET last_seen_at=now() WHERE id=$1', [bizId]);
+      }
+    }
+
+    // Shperndarja: logjika ndodhet te selector.js (ndryshohet vetem aty).
+    // Reklamat e para nga ky vizitor brenda vizites (frequency capping)
+    const pareRaw = (req.query.pare || '').split(',').map(x => x.trim()).filter(Boolean);
+    const rek = await selector.zgjidhReklame(pool, bizId, pareRaw, b.rows[0].snippet_id || null);
+    
+    // konv_url = faqja e konvertimit E KETIJ biznesi (snippet-i e perdor per te njohur suksesin)
+    res.json(Object.assign({ konv_url: b.rows[0].url_konvertimi || null, plani_host: b.rows[0].plani_host || 'falas', madhesia: b.rows[0].madhesia_desktop || '210x261', madhesia_mobile: b.rows[0].madhesia_mobile || '290x260', pozicioni: b.rows[0].pozicioni_reklames || 'qender' }, rek || {}));
+  } catch (e) {
+    res.json({ teksti: null });
+  }
+});
+
+// --- TRACK (shfaqje/klikime) ---
+app.all('/track', async (req, res) => {
+  cors(res);
+  if (req.query.preview === '1') return res.status(204).end(); // injoro preview-in
+  const key = req.query.key;
+  const lloji = req.query.event === 'click' ? 'click'
+              : req.query.event === 'shikim' ? 'shikim'
+              : 'view';
+  const rid = parseInt(req.query.rid, 10) || null;
+  try {
+    const snK2 = await snippetet.ngaCelesi(pool, key);
+    const b = { rows: snK2 ? [{ id: snK2.biznes_id }] : [] };
+    if (b.rows.length) {
+      let reklamuesId = null, burimi = null;
+      if (rid) {
+        const pr = await pool.query('SELECT biznes_id, logjika_shperndarjes FROM promovimet WHERE id=$1', [rid]);
+        if (pr.rows.length) { reklamuesId = pr.rows[0].biznes_id; burimi = pr.rows[0].logjika_shperndarjes || 'ankand'; }
+      }
+      await pool.query(
+        'INSERT INTO ngjarjet (biznes_id, lloji, origjina, reklama_id, reklamues_id, snippet_id, burimi) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+        [b.rows[0].id, lloji, req.headers.origin || req.headers.referer || null, rid, reklamuesId, snK2.snippet_id || null, burimi]
+      );
+    }
+  } catch (e) {}
+  res.status(204).end();
+});
+
+// --- Ndihmes: pastro HTML-in ne tekst te thjeshte ---
+function pastroHtml(html) {
+  return (html || '')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
-app.post('/api/kerko', async (req, res) => {
-  if (!EXA_KEY) return res.status(500).json({ error: 'EXA_API_KEY nuk eshte konfiguruar.' });
-  const { query, kategoria, qeVitiEkziston } = req.body || {};
-  if (!query) return res.status(400).json({ error: 'Mungon query.' });
-  if (puna && puna.statusi === 'duke_punuar') return res.status(409).json({ error: 'Nje kerkim po punon ende. Prit sa te perfundoje.' });
-  const kjo = { statusi: 'duke_punuar', mesazhi: 'Duke filluar...', filluar: Date.now() };
-  puna = kjo;
-  punoKerkimin(kjo, { query, kategoria, qeVitiEkziston }).catch(e => { kjo.statusi = 'gabim'; kjo.gabim = e.message; });
+// Kategorite kryesore (korniza; AI zgjedh SAKTESISHT nje prej tyre)
+const KATEGORITE = [
+  // Marketing
+  'Email Marketing', 'SEO Tools', 'Social Media Management', 'Content Marketing Platforms',
+  'Marketing Automation', 'Affiliate Marketing Software', 'Referral Program Software', 'PPC/Ad Management', 'Landing Page Builders',
+  // Sales & CRM
+  'CRM Software', 'Sales Engagement/Enablement', 'Lead Generation Tools', 'Sales Intelligence',
+  'Proposal & Contract Software', 'Sales Forecasting',
+  // Finance
+  'Accounting Software', 'Invoicing & Billing', 'Expense Management', 'Payroll Software',
+  'Payment Processing', 'Financial Planning & Budgeting',
+  // HR
+  'Recruiting/ATS Software', 'Core HR/HRIS', 'Employee Onboarding', 'Performance Management',
+  'Learning & Development (LMS)', 'Employee Engagement',
+  // Produktivitet
+  'Project Management', 'Task Management', 'Note-Taking Apps', 'Document Management',
+  'E-signature/Document Signing', 'Team Chat/Communication', 'Video Conferencing', 'Cloud File Storage', 'Calendar & Scheduling',
+  // Dev Tools
+  'API Management', 'CI/CD Tools', 'Cloud Infrastructure/Hosting', 'Monitoring & Observability',
+  'Database Tools', 'No-Code/Low-Code Platforms', 'Version Control', 'Software Testing/QA Automation', 'Localization/Translation Software',
+  // Design
+  'Graphic Design Tools', 'UI/UX Design Tools', 'Video Editing Software', 'Website Builders',
+  'Prototyping Tools',
+  // Support
+  'Helpdesk Software', 'Live Chat Software', 'Knowledge Base Software',
+  'Customer Feedback/Survey Tools', 'Call Center Software',
+  // Analitike
+  'Business Intelligence', 'Web Analytics', 'Product Analytics', 'Data Visualization',
+  'A/B Testing Tools', 'Site Search Tools',
+  // E-commerce
+  'E-commerce Platforms', 'Inventory Management', 'Dropshipping Tools', 'Shipping & Fulfillment',
+  'Subscription Management', 'Point of Sale (POS)',
+  // Siguri
+  'Cybersecurity/Antivirus', 'Identity & Access Management', 'Password Management',
+  'VPN Services', 'Backup & Recovery',
+  // AI/ML
+  'AI Writing Tools', 'AI Image Generation', 'Chatbot/Conversational AI',
+  'AI Automation Tools', 'AI Video Generation'
+];
+
+// --- ANALIZO (AI): kategori kryesore + nenkategori + permbledhje per algoritmin ---
+// --- KUFIZIMET E KATEGORIVE: cilat kategori biznesi klienti VETE i ka perjashtuar
+// (s'do te marrin/japin ekspozim me to). Parazgjedhje (VETEM here e pare, para se
+// klienti te ruaje ndonjehere vete): kategoria E VET (konkurrenca e njohur) e
+// perjashtuar automatikisht; te tjerat lejohen. Pasi klienti ruan njehere (edhe
+// bosh), parazgjedhja s'aplikohet me — respektohet gjithmone çka ka ruajtur vete.
+pool.query(`CREATE TABLE IF NOT EXISTS kategori_perjashtime (
+  biznes_id INTEGER NOT NULL, kategoria TEXT NOT NULL,
+  PRIMARY KEY (biznes_id, kategoria)
+)`).catch(e => console.error('migrim kategori_perjashtime:', e.message));
+pool.query(`CREATE TABLE IF NOT EXISTS kategori_kufizime_konfiguruar (biznes_id INTEGER PRIMARY KEY)`)
+  .catch(e => console.error('migrim kategori_kufizime_konfiguruar:', e.message));
+
+app.get('/api/kategori-kufizimet', iLoguar, async (req, res) => {
+  try {
+    const vetja = await pool.query('SELECT kategoria_kryesore, kategori_dytesore FROM bizneset WHERE id=$1', [req.biznesId]);
+    let vetjaKat = vetja.rows.length ? vetja.rows[0].kategoria_kryesore : null;
+    const kd = vetja.rows.length ? vetja.rows[0].kategori_dytesore : null;
+    // TE GJITHA kategorite E VETA (kryesore + dytesore), jo vetem 1 — nese biznesi ofron
+    // me shume se 1 sherbim, secili prej tyre eshte "konkurrence e njohur" per veten e vet.
+    const vetjaKategorite = [vetjaKat].concat(kd ? kd.split(',').map(x => x.trim()) : []).filter(Boolean);
+    // Kontrollo qe kategoria e ruajtur EKZISTON REALISHT ne listen aktuale (72) — nese
+    // biznesi eshte analizuar PARA ketij perditesimi (nen sistemin e vjeter, 12 kategori),
+    // vlera e ruajtur s'perputhet me asnje nga 72-shja, dhe sinjalizojme kete qartazi
+    // (jo vetem heshtazi s'e shenojme si perjashtim parazgjedhje).
+    const vetjaKatVlefshme = vetjaKat && KATEGORITE.includes(vetjaKat);
+    const vetjaKategoriteVlefshme = vetjaKategorite.filter(k => KATEGORITE.includes(k));
+    const uKonfigurua = await pool.query('SELECT 1 FROM kategori_kufizime_konfiguruar WHERE biznes_id=$1', [req.biznesId]);
+    let perjashtuar;
+    if (uKonfigurua.rows.length) {
+      // Klienti e ka ruajtur vete tashme — respekto SAKTESISHT ate qe ka zgjedhur.
+      const r = await pool.query('SELECT kategoria FROM kategori_perjashtime WHERE biznes_id=$1', [req.biznesId]);
+      perjashtuar = r.rows.map(x => x.kategoria);
+    } else {
+      // Hera e pare — parazgjedhje: TE GJITHA kategorite e veta (kryesore + dytesore,
+      // konkurrenca e njohur), VETEM ato vlera qe ekzistojne realisht ne listen aktuale.
+      perjashtuar = vetjaKategoriteVlefshme;
+    }
+    res.json({
+      kategorite: KATEGORITE, vetjaKat, vetjaKategorite: vetjaKategoriteVlefshme, perjashtuar,
+      vetjaKatVjeteruar: !!(vetjaKat && !vetjaKatVlefshme) // true = biznesi duhet te rianalizohet
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/kategori-kufizimet', iLoguar, async (req, res) => {
+  const perjashtuar = Array.isArray(req.body.perjashtuar) ? req.body.perjashtuar.filter(k => KATEGORITE.includes(k)) : [];
+  try {
+    await pool.query('DELETE FROM kategori_perjashtime WHERE biznes_id=$1', [req.biznesId]);
+    for (const k of perjashtuar) {
+      await pool.query('INSERT INTO kategori_perjashtime (biznes_id, kategoria) VALUES ($1,$2) ON CONFLICT DO NOTHING', [req.biznesId, k]);
+    }
+    await pool.query('INSERT INTO kategori_kufizime_konfiguruar (biznes_id) VALUES ($1) ON CONFLICT DO NOTHING', [req.biznesId]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/analizo/mbetur', iLoguar, async (req, res) => {
+  // Kufizimi u hoq — gjithmone "e pakufizuar" tani.
+  res.json({ mbetur: null, pakufizuar: true });
+});
+
+app.post('/api/analizo', iLoguar, async (req, res) => {
+  const pershkrimi = (req.body.pershkrimi || '').trim();
+  const lejo = !!req.body.lejo;
+  const PERSHKRIM_RISHKRIME_FALAS = 5;
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS pershkrim_rishkrime (
+      id SERIAL PRIMARY KEY, biznes_id INTEGER NOT NULL REFERENCES bizneset(id),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
+    // A eshte kjo RISHKRIM (biznesi TASHME ka permbledhje/pershkrim te ruajtur — jo hera e pare
+    // gjate wizard-it te regjistrimit) — VETEM rishkrimet numerohen kunder limitit.
+    const eGjendjes = await pool.query('SELECT permbledhje FROM bizneset WHERE id=$1', [req.biznesId]);
+    const eshteRishkrim = !!(eGjendjes.rows[0] && eGjendjes.rows[0].permbledhje);
+    if (eshteRishkrim) {
+      const premium = await kreativeModul.eshtePremium(pool, req.biznesId);
+      if (!premium) {
+        const rr = await pool.query(
+          `SELECT COUNT(*)::int AS n FROM pershkrim_rishkrime
+           WHERE biznes_id=$1 AND created_at > now() - interval '30 days'`, [req.biznesId]);
+        if (rr.rows[0].n >= PERSHKRIM_RISHKRIME_FALAS) {
+          return res.status(429).json({
+            error: 'Ke arritur kufirin mujor (' + PERSHKRIM_RISHKRIME_FALAS + ') të rishkrimeve të përshkrimit. Kalo te Premium për rishkrime të pakufizuara.',
+            kufiri_arritur: true, plani_url: '/app/plan'
+          });
+        }
+      }
+    }
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pershkrimi_auto BOOLEAN NOT NULL DEFAULT false`);
+    await pool.query('UPDATE bizneset SET pershkrimi=$2, lejo_analize=$3, pershkrimi_auto=false WHERE id=$1',
+      [req.biznesId, pershkrimi || null, lejo]);
+    if (eshteRishkrim) {
+      await pool.query('INSERT INTO pershkrim_rishkrime (biznes_id) VALUES ($1)', [req.biznesId]);
+    }
+
+    // nese lejohet, merr tekstin e faqes se biznesit
+    let webTekst = '';
+    if (lejo) {
+      const b = await pool.query('SELECT website FROM bizneset WHERE id=$1', [req.biznesId]);
+      let url = (b.rows[0] && b.rows[0].website || '').trim();
+      if (url) {
+        if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+        try { const f = await merrFaqen(url); webTekst = pastroHtml(f.body).slice(0, 4000); } catch (e) {}
+      }
+    }
+    if (!pershkrimi && !webTekst) {
+      return res.status(400).json({ error: "Shkruaj një përshkrim, ose sigurohu që faqja jote është publike për t'u studiuar." });
+    }
+
+    const key = process.env.OPENAI_API_KEY;
+    if (!key) {
+      // Pa AI: ruaj pershkrimin, kthe njoftim (kategorizimi behet me vone)
+      return res.json({ ok: true, ai: false, note: "AI s'është konfiguruar ende (mungon OPENAI_API_KEY)." });
+    }
+
+    // Kufizimi i vjeter (2/24h) u hoq — krijimi/analiza e pershkrimit me AI tani e pakufizuar.
+
+    const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+    const sys = 'Je analist qe klasifikon biznese SaaS per nje rrjet cross-promotion. Kthe VETEM JSON, pa asnje tekst tjeter.';
+    const user =
+      'Zgjidh SAKTESISHT nje kategori kryesore nga kjo liste: ' + KATEGORITE.join('; ') + '.\n\n' +
+      'Disa çifte lehte per t\'u ngatërruar — zgjidh sipas ÇFARE bën mjeti realisht, jo vetem temes:\n' +
+      '- SEO Tools (rendit nje faqe ME LART ne Google) vs Site Search Tools (kutia e kerkimit BRENDA nje faqeje/app).\n' +
+      '- Affiliate Marketing Software (paguan partnere/influencera te JASHTEM per shitje) vs Referral Program Software (shperblen nje klient qe referon nje klient tjeter).\n' +
+      '- A/B Testing Tools (eksperimente marketingu ne nje faqe live) vs Software Testing/QA Automation (testim kodi PARA lansimit).\n' +
+      '- Document Management (ruajtje/organizim skedarësh) vs E-signature/Document Signing (nenshkrim ligjerisht i vlefshem).\n' +
+      '- Localization/Translation Software (perkthen nje produkt/app ne gjuhe te tjera) — jo e njejta gje si Content Marketing.\n\n' +
+      'Pershkrimi i dhene nga biznesi: ' + (pershkrimi || '(pa pershkrim)') + '\n\n' +
+      (webTekst ? ('Teksti i nxjerre nga faqja e biznesit:\n' + webTekst + '\n\n') : '') +
+      'Detyra: shpjego QARTE cfare ofron ky biznes. Shpjegoje mire dhe plotesisht, pa e zgjatur kot, ' +
+      'me gjuhe te thjeshte e te kuptueshme. Nje person qe e lexon duhet ta kuptoje sakte se cfare eshte sherbimi dhe kujt i sherben. ' +
+      'Perdor aq fjale sa duhet per ta shpjeguar qarte — as te ngjeshura sa te humbase kuptimi, as te zgjatura kot. ' +
+      'Kombino pershkrimin e biznesit me tekstin e faqes (nese ka) per ta bere me te sakte.\n\n' +
+      'Kthe JSON me keto fusha:\n' +
+      '{"kategoria_kryesore": string (SAKTESISHT nje nga lista), ' +
+      '"kategori_dytesore": string[] (PARAZGJEDHJE: array bosh — shumica e bizneseve bejne 1 gje mire, s\'duhet te marrin asgje ketu. Shto element VETEM nese biznesi QARTAZI, PA dyshim mbulon nje treg TE VEÇANTE, p.sh. nje mjet "people-search" i perdorur PER "Recruiting/ATS Software" DHE "Sales Intelligence" DHE "Lead Generation Tools" — perdorime te ndryshme, blerës te ndryshëm. MOS shto kategori vetem sepse eshte E LIDHUR ngushte ose funksion natyror i kategorise kryesore — p.sh. nje mjet subscription-BILLING qe ben edhe "Payment Processing" eshte mbivendosje NORMALE, e pritshme, JO kategori e dyte; nje mjet project-management me chat baze S\'ESHTE "Team Chat/Communication". Kur ke dyshim, leje bosh), ' +
+      '"nenkategorite": string[] (2-4 nenkategori specifike — keto duhet te jene DETAJE me te ngushta te vete "kategoria_kryesore", JO kategori te veçanta nga lista — mos e perserit ketu dicka qe i takon "kategori_dytesore"), ' +
+      '"permbledhje": string (2-4 fjali te qarta qe shpjegojne cfare ofron biznesi dhe kujt i sherben, ' +
+      'me gjuhe te thjeshte, te shkruara ashtu qe nje algoritem te gjeje me cilat sherbime plotesuese mund te cohet. ' +
+      'SHKRUAJE fushen "permbledhje" GJITHMONE NE ANGLISHT, PAVARESISHT nga gjuha e pershkrimit/tekstit te dhene si input.)}';
+
+    let parsed = {};
+    try {
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify({
+          model, response_format: { type: 'json_object' },
+          messages: [{ role: 'system', content: sys }, { role: 'user', content: user }]
+        })
+      });
+      const data = await r.json();
+      if (data.error) return res.json({ ok: true, ai: false, note: 'AI: ' + data.error.message });
+      parsed = JSON.parse(data.choices[0].message.content);
+    } catch (e) {
+      return res.json({ ok: true, ai: false, note: 'Analiza AI dështoi: ' + e.message });
+    }
+
+    // Verifikim REAL ne kod (jo vetem kerkese te AI) — siguron qe kategoria e ruajtur
+    // perputhet me nje nga KATEGORITE (rast-pandjeshem, per siguri), duke perdorur
+    // GJITHMONE drejtshkrimin KANONIK te listes. Nese AI-ja kthen diçka qe s'perputhet
+    // fare (rralle, por e mundur), s'ruhet variant i shpikur — mbetet null.
+    const kkRaw = parsed.kategoria_kryesore || null;
+    const kk = kkRaw ? (KATEGORITE.find(k => k.toLowerCase() === kkRaw.toLowerCase()) || null) : null;
+    const nk = Array.isArray(parsed.nenkategorite) ? parsed.nenkategorite.join(', ') : (parsed.nenkategorite || null);
+    const kd = Array.isArray(parsed.kategori_dytesore) ? parsed.kategori_dytesore.join(', ') : (parsed.kategori_dytesore || null);
+    const perm = parsed.permbledhje || null;
+
+    await pool.query(
+      'UPDATE bizneset SET kategoria_kryesore=$2, kategori_dytesore=$3, nenkategorite=$4, permbledhje=$5, kategoria=$2 WHERE id=$1',
+      [req.biznesId, kk, kd, nk, perm]);
+
+    res.json({ ok: true, ai: true, kategoria_kryesore: kk, kategori_dytesore: kd, nenkategorite: nk, permbledhje: perm });
+
+    // Nis kombinimin AI MENJEHERE pas pershkrimit — jo me pas snippet-it, siç ishte
+    // me pare — kjo lejon ekspozim te hershem (biznese te tjera, qe kane snippet aktiv,
+    // mund ta shfaqin edhe para se ky biznes te lidhe vete snippet-in).
+    kombinimi.kombinoBiznesin(req.biznesId).catch(() => {});
+
+    // Gjenerim AUTOMATIK i nje reklame (imazh) menjehere pas pershkrimit — s'e ndal
+    // pergjigjen e mesiperme (async, "fire and forget"), thjesht per te aktivizuar hyrjen
+    // e klientit ne rrjet me shpejt, pa pritur qe ai vete te krijoje reklamen e pare.
+    (async () => {
+      try {
+        await pool.query(`ALTER TABLE kreativitetet ADD COLUMN IF NOT EXISTS auto_krijuar BOOLEAN NOT NULL DEFAULT false`);
+        const ekzistuese = await pool.query(`SELECT 1 FROM kreativitetet WHERE biznes_id=$1 LIMIT 1`, [req.biznesId]);
+        if (ekzistuese.rows.length) return; // ka tashme te pakten 1 kreativitet — mos krijo automatikisht
+
+        const bizRow = await pool.query('SELECT website, logjika_shperndarjes FROM bizneset WHERE id=$1', [req.biznesId]);
+        let link = (bizRow.rows[0] && bizRow.rows[0].website || '').trim();
+        if (!link) return; // pa website s'ka ku te coje reklama — mos krijo asgje automatikisht
+        if (!/^https?:\/\//i.test(link)) link = 'https://' + link;
+        const logjika = (bizRow.rows[0] && bizRow.rows[0].logjika_shperndarjes) || 'ankand';
+
+        const falKlient = require('./fal-klient');
+        const falUrl = await falKlient.gjeneroImazh(perm || pershkrimi, null, null, true);
+        // R2: shkarko imazhin nga fal.ai dhe ngarkoje ne R2 tonin — i njejti model si
+        // krijimi manual (kreative.js) — perndryshe editori (proxy-ja R2) s'e njeh URL-ne.
+        const imgResp = await fetch(falUrl);
+        const buf = Buffer.from(await imgResp.arrayBuffer());
+        const key = 'kreative/' + req.biznesId + '_' + Date.now() + '.png';
+        await s3.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key, Body: buf, ContentType: 'image/png' }));
+        const url = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '') + '/' + key;
+
+        await pool.query(
+          `INSERT INTO kreativitetet (biznes_id, lloji, emri, pershkrimi, output_url, status, auto_krijuar)
+           VALUES ($1,'imazh','Automatically created ad',$2,$3,'gati',true)`,
+          [req.biznesId, perm || pershkrimi, url]);
+
+        await pool.query(
+          `INSERT INTO promovimet (biznes_id, titulli, imazh_url, link, aktiv, logjika_shperndarjes, auto_krijuar)
+           VALUES ($1,'Automatically created ad',$2,$3,true,$4,true)`,
+          [req.biznesId, url, link, logjika]);
+      } catch (e) { console.error('Gjenerim automatik reklame deshtoi:', e.message); }
+    })();
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- ADMIN: autentikimi (paneli yt) ---
+async function iAdmin(req, res, next){
+  const token = req.cookies.imyr_admin;
+  if(!token) return res.status(401).json({ error: "S'je i loguar si admin." });
+  try {
+    const r = await pool.query('SELECT 1 FROM admin_seancat WHERE token=$1', [token]);
+    if(!r.rows.length) return res.status(401).json({ error: 'Seanca e pavlefshme.' });
+    next();
+  } catch(e){ res.status(500).json({ error: e.message }); }
+}
+app.post('/api/admin/hyr', async (req, res) => {
+  const pass = req.body.password || '';
+  const real = process.env.ADMIN_PASSWORD;
+  if(!real) return res.status(500).json({ error: "ADMIN_PASSWORD s'është caktuar te serveri." });
+  if(pass !== real) return res.status(400).json({ error: 'Fjalëkalim i gabuar.' });
+  const token = crypto.randomBytes(24).toString('hex');
+  await pool.query('INSERT INTO admin_seancat (token) VALUES ($1)', [token]);
+  res.cookie('imyr_admin', token, { httpOnly:true, sameSite:'lax', maxAge:7*24*60*60*1000 });
+  res.json({ ok:true });
+});
+app.post('/api/admin/dil', async (req, res) => {
+  const t = req.cookies.imyr_admin;
+  if(t) await pool.query('DELETE FROM admin_seancat WHERE token=$1', [t]).catch(()=>{});
+  res.clearCookie('imyr_admin'); res.json({ ok:true });
+});
+app.get('/api/admin/une', iAdmin, (req, res) => res.json({ ok:true }));
+
+// Endpoint-e shtese te admin-it (skedar i ndare — nuk prek webin real)
+require('./admin-routes')(app, pool, iAdmin, kombinimi);
+
+// Caktimi i madhesise se hapesires se reklames (skedar i ndare)
+require('./madhesia')(app, pool, iLoguar);
+
+// Snippet-e te shumta per biznes (skedar i ndare)
+const snippetet = require('./snippetet');
+snippetet(app, pool, iLoguar, beCeles);
+
+// URL-e te shumta konvertimi per biznes (skedar i ndare)
+const konvertimet = require('./konvertimet');
+konvertimet(app, pool, iLoguar, iAdmin);
+
+require('./pamje-perkohshme')(app, pool);
+
+// Zbulimi i platformes se klientit nga URL-ja (skedar i ndare, pa AI)
+platforma(app, pool, iLoguar, iAdmin);
+platforma.init(pool).catch(() => {});
+
+// Asistenti me Claude per vendosjen e kodit (skedar i ndare)
+require('./asistenti')(app, pool, iLoguar);
+
+// Asistenti i suportit te pergjithshem (FAQ, model i lire) — para dhe pas login
+require('./suporti')(app, pool);
+
+// Kreative — krijimi i reklamave me AI (imazh/video/HTML5)
+const kreativeModul = require('./kreative');
+kreativeModul(app, pool, iLoguar, { upload, s3, PutObjectCommand });
+
+require('./kreative-chat')(app, pool, iLoguar);
+
+require('./njoftime-admin')(app, pool, iLoguar, iAdmin);
+
+require('./ndryshime-admin')(app, pool, iLoguar, iAdmin);
+
+require('./marketing-email')(app, pool, iAdmin);
+
+// Resend (dergim email-esh) — nese RESEND_API_KEY s'eshte vendosur, resendKlient
+// mbetet null dhe ekipi.js e trajton pa u thyer (thjesht s'dergon email, fail-open).
+let resendKlient = null;
+if (process.env.RESEND_API_KEY) {
+  const { Resend } = require('resend');
+  resendKlient = new Resend(process.env.RESEND_API_KEY);
+  console.log('RESEND: çelësi u gjet, gjatësia=' + process.env.RESEND_API_KEY.length + ', fillon me="' + process.env.RESEND_API_KEY.slice(0,4) + '..."');
+} else {
+  console.log('RESEND: RESEND_API_KEY MUNGON ose ËSHTË BUJË — resendKlient=null, email S\'DO TË DËRGOHET FARE.');
+}
+require('./ekipi')(app, pool, iLoguar, resendKlient);
+
+// ═══ Njoftime email automatike (7 dite snippet, 3 muaj plani) — permes Gmail/Workspace (email.js) ═══
+const emailModul = require('./email');
+
+// ═══ ADMIN: dergim manual email-esh (nga zero, ose shabllon i gatshem) ═══
+app.get('/api/admin/email/bizneset', iAdmin, async (req, res) => {
+  try {
+    const r = await pool.query(`SELECT id, emri, email, logo_url FROM bizneset WHERE email IS NOT NULL AND email <> '' ORDER BY emri ASC`);
+    res.json({ bizneset: r.rows });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.post('/api/admin/email/dergo-manual', iAdmin, async (req, res) => {
+  const b = req.body || {};
+  const bizIds = Array.isArray(b.biznes_ids) ? b.biznes_ids : [];
+  if (!bizIds.length) return res.status(400).json({ error: 'Zgjidh të paktën një biznes.' });
+  try {
+    const r = await pool.query(`SELECT id, emri, email FROM bizneset WHERE id = ANY($1::int[])`, [bizIds]);
+    let dergu = 0, deshtuar = 0, gabimet = [];
+    for (const biz of r.rows) {
+      let subjekti, html;
+      if (b.shabllon === '7dite') {
+        const sh = emailModul.shablloniSnippet7Dite(biz.emri); subjekti = sh.subjekti; html = sh.html;
+      } else if (b.shabllon === '3muaj') {
+        const sh = emailModul.shablloniPagesa3Muaj(biz.emri); subjekti = sh.subjekti; html = sh.html;
+      } else {
+        subjekti = (b.subjekti || '').trim();
+        html = b.permbajtja_html || '';
+      }
+      if (!subjekti) { deshtuar++; gabimet.push(biz.emri + ': subjekti/shablloni erdhi bosh (shabllon="' + b.shabllon + '")'); continue; }
+      const rez = await emailModul.dergo({ te: biz.email, subjekti, html });
+      if (rez.ok) dergu++; else { deshtuar++; gabimet.push(biz.emri + ': ' + rez.error); }
+    }
+    res.json({ ok: true, dergu, deshtuar, gabimet });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+(async () => {
+  try {
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS njoftim_7dite_dergu BOOLEAN NOT NULL DEFAULT false`);
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS njoftim_3muaj_dergu BOOLEAN NOT NULL DEFAULT false`);
+    await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS balance_reset_7dite BOOLEAN NOT NULL DEFAULT false`);
+  } catch (e) { console.error('njoftime-email ALTER:', e.message); }
+})();
+
+async function kontrolloDheDergoNjoftimet() {
+  try {
+    // 7 dite (vetem biznesi_auto=true, njesoj si kushti i vertete i graceperiod-it)
+    const r7 = await pool.query(`
+      SELECT id, emri, email FROM bizneset
+      WHERE COALESCE(biznesi_auto,false)=true AND COALESCE(njoftim_7dite_dergu,false)=false
+        AND created_at <= now() - interval '7 days'
+        AND NOT EXISTS (SELECT 1 FROM snippetet s WHERE s.biznes_id=bizneset.id AND s.snippet_active=true)`);
+    for (const b of r7.rows) {
+      const sh = emailModul.shablloniSnippet7Dite(b.emri);
+      const rez = await emailModul.dergo({ te: b.email, subjekti: sh.subjekti, html: sh.html });
+      if (rez.ok) await pool.query('UPDATE bizneset SET njoftim_7dite_dergu=true WHERE id=$1', [b.id]);
+      else console.error('njoftim-7dite deshtoi per', b.id, ':', rez.error);
+    }
+    // RESET I HISTORIKUT TE BALANCE, pas 7 ditesh grace, NESE biznesi vetem ka MARRE (Balance)
+    // pa dhene fare (snippet ende joaktiv) — i pavarur nga suksesi i email-it siper (flamur i vecante),
+    // qe te garantohet SAKTESISHT 1 here, kurre me shume, edhe nese email-i deshton.
+    const rReset = await pool.query(`
+      SELECT id FROM bizneset
+      WHERE COALESCE(biznesi_auto,false)=true AND COALESCE(balance_reset_7dite,false)=false
+        AND created_at <= now() - interval '7 days'
+        AND NOT EXISTS (SELECT 1 FROM snippetet s WHERE s.biznes_id=bizneset.id AND s.snippet_active=true)`);
+    for (const b of rReset.rows) {
+      try {
+        // Fshi VETEM aktivitetin Balance (burimi='barazi') — si biznes_id (dhene) DHE reklamues_id
+        // (marre) — e kthen deficitin ne 0, sikur biznesi te ishte rregjistruar tani, pikerisht 1 here.
+        await pool.query("DELETE FROM ngjarjet WHERE burimi='barazi' AND (biznes_id=$1 OR reklamues_id=$1)", [b.id]);
+        await pool.query('UPDATE bizneset SET balance_reset_7dite=true WHERE id=$1', [b.id]);
+      } catch (e) { console.error('balance-reset-7dite deshtoi per', b.id, ':', e.message); }
+    }
+    // 3 muaj (plani ende falas)
+    const r3 = await pool.query(`
+      SELECT id, emri, email FROM bizneset
+      WHERE COALESCE(plani,'falas')!='premium' AND COALESCE(njoftim_3muaj_dergu,false)=false
+        AND created_at <= now() - interval '3 months'`);
+    for (const b of r3.rows) {
+      const sh = emailModul.shablloniPagesa3Muaj(b.emri);
+      const rez = await emailModul.dergo({ te: b.email, subjekti: sh.subjekti, html: sh.html });
+      if (rez.ok) await pool.query('UPDATE bizneset SET njoftim_3muaj_dergu=true WHERE id=$1', [b.id]);
+      else console.error('njoftim-3muaj deshtoi per', b.id, ':', rez.error);
+    }
+  } catch (e) { console.error('kontrolloDheDergoNjoftimet:', e.message); }
+}
+setInterval(kontrolloDheDergoNjoftimet, 60 * 60 * 1000); // çdo orë
+setTimeout(kontrolloDheDergoNjoftimet, 15000); // + 1 kontroll i shpejtë ne nisje (pas 15s)
+
+const pikeReklamaModul = require('./pike-reklama');
+pikeReklamaModul.rregjistroRoutet(app, pool, iAdmin);
+
+require('./suport-human')(app, pool, iLoguar, iAdmin);
+
+require('./reklama-media')(app, pool, iLoguar, { upload, s3, PutObjectCommand });
+require('./pauza')(app, pool, iLoguar);
+// Lista e bizneseve (emer + email)
+app.get('/api/admin/bizneset', iAdmin, async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT b.id, b.emri, b.email, b.logo_url, b.tipi,
+        COALESCE((SELECT COUNT(*) FROM ngjarjet e WHERE e.reklamues_id = b.id AND e.lloji='view'),0)::int AS shfaqje_marre,
+        COALESCE((SELECT COUNT(*) FROM ngjarjet e WHERE e.biznes_id = b.id AND e.lloji='view'),0)::int AS shfaqje_dhene,
+        COALESCE((SELECT COUNT(*) FROM ngjarjet e WHERE e.reklamues_id = b.id AND e.lloji='konvertim'),0)::int AS konvertime
+      FROM bizneset b ORDER BY b.created_at DESC`);
+    const pesha = require('./pesha');
+    const rows = r.rows.map(b => ({
+      id: b.id, emri: b.emri, email: b.email, logo_url: b.logo_url, tipi: b.tipi,
+      shfaqje_marre: b.shfaqje_marre, shfaqje_dhene: b.shfaqje_dhene,
+      pike_profili: Math.round(pesha.pikeProfili(b.tipi || 'b2b', b.shfaqje_marre, b.konvertime))
+    }));
+    res.json(rows);
+  } catch(e){ res.status(500).json({ error: e.message }); }
+});
+
+// --- BALANCAT: dhene/marra (shfaqje, burimi='barazi') per cdo biznes ne logjiken Balance ---
+// Perdoret nga admin.html per grafikun "male/kodra" — kolona te vogla katroresh per biznes,
+// neto = marra - dhene (pozitiv = ka marre me shume se ka dhene, negativ = anasjelltas).
+// Biznesi konsiderohet "ne Balance" nese: (a) ka logjika_shperndarjes='barazi' te bizneset,
+// OSE (b) ka te pakten nje reklame ne promovimet me logjika_shperndarjes='barazi'.
+app.get('/api/admin/balancat', iAdmin, async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT b.id, b.emri,
+        COALESCE(dhene_ng.n,0)::int AS dhene_shfaqje_ngarkime,
+        COALESCE(dhene.n,0)::int AS dhene_shfaqje,
+        COALESCE(marra_ng.n,0)::int AS marra_shfaqje_ngarkime,
+        COALESCE(marra.n,0)::int AS marra_shfaqje
+      FROM bizneset b
+      LEFT JOIN (
+        SELECT biznes_id, COUNT(*)::int AS n FROM ngjarjet
+        WHERE lloji='view' AND burimi='barazi' GROUP BY biznes_id
+      ) dhene_ng ON dhene_ng.biznes_id = b.id
+      LEFT JOIN (
+        SELECT biznes_id, COUNT(*)::int AS n FROM ngjarjet
+        WHERE lloji='shikim' AND burimi='barazi' GROUP BY biznes_id
+      ) dhene ON dhene.biznes_id = b.id
+      LEFT JOIN (
+        SELECT reklamues_id, COUNT(*)::int AS n FROM ngjarjet
+        WHERE lloji='view' AND burimi='barazi' GROUP BY reklamues_id
+      ) marra_ng ON marra_ng.reklamues_id = b.id
+      LEFT JOIN (
+        SELECT reklamues_id, COUNT(*)::int AS n FROM ngjarjet
+        WHERE lloji='shikim' AND burimi='barazi' GROUP BY reklamues_id
+      ) marra ON marra.reklamues_id = b.id
+      WHERE b.logjika_shperndarjes='barazi'
+         OR EXISTS (SELECT 1 FROM promovimet p
+                    WHERE p.biznes_id=b.id AND p.aktiv=true AND p.logjika_shperndarjes='barazi')
+      ORDER BY b.id`);
+    res.json(r.rows.map(x => ({
+      id: x.id, emri: x.emri,
+      dhene: x.dhene_shfaqje, marra: x.marra_shfaqje,
+      dhene_ngarkime: x.dhene_shfaqje_ngarkime, marra_ngarkime: x.marra_shfaqje_ngarkime,
+      neto: x.marra_shfaqje - x.dhene_shfaqje
+    })));
+  } catch(e){ res.status(500).json({ error: e.message }); }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// PERZGJEDHJET (ADMIN) — historiku i Fazes 3 te sistemit Automatik
+// ═══════════════════════════════════════════════════════════════════
+
+// --- Borxhi global mes Ankand dhe Balance (per grafikun 1-kolonesh) ---
+app.get('/api/admin/automatik/borxhi', iAdmin, async (req, res) => {
+  try {
+    const r = await pool.query('SELECT borxhi_neto, kufiri FROM borxhi_global WHERE id=1');
+    const row = r.rows[0] || { borxhi_neto: 0, kufiri: 10 };
+    res.json(row);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- Lista e TE GJITHA bizneseve (per karuselin), me shfaqje totale te ofruara ---
+app.get('/api/admin/automatik/lista', iAdmin, async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT b.id, b.emri,
+        COALESCE(v.shfaqje_totale, 0)::int AS shfaqje_totale,
+        COALESCE(v.ankand_fitore, 0)::int  AS ankand_fitore,
+        COALESCE(v.balance_fitore, 0)::int AS balance_fitore
+      FROM bizneset b
+      LEFT JOIN (
+        SELECT host_id,
+          COUNT(*)::int AS shfaqje_totale,
+          COUNT(*) FILTER (WHERE pishina_fituese='ankand')::int AS ankand_fitore,
+          COUNT(*) FILTER (WHERE pishina_fituese='barazi')::int AS balance_fitore
+        FROM automatik_vendime GROUP BY host_id
+      ) v ON v.host_id = b.id
+      ORDER BY b.emri`);
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- Detajet per NJE biznes (host): 2 tabela (Ankand / Balance) me finaliste historike ---
+app.get('/api/admin/automatik/:id', iAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.status(400).json({ error: 'ID e pavlefshme' });
+  try {
+    const totQ = await pool.query(`
+      SELECT COUNT(*)::int AS shfaqje_totale,
+        COUNT(*) FILTER (WHERE pishina_fituese='ankand')::int AS ankand_fitore,
+        COUNT(*) FILTER (WHERE pishina_fituese='barazi')::int AS balance_fitore
+      FROM automatik_vendime WHERE host_id=$1`, [id]);
+
+    // Vendimi i fundit i konkurruar — shuma e pikeve te perzgjedhjes per te dyja pishinat
+    const fundQ = await pool.query(`
+      SELECT pika_totale_ankand, pika_totale_barazi, zbritje_ankand
+      FROM automatik_vendime
+      WHERE host_id=$1 AND u_konkurrua=true
+      ORDER BY created_at DESC LIMIT 1`, [id]);
+    const pikaFundit = fundQ.rows[0] || { pika_totale_ankand: null, pika_totale_barazi: null, zbritje_ankand: null };
+    const hostTipiQ = await pool.query('SELECT tipi FROM bizneset WHERE id=$1', [id]);
+    const hostTipi = hostTipiQ.rows[0] && hostTipiQ.rows[0].tipi;
+    function pikaPerzgjedhjejeAdmin(x) { return (3/40000)*x*x - (3/200)*x + 7/4; }
+
+    async function tabelaPerPishine(pishina) {
+      const r = await pool.query(`
+        WITH mesatare AS (
+          SELECT f.biznes_id,
+            AVG(f.pesha)::numeric(10,2) AS pesha,
+            AVG(f.pika_perzgjedhje)::numeric(10,2) AS pika_perzgjedhje,
+            AVG(f.ai_skori)::numeric(10,2) AS ai_skori,
+            AVG(f.pike_profili)::numeric(10,2) AS pike_profili,
+            AVG(f.ndihma)::numeric(10,2) AS ndihma,
+            AVG(f.deficit)::numeric(10,2) AS deficit,
+            MAX(f.dhene)::int AS dhene,
+            MAX(f.marra)::int AS marra,
+            COUNT(*)::int AS pjesemarrje,
+            COUNT(*) FILTER (WHERE f.fitoi_biznesin=true)::int AS fitore
+          FROM automatik_finalistet f
+          JOIN automatik_vendime v ON v.id = f.vendim_id
+          WHERE v.host_id=$1 AND f.pishina=$2
+          GROUP BY f.biznes_id
+        ),
+        i_fundit AS (
+          SELECT DISTINCT ON (f.biznes_id) f.biznes_id, f.fitoi_biznesin AS fitore_fundit
+          FROM automatik_finalistet f
+          JOIN automatik_vendime v ON v.id = f.vendim_id
+          WHERE v.host_id=$1 AND f.pishina=$2
+          ORDER BY f.biznes_id, v.created_at DESC
+        )
+        SELECT m.biznes_id, (SELECT emri FROM bizneset WHERE id=m.biznes_id) AS emri,
+          (SELECT tipi FROM bizneset WHERE id=m.biznes_id) AS tipi,
+          m.pesha, m.pika_perzgjedhje, m.ai_skori, m.pike_profili, m.ndihma, m.deficit, m.dhene, m.marra, m.fitore,
+          i.fitore_fundit
+        FROM mesatare m JOIN i_fundit i ON i.biznes_id = m.biznes_id
+        ORDER BY m.fitore DESC, m.pesha DESC`, [id, pishina]);
+
+      // LIVE: per secilin kandidat, rillogarit AI+deficit/profil TANI (jo snapshot historik) —
+      // qe "pika e fundit" te reflektoje gjendjen REALE aktuale, njesoj si "Bizneset→Balance".
+      const balancaModul = require('./balanca')(pool);
+      for (const row of r.rows) {
+        let aiTani = 0;
+        try {
+          const s = await pool.query('SELECT skori FROM perputhjet WHERE reklamues_id=$1 AND host_id=$2', [row.biznes_id, id]);
+          if (s.rows.length && s.rows[0].skori != null) aiTani = s.rows[0].skori;
+        } catch (e) {}
+        row.ai_skori_fundit = aiTani;
+        if (pishina === 'barazi') {
+          const det = await balancaModul.merrDeficitet([row.biznes_id]);
+          const d = det[row.biznes_id] || { dhene: 0, marra: 0, deficit: 0 };
+          row.deficit_fundit = d.deficit;
+          row.dhene_fundit = d.dhene;
+          row.marra_fundit = d.marra;
+          row.pesha_fundit = Math.round(Math.max(0, aiTani + balancaModul.pikaDeficitit(d.deficit)) * 100) / 100;
+        } else {
+          const rr = await pool.query(
+            `SELECT COUNT(*) FILTER (WHERE lloji='shikim')::int AS shfaqje,
+                    COUNT(*) FILTER (WHERE lloji='konvertim')::int AS konvertime
+             FROM ngjarjet WHERE biznes_id=$1 AND created_at >= now() - interval '30 days'`, [row.biznes_id]);
+          const rate = pesha.PARAM.RATE[row.tipi || hostTipi] || pesha.PARAM.RATE.b2c;
+          const pikeProf = (rr.rows[0].shfaqje / rate) + rr.rows[0].konvertime;
+          let nderTop3 = false;
+          try {
+            const t3 = await pool.query(
+              `SELECT host_id FROM perputhjet WHERE reklamues_id=$1 AND skori IS NOT NULL ORDER BY skori DESC LIMIT $2`,
+              [row.biznes_id, pesha.PARAM.TOP_KOMBINIME]);
+            nderTop3 = t3.rows.some(x => x.host_id === id);
+          } catch (e) {}
+          const ndihNeto = pesha.ndihmaNeto(aiTani, pikeProf, nderTop3);
+          row.pike_profili_fundit = Math.round(pikeProf * 100) / 100;
+          row.ndihma_fundit = Math.round(ndihNeto * 100) / 100;
+          row.pesha_fundit = Math.round((aiTani + pikeProf + ndihNeto) * 100) / 100;
+        }
+        row.pika_perzgjedhje_fundit = Math.round(pikaPerzgjedhjejeAdmin(row.pesha_fundit) * 100) / 100;
+      }
+      const shumaLiveFundit = r.rows.reduce((s, row) => s + (row.pika_perzgjedhje_fundit || 0), 0);
+      return { rows: r.rows, shumaLiveFundit: Math.round(shumaLiveFundit * 100) / 100 };
+    }
+
+    const ankandKand = await tabelaPerPishine('ankand');
+    const balanceKand = await tabelaPerPishine('barazi');
+
+    res.json({
+      shfaqje_totale: totQ.rows[0].shfaqje_totale,
+      ankand: {
+        fitore_gjithsej: totQ.rows[0].ankand_fitore,
+        pika_totale_fundit: ankandKand.shumaLiveFundit,
+        zbritje_kufiri_fleksibel: pikaFundit.zbritje_ankand,
+        kandidatet: ankandKand.rows
+      },
+      balance: {
+        fitore_gjithsej: totQ.rows[0].balance_fitore,
+        pika_totale_fundit: balanceKand.shumaLiveFundit,
+        kandidatet: balanceKand.rows
+      }
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+
+// Biznesi konsiderohet "ne Balance" nese: (a) ka logjika_shperndarjes='barazi' te bizneset,
+// OSE (b) ka te pakten nje reklame ne promovimet me logjika_shperndarjes='barazi'.
+// Numrat pasqyrojne aktivitetin si HOST (kush ka ofruar hapesire dhe cka ndodhi tek ai).
+app.get('/api/admin/balancet-lista', iAdmin, async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT b.id, b.emri, b.email,
+        COALESCE(v.vetem, 0)::int        AS fitore_vetem,
+        COALESCE(v.fit_barazim, 0)::int  AS fitore_barazim,
+        COALESCE(v.pjes_barazim, 0)::int AS pjesemarrje_barazim
+      FROM bizneset b
+      LEFT JOIN (
+        SELECT host_id,
+          COUNT(*) FILTER (WHERE fitoi=true  AND me_barazim=false)::int AS vetem,
+          COUNT(*) FILTER (WHERE fitoi=true  AND me_barazim=true )::int AS fit_barazim,
+          COUNT(*) FILTER (WHERE                me_barazim=true )::int AS pjes_barazim
+        FROM balancet GROUP BY host_id
+      ) v ON v.host_id = b.id
+      WHERE b.logjika_shperndarjes='barazi'
+         OR EXISTS (SELECT 1 FROM promovimet p
+                    WHERE p.biznes_id=b.id AND p.aktiv=true AND p.logjika_shperndarjes='barazi')
+      ORDER BY b.emri`);
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- BALANCET (ANALITIKE): detajet e nje biznesi si HOST (dy grupime AGREGUAR) ---
+//   vetem    → nje rresht per REKLAMUES: sa here ky reklamues ka fituar te ky host (pa barazim)
+//   skenaret → nje rresht per skenar (host eshte i njejti = ky biznes, kandidatet ndryshojne):
+//              AI-ja e fundit + numri i fitoreve per secilin kandidat
+app.get('/api/admin/balancet/:id', iAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.status(400).json({ error: 'ID e pavlefshme' });
+  try {
+    // Tabela 1 — Fitore si i vetem TE KY HOST, AGREGUAR sipas reklamuesit qe fitoi
+    const vetemQ = await pool.query(`
+      SELECT b.reklamues_id,
+        COUNT(*)::int AS shfaqje,
+        MAX(b.created_at) AS last_at,
+        (SELECT emri FROM bizneset WHERE id = b.reklamues_id) AS reklamues_emri
+      FROM balancet b
+      WHERE b.host_id=$1 AND b.fitoi=true AND b.me_barazim=false
+      GROUP BY b.reklamues_id
+      ORDER BY shfaqje DESC`, [id]);
+
+    // Tabela 2 — Skenaret e barazimit TE KY HOST. Marrim raw pastaj agregojme ne JS
+    // sipas setit te kandidateve (host eshte i njejti gjithmone = $1).
+    const vendQ = await pool.query(`
+      SELECT DISTINCT vendim_id FROM balancet
+      WHERE host_id=$1 AND me_barazim=true`, [id]);
+    const vendimIdet = vendQ.rows.map(x => x.vendim_id);
+    let skenaret = [];
+    if (vendimIdet.length) {
+      const detQ = await pool.query(`
+        SELECT b.vendim_id, b.reklamues_id, b.ai_skori, b.fitoi, b.created_at,
+          (SELECT emri FROM bizneset WHERE id = b.reklamues_id) AS reklamues_emri
+        FROM balancet b
+        WHERE b.vendim_id = ANY($1::bigint[])
+        ORDER BY b.vendim_id DESC, b.reklamues_id`, [vendimIdet]);
+
+      // Hapi 1: grupim per vendim_id
+      const vendimet = {};
+      detQ.rows.forEach(r => {
+        if (!vendimet[r.vendim_id]) vendimet[r.vendim_id] = {
+          created_at: r.created_at,
+          kandidatet: []
+        };
+        vendimet[r.vendim_id].kandidatet.push({
+          reklamues_id: r.reklamues_id,
+          reklamues_emri: r.reklamues_emri,
+          ai_skori: r.ai_skori,
+          fitoi: r.fitoi
+        });
+      });
+
+      // Hapi 2: grupim per skenar = set i sorted candidate ids (host eshte i njejti)
+      const skenMap = {};
+      Object.values(vendimet).forEach(v => {
+        const skenId = v.kandidatet.map(k => k.reklamues_id).sort((a,b) => a-b).join(',');
+        if (!skenMap[skenId]) skenMap[skenId] = {
+          last_at: v.created_at,
+          ndodhi_here: 0,
+          kandidatet: {}
+        };
+        const s = skenMap[skenId];
+        s.ndodhi_here++;
+        if (new Date(v.created_at) > new Date(s.last_at)) s.last_at = v.created_at;
+        v.kandidatet.forEach(k => {
+          if (!s.kandidatet[k.reklamues_id]) s.kandidatet[k.reklamues_id] = {
+            reklamues_id: k.reklamues_id,
+            reklamues_emri: k.reklamues_emri,
+            ai_skori_latest: k.ai_skori,
+            fitore: 0
+          };
+          if (k.fitoi) s.kandidatet[k.reklamues_id].fitore++;
+        });
+      });
+
+      skenaret = Object.values(skenMap).map(s => ({
+        last_at: s.last_at,
+        ndodhi_here: s.ndodhi_here,
+        kandidatet: Object.values(s.kandidatet)
+      })).sort((a, b) => b.ndodhi_here - a.ndodhi_here);
+    }
+
+    res.json({ vetem: vetemQ.rows, skenaret });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Detajet e nje biznesi + statistika
+app.get('/api/admin/biznes/:id', iAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const logjika = ['ankand','barazi'].includes(req.query.logjika) ? req.query.logjika : 'ankand';
+  try {
+    const b = await pool.query(
+      `SELECT id, emri, email, website, kategoria_kryesore, kategori_dytesore, nenkategorite, permbledhje, pershkrimi,
+              plani, celes, created_at, snippet_active, origjina, kandidat_url, first_seen_at, last_seen_at,
+              tipi, biznesi_auto, pershkrimi_auto, track_active, ankand_krijuar, balance_krijuar
+       FROM bizneset WHERE id=$1`, [id]);
+    if(!b.rows.length) return res.status(404).json({ error: 'Nuk u gjet.' });
+    const row = b.rows[0];
+    const statistika = await analytics.statistikaBiznesi(pool, id);
+
+    // A ekziston fare llogaria per kete pishine (ankand/balance) — per butonat e toggle-it.
+    const eKetijPishina = logjika==='ankand' ? row.ankand_krijuar : row.balance_krijuar;
+
+    // 5 PIKAT E PLOTESIMIT (te perbashketa, jo pool-specifike — jane hapa te nivelit te biznesit).
+    const snLidhur = await pool.query('SELECT 1 FROM snippetet WHERE biznes_id=$1 AND snippet_active=true LIMIT 1', [id]);
+    const uLidhur = await pool.query('SELECT 1 FROM konvertimet WHERE biznes_id=$1 AND track_active=true LIMIT 1', [id]);
+    const zLidhur = await pool.query('SELECT 1 FROM zonat WHERE biznes_id=$1 AND track_active=true AND fshire=false LIMIT 1', [id]);
+    const rekManuale = await pool.query(`SELECT 1 FROM kreativitetet WHERE biznes_id=$1 AND auto_krijuar=false LIMIT 1`, [id]);
+    const rekAuto = await pool.query(`SELECT 1 FROM kreativitetet WHERE biznes_id=$1 AND auto_krijuar=true LIMIT 1`, [id]);
+    const reklamatListe = await pool.query(
+      `SELECT emri, lloji, auto_krijuar FROM kreativitetet WHERE biznes_id=$1 ORDER BY id DESC LIMIT 10`, [id]);
+    const konvertimIPlote = !!row.track_active && (uLidhur.rows.length > 0 || zLidhur.rows.length > 0);
+    const checklist = {
+      llogaria:   { plotesuar: !!(row.website && row.tipi), menyra: row.biznesi_auto ? 'automatik' : 'manual' },
+      pershkrimi: { plotesuar: !!(row.permbledhje || row.pershkrimi), menyra: row.pershkrimi_auto ? 'automatik' : 'manual' },
+      lidhja:     { plotesuar: snLidhur.rows.length > 0, menyra: 'manual' },
+      reklama:    { plotesuar: rekManuale.rows.length > 0 || rekAuto.rows.length > 0, menyra: rekManuale.rows.length > 0 ? 'manual' : 'automatik' },
+      konvertimi: { plotesuar: konvertimIPlote, menyra: 'manual' }
+    };
+
+    // SNIPPET-ET DHE CREATIVET jane te perbashketa (jo pool-specifike) — vetem numri i tyre.
+    const snippetetListe = await pool.query(
+      `SELECT id, emri, snippet_active, pauzuar FROM snippetet WHERE biznes_id=$1 ORDER BY id DESC`, [id]);
+
+    // REKLAMAT (promovimet) — POOL-SPECIFIKE, filtruar sipas logjika_shperndarjes.
+    const promovimetListe = await pool.query(
+      `SELECT id, teksti, aktiv, pauzuar, auto_krijuar, created_at FROM promovimet
+       WHERE biznes_id=$1 AND COALESCE(logjika_shperndarjes,'ankand')=$2 ORDER BY id DESC LIMIT 20`, [id, logjika]);
+
+    // ANALITIKA (dhene + marre) — POOL-SPECIFIKE, filtruar sipas burimit te ngjarjeve (30 dite).
+    const statPoolQ = await pool.query(
+      `SELECT
+        (SELECT COUNT(*) FROM ngjarjet e JOIN promovimet p ON p.id=e.reklama_id
+           WHERE p.biznes_id=$1 AND e.lloji='view' AND e.burimi=$2 AND e.created_at > now()-interval '30 days')::int AS dhene_shfaqje,
+        (SELECT COUNT(*) FROM ngjarjet e JOIN promovimet p ON p.id=e.reklama_id
+           WHERE p.biznes_id=$1 AND e.lloji='shikim' AND e.burimi=$2 AND e.created_at > now()-interval '30 days')::int AS dhene_shikime,
+        (SELECT COUNT(*) FROM ngjarjet e JOIN promovimet p ON p.id=e.reklama_id
+           WHERE p.biznes_id=$1 AND e.lloji='click' AND e.burimi=$2 AND e.created_at > now()-interval '30 days')::int AS dhene_klikime,
+        (SELECT COUNT(*) FROM ngjarjet e JOIN promovimet p ON p.id=e.reklama_id
+           WHERE p.biznes_id=$1 AND e.lloji='konvertim' AND e.burimi=$2 AND e.created_at > now()-interval '30 days')::int AS dhene_konvertime,
+        (SELECT COUNT(*) FROM ngjarjet e WHERE e.biznes_id=$1 AND e.lloji='view' AND e.burimi=$2 AND e.created_at > now()-interval '30 days')::int AS marre_shfaqje,
+        (SELECT COUNT(*) FROM ngjarjet e WHERE e.biznes_id=$1 AND e.lloji='shikim' AND e.burimi=$2 AND e.created_at > now()-interval '30 days')::int AS marre_shikime,
+        (SELECT COUNT(*) FROM ngjarjet e WHERE e.biznes_id=$1 AND e.lloji='click' AND e.burimi=$2 AND e.created_at > now()-interval '30 days')::int AS marre_klikime,
+        (SELECT COUNT(*) FROM ngjarjet e WHERE e.biznes_id=$1 AND e.lloji='konvertim' AND e.burimi=$2 AND e.created_at > now()-interval '30 days')::int AS marre_konvertime`,
+      [id, logjika]);
+
+    res.json({
+      biznes: row, statistika, checklist, reklamat: reklamatListe.rows,
+      logjika, eKetijPishina,
+      snippetet: snippetetListe.rows,
+      promovimet: promovimetListe.rows,
+      statPool: statPoolQ.rows[0]
+    });
+  } catch(e){ res.status(500).json({ error: e.message }); }
+});
+
+// --- FSHIRJE E PLOTE E NJE BIZNESI — heq CDO gjurme te tij nga platforma, ne CDO tabele
+// te njohur, ne 1 transaksion (ose gjithcka, ose asgje). Perdoret nga admin, "Delete" butoni. ---
+app.delete('/api/admin/biznes/:id', iAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.status(400).json({ error: 'ID e pavlefshme' });
+  const klient = await pool.connect();
+  try {
+    await klient.query('BEGIN');
+    // Tabelat QENDRORE (perdoren gjeresisht ne krejt aplikacionin, sigurisht ekzistojne).
+    // ekipi_anetaret DHE ekipi_role_shabllonet — te dyja te konfirmuara nga gabimet e mepareshme.
+    // Rendi eshte KRITIK: anetaret referojne rolet (rol_id), duhet fshirë ANETARET SE PARI.
+    await klient.query('DELETE FROM ekipi_anetaret WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM ekipi_ftesat WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM ekipi_aktiviteti WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM ekipi_role_shabllonet WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM ngjarjet WHERE biznes_id=$1 OR reklamues_id=$1', [id]);
+    await klient.query('DELETE FROM perputhjet WHERE reklamues_id=$1 OR host_id=$1', [id]);
+    await klient.query('DELETE FROM automatik_vendime WHERE host_id=$1', [id]);
+    await klient.query('DELETE FROM automatik_finalistet WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM balancet WHERE host_id=$1 OR reklamues_id=$1', [id]);
+    await klient.query('DELETE FROM garat WHERE host_id=$1 OR reklamues_id=$1', [id]);
+    await klient.query('DELETE FROM kreativitetet WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM snippetet WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM promovimet WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM konvertimet WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM zonat WHERE biznes_id=$1', [id]);
+    // Me ne fund, vetë biznesi
+    await klient.query('DELETE FROM bizneset WHERE id=$1', [id]);
+    await klient.query('COMMIT');
+  } catch (e) {
+    await klient.query('ROLLBACK');
+    klient.release();
+    return res.status(500).json({ error: e.message });
+  }
+  klient.release();
+
+  // Tabelat OPSIONALE (veçori qe mund te mos jene perdorur ende ne kete server specifik,
+  // pra tabela mund te MOS EKZISTOJE fare akoma) — trajtuar VEÇMAS, JASHTE transaksionit
+  // kryesor, qe nese ndonjë s'ekziston, te MOS PRISHË fshirjen kryesore qe TASHME ndodhi me sukses.
+  const tabelatOpsionale = [
+    { tab: 'kategori_perjashtime', kol: 'biznes_id' },
+    { tab: 'kategori_kufizime_konfiguruar', kol: 'biznes_id' },
+    { tab: 'ekipi_lista_pritjes', kol: 'biznes_id' },
+    { tab: 'suport_kerkesat', kol: 'biznes_id' },
+    { tab: 'njoftimet_admin', kol: 'biznes_id' },
+    { tab: 'analizo_perdorimi', kol: 'biznes_id' }
+  ];
+  for (const t of tabelatOpsionale) {
+    try { await pool.query(`DELETE FROM ${t.tab} WHERE ${t.kol}=$1`, [id]); }
+    catch (e) { /* tabela s'ekziston ende ne kete server — s'ka gje per te fshire, injoro */ }
+  }
+
   res.json({ ok: true });
 });
 
-app.get('/api/statusi', (req, res) => {
-  res.json({ puna });
-});
-
-app.get('/api/test-email', async (req, res) => {
-  const domain = req.query.domain;
-  if (!domain) return res.status(400).json({ error: 'Shto ?domain=example.com ne URL.' });
-  if (!GENERECT_KEY) return res.status(500).json({ error: 'GENERECT_API_KEY nuk eshte konfiguruar.' });
-  const headers = { 'Content-Type': 'application/json', 'Authorization': 'Token ' + GENERECT_KEY };
-  const baza = 'https://api.generect.com/api/v1';
-  const permbledhje = { domain };
-  const detaje = {};
-  const rezultat = { permbledhje, detaje };
-  try {
-    const rComp = await fetch(baza + '/enrich/database/company/', { method: 'POST', headers, body: JSON.stringify({ domain }) });
-    permbledhje.hapi1_status = rComp.status;
-    const dComp = await rComp.json();
-    permbledhje.kostoja_hapi1 = dComp.meta ? dComp.meta.amount_charged : null;
-    const komp = dComp.data;
-    permbledhje.kompania = komp ? { emri: komp.name, domain: komp.domain, punonjes: komp.headcount_exact, linkedin_urn: komp.linkedin_urn } : null;
-    const companyLink = komp && (komp.linkedin_link || komp.linkedin_url || (komp.linkedin_urn ? ('https://www.linkedin.com/company/' + komp.linkedin_urn + '/') : null));
-    permbledhje.companyLink = companyLink || null;
-    if (!companyLink) return res.json(rezultat);
-
-    const rSearch = await fetch(baza + '/search/database/leads/', {
-      method: 'POST', headers, body: JSON.stringify({ job_titles: ['CEO', 'Founder', 'Owner', 'Co-Founder'], company_link: companyLink, limit_by: 3 })
-    });
-    permbledhje.hapi2_status = rSearch.status;
-    const dSearch = await rSearch.json();
-    permbledhje.kostoja_hapi2 = dSearch.meta ? dSearch.meta.amount_charged : null;
-    const leads = (dSearch.data && dSearch.data.leads) || dSearch.data || [];
-    permbledhje.personat = leads.map(l => ({ emri: l.full_name, titulli: l.job_title, kompania: l.company_name, linkedin_url: l.linkedin_url, ka_id: !!l.id }));
-    const identifikues = identifikuesPersoni(zgjidhPersonin(leads));
-    const zgjedhur = zgjidhPersonin(leads);
-    permbledhje.zgjedhur = zgjedhur ? { emri: zgjedhur.full_name, titulli: zgjedhur.job_title } : null;
-    permbledhje.identifikuesiPerdorur = identifikues;
-    if (!identifikues) return res.json(rezultat);
-
-    const rEmail = await fetch(baza + '/email/find/', { method: 'POST', headers, body: JSON.stringify(identifikues) });
-    permbledhje.hapi3_status = rEmail.status;
-    const dEmail = await rEmail.json();
-    permbledhje.email = nxjerrEmail(dEmail.data);
-    permbledhje.verifikimi = dEmail.data ? { result: dEmail.data.result, catch_all: dEmail.data.catch_all } : null;
-    permbledhje.kostoja_hapi3 = dEmail.meta ? dEmail.meta.amount_charged : null;
-    detaje.hapi3_email_body = dEmail;
-  } catch (e) { permbledhje.gabim = e.message; }
-  res.json(rezultat);
-});
-
-app.get('/api/kategorite', async (req, res) => {
-  try {
-    const r = await pool.query('SELECT DISTINCT kategoria FROM bizneset_gjetur WHERE kategoria IS NOT NULL ORDER BY kategoria ASC');
-    res.json({ kategorite: r.rows.map(x => x.kategoria) });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-function arratisCSV(vlera) {
-  const tekst = String(vlera == null ? '' : vlera);
-  if (/[",\n]/.test(tekst)) return '"' + tekst.replace(/"/g, '""') + '"';
-  return tekst;
+// --- Faqet ---
+app.use(express.static(path.join(__dirname, 'public')));
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
+app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
+app.get('/refund', (req, res) => res.sendFile(path.join(__dirname, 'public', 'refund.html')));
+app.get('/contact', (req, res) => res.sendFile(path.join(__dirname, 'public', 'contact.html')));
+app.get('/about', (req, res) => res.sendFile(path.join(__dirname, 'public', 'about.html')));
+app.get('/si-funksionon', (req, res) => res.sendFile(path.join(__dirname, 'public', 'si-funksionon.html')));
+app.get('/how-it-works', (req, res) => res.sendFile(path.join(__dirname, 'public', 'si-funksionon.html')));
+app.get('/formate-ai', (req, res) => res.sendFile(path.join(__dirname, 'public', 'formate-ai.html')));
+app.get('/ai-formats', (req, res) => res.sendFile(path.join(__dirname, 'public', 'formate-ai.html')));
+app.get('/gjurmimi-analitika', (req, res) => res.sendFile(path.join(__dirname, 'public', 'gjurmimi-analitika.html')));
+app.get('/tracking-analytics', (req, res) => res.sendFile(path.join(__dirname, 'public', 'gjurmimi-analitika.html')));
+app.get('/ekipet-rolet', (req, res) => res.sendFile(path.join(__dirname, 'public', 'ekipet-rolet.html')));
+app.get('/teams-roles', (req, res) => res.sendFile(path.join(__dirname, 'public', 'ekipet-rolet.html')));
+app.get('/ai-matching', (req, res) => res.sendFile(path.join(__dirname, 'public', 'ai-matching.html')));
+// ---- BLOG (fillim) ---- artikujt jane skedare .md te dosja content/blog (shih blog.js). Pa artikuj te publikuar, /blog shfaq blog.html statik.
+try {
+  require('./blog')(app, { publicDir: path.join(__dirname, 'public'), contentDir: path.join(__dirname, 'content', 'blog') });
+} catch (e) {
+  console.error('blog.js nuk u ngarkua, po perdoret blog.html statik:', e.message);
+  app.get('/blog', (req, res) => res.sendFile(path.join(__dirname, 'public', 'blog.html')));
 }
-
-app.get('/api/eksporto-csv', async (req, res) => {
-  try {
-    const { kategoria } = req.query;
-    let r;
-    if (kategoria) {
-      r = await pool.query("SELECT email, domain, emri FROM bizneset_gjetur WHERE kategoria=$1 AND email IS NOT NULL AND email NOT LIKE '(%' ORDER BY gjetur_at DESC", [kategoria]);
-    } else {
-      r = await pool.query("SELECT email, domain, emri FROM bizneset_gjetur WHERE email IS NOT NULL AND email NOT LIKE '(%' ORDER BY gjetur_at DESC");
-    }
-    const rreshta = ['email,domain,emri'];
-    for (const row of r.rows) {
-      rreshta.push([arratisCSV(row.email), arratisCSV(row.domain), arratisCSV(row.emri)].join(','));
-    }
-    const csv = rreshta.join('\n');
-    const emriSkedarit = 'bizneset' + (kategoria ? ('-' + kategoria) : '') + '.csv';
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename="' + emriSkedarit + '"');
-    res.send(csv);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+// ---- BLOG (fund) ----
+app.get('/ekipi', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/prano-ftesen', (req, res) => res.sendFile(path.join(__dirname, 'public', 'prano-ftesen.html')));
+app.get('/cilesimet', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+// --- 5 SAAS PROVE (demo-*.js — secili i pavarur; fshiji kur te mbarosh) ---
+const demot = {
+  paguar: require('./demo-paguar'),
+  matje:  require('./demo-matje'),
+  posta:  require('./demo-posta'),
+  suport: require('./demo-suport'),
+  dizajn: require('./demo-dizajn')
+};
+app.get('/demo/:slug', (req, res) => {
+  const d = demot[req.params.slug];
+  if (!d) return res.status(404).send('SaaS i panjohur');
+  res.send(d.faqet.ballina());
+});
+app.get('/demo/:slug/regjistrohu', (req, res) => {
+  const d = demot[req.params.slug];
+  if (!d) return res.status(404).send('SaaS i panjohur');
+  res.send(d.faqet.regjistrohu());
+});
+app.get('/demo/:slug/welcome', (req, res) => {
+  const d = demot[req.params.slug];
+  if (!d) return res.status(404).send('SaaS i panjohur');
+  res.send(d.faqet.welcome());
 });
 
-// Shto kontakt manualisht (p.sh. per testim) — trajton rastin kur disa email-e ndajne te njejtin
-// domain (si @gmail.com), duke shtuar nje suffix te vogel per te shmangur konfliktin e uniqitetit te domain-it.
-app.post('/api/shto-manualisht', async (req, res) => {
-  const { email, emri, kategoria } = req.body || {};
-  if (!email || !email.includes('@')) return res.status(400).json({ error: 'Email i pavlefshem.' });
-  try {
-    let domainBaze = domainNga('http://' + email.split('@')[1]);
-    let domainPerRuajtje = domainBaze;
-    let provoi = 0;
-    while (true) {
-      const ekziston = await pool.query('SELECT 1 FROM bizneset_gjetur WHERE domain=$1', [domainPerRuajtje]);
-      if (!ekziston.rows.length) break;
-      provoi++;
-      domainPerRuajtje = domainBaze + '-' + provoi;
-      if (provoi > 50) return res.status(500).json({ error: 'Shume konflikte domain-i, provo tjeter email.' });
-    }
-    const ins = await pool.query(
-      'INSERT INTO bizneset_gjetur (domain, emri, url, pershkrimi, kategoria, email) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *',
-      [domainPerRuajtje, emri || email, 'mailto:' + email, 'Kontakt i shtuar manualisht.', kategoria || 'emailet-e-proves', email]
-    );
-    res.json({ ok: true, rreshti: ins.rows[0] });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
+// --- SAJTI I PROVES (test-saas.js — fshije bashke me kete bllok kur te mbaroje testimi) ---
+const testSaas = require('./test-saas');
+app.get('/test', (req, res) => res.send(testSaas.faqet.ballina()));
+app.get('/test/regjistrohu', (req, res) => res.send(testSaas.faqet.regjistrohu()));
+app.get('/test/welcome', (req, res) => res.send(testSaas.faqet.welcome()));
+app.get('/test2', (req, res) => res.sendFile(path.join(__dirname, 'index-test-saas2.html')));
+app.get('/test2/regjistrohu', (req, res) => res.sendFile(path.join(__dirname, 'test2-regjistrohu.html')));
+app.get('/test2/welcome', (req, res) => res.sendFile(path.join(__dirname, 'test2-welcome.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 
-// Perdoret nga admini i PhronexusAI (sinkronizimi i kontakteve) dhe nga tab-i "Ruajtura" (me ?burimi=exa, qe te mbetet si ishte).
-// Pa ?burimi=exa kthen edhe kompanite e Crustdata qe kane email (jo me MX te pavlefshem), me kategorine "Crustdata: <emri>";
-// keshtu admini i PhronexusAI i ndan ne seksione pa u ndryshuar kodi i tij i importit.
-const KATEGORI_CRUSTDATA = 'Crustdata: ';
-app.get('/api/te-gjitha', async (req, res) => {
-  try {
-    const kategoria = req.query.kategoria ? String(req.query.kategoria) : '';
-    const vetemExa = req.query.burimi === 'exa';
-    const eCrust = kategoria.startsWith(KATEGORI_CRUSTDATA);
-    let rows = [];
-    if (!eCrust) {
-      const r = kategoria
-        ? await pool.query('SELECT email, email_statusi, domain, emri, kategoria FROM bizneset_gjetur WHERE kategoria=$1 ORDER BY gjetur_at DESC', [kategoria])
-        : await pool.query('SELECT email, email_statusi, domain, emri, kategoria FROM bizneset_gjetur ORDER BY gjetur_at DESC');
-      rows = r.rows;
-    }
-    if (!vetemExa && (eCrust || !kategoria)) {
-      try {
-        const emriKat = eCrust ? kategoria.slice(KATEGORI_CRUSTDATA.length) : null;
-        let sql = 'SELECT email, domain, emri, kategoria FROM kompani_pare WHERE email IS NOT NULL AND email_mx IS DISTINCT FROM false';
-        const p = [];
-        if (emriKat === 'pa-kategori') sql += " AND (kategoria IS NULL OR kategoria = '')";
-        else if (emriKat) { p.push(emriKat); sql += ' AND kategoria = $1'; }
-        const r = await pool.query(sql + ' ORDER BY gjetur_at DESC', p);
-        rows = rows.concat(r.rows.map(x => ({ email: x.email, email_statusi: 'nga-faqja', domain: x.domain, emri: x.emri, kategoria: KATEGORI_CRUSTDATA + (x.kategoria || 'pa-kategori') })));
-      } catch (e) { console.error('te-gjitha: pjesa e Crustdata nuk u lexua (Exa vazhdon):', e.message); }
-    }
-    res.json({ rows });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
+// health check
+app.get('/health', (req, res) => res.json({ ok: true, koha: new Date().toISOString() }));
+// SHTO KETE TE server.js — DUHET TE JETE E FUNDIT, pas TE GJITHA app.get/post/etj
+// te tjera (API-t, static, faqet specifike si /ekipi, /cilesimet).
+//
+// Pse nevojitet: core.js tani gjeneron URL reale per çdo faqe te aplikacionit
+// (/app/dashboard, /app/hapesira/5, /app/reklamat/performanca, etj.) — por keto
+// s'ekzistojne si "rruge" te vertetat te serveri (jane vetem gjendje e brendshme
+// e JS-it). Pa kete catch-all, refresh/link-i-ndare/direkt-hapje per keto URL
+// do te kthente 404, sepse serveri s'i njeh fare.
+//
+// Ky route i FUNDIT thjesht i kthen te gjitha (perveç /api/...) te index.html,
+// dhe core.js (urlToState) e rindërton vetë gjendjen e sakte nga vetë URL-ja.
 
-// ---- BISEDAT ----
-app.post('/api/bisedat/formulo', async (req, res) => {
-  const b = req.body || {};
-  const pershkrim = String(b.pershkrim || '').trim();
-  if (!pershkrim) return res.status(400).json({ error: 'Shkruaj nje pershkrim: cfare kerkon.' });
-  if (pershkrim.length > 1500) return res.status(400).json({ error: 'Pershkrimi eshte shume i gjate (maks. 1500 shkronja).' });
-  const numri = Math.min(8, Math.max(1, parseInt(b.numri, 10) || 4));
-  try { res.json({ ok: true, kerkesat: await formuloKerkesatMeAI(pershkrim, numri) }); }
-  catch (e) { res.status(500).json({ error: e.message }); }
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found' });
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-
-app.post('/api/bisedat/kerko', async (req, res) => {
-  const b = req.body || {};
-  const kerkesat = (Array.isArray(b.kerkesat) ? b.kerkesat : [])
-    .filter(x => typeof x === 'string').map(x => x.trim()).filter(Boolean)
-    .map(x => x.slice(0, 300)).slice(0, 8);
-  if (!kerkesat.length) return res.status(400).json({ error: 'Shkruaj te pakten 1 kerkese.' });
-  if (!SERPER_KEY) return res.status(400).json({ error: 'SERPER_API_KEY mungon te Railway → Variables.' });
-  const koha = KOHET_E_LEJUARA.includes(b.koha) ? b.koha : '';
-  const faqet = pastroFaqet(b.faqet);
-  const rezultatet = await Promise.all(kerkesat.map(async q => {
-    const qFinal = shtoFiltrinEFaqeve(q, faqet); // kerkesa e sakte qe shkon te Google
-    try {
-      const raw = await kerkoSerper(qFinal, koha);
-      const organic = (raw.organic || []).map(o => {
-        let faqja = ''; try { faqja = new URL(o.link).hostname.replace(/^www\./, ''); } catch (e) {}
-        return { pozicioni: o.position, titulli: o.title, linku: o.link, fragmenti: o.snippet, data: o.date || '', faqja };
-      });
-      return { q, qFinal, ok: true, organic, raw };
-    } catch (e) { return { q, qFinal, ok: false, error: e.message, organic: [] }; }
-  }));
-  res.json({ ok: true, koha, faqet, rezultatet });
-});
-
-// ---- KOMPANI TE REJA ----
-app.post('/api/kompani-reja/kerko', async (req, res) => {
-  if (!CRUSTDATA_KEY) return res.status(400).json({ error: 'CRUSTDATA_API_KEY mungon te Railway → Variables.' });
-  const b = req.body || {};
-  const vitiAkt = new Date().getFullYear();
-  const viti = parseInt(b.viti, 10);
-  if (!Number.isInteger(viti) || viti < 1990 || viti > vitiAkt) {
-    return res.status(400).json({ error: 'Viti i themelimit duhet te jete nje numer midis 1990 dhe ' + vitiAkt + '.' });
-  }
-  const industria = String(b.industria || '').trim().slice(0, 100);
-  const shteti = String(b.shteti || '').trim().slice(0, 60);
-  const pershkrim = String(b.pershkrim || '').trim().slice(0, 200);
-  const kategoria = String(b.kategoria || '').replace(/[<>\u0000-\u001f]/g, '').replace(/\s+/g, ' ').trim().slice(0, 60) || null; // emri i grupit, ruhet me kompanite
-  const maks = parseInt(b.maksPunonjes, 10);
-  const maksPunonjes = Number.isInteger(maks) && maks > 0 && maks <= 1000000 ? maks : null;
-  const limit = Math.min(50, Math.max(1, parseInt(b.limit, 10) || 10)); // kufi i fortë 50, per te mbrojtur kreditet
-  const fshihTePara = b.fshihTePara !== false; // paracaktuar: po
-  let perjashto = [], paralajmerim = null;
-  if (fshihTePara) {
-    try { perjashto = await merrDomainetePara(); }
-    catch (e) { paralajmerim = 'Historiku nuk u lexua (' + e.message + '); kerkimi u be pa perjashtim.'; }
-  }
-  const trupiBaze = { filters: ndertoFiltratKompani({ viti, vitiMax: vitiAkt, industria, shteti, maksPunonjes, perjashto }), fields: FUSHAT_KOMPANI, limit };
-  if (pershkrim) trupiBaze.search = { query: pershkrim, mode: 'hybrid' }; // sipas dokumentimit: filtrat mbeten kushte te forta, renditja eshte sipas perputhjes
-  try {
-    const { r, perdorur } = await kerkoKompani(trupiBaze);
-    if (!r.ok) return res.status([400, 401, 403, 429].includes(r.status) ? r.status : 502).json({ error: mesazhGabimiCrustdata(r), kredite_perdorur: r.kredite });
-    const kompanite = (Array.isArray(r.data.companies) ? r.data.companies : []).map(sheshoKompanine);
-    try { await ruajKompanite(kompanite, kategoria); } // ruhen gjithmone me te dhenat e plota (qe perjashtimi dhe "Te gjitha" te funksionojne)
-    catch (e) { paralajmerim = (paralajmerim ? paralajmerim + ' ' : '') + 'Historiku nuk u ruajt (' + e.message + ').'; }
-    res.json({
-      ok: true, kerkesa: kerkesePerShfaqje(perdorur.trupi), renditja: perdorur.sorts, kredite_perdorur: r.kredite,
-      total_count: r.data.total_count == null ? null : r.data.total_count, te_pare: fshihTePara ? perjashto.length : null,
-      paralajmerim, kategoria, kompanite, raw: r.data
-    });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.post('/api/kompani-reja/pastro', async (req, res) => {
-  try {
-    // Nuk fshin asgje: vetem lejon qe kompanite e ruajtura (me email-et e tyre) te shfaqen serish te kerkimet.
-    const r = await pool.query('UPDATE kompani_pare SET fshih = false');
-    res.json({ ok: true, liruar: r.rowCount == null ? null : r.rowCount });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// Te gjitha kompanite e ruajtura (edhe ato te gjeneruara me pare), me filtrin e email-it.
-app.get('/api/kompani-reja/ruajtura', async (req, res) => {
-  try {
-    const q = req.query || {};
-    const filtri = ['me-email', 'pa-email'].includes(q.filtri) ? q.filtri : 'te-gjitha';
-    const limit = Math.min(500, Math.max(1, parseInt(q.limit, 10) || 100));
-    const offset = Math.max(0, parseInt(q.offset, 10) || 0);
-    const kushti = filtri === 'me-email' ? 'WHERE email IS NOT NULL' : filtri === 'pa-email' ? 'WHERE email IS NULL' : '';
-    const rows = (await pool.query(
-      'SELECT domain, emri, website, viti, punonjes, shteti, qyteti, linkedin, twitter, email, email_lloji, email_mx, email_burimi, email_gjendja, kategoria, gjetur_at ' +
-      'FROM kompani_pare ' + kushti + ' ORDER BY gjetur_at DESC, domain LIMIT $1 OFFSET $2', [limit, offset])).rows;
-    const n = (await pool.query('SELECT COUNT(*)::int AS gjithsej, COUNT(email)::int AS me_email FROM kompani_pare')).rows[0] || {};
-    const gjithsej = n.gjithsej || 0, meEmail = n.me_email || 0;
-    res.json({ ok: true, filtri, rows, gjithsej, me_email: meEmail, pa_email: gjithsej - meEmail });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// Gjen email-in nga faqja e nje kompanie TE RUAJTUR (domain-i duhet te jete ne databaze, jo adrese e lire: shmang abuzimin).
-app.post('/api/kompani-reja/email', async (req, res) => {
-  const b = req.body || {};
-  const domain = normalizoDomain(b.domain);
-  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(domain) || net.isIP(domain) || !/[a-z]/.test(domain.split('.').pop())) {
-    return res.status(400).json({ error: 'Domain i pavlefshem.' }); // pa adresa IP dhe pa "domain" me TLD vetem numra
-  }
-  if (emailNeVazhdim >= 3) return res.status(429).json({ error: 'Po kerkohen tashme 3 faqe njekohesisht. Prit pak dhe provo serish.' });
-  emailNeVazhdim++;
-  try {
-    const ekz = await pool.query('SELECT domain, email, email_lloji, email_mx, email_burimi, email_gjendja FROM kompani_pare WHERE domain = $1', [domain]);
-    if (!ekz.rows.length) return res.status(404).json({ error: 'Kompania nuk eshte e ruajtur. Kerko fillimisht te Crustdata.' });
-    const e0 = ekz.rows[0];
-    if (e0.email && !b.rigjej) {
-      return res.json({ ok: true, nga_kujtesa: true, domain, email: e0.email, email_lloji: e0.email_lloji || null, email_mx: e0.email_mx == null ? null : e0.email_mx, email_burimi: e0.email_burimi || null, email_gjendja: 'u-gjet', mesazh: 'E ruajtur me pare' });
-    }
-    const g = await gjejEmailPerKompani(domain);
-    await pool.query('UPDATE kompani_pare SET email = $2, email_lloji = $3, email_mx = $4, email_burimi = $5, email_gjendja = $6, email_at = now() WHERE domain = $1',
-      [domain, g.email || null, g.lloji || null, g.mx == null ? null : g.mx, g.burimi || null, g.gjendja]);
-    res.json({ ok: true, domain, email: g.email || null, email_lloji: g.lloji || null, email_mx: g.mx == null ? null : g.mx, email_burimi: g.burimi || null, email_gjendja: g.gjendja, mesazh: g.mesazh || '' });
-  } catch (e) { res.status(500).json({ error: String(e.message).replace(/https?:\/\/\S+/g, '[adrese]') }); }
-  finally { emailNeVazhdim--; }
-});
-
-app.get('/api/kompani-reja/kredite', async (req, res) => {
-  if (!CRUSTDATA_KEY) return res.status(400).json({ error: 'CRUSTDATA_API_KEY mungon te Railway → Variables.' });
-  try {
-    const r = await crustdataThirr('GET', '/user/credits', null); // falas, nuk shpenzon kredite
-    if (!r.ok) return res.status([401, 403, 429].includes(r.status) ? r.status : 502).json({ error: mesazhGabimiCrustdata(r) });
-    res.json({ ok: true, kredite: r.data.credits == null ? null : r.data.credits });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.post('/api/kompani-reja/sugjerime', async (req, res) => {
-  if (!CRUSTDATA_KEY) return res.status(400).json({ error: 'CRUSTDATA_API_KEY mungon te Railway → Variables.' });
-  const teksti = String((req.body && req.body.teksti) || '').trim().slice(0, 60);
-  try {
-    // Autocomplete eshte falas; kthen vlerat e sakta te industrise, qe filtri te mos jape zero rezultate nga nje emer i gabuar.
-    const r = await crustdataThirr('POST', '/company/search/autocomplete', { field: 'taxonomy.professional_network_industry', query: teksti, limit: 15 });
-    if (!r.ok) return res.status([400, 401, 403, 429].includes(r.status) ? r.status : 502).json({ error: mesazhGabimiCrustdata(r) });
-    const sugjerime = (Array.isArray(r.data.suggestions) ? r.data.suggestions : []).map(s => s && s.value).filter(v => typeof v === 'string');
-    res.json({ ok: true, sugjerime });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// ---- ALERTE ----
-app.get('/api/alerte', async (req, res) => {
-  try {
-    const q = req.query || {};
-    const statusi = ALERTE_STATUSET.includes(q.statusi) ? q.statusi : null;
-    const limit = Math.min(500, Math.max(1, parseInt(q.limit, 10) || 100));
-    const rows = statusi
-      ? (await pool.query('SELECT ' + ALERTE_KOLONAT + ' FROM alerte_rezultate WHERE statusi = $1 ORDER BY COALESCE(publikuar, gjetur_at) DESC, id DESC LIMIT $2', [statusi, limit])).rows
-      : (await pool.query('SELECT ' + ALERTE_KOLONAT + ' FROM alerte_rezultate ORDER BY COALESCE(publikuar, gjetur_at) DESC, id DESC LIMIT $1', [limit])).rows;
-    const numrimi = (await pool.query('SELECT statusi, COUNT(*)::int AS n FROM alerte_rezultate GROUP BY statusi')).rows;
-    const numrat = { 'i ri': 0, 'u pergjigj': 0, 'e lashe': 0 };
-    numrimi.forEach(r => { if (r.statusi in numrat) numrat[r.statusi] = r.n; });
-    res.json({ ok: true, rows, numrat, feedet: alerteFeedet().length, gjendja: alerteGjendja });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.post('/api/alerte/rifresko', async (req, res) => {
-  if (!alerteFeedet().length) return res.status(400).json({ error: 'GOOGLE_ALERTS_FEEDS mungon te Railway → Variables.' });
-  try {
-    const g = await lexoFeedetAlerte();
-    res.json({ ok: true, feedet: g.feedet, te_reja: g.te_reja, gabime: g.gabime, fundit: g.fundit });
-  } catch (e) { res.status(500).json({ error: String(e.message).replace(/https?:\/\/\S+/g, '[adrese]') }); }
-});
-
-app.post('/api/alerte/statusi', async (req, res) => {
-  const b = req.body || {};
-  const id = parseInt(b.id, 10);
-  if (!Number.isInteger(id) || !ALERTE_STATUSET.includes(b.statusi)) return res.status(400).json({ error: 'Id ose status i pavlefshem.' });
-  try {
-    const r = await pool.query('UPDATE alerte_rezultate SET statusi = $1 WHERE id = $2', [b.statusi, id]);
-    res.json({ ok: true, ndryshuar: r.rowCount || 0 });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => { console.log('Zbulim Bizneseh po punon ne portin ' + PORT); nisAlertePoll(); });
+initDB(pool)
+  .then(() => kombinimi.init(pool))
+  .then(() => selector.initGarat(pool))
+  .then(() => app.listen(PORT, () => console.log('Imyr po punon ne portin ' + PORT)))
+  .catch(e => {
+    console.error('Gabim init DB:', e.message);
+    // Nis serverin gjithsesi qe health check te punoje
+    app.listen(PORT, () => console.log('Imyr (pa DB) ne portin ' + PORT));
+  });
