@@ -35,6 +35,13 @@ function ndertoTransporteret() {
 }
 function listaLlogariveAktive() { return Object.keys(ndertoTransporteret()); }
 
+// Per testet e vendosjes (p.sh. InboxIssue): nese ne Railway ekziston MKT_TEST_KODI, nje rresht i vogel "ref: KODI" shtohet ne fund
+// te cdo emaili qe dergohet. Pa ate variabel nuk ndryshon asgje. HIQE variablen pas testit.
+function rreshtiKodiTestit() {
+  const k = String(process.env.MKT_TEST_KODI || '').trim();
+  return /^[A-Za-z0-9_.: -]{4,80}$/.test(k) ? '\n<p style="color:#94a3b8;font-size:10px;">ref: ' + k + '</p>' : '';
+}
+
 function escHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 // Nxjerr emrin e "pastruar" te platformes nga domain-i: ashbyhq.com -> Ashbyhq
 function emriPlatformesNgaDomain(domain) {
@@ -327,7 +334,7 @@ module.exports = function (app, pool, iAdmin) {
         const subjektiFinal = subjekti.replace(/\{emri\}/g, kont.emri || kont.domain).replace(/\{domain\}/g, kont.domain || '').replace(/\{platforma\}/g, platformaEmri);
         try {
           await transporter.sendMail({
-            from: '"PhronexusAI" <' + llogaria + '>', to: kont.email, subject: subjektiFinal, html
+            from: '"PhronexusAI" <' + llogaria + '>', to: kont.email, subject: subjektiFinal, html: html + rreshtiKodiTestit()
           });
           await pool.query('UPDATE marketing_kontaktet SET derguar=true, derguar_nga=$1, derguar_at=now(), derguar_sasi=derguar_sasi+1 WHERE id=$2', [llogaria, kont.id]);
           await pool.query('INSERT INTO marketing_log (fushata_id, email, sukses, detaje) VALUES (NULL,$1,true,$2)', [kont.email, 'Derguar menjehere nga ' + llogaria]);
@@ -448,7 +455,7 @@ module.exports = function (app, pool, iAdmin) {
           const subjektiFinal = subjekti.replace(/\{emri\}/g, kont.emri || kont.domain).replace(/\{domain\}/g, kont.domain || '').replace(/\{platforma\}/g, platformaEmri);
           try {
             await transporter.sendMail({
-              from: '"PhronexusAI" <' + slot.llogaria + '>', to: kont.email, subject: subjektiFinal, html
+              from: '"PhronexusAI" <' + slot.llogaria + '>', to: kont.email, subject: subjektiFinal, html: html + rreshtiKodiTestit()
             });
             await pool.query('UPDATE marketing_fushata_kontakte SET derguar=true, derguar_at=now() WHERE id=$1', [kont.fk_id]);
             await pool.query('UPDATE marketing_kontaktet SET derguar=true, derguar_nga=$1, derguar_at=now(), derguar_sasi=derguar_sasi+1 WHERE id=$2', [slot.llogaria, kont.kontakt_id]);
