@@ -114,7 +114,8 @@ border-radius:8px; color:#e6edf3; font-size:14px; font-family:inherit; margin-bo
 .krow{ display:flex; align-items:center; padding:11px 14px; border-bottom:1px solid #1c2230; font-size:14px; }
 .mktGridFushatat{ display:grid; grid-template-columns:2fr 1.3fr 1.3fr 1fr 1fr; gap:10px; padding:10px 12px; align-items:center; border-bottom:1px solid #1c2230; font-size:13px; }
 .mktGridLog{ display:grid; grid-template-columns:1.3fr 1.8fr .8fr 2fr; gap:10px; padding:10px 12px; align-items:center; border-bottom:1px solid #1c2230; font-size:13px; }
-.mktGridFushatat.mktHead, .mktGridLog.mktHead{ background:#161b22; color:#8b949e; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; position:sticky; top:0; }
+.mktGridEm{ display:grid; grid-template-columns:1.2fr 2fr 1fr 1.3fr 1.2fr .8fr 1.3fr 1.3fr; gap:10px; padding:10px 12px; align-items:center; border-bottom:1px solid #1c2230; font-size:13px; }
+.mktGridFushatat.mktHead, .mktGridLog.mktHead, .mktGridEm.mktHead{ background:#161b22; color:#8b949e; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; position:sticky; top:0; }
 .krow:last-child{ border-bottom:none; }
 .krow.khead{ background:#161b22; color:#8b949e; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
 .kc1{ flex:1; }
@@ -159,7 +160,7 @@ const SECTIONS = [
 { k:'b4', l:'Përzgjedhjet' }, { k:'mkt', l:'Marketingu' }
 ];
 const MKT_SUB = [
-{ k:'dergimet', l:'Dërgimet' }, { k:'analitika', l:'Analitika' }
+{ k:'dergimet', l:'Dërgimet' }, { k:'analitika', l:'Analitika' }, { k:'emailet', l:'Email-et' }
 ];
 let curMktSub = 'dergimet';
 const NJOFT_SUB = [
@@ -1517,6 +1518,7 @@ function renderMktMain(){
 const m=$('mktMain');
 if(curMktSub==='dergimet'){ renderMktDergimet(m); return; }
 if(curMktSub==='analitika'){ renderMktAnalitika(m); return; }
+if(curMktSub==='emailet'){ renderMktEmailet(m); return; }
 }
 
 async function renderMktDergimet(m){
@@ -1809,6 +1811,85 @@ stat.textContent='U planifikua! Do të dërgohet automatikisht sipas orarit.';
 setTimeout(()=>renderMktDergimet($('mktMain')), 1500);
 }catch(e){ stat.textContent='Gabim: '+e.message; btn.disabled=false; }
 }
+
+// MKT-EMAILET (fillim) — menuja "Email-et": lista e email-eve te dergura me filtra (te dhenat vijne nga tabela marketing_dergimet)
+const MKT_EM_FILTRAT = [
+['te-gjitha','Të gjitha','te_gjitha'],
+['pa-shkuar','Pa shkuar','pa_shkuar'],
+['pa-hapur','Shkuar, pa u hapur','pa_hapur'],
+['hapur','Hapur','hapur'],
+['klikuar','Klikuar','klikuar']
+];
+let curMktEmFiltri='te-gjitha';
+function renderMktEmailet(m){
+m.innerHTML='<h2 class="h">Email-et</h2>'+
+'<p class="small" style="margin:2px 0 14px;">Çdo email i dërguar nga Marketingu, më të rejat të parat. “Shkuar” do të thotë që serveri i Gmail e pranoi, jo që arriti te inbox. Nuk mund të dihet nëse përfundoi te spam ose te “All Mail”.</p>'+
+'<div id="mktEmFiltra" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;"></div>'+
+'<div id="mktEmInfo" class="small" style="margin-bottom:10px;"></div>'+
+'<div id="mktEmLista"><p class="small">Po ngarkoj…</p></div>';
+mktEmailetNgarko();
+}
+function mktEmCel(tekst,stil,titull){
+const s=document.createElement('span'); s.textContent=tekst;
+if(stil) s.style.cssText=stil;
+if(titull) s.title=titull;
+return s;
+}
+async function mktEmailetNgarko(){
+const lista=$('mktEmLista');
+try{
+const d=await(await fetch('/api/admin/marketing/emailet?filtri='+encodeURIComponent(curMktEmFiltri)+'&limit=200')).json();
+if(d.error){ lista.innerHTML=''; lista.appendChild(mktEmCel('Gabim: '+d.error,'font-size:13px;color:#e5484d;')); return; }
+mktEmailetShfaq(d);
+}catch(e){ lista.innerHTML=''; lista.appendChild(mktEmCel('Gabim rrjeti: '+e.message,'font-size:13px;color:#e5484d;')); }
+}
+function mktEmGjurmim(x,kohaFusha,nrFusha,ndezur){
+if(x.statusi!=='derguar') return ['—','',''];
+if(x[kohaFusha]) return ['Po'+(x[nrFusha]>1?' ×'+x[nrFusha]:'')+' · '+new Date(x[kohaFusha]).toLocaleString('sq-AL'),'color:#3fb950;',''];
+if(!ndezur) return ['—','color:#8b949e;','Gjurmimi është i fikur'];
+return ['Jo','color:#8b949e;',''];
+}
+function mktEmailetShfaq(d){
+const filtra=$('mktEmFiltra'); filtra.innerHTML='';
+MKT_EM_FILTRAT.forEach(f=>{
+const b=document.createElement('button');
+b.className='subnav'+(f[0]===curMktEmFiltri?' active':'');
+b.style.cssText='display:inline-block;width:auto;border:1px solid #2a313c;';
+b.textContent=f[1]+' ('+((d.numrat||{})[f[2]]||0)+')';
+b.onclick=()=>{ curMktEmFiltri=f[0]; mktEmailetNgarko(); };
+filtra.appendChild(b);
+});
+const rf=document.createElement('button'); rf.className='subnav'; rf.style.cssText='display:inline-block;width:auto;border:1px solid #2a313c;';
+rf.textContent='Rifresko'; rf.onclick=()=>mktEmailetNgarko(); filtra.appendChild(rf);
+const g=d.gjurmim||{};
+$('mktEmInfo').textContent=
+'Hapjet: '+(g.hapje?'gjurmimi është i ndezur (mund të jenë të pasakta: Apple Mail dhe filtrat e sigurisë i hapin vetë imazhet).':'gjurmimi është i fikur (vendos MKT_GJURMIM_HAPJE=1 te Railway për ta ndezur).')+
+' Klikimet: '+(g.klikime?'gjurmimi është i ndezur.':'gjurmimi është i fikur (vendos MKT_GJURMIM_KLIKIME=1 te Railway për ta ndezur).');
+const lista=$('mktEmLista'); lista.innerHTML='';
+const rreshta=d.rows||[];
+if(!rreshta.length){ lista.appendChild(mktEmCel('Asnjë email në këtë filtër.','font-size:13px;color:#8b949e;')); return; }
+const wrap=document.createElement('div'); wrap.className='njTblWrap'; wrap.style.overflowX='auto';
+const brenda=document.createElement('div'); brenda.style.minWidth='1000px'; wrap.appendChild(brenda);
+const kok=document.createElement('div'); kok.className='mktGridEm mktHead';
+['Kur','Kontakti','Kategoria','Shablloni','Llogaria','Statusi','Hapur','Klikuar'].forEach(t=>kok.appendChild(mktEmCel(t)));
+brenda.appendChild(kok);
+rreshta.forEach(x=>{
+const r=document.createElement('div'); r.className='mktGridEm';
+r.appendChild(mktEmCel(x.derguar_at?new Date(x.derguar_at).toLocaleString('sq-AL'):'—'));
+const kont=document.createElement('span'); kont.appendChild(mktEmCel(x.email||'','font-weight:600;'));
+const dom=document.createElement('div'); dom.className='small'; dom.textContent=x.domain||''; kont.appendChild(dom); r.appendChild(kont);
+r.appendChild(mktEmCel(x.kategoria||'—'));
+r.appendChild(mktEmCel(x.shabllon_emri||'—','',x.subjekti||''));
+r.appendChild(mktEmCel(x.llogaria||'—'));
+const st=x.statusi==='derguar'?['Shkuar','color:#3fb950;','']:x.statusi==='deshtoi'?['Dështoi','color:#e5484d;',x.gabimi||'']:['Në pritje','color:#d29922;',''];
+r.appendChild(mktEmCel(st[0],st[1]+'font-weight:600;',st[2]));
+const h=mktEmGjurmim(x,'hapur_at','hapje',g.hapje); r.appendChild(mktEmCel(h[0],h[1],h[2]));
+const k=mktEmGjurmim(x,'klikuar_at','klikime',g.klikime); r.appendChild(mktEmCel(k[0],k[1],k[2]));
+brenda.appendChild(r);
+});
+lista.appendChild(wrap);
+}
+// MKT-EMAILET (fund)
 
 async function renderMktAnalitika(m){
 m.innerHTML='<h2 class="h">Analitika</h2><p class="small" style="margin:2px 0 18px;">Fushatat e planifikuara dhe progresi i tyre.</p><div id="mktAnalLista"><p class="small">Po ngarkoj…</p></div>'+
