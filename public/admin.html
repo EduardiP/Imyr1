@@ -1866,12 +1866,22 @@ lista.innerHTML=''; lista.appendChild(mktEmCel('Gabim rrjeti: '+e.message,'font-
 mktEmKoha('Rifreskimi dështoi në '+new Date().toLocaleTimeString()+'.',true);
 }finally{ if(btn){ btn.disabled=false; btn.textContent=tekstiVjeter; } }
 }
-// kishteGjurmim = a kishte piksel / lidhje te gjurmuar KUR u dergua email-i (jo a eshte gjurmimi i ndezur tani)
-function mktEmGjurmim(x,kohaFusha,nrFusha,kishteGjurmim){
-if(x.statusi!=='derguar') return ['—','',''];
-if(x[kohaFusha]) return ['Po'+(x[nrFusha]>1?' ×'+x[nrFusha]:'')+' · '+new Date(x[kohaFusha]).toLocaleString('sq-AL'),'color:#3fb950;',''];
-if(!kishteGjurmim) return ['—','color:#8b949e;','Ky email u dërgua pa gjurmim, prandaj nuk mund të dihet'];
-return ['Jo','color:#8b949e;',''];
+// Kolonat "Hapur" / "Klikuar": NUMRI i herave (+1 per cdo hapje / klikim te regjistruar), jo Po/Jo.
+// kishteGjurmim = a kishte piksel / lidhje te gjurmuar KUR u dergua email-i (jo a eshte gjurmimi i ndezur tani): pa gjurmim del "—" (s'mund te dihet), me gjurmim dhe pa asnje hapje del 0.
+function mktEmNumri(x,kohaFusha,nrFusha,kishteGjurmim){
+const s=document.createElement('span');
+if(x.statusi!=='derguar'){ s.textContent='—'; return s; }
+let n=parseInt(x[nrFusha],10)||0;
+if(!n && x[kohaFusha]) n=1; // p.sh. u klikua linku por pikseli s'u ngarkua: hapur te pakten 1 here
+if(n>0){
+const b=document.createElement('b'); b.textContent=String(n); b.style.cssText='color:#3fb950;font-size:15px;'; s.appendChild(b);
+if(x[kohaFusha]){ const t=document.createElement('div'); t.className='small'; t.textContent='e para: '+new Date(x[kohaFusha]).toLocaleString('sq-AL'); s.appendChild(t); }
+return s;
+}
+s.style.cssText='color:#8b949e;';
+if(!kishteGjurmim){ s.textContent='—'; s.title='Ky email u dërgua pa gjurmim, prandaj nuk mund të dihet'; return s; }
+s.textContent='0';
+return s;
 }
 async function mktEmTestoGjurmimin(btn){
 const box=$('mktEmTest'); if(!box) return;
@@ -1908,14 +1918,14 @@ $('mktEmInfo').textContent=
 'Gjurmimi: hapjet '+(g.hapje?'NDEZUR':'FIKUR')+', klikimet '+(g.klikime?'NDEZUR':'FIKUR')+'. '+
 (g.hapje?'Hapjet mund të jenë të pasakta (Apple Mail dhe filtrat e sigurisë i hapin vetë imazhet; te Spam Gmail nuk i ngarkon imazhet). ':'')+
 ((!g.hapje||!g.klikime)?'Për ta ndezur: Railway (projekti Imyr1) → Variables → fshi MKT_GJURMIM_HAPJE / MKT_GJURMIM_KLIKIME ose vendose në 1. ':'')+
-'Numërohen vetëm email-et e dërguara kur gjurmimi ishte i ndezur.';
+'Numri te “Hapur (herë)” dhe “Klikuar (herë)” rritet +1 çdo herë që regjistrohet një hapje ose klikim (vetëm për email-et e dërguara kur gjurmimi ishte i ndezur).';
 const lista=$('mktEmLista'); lista.innerHTML='';
 const rreshta=d.rows||[];
 if(!rreshta.length){ lista.appendChild(mktEmCel('Asnjë email në këtë filtër.','font-size:13px;color:#8b949e;')); return; }
 const wrap=document.createElement('div'); wrap.className='njTblWrap'; wrap.style.overflowX='auto';
 const brenda=document.createElement('div'); brenda.style.minWidth='1000px'; wrap.appendChild(brenda);
 const kok=document.createElement('div'); kok.className='mktGridEm mktHead';
-['Kur','Kontakti','Kategoria','Shablloni','Llogaria','Statusi','Hapur','Klikuar'].forEach(t=>kok.appendChild(mktEmCel(t)));
+['Kur','Kontakti','Kategoria','Shablloni','Llogaria','Statusi','Hapur (herë)','Klikuar (herë)'].forEach(t=>kok.appendChild(mktEmCel(t)));
 brenda.appendChild(kok);
 rreshta.forEach(x=>{
 const r=document.createElement('div'); r.className='mktGridEm';
@@ -1927,8 +1937,8 @@ r.appendChild(mktEmCel(x.shabllon_emri||'—','',x.subjekti||''));
 r.appendChild(mktEmCel(x.llogaria||'—'));
 const st=x.statusi==='derguar'?['Shkuar','color:#3fb950;','']:x.statusi==='deshtoi'?['Dështoi','color:#e5484d;',x.gabimi||'']:['Në pritje','color:#d29922;',''];
 r.appendChild(mktEmCel(st[0],st[1]+'font-weight:600;',st[2]));
-const h=mktEmGjurmim(x,'hapur_at','hapje',x.me_piksel); r.appendChild(mktEmCel(h[0],h[1],h[2]));
-const k=mktEmGjurmim(x,'klikuar_at','klikime',x.me_lidhje); r.appendChild(mktEmCel(k[0],k[1],k[2]));
+r.appendChild(mktEmNumri(x,'hapur_at','hapje',x.me_piksel));
+r.appendChild(mktEmNumri(x,'klikuar_at','klikime',x.me_lidhje));
 brenda.appendChild(r);
 });
 lista.appendChild(wrap);
