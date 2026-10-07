@@ -1824,8 +1824,10 @@ let curMktEmFiltri='te-gjitha';
 function renderMktEmailet(m){
 m.innerHTML='<h2 class="h">Email-et</h2>'+
 '<p class="small" style="margin:2px 0 14px;">Çdo email i dërguar nga Marketingu, më të rejat të parat. “Shkuar” do të thotë që serveri i Gmail e pranoi, jo që arriti te inbox. Nuk mund të dihet nëse përfundoi te spam ose te “All Mail”.</p>'+
-'<div id="mktEmFiltra" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;"></div>'+
+'<div id="mktEmFiltra" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;"></div>'+
+'<div id="mktEmKoha" class="small" style="margin-bottom:8px;"></div>'+
 '<div id="mktEmInfo" class="small" style="margin-bottom:10px;"></div>'+
+'<div id="mktEmTest"></div>'+
 '<div id="mktEmLista"><p class="small">Po ngarkoj…</p></div>';
 mktEmailetNgarko();
 }
@@ -1835,22 +1837,60 @@ if(stil) s.style.cssText=stil;
 if(titull) s.title=titull;
 return s;
 }
-async function mktEmailetNgarko(){
-const lista=$('mktEmLista');
-try{
-const d=await(await fetch('/api/admin/marketing/emailet?filtri='+encodeURIComponent(curMktEmFiltri)+'&limit=200')).json();
-if(d.error){ lista.innerHTML=''; lista.appendChild(mktEmCel('Gabim: '+d.error,'font-size:13px;color:#e5484d;')); return; }
-mktEmailetShfaq(d);
-}catch(e){ lista.innerHTML=''; lista.appendChild(mktEmCel('Gabim rrjeti: '+e.message,'font-size:13px;color:#e5484d;')); }
+function mktEmKoha(tekst,gabim){
+const e=$('mktEmKoha'); if(!e) return;
+e.textContent=tekst; e.style.color=gabim?'#e5484d':'#8b949e';
 }
-function mktEmGjurmim(x,kohaFusha,nrFusha,ndezur){
+function mktEmGabimTekst(status,d){
+const msg=(d&&d.error)?String(d.error):'';
+if(status===404||msg==='Not found') return 'Serveri nuk e njeh këtë faqe (404): skedari i ri marketing-email.js nuk është te Imyr1 (në rrënjë, pranë server.js), ose Railway nuk e ka ri-deployuar ende.';
+if(status===401) return 'Seanca e adminit ka skaduar. Rifresko faqen dhe hyr përsëri.';
+return 'Gabim nga serveri'+(status?' ('+status+')':'')+(msg?': '+msg:'.');
+}
+async function mktEmailetNgarko(btn){
+const lista=$('mktEmLista'); if(!lista) return;
+const tekstiVjeter=btn?btn.textContent:'';
+if(btn){ btn.disabled=true; btn.textContent='Duke rifreskuar…'; }
+try{
+const r=await fetch('/api/admin/marketing/emailet?filtri='+encodeURIComponent(curMktEmFiltri)+'&limit=200&_='+Date.now(),{cache:'no-store'});
+let d=null; try{ d=await r.json(); }catch(e){ d=null; }
+if(!r.ok||!d||d.error){
+lista.innerHTML=''; lista.appendChild(mktEmCel(mktEmGabimTekst(r.status,d),'font-size:13px;color:#e5484d;line-height:1.5;'));
+mktEmKoha('Rifreskimi dështoi në '+new Date().toLocaleTimeString()+'.',true);
+return;
+}
+mktEmailetShfaq(d);
+mktEmKoha('Rifreskuar në '+new Date().toLocaleTimeString()+' · '+((d.rows||[]).length)+' rreshta.');
+}catch(e){
+lista.innerHTML=''; lista.appendChild(mktEmCel('Gabim rrjeti: '+e.message,'font-size:13px;color:#e5484d;'));
+mktEmKoha('Rifreskimi dështoi në '+new Date().toLocaleTimeString()+'.',true);
+}finally{ if(btn){ btn.disabled=false; btn.textContent=tekstiVjeter; } }
+}
+// kishteGjurmim = a kishte piksel / lidhje te gjurmuar KUR u dergua email-i (jo a eshte gjurmimi i ndezur tani)
+function mktEmGjurmim(x,kohaFusha,nrFusha,kishteGjurmim){
 if(x.statusi!=='derguar') return ['—','',''];
 if(x[kohaFusha]) return ['Po'+(x[nrFusha]>1?' ×'+x[nrFusha]:'')+' · '+new Date(x[kohaFusha]).toLocaleString('sq-AL'),'color:#3fb950;',''];
-if(!ndezur) return ['—','color:#8b949e;','Gjurmimi është i fikur'];
+if(!kishteGjurmim) return ['—','color:#8b949e;','Ky email u dërgua pa gjurmim, prandaj nuk mund të dihet'];
 return ['Jo','color:#8b949e;',''];
 }
+async function mktEmTestoGjurmimin(btn){
+const box=$('mktEmTest'); if(!box) return;
+const tekstiVjeter=btn.textContent; btn.disabled=true; btn.textContent='Duke testuar…';
+box.innerHTML='';
+try{
+const r=await fetch('/api/admin/marketing/test-gjurmimin',{method:'POST',cache:'no-store'});
+let d=null; try{ d=await r.json(); }catch(e){ d=null; }
+if(!r.ok||!d||!d.hapat){ box.appendChild(mktEmCel(mktEmGabimTekst(r.status,d),'font-size:13px;color:#e5484d;line-height:1.5;')); return; }
+const kuti=document.createElement('div'); kuti.style.cssText='border:1px solid #2a313c;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px;line-height:1.7;';
+d.hapat.forEach(h=>{ const p=document.createElement('div'); p.appendChild(mktEmCel((h.ok?'✓ ':'✗ ')+h.emri+' — '+h.detaje,'color:'+(h.ok?'#3fb950':'#e5484d')+';')); kuti.appendChild(p); });
+const fund=document.createElement('div'); fund.style.cssText='margin-top:6px;font-weight:600;';
+fund.textContent=d.ok?'Gjurmimi punon plotësisht. Nëse një email del “Jo” te Hapur, shkaku është te marrësi (imazhet e bllokuara, ose emaili është në Spam).':'Gjurmimi ka problem — shih rreshtat me ✗ më sipër.';
+kuti.appendChild(fund); box.appendChild(kuti);
+}catch(e){ box.appendChild(mktEmCel('Gabim rrjeti: '+e.message,'font-size:13px;color:#e5484d;')); }
+finally{ btn.disabled=false; btn.textContent=tekstiVjeter; }
+}
 function mktEmailetShfaq(d){
-const filtra=$('mktEmFiltra'); filtra.innerHTML='';
+const filtra=$('mktEmFiltra'); if(!filtra) return; filtra.innerHTML='';
 MKT_EM_FILTRAT.forEach(f=>{
 const b=document.createElement('button');
 b.className='subnav'+(f[0]===curMktEmFiltri?' active':'');
@@ -1860,11 +1900,15 @@ b.onclick=()=>{ curMktEmFiltri=f[0]; mktEmailetNgarko(); };
 filtra.appendChild(b);
 });
 const rf=document.createElement('button'); rf.className='subnav'; rf.style.cssText='display:inline-block;width:auto;border:1px solid #2a313c;';
-rf.textContent='Rifresko'; rf.onclick=()=>mktEmailetNgarko(); filtra.appendChild(rf);
+rf.textContent='Rifresko'; rf.onclick=()=>mktEmailetNgarko(rf); filtra.appendChild(rf);
+const tb=document.createElement('button'); tb.className='subnav'; tb.style.cssText='display:inline-block;width:auto;border:1px solid #2a313c;';
+tb.textContent='Testo gjurmimin'; tb.onclick=()=>mktEmTestoGjurmimin(tb); filtra.appendChild(tb);
 const g=d.gjurmim||{};
 $('mktEmInfo').textContent=
-'Hapjet: '+(g.hapje?'gjurmimi është i ndezur (mund të jenë të pasakta: Apple Mail dhe filtrat e sigurisë i hapin vetë imazhet).':'gjurmimi është i fikur (vendos MKT_GJURMIM_HAPJE=1 te Railway për ta ndezur).')+
-' Klikimet: '+(g.klikime?'gjurmimi është i ndezur.':'gjurmimi është i fikur (vendos MKT_GJURMIM_KLIKIME=1 te Railway për ta ndezur).');
+'Gjurmimi: hapjet '+(g.hapje?'NDEZUR':'FIKUR')+', klikimet '+(g.klikime?'NDEZUR':'FIKUR')+'. '+
+(g.hapje?'Hapjet mund të jenë të pasakta (Apple Mail dhe filtrat e sigurisë i hapin vetë imazhet; te Spam Gmail nuk i ngarkon imazhet). ':'')+
+((!g.hapje||!g.klikime)?'Për ta ndezur: Railway (projekti Imyr1) → Variables → fshi MKT_GJURMIM_HAPJE / MKT_GJURMIM_KLIKIME ose vendose në 1. ':'')+
+'Numërohen vetëm email-et e dërguara kur gjurmimi ishte i ndezur.';
 const lista=$('mktEmLista'); lista.innerHTML='';
 const rreshta=d.rows||[];
 if(!rreshta.length){ lista.appendChild(mktEmCel('Asnjë email në këtë filtër.','font-size:13px;color:#8b949e;')); return; }
@@ -1883,8 +1927,8 @@ r.appendChild(mktEmCel(x.shabllon_emri||'—','',x.subjekti||''));
 r.appendChild(mktEmCel(x.llogaria||'—'));
 const st=x.statusi==='derguar'?['Shkuar','color:#3fb950;','']:x.statusi==='deshtoi'?['Dështoi','color:#e5484d;',x.gabimi||'']:['Në pritje','color:#d29922;',''];
 r.appendChild(mktEmCel(st[0],st[1]+'font-weight:600;',st[2]));
-const h=mktEmGjurmim(x,'hapur_at','hapje',g.hapje); r.appendChild(mktEmCel(h[0],h[1],h[2]));
-const k=mktEmGjurmim(x,'klikuar_at','klikime',g.klikime); r.appendChild(mktEmCel(k[0],k[1],k[2]));
+const h=mktEmGjurmim(x,'hapur_at','hapje',x.me_piksel); r.appendChild(mktEmCel(h[0],h[1],h[2]));
+const k=mktEmGjurmim(x,'klikuar_at','klikime',x.me_lidhje); r.appendChild(mktEmCel(k[0],k[1],k[2]));
 brenda.appendChild(r);
 });
 lista.appendChild(wrap);
