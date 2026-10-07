@@ -43,26 +43,32 @@ function rreshtiKodiTestit() {
   return /^[A-Za-z0-9_.: -]{4,80}$/.test(k) ? '\n<p style="color:#94a3b8;font-size:10px;">ref: ' + k + '</p>' : '';
 }
 
-// ═══ Gjurmim (i FIKUR si paracaktim) ═══
-// Railway -> Variables: MKT_GJURMIM_HAPJE=1 shton nje piksel te padukshem; MKT_GJURMIM_KLIKIME=1 e kalon lidhjen e faqes
-// (phronexusai.com) neper serverin tend. Pa to, email-et dalin saktesisht si me pare (vetem rregjistrohet dergimi).
+// ═══ Gjurmim (i NDEZUR si paracaktim) ═══
+// Pikseli i padukshem (hapjet) dhe kalimi i lidhjes se faqes (phronexusai.com) neper serverin tend (klikimet) jane NDEZUR vete.
+// Per ta fikur njerin: Railway -> Variables: MKT_GJURMIM_HAPJE=0 (hapjet) ose MKT_GJURMIM_KLIKIME=0 (klikimet). Pranohet edhe off / false / jo.
 const BAZA_PUBLIKE = 'https://phronexusai.com';
-function gjurmimHapjeNdezur() { return process.env.MKT_GJURMIM_HAPJE === '1'; }
-function gjurmimKlikimeNdezur() { return process.env.MKT_GJURMIM_KLIKIME === '1'; }
+function gjurmimIFikur(v) { return ['0', 'false', 'off', 'jo', 'no', 'fik', 'fikur'].includes(String(v == null ? '' : v).trim().toLowerCase()); }
+function gjurmimHapjeNdezur() { return !gjurmimIFikur(process.env.MKT_GJURMIM_HAPJE); }
+function gjurmimKlikimeNdezur() { return !gjurmimIFikur(process.env.MKT_GJURMIM_KLIKIME); }
 function krijoToken() { return crypto.randomBytes(12).toString('hex'); } // 24 shkronja hex, i pavlefte per t'u hamendesuar
+// Kthen { html, me_piksel, me_lidhje }: html-ja e gatshme per dergim + a u vendos vertet piksel / a u gjurmua te pakten nje lidhje
+// (ruhet ne rresht, qe te dihet pastaj kur nje email "s'eshte hapur" vs. "s'kishte fare gjurmim").
 function pergatitHtmlPerDergim(html, token) {
   let h = html;
+  let meLidhje = false;
   if (gjurmimKlikimeNdezur()) {
     // Vetem lidhjet e kesaj faqeje; Unsubscribe mbetet i paprekur. Destinacioni ndertohet gjithmone mbi phronexusai.com (pa "open redirect").
     h = h.replace(/href="https:\/\/phronexusai\.com(\/[^"#]*)?(#[^"]*)?"/g, (m, shtegu) => {
       const p = (shtegu || '/').replace(/&amp;/g, '&');
       if (p.indexOf('/marketing-unsubscribe') === 0 || p.indexOf('/m/') === 0) return m;
+      meLidhje = true;
       return 'href="' + BAZA_PUBLIKE + '/m/c/' + token + '?p=' + encodeURIComponent(p) + '"';
     });
   }
   h = h + rreshtiKodiTestit();
-  if (gjurmimHapjeNdezur()) h += '\n<img src="' + BAZA_PUBLIKE + '/m/o/' + token + '.gif" width="1" height="1" alt="" style="display:block;border:0;width:1px;height:1px;opacity:0;">';
-  return h;
+  const mePiksel = gjurmimHapjeNdezur();
+  if (mePiksel) h += '\n<img src="' + BAZA_PUBLIKE + '/m/o/' + token + '.gif" width="1" height="1" alt="" style="display:block;border:0;width:1px;height:1px;opacity:0;">';
+  return { html: h, me_piksel: mePiksel, me_lidhje: meLidhje };
 }
 const GIF_1X1 = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
 
@@ -109,12 +115,34 @@ function shperndajNe24Ore(sasia, minutaFillimit) {
 }
 
 module.exports = function (app, pool, iAdmin) {
+  // Tabela e gjurmimit krijohet ketu, VETE (jo brenda migrimit te madh me poshte), qe nje gabim ne ndonje migrim tjeter
+  // te mos e lere pa tabele. Thirret edhe para cdo regjistrimi / liste; kur eshte krijuar nje here, s'bën asgje me.
+  let tabelaDergimetPromise = null;
+  function siguroTabelenDergimet() {
+    if (!tabelaDergimetPromise) {
+      tabelaDergimetPromise = (async () => {
+        await pool.query(`CREATE TABLE IF NOT EXISTS marketing_dergimet (
+          id SERIAL PRIMARY KEY, token TEXT UNIQUE NOT NULL, kontakt_id INT, email TEXT NOT NULL, domain TEXT, kategoria TEXT,
+          shabllon_id INT, shabllon_emri TEXT, llogaria TEXT, subjekti TEXT, fushata_id INT,
+          statusi TEXT NOT NULL, gabimi TEXT, derguar_at TIMESTAMPTZ DEFAULT now(),
+          hapur_at TIMESTAMPTZ, hapje INT NOT NULL DEFAULT 0, hapur_ua TEXT, klikuar_at TIMESTAMPTZ, klikime INT NOT NULL DEFAULT 0
+        )`);
+        // Nese tabela ekzistonte nga versioni i meparshem, shtohen kolonat e reja (a kishte piksel / lidhje te gjurmuar ne momentin e dergimit).
+        await pool.query('ALTER TABLE marketing_dergimet ADD COLUMN IF NOT EXISTS me_piksel BOOLEAN NOT NULL DEFAULT false');
+        await pool.query('ALTER TABLE marketing_dergimet ADD COLUMN IF NOT EXISTS me_lidhje BOOLEAN NOT NULL DEFAULT false');
+        await pool.query('CREATE INDEX IF NOT EXISTS marketing_dergimet_koha ON marketing_dergimet (derguar_at DESC)');
+      })().catch(e => { tabelaDergimetPromise = null; throw e; }); // nese deshtoi, hera tjeter provohet perseri
+    }
+    return tabelaDergimetPromise;
+  }
+
   // Regjistron cdo dergim (sukses ose deshtim). Nje gabim ketu NUK e ndalon kurre dergimin.
   async function regjistroDergimin(r) {
     try {
+      await siguroTabelenDergimet().catch(() => {}); // nese tabela vertet mungon, INSERT-i me poshte e raporton gabimin
       await pool.query(
-        'INSERT INTO marketing_dergimet (token, kontakt_id, email, domain, kategoria, shabllon_id, shabllon_emri, llogaria, subjekti, fushata_id, statusi, gabimi) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)',
-        [r.token, r.kontakt_id || null, r.email, r.domain || null, r.kategoria || null, r.shabllon_id || null, r.shabllon_emri || null, r.llogaria || null, r.subjekti || null, r.fushata_id || null, r.statusi, r.gabimi ? String(r.gabimi).slice(0, 500) : null]);
+        'INSERT INTO marketing_dergimet (token, kontakt_id, email, domain, kategoria, shabllon_id, shabllon_emri, llogaria, subjekti, fushata_id, statusi, gabimi, me_piksel, me_lidhje) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)',
+        [r.token, r.kontakt_id || null, r.email, r.domain || null, r.kategoria || null, r.shabllon_id || null, r.shabllon_emri || null, r.llogaria || null, r.subjekti || null, r.fushata_id || null, r.statusi, r.gabimi ? String(r.gabimi).slice(0, 500) : null, !!r.me_piksel, !!r.me_lidhje]);
     } catch (e) { console.error('marketing_dergimet:', e.message); }
   }
 
@@ -156,14 +184,9 @@ module.exports = function (app, pool, iAdmin) {
         id SERIAL PRIMARY KEY, fushata_id INT, email TEXT, sukses BOOLEAN NOT NULL,
         detaje TEXT, krijuar_at TIMESTAMPTZ DEFAULT now()
       )`);
-      await pool.query(`CREATE TABLE IF NOT EXISTS marketing_dergimet (
-        id SERIAL PRIMARY KEY, token TEXT UNIQUE NOT NULL, kontakt_id INT, email TEXT NOT NULL, domain TEXT, kategoria TEXT,
-        shabllon_id INT, shabllon_emri TEXT, llogaria TEXT, subjekti TEXT, fushata_id INT,
-        statusi TEXT NOT NULL, gabimi TEXT, derguar_at TIMESTAMPTZ DEFAULT now(),
-        hapur_at TIMESTAMPTZ, hapje INT NOT NULL DEFAULT 0, hapur_ua TEXT, klikuar_at TIMESTAMPTZ, klikime INT NOT NULL DEFAULT 0
-      )`);
-      await pool.query('CREATE INDEX IF NOT EXISTS marketing_dergimet_koha ON marketing_dergimet (derguar_at DESC)');
     } catch (e) { console.error('marketing-email migrim:', e.message); }
+    // Tabela e gjurmimit — ne bllokun e saj, e pavarur nga migrimet e tjera me larte.
+    try { await siguroTabelenDergimet(); } catch (e) { console.error('marketing_dergimet migrim:', e.message); }
 
     // Para-ngarko 1 shabllon te dizajnuar, gati per t'u perdorur — vetem 1 here,
     // kur ende s'ekziston asnje shabllon me kete emer (nuk perseritet ne restart-e te tjera).
@@ -372,17 +395,18 @@ module.exports = function (app, pool, iAdmin) {
         const html = htmlBazë.replace(/\{emri\}/g, escHtml(kont.emri || kont.domain)).replace(/\{domain\}/g, escHtml(kont.domain || '')).replace(/\{platforma\}/g, escHtml(platformaEmri)).replace(/\{unsubscribe_link\}/g, unsubLink);
         const subjektiFinal = subjekti.replace(/\{emri\}/g, kont.emri || kont.domain).replace(/\{domain\}/g, kont.domain || '').replace(/\{platforma\}/g, platformaEmri);
         const token = krijoToken();
+        const pg = pergatitHtmlPerDergim(html, token);
         try {
           await transporter.sendMail({
-            from: '"PhronexusAI" <' + llogaria + '>', to: kont.email, subject: subjektiFinal, html: pergatitHtmlPerDergim(html, token)
+            from: '"PhronexusAI" <' + llogaria + '>', to: kont.email, subject: subjektiFinal, html: pg.html
           });
           await pool.query('UPDATE marketing_kontaktet SET derguar=true, derguar_nga=$1, derguar_at=now(), derguar_sasi=derguar_sasi+1 WHERE id=$2', [llogaria, kont.id]);
           await pool.query('INSERT INTO marketing_log (fushata_id, email, sukses, detaje) VALUES (NULL,$1,true,$2)', [kont.email, 'Derguar menjehere nga ' + llogaria]);
-          await regjistroDergimin({ token, kontakt_id: kont.id, email: kont.email, domain: kont.domain, kategoria: kont.kategoria, shabllon_id, shabllon_emri: shabllonEmri, llogaria, subjekti: subjektiFinal, statusi: 'derguar' });
+          await regjistroDergimin({ token, kontakt_id: kont.id, email: kont.email, domain: kont.domain, kategoria: kont.kategoria, shabllon_id, shabllon_emri: shabllonEmri, llogaria, subjekti: subjektiFinal, statusi: 'derguar', me_piksel: pg.me_piksel, me_lidhje: pg.me_lidhje });
           dergu++;
         } catch (e) {
           await pool.query('INSERT INTO marketing_log (fushata_id, email, sukses, detaje) VALUES (NULL,$1,false,$2)', [kont.email, String(e.message).slice(0, 500)]).catch(()=>{});
-          await regjistroDergimin({ token, kontakt_id: kont.id, email: kont.email, domain: kont.domain, kategoria: kont.kategoria, shabllon_id, shabllon_emri: shabllonEmri, llogaria, subjekti: subjektiFinal, statusi: 'deshtoi', gabimi: e.message });
+          await regjistroDergimin({ token, kontakt_id: kont.id, email: kont.email, domain: kont.domain, kategoria: kont.kategoria, shabllon_id, shabllon_emri: shabllonEmri, llogaria, subjekti: subjektiFinal, statusi: 'deshtoi', gabimi: e.message, me_piksel: pg.me_piksel, me_lidhje: pg.me_lidhje });
           deshtuar++;
         }
       }
@@ -484,14 +508,17 @@ module.exports = function (app, pool, iAdmin) {
 
   // ═══ Lista e email-eve te dergura (menuja "Email-et") ═══
   app.get('/api/admin/marketing/emailet', iAdmin, async (req, res) => {
+    res.set('Cache-Control', 'no-store'); // Rifresko duhet te marre GJITHMONE te dhena te reja, kurre nga cache
     try {
-      const KUSHTET = { 'te-gjitha': 'TRUE', 'pa-shkuar': "statusi <> 'derguar'", 'pa-hapur': "statusi = 'derguar' AND hapur_at IS NULL", 'hapur': 'hapur_at IS NOT NULL', 'klikuar': 'klikuar_at IS NOT NULL' };
+      await siguroTabelenDergimet();
+      // "Pa u hapur" numerohet vetem per email-et qe kishin vertet piksel (pa piksel s'ka si dihet nese u hapen).
+      const KUSHTET = { 'te-gjitha': 'TRUE', 'pa-shkuar': "statusi <> 'derguar'", 'pa-hapur': "statusi = 'derguar' AND me_piksel AND hapur_at IS NULL", 'hapur': 'hapur_at IS NOT NULL', 'klikuar': 'klikuar_at IS NOT NULL' };
       const q = req.query || {};
       const filtri = Object.prototype.hasOwnProperty.call(KUSHTET, q.filtri) ? q.filtri : 'te-gjitha';
       const limit = Math.min(500, Math.max(1, parseInt(q.limit, 10) || 200));
       const offset = Math.max(0, parseInt(q.offset, 10) || 0);
       const rows = (await pool.query(
-        'SELECT id, email, domain, kategoria, shabllon_emri, llogaria, subjekti, statusi, gabimi, derguar_at, hapur_at, hapje, klikuar_at, klikime FROM marketing_dergimet WHERE ' +
+        'SELECT id, email, domain, kategoria, shabllon_emri, llogaria, subjekti, statusi, gabimi, derguar_at, hapur_at, hapje, klikuar_at, klikime, me_piksel, me_lidhje FROM marketing_dergimet WHERE ' +
         KUSHTET[filtri] + ' ORDER BY derguar_at DESC, id DESC LIMIT $1 OFFSET $2', [limit, offset])).rows;
       const PRITJE = 'FROM marketing_fushata_kontakte fk JOIN marketing_fushatat f ON f.id = fk.fushata_id JOIN marketing_kontaktet k ON k.id = fk.kontakt_id ' +
         "WHERE NOT fk.derguar AND f.statusi = 'aktiv' AND NOT k.unsubscribed";
@@ -499,15 +526,51 @@ module.exports = function (app, pool, iAdmin) {
       if (filtri === 'te-gjitha' || filtri === 'pa-shkuar') {
         ne_pritje = (await pool.query('SELECT fk.id, k.email, k.domain, k.kategoria, (SELECT emri FROM marketing_shabllonet WHERE id = f.shabllon_id) AS shabllon_emri, f.llogaria ' +
           PRITJE + ' ORDER BY f.id DESC, fk.radha ASC LIMIT 200')).rows
-          .map(x => ({ id: 'p' + x.id, email: x.email, domain: x.domain, kategoria: x.kategoria, shabllon_emri: x.shabllon_emri, llogaria: x.llogaria, subjekti: null, statusi: 'ne_pritje', gabimi: null, derguar_at: null, hapur_at: null, hapje: 0, klikuar_at: null, klikime: 0 }));
+          .map(x => ({ id: 'p' + x.id, email: x.email, domain: x.domain, kategoria: x.kategoria, shabllon_emri: x.shabllon_emri, llogaria: x.llogaria, subjekti: null, statusi: 'ne_pritje', gabimi: null, derguar_at: null, hapur_at: null, hapje: 0, klikuar_at: null, klikime: 0, me_piksel: false, me_lidhje: false }));
       }
       const n = (await pool.query(
-        "SELECT COUNT(*)::int AS gjithsej, COUNT(*) FILTER (WHERE statusi = 'deshtoi')::int AS deshtoi, COUNT(*) FILTER (WHERE statusi = 'derguar' AND hapur_at IS NULL)::int AS pa_hapur, " +
+        "SELECT COUNT(*)::int AS gjithsej, COUNT(*) FILTER (WHERE statusi = 'deshtoi')::int AS deshtoi, COUNT(*) FILTER (WHERE statusi = 'derguar' AND me_piksel AND hapur_at IS NULL)::int AS pa_hapur, " +
         'COUNT(*) FILTER (WHERE hapur_at IS NOT NULL)::int AS hapur, COUNT(*) FILTER (WHERE klikuar_at IS NOT NULL)::int AS klikuar FROM marketing_dergimet')).rows[0] || {};
       const pritje = ((await pool.query('SELECT COUNT(*)::int AS n ' + PRITJE)).rows[0] || {}).n || 0;
       const numrat = { te_gjitha: (n.gjithsej || 0) + pritje, pa_shkuar: (n.deshtoi || 0) + pritje, pa_hapur: n.pa_hapur || 0, hapur: n.hapur || 0, klikuar: n.klikuar || 0 };
       res.json({ ok: true, filtri, rows: ne_pritje.concat(rows), numrat, gjurmim: { hapje: gjurmimHapjeNdezur(), klikime: gjurmimKlikimeNdezur() } });
     } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ═══ Test i gjurmimit (butoni "Testo gjurmimin" te menuja Email-et) ═══
+  // Serveri kerkon VETE adresat publike te gjurmimit (https://phronexusai.com/m/o/... dhe /m/c/...), saktesisht si do ta bente nje klient email-i,
+  // dhe kontrollon qe hapja dhe klikimi regjistrohen ne databaze. Rreshti i testit fshihet menjehere pas testit (nuk shfaqet ne liste).
+  app.post('/api/admin/marketing/test-gjurmimin', iAdmin, async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    const hapat = [];
+    const hap = (emri, ok, detaje) => hapat.push({ emri, ok: !!ok, detaje: detaje || '' });
+    const hapjeN = gjurmimHapjeNdezur(), klikimeN = gjurmimKlikimeNdezur();
+    hap('Hapjet (piksel ne email)', hapjeN, hapjeN ? 'e ndezur' : 'e FIKUR — email-et e reja dalin pa piksel (hiq MKT_GJURMIM_HAPJE nga Railway)');
+    hap('Klikimet (lidhja ne email)', klikimeN, klikimeN ? 'e ndezur' : 'e FIKUR — lidhja nuk gjurmohet (hiq MKT_GJURMIM_KLIKIME nga Railway)');
+    const token = krijoToken();
+    let rreshtiKrijuar = false;
+    const opsione = () => ({ signal: AbortSignal.timeout(10000), headers: { 'User-Agent': 'PhronexusAI-test-gjurmimi' } });
+    try {
+      await siguroTabelenDergimet();
+      await pool.query("INSERT INTO marketing_dergimet (token, email, statusi) VALUES ($1, 'test-gjurmimi@local', 'test')", [token]);
+      rreshtiKrijuar = true;
+      hap('Databaza', true, 'tabela marketing_dergimet punon');
+      try {
+        const r = await fetch(BAZA_PUBLIKE + '/m/o/' + token + '.gif', opsione());
+        const lloji = r.headers.get('content-type') || '';
+        hap('Pikseli arrihet nga interneti', r.status === 200 && /image\/gif/i.test(lloji), 'HTTP ' + r.status + (lloji ? ', ' + lloji : '') + (r.redirected ? ' (pas nje ridrejtimi)' : ''));
+      } catch (e) { hap('Pikseli arrihet nga interneti', false, "s'u arrit " + BAZA_PUBLIKE + ': ' + e.message); }
+      try {
+        const r = await fetch(BAZA_PUBLIKE + '/m/c/' + token + '?p=%2F', Object.assign({ redirect: 'manual' }, opsione()));
+        const lok = r.headers.get('location') || '';
+        hap('Klikimi arrihet nga interneti', r.status === 302 && lok.replace(/\/$/, '') === BAZA_PUBLIKE, 'HTTP ' + r.status + (lok ? ' -> ' + lok : ''));
+      } catch (e) { hap('Klikimi arrihet nga interneti', false, "s'u arrit " + BAZA_PUBLIKE + ': ' + e.message); }
+      const k = (await pool.query('SELECT hapje, klikime FROM marketing_dergimet WHERE token = $1', [token])).rows[0] || {};
+      hap('Hapja u regjistrua ne databaze', k.hapje === 1, 'hapje=' + k.hapje);
+      hap('Klikimi u regjistrua ne databaze', k.klikime === 1, 'klikime=' + k.klikime);
+    } catch (e) { hap('Testi', false, e.message); }
+    finally { if (rreshtiKrijuar) await pool.query('DELETE FROM marketing_dergimet WHERE token = $1', [token]).catch(() => {}); }
+    res.json({ ok: hapat.every(h => h.ok), hapat });
   });
 
   // ═══ Motori i planifikuar — kontrollon cdo minute, dergon kur eshte koha ═══
@@ -549,19 +612,20 @@ module.exports = function (app, pool, iAdmin) {
           const html = htmlBazë.replace(/\{emri\}/g, escHtml(kont.emri || kont.domain)).replace(/\{domain\}/g, escHtml(kont.domain || '')).replace(/\{platforma\}/g, escHtml(platformaEmri)).replace(/\{unsubscribe_link\}/g, unsubLink);
           const subjektiFinal = subjekti.replace(/\{emri\}/g, kont.emri || kont.domain).replace(/\{domain\}/g, kont.domain || '').replace(/\{platforma\}/g, platformaEmri);
           const token = krijoToken();
+          const pg = pergatitHtmlPerDergim(html, token);
           try {
             await transporter.sendMail({
-              from: '"PhronexusAI" <' + slot.llogaria + '>', to: kont.email, subject: subjektiFinal, html: pergatitHtmlPerDergim(html, token)
+              from: '"PhronexusAI" <' + slot.llogaria + '>', to: kont.email, subject: subjektiFinal, html: pg.html
             });
             await pool.query('UPDATE marketing_fushata_kontakte SET derguar=true, derguar_at=now() WHERE id=$1', [kont.fk_id]);
             await pool.query('UPDATE marketing_kontaktet SET derguar=true, derguar_nga=$1, derguar_at=now(), derguar_sasi=derguar_sasi+1 WHERE id=$2', [slot.llogaria, kont.kontakt_id]);
             await pool.query('UPDATE marketing_fushata_slots SET perdorur = perdorur + 1 WHERE id=$1', [slot.slot_id]);
             await pool.query('INSERT INTO marketing_log (fushata_id, email, sukses, detaje) VALUES ($1,$2,true,$3)', [slot.fushata_id, kont.email, 'Derguar nga ' + slot.llogaria]);
-            await regjistroDergimin({ token, kontakt_id: kont.kontakt_id, email: kont.email, domain: kont.domain, kategoria: kont.kategoria, shabllon_id: slot.shabllon_id, shabllon_emri: shabllonEmri, llogaria: slot.llogaria, subjekti: subjektiFinal, fushata_id: slot.fushata_id, statusi: 'derguar' });
+            await regjistroDergimin({ token, kontakt_id: kont.kontakt_id, email: kont.email, domain: kont.domain, kategoria: kont.kategoria, shabllon_id: slot.shabllon_id, shabllon_emri: shabllonEmri, llogaria: slot.llogaria, subjekti: subjektiFinal, fushata_id: slot.fushata_id, statusi: 'derguar', me_piksel: pg.me_piksel, me_lidhje: pg.me_lidhje });
           } catch (e) {
             console.error('marketing dergim deshtoi:', kont.email, e.message);
             await pool.query('INSERT INTO marketing_log (fushata_id, email, sukses, detaje) VALUES ($1,$2,false,$3)', [slot.fushata_id, kont.email, String(e.message).slice(0, 500)]).catch(()=>{});
-            await regjistroDergimin({ token, kontakt_id: kont.kontakt_id, email: kont.email, domain: kont.domain, kategoria: kont.kategoria, shabllon_id: slot.shabllon_id, shabllon_emri: shabllonEmri, llogaria: slot.llogaria, subjekti: subjektiFinal, fushata_id: slot.fushata_id, statusi: 'deshtoi', gabimi: e.message });
+            await regjistroDergimin({ token, kontakt_id: kont.kontakt_id, email: kont.email, domain: kont.domain, kategoria: kont.kategoria, shabllon_id: slot.shabllon_id, shabllon_emri: shabllonEmri, llogaria: slot.llogaria, subjekti: subjektiFinal, fushata_id: slot.fushata_id, statusi: 'deshtoi', gabimi: e.message, me_piksel: pg.me_piksel, me_lidhje: pg.me_lidhje });
           }
         }
 
