@@ -112,8 +112,9 @@ border-radius:8px; color:#e6edf3; font-size:14px; font-family:inherit; margin-bo
 .kitem.disabled{ opacity:.35; cursor:not-allowed; }
 .ktabela{ border:1px solid #2a313c; border-radius:10px; overflow:hidden; }
 .krow{ display:flex; align-items:center; padding:11px 14px; border-bottom:1px solid #1c2230; font-size:14px; }
-.mktGridFushatat{ display:grid; grid-template-columns:2fr 1.3fr 1.3fr 1fr 1fr; gap:10px; padding:10px 12px; align-items:center; border-bottom:1px solid #1c2230; font-size:13px; }
-.mktGridLog{ display:grid; grid-template-columns:1.3fr 1.8fr .8fr 2fr; gap:10px; padding:10px 12px; align-items:center; border-bottom:1px solid #1c2230; font-size:13px; }
+.mktGridFushatat{ display:grid; grid-template-columns:1.6fr 1.6fr 1.4fr 1.4fr 1fr 1.5fr 1.2fr; gap:10px; padding:10px 12px; align-items:center; border-bottom:1px solid #1c2230; font-size:13px; }
+.mktGridLog{ display:grid; grid-template-columns:1.3fr 1.8fr 1.4fr 1.4fr .8fr 2fr; gap:10px; padding:10px 12px; align-items:center; border-bottom:1px solid #1c2230; font-size:13px; }
+.mktGridFushatat>span, .mktGridLog>span{ min-width:0; overflow-wrap:anywhere; }
 .mktGridEm{ display:grid; grid-template-columns:1.2fr 2fr 1fr 1.3fr 1.2fr .8fr 1.3fr 1.3fr; gap:10px; padding:10px 12px; align-items:center; border-bottom:1px solid #1c2230; font-size:13px; }
 .mktGridFushatat.mktHead, .mktGridLog.mktHead, .mktGridEm.mktHead{ background:#161b22; color:#8b949e; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; position:sticky; top:0; }
 .krow:last-child{ border-bottom:none; }
@@ -1945,36 +1946,158 @@ lista.appendChild(wrap);
 }
 // MKT-EMAILET (fund)
 
-async function renderMktAnalitika(m){
-m.innerHTML='<h2 class="h">Analitika</h2><p class="small" style="margin:2px 0 18px;">Fushatat e planifikuara dhe progresi i tyre.</p><div id="mktAnalLista"><p class="small">Po ngarkoj…</p></div>'+
-'<h2 class="h" style="margin-top:28px;">Regjistri i dërgimeve</h2><p class="small" style="margin:2px 0 18px;">Çdo përpjekje dërgimi, sukses apo dështim, me detaje — për diagnostikim.</p><div id="mktLogLista"><p class="small">Po ngarkoj…</p></div>';
+// MKT-ANALITIKA (fillim) — fushatat (ato AKTIVE kane butonin "Ndrysho orarin") dhe regjistri i dergimeve (me shabllonin)
+let mktOrariId=null, mktOrari=null, mktOrariDataRe='', mktOrariMesazh='';
+function mktOrariDitaPas(dt){ const t=new Date(dt+'T12:00:00Z'); t.setUTCDate(t.getUTCDate()+1); return t.toISOString().slice(0,10); }
+function mktOrariPergatit(d){ d.rreshta=(d.slots||[]).filter(s=>s.perdorur<s.sasia).map(s=>({id:s.id,data:s.data,ora:s.ora,sasia:s.sasia,perdorur:s.perdorur})); return d; }
+function mktOrariRenditi(){ mktOrari.rreshta.sort((a,b)=>{ const x=a.data+' '+a.ora, y=b.data+' '+b.ora; return x<y?-1:(x>y?1:0); }); }
+function mktKontakte(n){ return n+(n===1?' kontakt':' kontakte'); }
+// Burimi sipas kategorise: ato qe nisin me "Crustdata: " vijne nga Crustdata, te tjerat (te vjetrat) nga Exa — njesoj si te zgjedhja e kategorise te "Dërgimet".
+function mktKategoriaHtml(kat){
+if(!kat) return '—';
+const s=String(kat), pref='Crustdata: ', cd=s.indexOf(pref)===0;
+return esc(cd?s.slice(pref.length):s)+'<div class="small" style="color:'+(cd?'#7aa2ff':'#b794f6')+';">'+(cd?'Crustdata':'Exa')+'</div>';
+}
+function mktOrariKuti(ngjyra,html){ return '<div style="border-left:3px solid '+ngjyra+';padding:6px 10px;margin-bottom:10px;font-size:13px;">'+html+'</div>'; }
+function mktOrariNota(r,tani){
+if(!r.data||!r.ora) return '<span style="color:#d29922;">plotëso datën dhe orën</span>';
+const pj=[];
+if(r.sasia>1) pj.push('× '+r.sasia+' email'+(r.perdorur?' ('+r.perdorur+' të dërguara)':''));
+if((r.data+' '+r.ora)<=tani) pj.push('<span style="color:#d29922;">ora ka kaluar — dërgohet brenda 1 minute</span>');
+return pj.join(' · ');
+}
+function mktOrariMsg(txt,gabim){ const e=$('mktOrariMsg'); if(e){ e.textContent=txt||''; e.style.color=gabim?'#e5484d':''; } }
+function mktOrariRender(){
+const d=mktOrari, ed=$('mktEd'+mktOrariId); if(!d||!ed) return;
+const k=d.kontakte, f=d.fushata, tani=d.tani.data+' '+d.tani.ora;
+const vende=d.rreshta.reduce((a,r)=>a+Math.max(0,(parseInt(r.sasia,10)||1)-(r.perdorur||0)),0);
+const mungon=Math.max(0,k.mbeten-vende);
+const perdorura=(d.slots||[]).filter(s=>s.perdorur>=s.sasia).length;
+let h='<div style="padding:14px 16px;background:#0e1116;border-bottom:1px solid #1c2230;">';
+h+='<div class="small" style="margin-bottom:10px;">Kontakte: <b>'+k.gjithsej+'</b> gjithsej · <b>'+k.derguar+'</b> të dërguar · <b>'+k.mbeten+'</b> mbeten'+(k.cregjistruar>0?' · '+k.cregjistruar+' çregjistruar (nuk dërgohen)':'')+' · vende në orar: <b>'+vende+'</b></div>';
+if(!f.llogaria_ok) h+=mktOrariKuti('#e5484d','Llogaria <b>'+esc(f.llogaria)+'</b> nuk është e konfiguruar në Railway — asnjë email nuk dërgohet nga kjo fushatë.');
+if(!f.shabllon_ok) h+=mktOrariKuti('#e5484d','Shablloni i kësaj fushate nuk ekziston më — asnjë email nuk dërgohet.');
+if(k.mbeten===0) h+=mktOrariKuti('#8b949e','Nuk ka kontakte për t\'u dërguar — fushata mbyllet vetë brenda një minute.');
+else if(mungon>0) h+=mktOrariKuti('#d29922','⚠ '+(mungon===1?'Mungon <b>1</b> vend':'Mungojnë <b>'+mungon+'</b> vende')+': ka '+mktKontakte(k.mbeten)+' pa u dërguar, por orari ka vetëm '+vende+(vende===1?' vend':' vende')+'. Shto orë më poshtë që fushata të përfundojë.');
+else h+=mktOrariKuti('#3fb950','✓ Orari mjafton për të gjithë kontaktet që mbeten.');
+if(perdorura) h+='<div class="small" style="margin-bottom:8px;">'+perdorura+' orë të përdorura tashmë (u dërguan) — nuk ndryshohen.</div>';
+h+='<div class="small" style="margin-bottom:6px;">Orari që mbetet (data dhe ora e çdo email-i):</div>';
+if(!d.rreshta.length) h+='<div class="small" style="margin-bottom:8px;">Asnjë orë e hapur në orar.</div>';
+d.rreshta.forEach((r,i)=>{
+h+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">'+
+'<input type="date" value="'+esc(r.data)+'" onchange="mktOrariNdrysho('+i+',\'data\',this.value)" style="width:160px;margin:0;">'+
+'<input type="time" value="'+esc(r.ora)+'" onchange="mktOrariNdrysho('+i+',\'ora\',this.value)" style="width:120px;margin:0;">'+
+'<button class="btn ghost" style="padding:6px 10px;" title="Hiq këtë orë" onclick="mktOrariHiq('+i+')">✕</button>'+
+'<span id="mktOrN'+i+'" class="small">'+mktOrariNota(r,tani)+'</span></div>';
+});
+h+='<div style="margin-top:12px;padding-top:12px;border-top:1px solid #1c2230;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'+
+'<span class="small">Shto</span><input id="mktOrariNr" type="number" min="1" max="200" value="'+Math.min(Math.max(mungon,1),3)+'" style="width:80px;margin:0;">'+
+'<span class="small">email në datën</span><input id="mktOrariDt" type="date" value="'+esc(mktOrariDataRe&&mktOrariDataRe>=d.tani.data?mktOrariDataRe:d.tani.data)+'" style="width:160px;margin:0;">'+
+'<button class="btn" style="padding:6px 12px;" onclick="mktOrariShto()">Shto</button></div>'+
+'<div class="small" style="margin-top:6px;">Orët shpërndahen njëtrajtësisht gjatë ditës; mund t\'i ndryshosh një nga një.</div>'+
+'<div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">'+
+'<button class="btn cta" onclick="mktOrariRuaj(this)">Ruaj orarin</button>'+
+'<button class="btn ghost" onclick="mktOrariMbyll()">Mbyll</button>'+
+'<span id="mktOrariMsg" class="small"></span></div></div>';
+ed.innerHTML=h;
+mktOrariMsg(mktOrariMesazh); mktOrariMesazh='';
+}
+function mktOrariNdrysho(i,fusha,vl){
+const r=mktOrari&&mktOrari.rreshta[i]; if(!r) return;
+r[fusha]=vl;
+const n=$('mktOrN'+i); if(n) n.innerHTML=mktOrariNota(r,mktOrari.tani.data+' '+mktOrari.tani.ora);
+}
+function mktOrariHiq(i){ if(!mktOrari) return; mktOrari.rreshta.splice(i,1); mktOrariRender(); }
+function mktOrariShto(){
+const d=mktOrari; if(!d) return;
+const nr=Math.max(1,Math.min(200,parseInt($('mktOrariNr').value,10)||1));
+const dt=$('mktOrariDt').value;
+if(!dt){ mktOrariMsg('Zgjidh datën.',true); return; }
+if(dt<d.tani.data){ mktOrariMsg('Kjo datë ka kaluar. Zgjidh sot ose një ditë më vonë.',true); return; }
+const oret=mktLlogaritOretENjetrajteshme(nr,dt===d.tani.data?d.tani.minuta:0);
+if(!oret.length){ mktOrariMsg('Sot nuk ka më kohë. Zgjidh ditën e nesërme.',true); return; }
+oret.forEach(o=>d.rreshta.push({id:null,data:dt,ora:o,sasia:1,perdorur:0}));
+mktOrariRenditi();
+mktOrariDataRe=mktOrariDitaPas(dt);
+mktOrariRender();
+mktOrariMsg('U shtuan '+oret.length+' orë — shtyp "Ruaj orarin" që të ruhen.');
+}
+async function mktOrariRuaj(btn){
+const d=mktOrari, id=mktOrariId; if(!d) return;
+for(let i=0;i<d.rreshta.length;i++){ const r=d.rreshta[i]; if(!r.data||!r.ora){ mktOrariMsg('Rreshti '+(i+1)+': plotëso datën dhe orën.',true); return; } }
+btn.disabled=true; mktOrariMsg('Po ruaj…');
 try{
-const d=await(await fetch('/api/admin/marketing/fushatat')).json();
+const j=await(await fetch('/api/admin/marketing/fushata/'+id+'/orari',{method:'POST',headers:{'Content-Type':'application/json'},cache:'no-store',
+body:JSON.stringify({ slots: d.rreshta.map(r=>({ id:r.id, data:r.data, ora:r.ora, sasia:r.sasia })) })})).json();
+if(j.error){ mktOrariMsg('Gabim: '+j.error,true); btn.disabled=false; return; }
+await mktAnalFushatat(); // rifreskon tabelen lart (paralajmerimi dhe progresi)
+mktOrariId=id; mktOrari=mktOrariPergatit(j); mktOrariMesazh='U ruajt ✓';
+const ed=$('mktEd'+id); if(ed){ ed.style.display='block'; mktOrariRender(); }
+}catch(e){ mktOrariMsg('Gabim: '+e.message,true); btn.disabled=false; }
+}
+function mktOrariMbyll(){
+if(mktOrariId!=null){ const ed=$('mktEd'+mktOrariId); if(ed){ ed.style.display='none'; ed.innerHTML=''; } }
+mktOrariId=null; mktOrari=null; mktOrariDataRe='';
+}
+async function mktOrariHap(id){
+if(mktOrariId===id){ mktOrariMbyll(); return; }
+mktOrariMbyll();
+mktOrariId=id;
+const ed=$('mktEd'+id); if(!ed) return;
+ed.style.display='block'; ed.innerHTML='<div class="small" style="padding:14px 16px;background:#0e1116;">Po ngarkoj orarin…</div>';
+try{
+const d=await(await fetch('/api/admin/marketing/fushata/'+id,{cache:'no-store'})).json();
+if(mktOrariId!==id) return; // ndërkohë u hap një tjetër
+if(d.error||!d.fushata){ ed.innerHTML='<div class="small" style="padding:14px 16px;background:#0e1116;color:#e5484d;">Gabim: '+esc(d.error||'përgjigje e papritur')+'</div>'; return; }
+if(d.fushata.statusi!=='aktiv'){ ed.innerHTML='<div class="small" style="padding:14px 16px;background:#0e1116;">Kjo fushatë ka përfunduar — orari s\'ndryshohet më.</div>'; return; }
+mktOrari=mktOrariPergatit(d); mktOrariRender();
+}catch(e){ if(mktOrariId===id) ed.innerHTML='<div class="small" style="padding:14px 16px;background:#0e1116;color:#e5484d;">Gabim: '+esc(e.message)+'</div>'; }
+}
+async function mktAnalFushatat(){
+const box=$('mktAnalLista'); if(!box) return;
+try{
+const d=await(await fetch('/api/admin/marketing/fushatat',{cache:'no-store'})).json();
+if(d.error){ box.innerHTML='<p class="small">Gabim: '+esc(d.error)+'</p>'; return; }
 const f=d.fushatat||[];
-if(!f.length){ $('mktAnalLista').innerHTML='<p class="small">Ende s\'ka fushata të planifikuara.</p>'; }
-else{
-$('mktAnalLista').innerHTML='<div class="njTblWrap">'+
-'<div class="mktGridFushatat mktHead"><span>Emri</span><span>Llogaria</span><span>Shabllon</span><span>Progresi</span><span>Statusi</span></div>'+
-f.map(x=>
-'<div class="mktGridFushatat"><span>'+(x.emri||'(pa emër)')+'</span><span>'+x.llogaria+'</span><span>'+(x.shabllon_emri||'—')+'</span>'+
-'<span>'+x.derguar_kontakte+' / '+x.gjithsej_kontakte+'</span><span>'+(x.statusi==='aktiv'?'Aktiv':'Përfunduar')+'</span></div>'
-).join('')+
+if(!f.length){ box.innerHTML='<p class="small">Ende s\'ka fushata të planifikuara.</p>'; return; }
+box.innerHTML='<div class="njTblWrap">'+
+'<div class="mktGridFushatat mktHead"><span>Emri</span><span>Llogaria</span><span>Shabllon</span><span>Kategoria</span><span>Progresi</span><span>Statusi</span><span>Orari</span></div>'+
+f.map(x=>{
+const aktiv=x.statusi==='aktiv';
+const pa=(aktiv&&x.mbeten_kontakte>0&&x.vende<x.mbeten_kontakte)?(x.mbeten_kontakte-x.vende):0;
+return '<div class="mktGridFushatat"><span>'+esc(x.emri||'(pa emër)')+'</span><span>'+esc(x.llogaria)+'</span><span>'+esc(x.shabllon_emri||'—')+'</span>'+
+'<span>'+((x.kategorite&&x.kategorite.length)?x.kategorite.map(mktKategoriaHtml).join(''):'—')+'</span>'+
+'<span>'+x.derguar_kontakte+' / '+x.gjithsej_kontakte+(x.cregjistruar_kontakte>0?'<div class="small">'+x.cregjistruar_kontakte+' çregjistruar</div>':'')+'</span>'+
+'<span>'+(aktiv?'Aktiv':'Përfunduar')+(pa?'<div class="small" style="color:#d29922;">⚠ pa orar për '+mktKontakte(pa)+'</div>':'')+(aktiv&&x.llogaria_ok===false?'<div class="small" style="color:#e5484d;">⚠ llogaria s\'është e konfiguruar</div>':'')+'</span>'+
+'<span>'+(aktiv?'<button class="btn ghost" style="padding:5px 10px;font-size:12px;" onclick="mktOrariHap('+x.id+')">Ndrysho orarin</button>':'—')+'</span></div>'+
+'<div id="mktEd'+x.id+'" style="display:none;"></div>';
+}).join('')+
 '</div>';
+}catch(e){ box.innerHTML='<p class="small">Gabim.</p>'; }
 }
-}catch(e){ $('mktAnalLista').innerHTML='<p class="small">Gabim.</p>'; }
+async function mktAnalLog(){
+const box=$('mktLogLista'); if(!box) return;
 try{
-const dl=await(await fetch('/api/admin/marketing/log')).json();
+const dl=await(await fetch('/api/admin/marketing/log',{cache:'no-store'})).json();
+if(dl.error){ box.innerHTML='<p class="small">Gabim: '+esc(dl.error)+'</p>'; return; }
 const l=dl.log||[];
-if(!l.length){ $('mktLogLista').innerHTML='<p class="small">Ende s\'ka asnjë përpjekje dërgimi të regjistruar.</p>'; return; }
-$('mktLogLista').innerHTML='<div class="njTblWrap">'+
-'<div class="mktGridLog mktHead"><span>Kur</span><span>Email</span><span>Rezultati</span><span>Detaje</span></div>'+
+if(!l.length){ box.innerHTML='<p class="small">Ende s\'ka asnjë përpjekje dërgimi të regjistruar.</p>'; return; }
+box.innerHTML='<div class="njTblWrap">'+
+'<div class="mktGridLog mktHead"><span>Kur</span><span>Email</span><span>Shablloni</span><span>Kategoria</span><span>Rezultati</span><span>Detaje</span></div>'+
 l.map(x=>
-'<div class="mktGridLog"><span>'+new Date(x.krijuar_at).toLocaleString('sq-AL')+'</span><span>'+x.email+'</span>'+
-'<span style="color:'+(x.sukses?'#3fb950':'#e5484d')+';">'+(x.sukses?'U dërgua':'Dështoi')+'</span><span>'+(x.detaje||'—')+'</span></div>'
+'<div class="mktGridLog"><span>'+new Date(x.krijuar_at).toLocaleString('sq-AL')+'</span><span>'+esc(x.email)+'</span><span>'+esc(x.shabllon_emri||'—')+'</span><span>'+mktKategoriaHtml(x.kategoria)+'</span>'+
+'<span style="color:'+(x.sukses?'#3fb950':'#e5484d')+';">'+(x.sukses?'U dërgua':'Dështoi')+'</span><span>'+esc(x.detaje||'—')+'</span></div>'
 ).join('')+
 '</div>';
-}catch(e){ $('mktLogLista').innerHTML='<p class="small">Gabim.</p>'; }
+}catch(e){ box.innerHTML='<p class="small">Gabim.</p>'; }
 }
+async function renderMktAnalitika(m){
+mktOrariId=null; mktOrari=null; mktOrariDataRe=''; mktOrariMesazh='';
+m.innerHTML='<h2 class="h">Analitika</h2><p class="small" style="margin:2px 0 18px;">Fushatat e planifikuara dhe progresi i tyre. Për ato që janë “Aktiv” mund ta ndryshosh orarin me butonin “Ndrysho orarin”.</p><div id="mktAnalLista"><p class="small">Po ngarkoj…</p></div>'+
+'<h2 class="h" style="margin-top:28px;">Regjistri i dërgimeve</h2><p class="small" style="margin:2px 0 18px;">Çdo përpjekje dërgimi, sukses apo dështim, me shabllonin e përdorur dhe detaje — për diagnostikim.</p><div id="mktLogLista"><p class="small">Po ngarkoj…</p></div>';
+await Promise.all([mktAnalFushatat(), mktAnalLog()]);
+}
+// MKT-ANALITIKA (fund)
 
 </script>
 </body>
