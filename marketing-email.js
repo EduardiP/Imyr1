@@ -72,6 +72,13 @@ function pergatitHtmlPerDergim(html, token) {
 }
 const GIF_1X1 = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
 
+// Data "YYYY-MM-DD" e vertete e kalendarit (jo p.sh. 2026-02-31).
+function eDataEVlefshme(s) {
+  if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const d = new Date(s + 'T00:00:00Z');
+  return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s && d.getUTCFullYear() >= 2020 && d.getUTCFullYear() <= 2100;
+}
+
 function escHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 // Nxjerr emrin e "pastruar" te platformes nga domain-i: ashbyhq.com -> Ashbyhq
 function emriPlatformesNgaDomain(domain) {
@@ -131,6 +138,7 @@ module.exports = function (app, pool, iAdmin) {
         await pool.query('ALTER TABLE marketing_dergimet ADD COLUMN IF NOT EXISTS me_piksel BOOLEAN NOT NULL DEFAULT false');
         await pool.query('ALTER TABLE marketing_dergimet ADD COLUMN IF NOT EXISTS me_lidhje BOOLEAN NOT NULL DEFAULT false');
         await pool.query('CREATE INDEX IF NOT EXISTS marketing_dergimet_koha ON marketing_dergimet (derguar_at DESC)');
+        await pool.query('CREATE INDEX IF NOT EXISTS marketing_dergimet_email ON marketing_dergimet (email)'); // per te gjetur shabllonin e cdo rreshti te regjistrit
       })().catch(e => { tabelaDergimetPromise = null; throw e; }); // nese deshtoi, hera tjeter provohet perseri
     }
     return tabelaDergimetPromise;
@@ -460,24 +468,147 @@ module.exports = function (app, pool, iAdmin) {
   });
 
   // ═══ Lista e fushatave (per Analitiken) ═══
+  // mbeten_kontakte = te padergura dhe jo te cregjistruar (ata qe duhen dergu ende); vende = sa email-e akoma "lejon" orari.
+  // Kur vende < mbeten_kontakte, fushata ngec "Aktiv" (s'ka orar per te gjithe) — Analitika e tregon kete.
   app.get('/api/admin/marketing/fushatat', iAdmin, async (req, res) => {
+    res.set('Cache-Control', 'no-store');
     try {
       const r = await pool.query(`
         SELECT f.id, f.emri, f.llogaria, f.statusi, f.krijuar_at, s.emri AS shabllon_emri,
           COUNT(fk.id)::int AS gjithsej_kontakte,
-          COUNT(fk.id) FILTER (WHERE fk.derguar)::int AS derguar_kontakte
+          COUNT(fk.id) FILTER (WHERE fk.derguar)::int AS derguar_kontakte,
+          COUNT(fk.id) FILTER (WHERE NOT fk.derguar AND NOT k.unsubscribed)::int AS mbeten_kontakte,
+          COUNT(fk.id) FILTER (WHERE NOT fk.derguar AND k.unsubscribed)::int AS cregjistruar_kontakte,
+          ARRAY_AGG(DISTINCT k.kategoria) FILTER (WHERE k.kategoria IS NOT NULL) AS kategorite,
+          (SELECT COALESCE(SUM(sl.sasia - sl.perdorur), 0)::int FROM marketing_fushata_slots sl WHERE sl.fushata_id = f.id AND sl.perdorur < sl.sasia) AS vende
         FROM marketing_fushatat f
         LEFT JOIN marketing_shabllonet s ON s.id = f.shabllon_id
         LEFT JOIN marketing_fushata_kontakte fk ON fk.fushata_id = f.id
+        LEFT JOIN marketing_kontaktet k ON k.id = fk.kontakt_id
         GROUP BY f.id, s.emri ORDER BY f.krijuar_at DESC`);
-      res.json({ fushatat: r.rows });
+      const aktive = listaLlogariveAktive();
+      res.json({ fushatat: r.rows.map(x => Object.assign(x, { llogaria_ok: aktive.includes(x.llogaria) })) });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
-  app.get('/api/admin/marketing/log', iAdmin, async (req, res) => {
+  // Gjendja e plote e nje fushate per editorin e orarit (kontaktet, orari, ora aktuale e Tiranes).
+  async function gjendjaEFushates(id) {
+    const f = (await pool.query(
+      'SELECT f.id, f.emri, f.llogaria, f.statusi, s.emri AS shabllon_emri, (s.id IS NOT NULL) AS shabllon_ok FROM marketing_fushatat f LEFT JOIN marketing_shabllonet s ON s.id = f.shabllon_id WHERE f.id = $1', [id])).rows[0];
+    if (!f) return null;
+    const k = (await pool.query(`
+      SELECT COUNT(*)::int AS gjithsej,
+        COUNT(*) FILTER (WHERE fk.derguar)::int AS derguar,
+        COUNT(*) FILTER (WHERE NOT fk.derguar AND NOT kt.unsubscribed)::int AS mbeten,
+        COUNT(*) FILTER (WHERE NOT fk.derguar AND kt.unsubscribed)::int AS cregjistruar
+      FROM marketing_fushata_kontakte fk JOIN marketing_kontaktet kt ON kt.id = fk.kontakt_id WHERE fk.fushata_id = $1`, [id])).rows[0];
+    const slots = (await pool.query(
+      "SELECT id, to_char(data, 'YYYY-MM-DD') AS data, left(ora::text, 5) AS ora, sasia, perdorur FROM marketing_fushata_slots WHERE fushata_id = $1 ORDER BY data, ora, id", [id])).rows;
+    const t = (await pool.query("SELECT to_char(now() AT TIME ZONE 'Europe/Tirane', 'YYYY-MM-DD') AS data, to_char(now() AT TIME ZONE 'Europe/Tirane', 'HH24:MI') AS ora")).rows[0];
+    const vende = slots.reduce((a, x) => a + Math.max(0, x.sasia - x.perdorur), 0);
+    return {
+      fushata: { id: f.id, emri: f.emri, llogaria: f.llogaria, statusi: f.statusi, shabllon_emri: f.shabllon_emri, shabllon_ok: !!f.shabllon_ok, llogaria_ok: listaLlogariveAktive().includes(f.llogaria) },
+      kontakte: k, slots, vende,
+      tani: { data: t.data, ora: t.ora, minuta: parseInt(t.ora.slice(0, 2), 10) * 60 + parseInt(t.ora.slice(3, 5), 10) }
+    };
+  }
+
+  app.get('/api/admin/marketing/fushata/:id', iAdmin, async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isInteger(id) || id < 1) return res.status(400).json({ error: 'Fushata e pavlefshme.' });
     try {
-      const r = await pool.query('SELECT * FROM marketing_log ORDER BY krijuar_at DESC LIMIT 100');
-      res.json({ log: r.rows });
+      const g = await gjendjaEFushates(id);
+      if (!g) return res.status(404).json({ error: "Fushata s'u gjet." });
+      res.json(Object.assign({ ok: true }, g));
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // Ndryshon orarin e nje fushate AKTIVE. Body: { slots: [ { id?, data:'YYYY-MM-DD', ora:'HH:MM', sasia? } ] } = orari i deshiruar i orave te hapura.
+  //  - rresht me id te nje ore te hapur -> ndryshon daten/oren; rresht pa id -> ore e re;
+  //  - ore e hapur qe mungon ne liste -> fshihet (nese s'ka dergu asgje prej saj) ose mbyllet (sasia = sa u dergua);
+  //  - orat e perdorura plotesisht (u dergua gjithcka) nuk preken kurre.
+  app.post('/api/admin/marketing/fushata/:id/orari', iAdmin, async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isInteger(id) || id < 1) return res.status(400).json({ error: 'Fushata e pavlefshme.' });
+    const lista = req.body && req.body.slots;
+    if (!Array.isArray(lista)) return res.status(400).json({ error: 'Orari mungon.' });
+    if (lista.length > 500) return res.status(400).json({ error: 'Maksimumi 500 orë për një fushatë.' });
+    const rreshta = [];
+    for (let i = 0; i < lista.length; i++) {
+      const s = lista[i] || {};
+      const nr = 'Rreshti ' + (i + 1) + ': ';
+      if (!eDataEVlefshme(s.data)) return res.status(400).json({ error: nr + 'data e pavlefshme.' });
+      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(String(s.ora || ''))) return res.status(400).json({ error: nr + 'ora e pavlefshme.' });
+      const sasia = (s.sasia == null || s.sasia === '') ? 1 : Number(s.sasia);
+      if (!Number.isInteger(sasia) || sasia < 1 || sasia > 1000) return res.status(400).json({ error: nr + 'numri i email-eve duhet të jetë nga 1 deri 1000.' });
+      const sid = (s.id == null || s.id === '') ? null : Number(s.id);
+      if (sid !== null && (!Number.isInteger(sid) || sid < 1)) return res.status(400).json({ error: nr + 'rresht i pavlefshëm.' });
+      rreshta.push({ id: sid, data: s.data, ora: s.ora, sasia });
+    }
+    const klient = await pool.connect();
+    try {
+      await klient.query('BEGIN');
+      const f = (await klient.query('SELECT id, statusi FROM marketing_fushatat WHERE id = $1 FOR UPDATE', [id])).rows[0];
+      if (!f) { await klient.query('ROLLBACK'); return res.status(404).json({ error: "Fushata s'u gjet." }); }
+      if (f.statusi !== 'aktiv') { await klient.query('ROLLBACK'); return res.status(409).json({ error: "Kjo fushatë ka përfunduar, orari s'ndryshohet më." }); }
+      const ekzistuese = (await klient.query('SELECT id, sasia, perdorur FROM marketing_fushata_slots WHERE fushata_id = $1 FOR UPDATE', [id])).rows;
+      const teHapura = new Map(ekzistuese.filter(x => x.perdorur < x.sasia).map(x => [x.id, x]));
+      const teMbyllura = new Set(ekzistuese.filter(x => x.perdorur >= x.sasia).map(x => x.id));
+      const mbajtur = new Set();
+      for (const r of rreshta) {
+        if (r.id !== null && teHapura.has(r.id)) {
+          if (mbajtur.has(r.id)) continue;
+          mbajtur.add(r.id);
+          await klient.query('UPDATE marketing_fushata_slots SET data = $1, ora = $2, sasia = GREATEST($3, perdorur) WHERE id = $4', [r.data, r.ora, r.sasia, r.id]);
+        } else if (r.id !== null && teMbyllura.has(r.id)) {
+          continue; // ndersa po e ndryshoje, ky email u dergua plotesisht — mbetet ashtu
+        } else {
+          await klient.query('INSERT INTO marketing_fushata_slots (fushata_id, data, ora, sasia) VALUES ($1,$2,$3,$4)', [id, r.data, r.ora, r.sasia]);
+        }
+      }
+      for (const [sid, ex] of teHapura) {
+        if (mbajtur.has(sid)) continue;
+        if (ex.perdorur === 0) await klient.query('DELETE FROM marketing_fushata_slots WHERE id = $1 AND perdorur = 0', [sid]);
+        else await klient.query('UPDATE marketing_fushata_slots SET sasia = perdorur WHERE id = $1', [sid]);
+      }
+      await klient.query('COMMIT');
+    } catch (e) {
+      await klient.query('ROLLBACK').catch(() => {});
+      return res.status(500).json({ error: e.message });
+    } finally { klient.release(); }
+    try { res.json(Object.assign({ ok: true }, await gjendjaEFushates(id))); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // Regjistri i dergimeve + SHABLLONI i perdorur per cdo rresht (nga rreshti i dergimit ne marketing_dergimet; nese s'ka, nga shablloni i fushates)
+  // + KATEGORIA e kontaktit (prefiksi "Crustdata: " tregon burimin Crustdata, perndryshe Exa — kjo percaktohet ne faqe).
+  app.get('/api/admin/marketing/log', iAdmin, async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    try {
+      let rows;
+      try {
+        await siguroTabelenDergimet();
+        rows = (await pool.query(`
+          SELECT l.id, l.fushata_id, l.email, l.sukses, l.detaje, l.krijuar_at, COALESCE(d.shabllon_emri, s.emri) AS shabllon_emri,
+            COALESCE(d.kategoria, kt.kategoria) AS kategoria
+          FROM (SELECT * FROM marketing_log ORDER BY krijuar_at DESC LIMIT 100) l
+          LEFT JOIN marketing_fushatat f ON f.id = l.fushata_id
+          LEFT JOIN marketing_shabllonet s ON s.id = f.shabllon_id
+          LEFT JOIN marketing_kontaktet kt ON kt.email = l.email
+          LEFT JOIN LATERAL (
+            SELECT dd.shabllon_emri, dd.kategoria FROM marketing_dergimet dd
+            WHERE dd.email = l.email AND dd.fushata_id IS NOT DISTINCT FROM l.fushata_id AND dd.shabllon_emri IS NOT NULL
+              AND dd.derguar_at BETWEEN l.krijuar_at - interval '5 minutes' AND l.krijuar_at + interval '5 minutes'
+            ORDER BY abs(extract(epoch FROM (dd.derguar_at - l.krijuar_at))) LIMIT 1
+          ) d ON true
+          ORDER BY l.krijuar_at DESC`)).rows;
+      } catch (e) {
+        console.error('marketing log (shablloni):', e.message);
+        rows = (await pool.query('SELECT l.*, NULL::text AS shabllon_emri, kt.kategoria FROM (SELECT * FROM marketing_log ORDER BY krijuar_at DESC LIMIT 100) l LEFT JOIN marketing_kontaktet kt ON kt.email = l.email ORDER BY l.krijuar_at DESC')).rows; // regjistri nuk duhet te mbetet kurre bosh per shkak te shabllonit
+      }
+      res.json({ log: rows });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
@@ -580,14 +711,24 @@ module.exports = function (app, pool, iAdmin) {
     poPunon = true;
     const llog = ndertoTransporteret();
     try {
+      // Fushata aktive pa asnje kontakt per t'u dergu (te gjithe u derguan ose u cregjistruan) mbyllet vete — perndryshe mbetet "Aktiv" pergjithmone.
+      await pool.query(`
+        UPDATE marketing_fushatat f SET statusi = 'perfunduar'
+        WHERE f.statusi = 'aktiv' AND NOT EXISTS (
+          SELECT 1 FROM marketing_fushata_kontakte fk JOIN marketing_kontaktet k ON k.id = fk.kontakt_id
+          WHERE fk.fushata_id = f.id AND NOT fk.derguar AND NOT k.unsubscribed)`);
+      // Merren parasysh vetem fushatat qe VERTET mund te dergojne (llogaria e konfiguruar, shablloni ekziston); perndryshe nje ore e vjeter
+      // e nje fushate te prishur do te zinte radhen cdo minute dhe do t'i ndalonte te gjitha fushatat e tjera.
       const slotsGati = await pool.query(`
         SELECT sl.id AS slot_id, sl.fushata_id, sl.sasia, sl.perdorur, f.llogaria, f.shabllon_id, f.statusi
         FROM marketing_fushata_slots sl
         JOIN marketing_fushatat f ON f.id = sl.fushata_id
         WHERE f.statusi = 'aktiv' AND sl.perdorur < sl.sasia
+          AND f.llogaria = ANY($1::text[])
+          AND EXISTS (SELECT 1 FROM marketing_shabllonet sh WHERE sh.id = f.shabllon_id)
           AND ((sl.data + sl.ora) AT TIME ZONE 'Europe/Tirane') <= now()
         ORDER BY sl.data ASC, sl.ora ASC
-        LIMIT 1`); // VETEM 1 slot per ekzekutim — nese disa jane "vone" njekohesisht (p.sh. pas nje rinisje
+        LIMIT 1`, [Object.keys(llog)]); // VETEM 1 slot per ekzekutim — nese disa jane "vone" njekohesisht (p.sh. pas nje rinisje
                     // serveri), vazhdojne 1 nga 1, minute pas minute, jo te gjitha njeheresh.
 
       for (const slot of slotsGati.rows) {
@@ -629,8 +770,8 @@ module.exports = function (app, pool, iAdmin) {
           }
         }
 
-        // Nese s'ka me kontakte pa dergu fare ne kete fushate, e shenon te perfunduar.
-        const mbetur = await pool.query('SELECT COUNT(*)::int AS n FROM marketing_fushata_kontakte WHERE fushata_id=$1 AND NOT derguar', [slot.fushata_id]);
+        // Nese s'ka me kontakte per t'u dergu (pa dergu dhe jo te cregjistruar) ne kete fushate, e shenon te perfunduar.
+        const mbetur = await pool.query('SELECT COUNT(*)::int AS n FROM marketing_fushata_kontakte fk JOIN marketing_kontaktet k ON k.id = fk.kontakt_id WHERE fk.fushata_id=$1 AND NOT fk.derguar AND NOT k.unsubscribed', [slot.fushata_id]);
         if (mbetur.rows[0].n === 0) {
           await pool.query(`UPDATE marketing_fushatat SET statusi='perfunduar' WHERE id=$1`, [slot.fushata_id]);
         }
