@@ -79,10 +79,6 @@
       eTrupi: 'Message',
       eTrupiVlera: 'Hi {company} team,\n\nAI writes your message here after it studies your business.',
       eFusha: 'Insert field:',
-      eVazhdime: 'Follow-ups',
-      eDita: 'Day',
-      eVazhdimiTekst: 'Short follow-up if there is no reply',
-      eShtoVazhdim: '+ Add follow-up',
       eHapi4: 'Schedule',
       eData: 'Start date',
       eOra: 'Time',
@@ -118,8 +114,8 @@
       eDergoNga: 'Send from your mailbox',
       eDergoNgaNen: 'Sign in to Gmail or Outlook so the emails go out from your own address, and replies come back to you. "Other (SMTP)" is for any other email provider, using its server settings.',
       eDergo: 'Send',
-      eLimit3: 'The free try sends up to 3 emails. Sign in to send to more businesses with professional sending.',
-      eKufiri4: 'In the free try, emails must be at least 4 hours apart. Sign in for professional sending: any schedule, more emails and follow-ups.',
+      eLimit3: 'The free try sends up to 3 emails per domain. Sign in to send to more businesses with professional sending.',
+      eKufiri4: 'In the free try, emails must be at least 4 hours apart. Sign in for professional sending: any schedule and more emails.',
       eLidhFillimisht: 'Choose a mailbox to send from first.',
       eHyr: 'Sign in for unlimited use',
       ePreview: 'Preview',
@@ -138,9 +134,10 @@
       eShembullMarres: 'Example recipient',
       eNjeProve: 'Free: one try per domain. Your email is written by AI from your domain.',
       ePritDomainin: 'Enter your domain and study your business first: AI writes the email from it.',
-      ePerdorur: 'The free try for {d} has already been used. Sign in for unlimited use.',
+      ePerdorur: 'Your free try for {d} has ended. Sign in to keep sending, with no limit.',
       sSeShpejti: 'Signal search is coming soon. Sign in and we will start finding signals for your business as soon as it launches.',
       eDirektoriaSeShpejti: 'The business directory is coming soon.',
+      eAsnjeNeKat: 'No more businesses to email in this category. Choose another category.',
       eMarresShembull: 'Example Company',
       pPamja: 'How it will look',
       pPritStudimin: 'Study your business with AI to see your email here.',
@@ -160,6 +157,38 @@
       pRedakto: 'Edit design',
       pMbyllRedaktimin: 'Done',
       pEmriDerguesit: 'Sender name',
+      eMbetur: '{n} of 3 free emails left for {d}',
+      eOfertaMbaroi: 'Your free try for {d} has ended. Sign in to keep sending, with no limit.',
+      eRikthim: 'Welcome back. These are the emails from your free try for {d}.',
+      eDitetLira: 'Free sending capacity (next 7 days)',
+      eDitaPlot: 'full',
+      eDitaLira: '{n} free',
+      eSot: 'Today',
+      eNeser: 'Tomorrow',
+      ePlotSot: 'Free sending from our mailboxes is full for today. Sign in and send from your own email, with no limit.',
+      eDitaEZgjedhurPlot: 'This day is full. Choose another day.',
+      eMaks7: 'You can schedule up to 7 days ahead.',
+      stVonuar: 'Delayed',
+      pFundiTitulli: 'Sending stays 100% free. To send without the PhronexusAI footer:',
+      pFundi1: 'Sign in',
+      pFundi2: 'Complete your profile (AI fills it in for you)',
+      pFundi3: 'Add the PhronexusAI snippet to your website, so it shows partner ads and brings real views',
+      eDukeDerguar: 'Scheduling…',
+      eUPlanifikua: 'Scheduled. Each email goes out at its time.',
+      eGabimDergimi: 'Could not schedule: {e}',
+      eEmailetE: 'Your emails',
+      eKolMarresi: 'Recipient',
+      eKolOra: 'Scheduled',
+      eKolStatusi: 'Status',
+      eKolHapur: 'Opened',
+      eKolKlikuar: 'Clicked',
+      eKolCregj: 'Unsubscribed',
+      stNeRadhe: 'Scheduled',
+      stDerguar: 'Sent',
+      stDeshtoi: 'Not sent',
+      eHapur: 'Opened',
+      eKlikuar: 'Clicked',
+      eShenimHapjet: 'Opens are estimated: some email apps block tracking. Replies go to the sending mailbox.',
     },
     sq: {
       shembull: 'Të dhëna shembull',
@@ -214,10 +243,6 @@
       eTrupi: 'Mesazhi',
       eTrupiVlera: 'Përshëndetje ekipi i {company},\n\nAI e shkruan mesazhin këtu pasi të studiojë biznesin tënd.',
       eFusha: 'Shto fushë:',
-      eVazhdime: 'Vazhdimet',
-      eDita: 'Dita',
-      eVazhdimiTekst: 'Rikujtim i shkurtër nëse nuk ka përgjigje',
-      eShtoVazhdim: '+ Shto vazhdim',
       eHapi4: 'Planifikimi',
       eData: 'Data e nisjes',
       eOra: 'Ora',
@@ -254,7 +279,7 @@
       eDergoNgaNen: 'Hyr në Gmail ose Outlook që email-et të dalin nga adresa jote dhe përgjigjet të vijnë te ti. "Tjetër (SMTP)" është për çdo ofrues tjetër email-i, me të dhënat e serverit të tij.',
       eDergo: 'Dërgo',
       eLimit3: 'Prova falas dërgon deri në 3 email-e. Hyr në llogari për të dërguar te më shumë biznese me dërgim profesional.',
-      eKufiri4: 'Në provën falas email-et duhet të jenë të paktën 4 orë larg njëri-tjetrit. Hyr në llogari për dërgim profesional: çdo orar, më shumë email-e dhe vazhdime.',
+      eKufiri4: 'Në provën falas email-et duhet të jenë të paktën 4 orë larg njëri-tjetrit. Hyr në llogari për dërgim profesional: çdo orar dhe më shumë email-e.',
       eLidhFillimisht: 'Zgjidh fillimisht nga cili email do dërgosh.',
       eHyr: 'Hyr për përdorim të pakufizuar',
       ePreview: 'Parapamje',
@@ -273,9 +298,10 @@
       eShembullMarres: 'Marrës shembull',
       eNjeProve: 'Falas: një provë për domain. Email-in e shkruan AI nga domaini yt.',
       ePritDomainin: 'Jep domainin dhe studio biznesin fillimisht: AI e shkruan email-in prej tij.',
-      ePerdorur: 'Prova falas për {d} është përdorur tashmë. Hyr për përdorim të pakufizuar.',
+      ePerdorur: 'Prova falas për {d} ka përfunduar. Hyr në llogari për të vazhduar dërgimin, pa kufi.',
       sSeShpejti: 'Kërkimi i sinjaleve vjen së shpejti. Hyr dhe do të nisim të gjejmë sinjale për biznesin tënd sapo të niset.',
       eDirektoriaSeShpejti: 'Direktoria e bizneseve vjen së shpejti.',
+      eAsnjeNeKat: 'Nuk ka më biznese për të kontaktuar në këtë kategori. Zgjidh një kategori tjetër.',
       eMarresShembull: 'Kompani Shembull',
       pPamja: 'Si do të duket',
       pPritStudimin: 'Studio biznesin me AI që ta shohësh email-in këtu.',
@@ -295,19 +321,46 @@
       pRedakto: 'Ndrysho dizajnin',
       pMbyllRedaktimin: 'Mbyll',
       pEmriDerguesit: 'Emri i dërguesit',
+      eMbetur: '{n} nga 3 email-e falas të mbetura për {d}',
+      eOfertaMbaroi: 'Prova falas për {d} ka përfunduar. Hyr në llogari për të vazhduar dërgimin, pa kufi.',
+      eRikthim: 'Mirë se u ktheve. Këto janë email-et e provës falas për {d}.',
+      eDitetLira: 'Vende të lira për dërgim falas (7 ditët e ardhshme)',
+      eDitaPlot: 'plot',
+      eDitaLira: '{n} të lira',
+      eSot: 'Sot',
+      eNeser: 'Nesër',
+      ePlotSot: 'Dërgimi falas nga email-et tona është plot për sot. Hyr në llogari dhe dërgo nga email-i yt, pa kufi.',
+      eDitaEZgjedhurPlot: 'Kjo ditë është plot. Zgjidh një ditë tjetër.',
+      eMaks7: 'Mund të planifikosh deri në 7 ditë përpara.',
+      stVonuar: 'U vonua',
+      pFundiTitulli: 'Dërgimi mbetet 100% falas. Për të dërguar pa fundin e PhronexusAI:',
+      pFundi1: 'Hyr në llogari',
+      pFundi2: 'Plotëso profilin (AI e plotëson për ty)',
+      pFundi3: 'Shto snippet-in e PhronexusAI në faqen tënde, që të shfaqë reklamat e partnerëve dhe të sjellë shikime reale',
+      eDukeDerguar: 'Po planifikohet…',
+      eUPlanifikua: 'U planifikua. Çdo email niset në orën e vet.',
+      eGabimDergimi: 'Nuk u planifikua: {e}',
+      eEmailetE: 'Email-et e tua',
+      eKolMarresi: 'Marrësi',
+      eKolOra: 'Planifikuar',
+      eKolStatusi: 'Statusi',
+      eKolHapur: 'Hapur',
+      eKolKlikuar: 'Klikuar',
+      eKolCregj: 'Çregjistruar',
+      stNeRadhe: 'Në radhë',
+      stDerguar: 'Dërguar',
+      stDeshtoi: 'Nuk u dërgua',
+      eHapur: 'Hapur',
+      eKlikuar: 'Klikuar',
+      eShenimHapjet: 'Hapjet janë të përafërta: disa programe email-i e bllokojnë gjurmimin. Përgjigjet shkojnë te email-i dërgues.',
     }
   };
 
   // Sinjalet e verteta vijne nga motori kur te ndertohet kerkimi; tani lista eshte bosh (pa shembuj).
   var SINJALE = [];
-  var KATEGORITE = [
-    { v: 'saas-marketing', en: 'SaaS · Marketing & sales', sq: 'SaaS · Marketing dhe shitje', n: 1284 },
-    { v: 'saas-fin', en: 'SaaS · Finance & invoicing', sq: 'SaaS · Financa dhe faturim', n: 612 },
-    { v: 'saas-dev', en: 'SaaS · Developer tools', sq: 'SaaS · Mjete për zhvillues', n: 947 },
-    { v: 'saas-ai', en: 'SaaS · AI tools', sq: 'SaaS · Mjete AI', n: 1530 },
-    { v: 'agency', en: 'Agencies', sq: 'Agjenci', n: 408 }
-  ];
-  // Direktoria e bizneseve vjen nga motori kur te ndertohet; tani lista eshte bosh (pa shembuj).
+  // Kategorite dhe bizneset vijne nga direktoria e vertete ne databaze (GET /api/pxse/kategorite dhe /api/pxse/bizneset).
+  // Faqja merr vetem emrin dhe domainin e biznesit, kurre adresen e email-it.
+  var KATEGORITE = [];
   var BIZNESET = [];
 
   // Kodi i seances se proves (i rastesishem, ruhet ne shfletues; mbijeton edhe kalimin te Google gjate hyrjes).
@@ -436,14 +489,22 @@
     '.px-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}',
     '.px-grid-2 .px-input,.px-grid-3 .px-input,.px-grid-2 .px-select,.px-grid-3 .px-select{width:100%}',
     '.px-zgjeruar{display:none}',
-    '.px-vazhdim{display:flex;gap:8px;align-items:center;font-size:13px;border-top:1px dashed var(--px-kufiri);padding-top:8px;margin-top:8px}',
-    '.px-vazhdim b{white-space:nowrap}',
+    '.px-tabela-mbajtese{overflow-x:auto}',
+    '.px-tabela{width:100%;border-collapse:collapse;font-size:13px}',
+    '.px-tabela th{text-align:left;font-weight:600;color:var(--px-zbehur);font-size:12px;padding:6px 8px;border-bottom:1px solid var(--px-kufiri);white-space:nowrap}',
+    '.px-tabela td{padding:8px;border-bottom:1px solid var(--px-kufiri);vertical-align:top;white-space:nowrap}',
+    '.px-tabela td small{display:block;color:var(--px-zbehur);font-size:12px}',
+    '.px-st{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;background:var(--px-siperfaqja)}',
+    '.px-st-derguar{background:#e6f6ec;color:#17733a}',
+    '.px-st-deshtoi{background:#fdecec;color:#b42318}',
+    '.px-po{color:#17733a;font-weight:700}',
+    '.px-jo{color:var(--px-zbehur)}',
     '.px-veprimi{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px}',
     '.px-shenim{font-size:12px;color:var(--px-zbehur);margin-top:10px}',
     '.px-falas{font-size:12px;color:var(--px-sukses);font-weight:600}',
     '.px-toast{position:absolute;left:50%;bottom:18px;transform:translateX(-50%) translateY(10px);background:var(--px-teksti);color:var(--px-sfondi);padding:10px 16px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}',
     '.px-toast.px-shfaq{opacity:1;transform:translateX(-50%) translateY(0)}',
-    '.px-statistika{display:none;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}',
+    '.px-statistika{display:none;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}',
     '.px-statistika div{background:var(--px-siperfaqja);border-radius:var(--px-rrezja-vogel);padding:10px 12px}',
     '.px-statistika b{display:block;font-size:20px}',
     '.px-statistika span{font-size:12px;color:var(--px-zbehur)}',
@@ -461,6 +522,13 @@
     '.px-hyrje:focus-visible{outline:2px solid var(--px-theks);outline-offset:2px}',
     '.px-paralajmero .px-hyrje{padding:9px 14px}',
     '.px-studio-stat.px-keq{color:#b42318}',
+    '.px-keq{color:#b42318;font-size:12px}',
+    '.px-ditet{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}',
+    '.px-dita{display:inline-flex;flex-direction:column;font-size:12px;line-height:1.3;padding:5px 9px;border-radius:8px;background:#e6f6ec;color:#17733a}',
+    '.px-dita b{font-weight:600}',
+    '.px-dita-plot{background:#fdecec;color:#b42318}',
+    '.px-kushtet{margin:0;padding-left:20px;flex:1 1 100%;line-height:1.6}',
+    '.px-st-vonuar{background:#fff7e8;color:#9a5b00}',
     // parapamja e email-it
     '.px-modal{position:fixed;inset:0;background:rgba(15,18,30,.55);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;z-index:2147483000}',
     '.px-modal-kuti{background:var(--px-sfondi);border-radius:var(--px-rrezja);box-shadow:0 20px 60px rgba(0,0,0,.25);width:min(760px,100%);overflow:hidden}',
@@ -594,14 +662,14 @@
       this._filtri = { burimi: '', min: 40, dite: 30 }; // shfaqen vetem rezultatet me 40+ pike nga AI
       this._lidhur = '';
       this._kategoria = ''; // '' = te gjitha kategorite (me te rejat ne fillim)
-      this._vazhdime = [3, 7];
       // gjendja e seksionit te email-eve
       this._em = { domaini: '', studim: '', subjekti: null, trupi: null, rekomanduar: [], zgjedhur: [], oret: {}, njoftim: '',
-        marka: '', hapurDizajni: false,
+        marka: '', hapurDizajni: false, dergimet: [], mbetur: null, dergimi: '', gabimDergimi: '', bizCache: {}, ditet: [], rikthim: false,
         dizajn: { id: '2', ngjyra: '#3b6ef0', logo: '', meButon: true, butoniTekst: '', butoniLink: '' } };
       var selfL = this;
       this._neResize = function () { selfL._lartesia(); };
       window.addEventListener('resize', this._neResize);
+      this._ngarkoKategorite();
     }
     // Ne ekrane te ngushta (telefon) 50/50 eshte shume ngushte: fillon me pjesen e majte te plote.
     var gj0 = this.getBoundingClientRect().width;
@@ -745,16 +813,113 @@
     var l = em.zgjedhur.map(function (id) { return { id: id, t: Date.parse(em.oret[id] || '') }; });
     var keq = {};
     l.forEach(function (a) { if (isNaN(a.t)) keq[a.id] = true; });
-    var ok = l.filter(function (a) { return !isNaN(a.t); }).sort(function (a, b) { return a.t - b.t; });
-    for (var i = 1; i < ok.length; i++) { if (ok[i].t - ok[i - 1].t < KATER_ORE) { keq[ok[i].id] = true; keq[ok[i - 1].id] = true; } }
+    // edhe email-et qe jane planifikuar me pare per kete domain numerohen (rregulli 4 ore vlen per te gjitha)
+    var ok = l.filter(function (a) { return !isNaN(a.t); }).concat((em.dergimet || []).map(function (x) { return { id: null, t: Date.parse(x.ora) }; }))
+      .sort(function (a, b) { return a.t - b.t; });
+    for (var i = 1; i < ok.length; i++) { if (ok[i].t - ok[i - 1].t < KATER_ORE) { if (ok[i].id) keq[ok[i].id] = true; if (ok[i - 1].id) keq[ok[i - 1].id] = true; } }
     return keq;
+  };
+
+  // ---------- DIREKTORIA DHE DERGIMET (nga serveri) ----------
+  PxSinjaleEmail.prototype._api = function () { return (this.getAttribute('api') || '/api/pxse').replace(/\/$/, ''); };
+  PxSinjaleEmail.prototype._ngarkoKategorite = function () {
+    var self = this;
+    fetch(this._api() + '/kategorite').then(function (r) { return r.json(); }).then(function (j) {
+      KATEGORITE.length = 0;
+      (j.kategorite || []).forEach(function (k) { KATEGORITE.push({ v: k.v, en: k.emri, sq: k.emri, n: k.n }); });
+      self._ngarkoBizneset();
+    }).catch(function () {});
+  };
+  PxSinjaleEmail.prototype._ngarkoBizneset = function () {
+    var self = this, em = this._em, nr = (this._bizNr = (this._bizNr || 0) + 1);
+    var url = this._api() + '/bizneset?kategoria=' + encodeURIComponent(this._kategoria || '') + '&domaini=' + encodeURIComponent(em.studim === 'gati' ? em.domaini : '');
+    fetch(url).then(function (r) { return r.json(); }).then(function (j) {
+      if (nr !== self._bizNr) return; // nje kerkese me e re ka ardhur ndermjet
+      BIZNESET.length = 0;
+      (j.bizneset || []).forEach(function (b) { BIZNESET.push(b); });
+      self._rivizatoEmail();
+    }).catch(function () {});
+  };
+  // Biznesi i zgjedhur gjendet edhe kur lista ka ndryshuar (p.sh. pas ndryshimit te kategorise).
+  PxSinjaleEmail.prototype._biz = function (id) {
+    return BIZNESET.find(function (x) { return x.id === id; }) || this._em.bizCache[id] || null;
+  };
+  // Dita sipas ores se Berlinit (serveri e numeron kapacitetin ditor ne kete zone)
+  function pxseDitaBerlin(t) {
+    try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(t)); }
+    catch (e) { return new Date(t).toISOString().slice(0, 10); }
+  }
+  PxSinjaleEmail.prototype._ngarkoDitet = function () {
+    var self = this;
+    fetch(this._api() + '/ditet').then(function (r) { return r.json(); }).then(function (j) {
+      self._em.ditet = (j && j.ditet) || []; self._rivizatoEmail();
+    }).catch(function () {});
+  };
+  PxSinjaleEmail.prototype._liraNeDite = function (dita) {
+    var x = (this._em.ditet || []).filter(function (d) { return d.dita === dita; })[0];
+    return x ? x.lira : null; // null = nuk dihet (p.sh. pa lidhje): serveri vendos
+  };
+  // Id-te e marresve te zgjedhur qe bien ne nje dite plot (duke numeruar edhe zgjedhjet e tjera te se njejtes dite)
+  PxSinjaleEmail.prototype._ditetPlot = function () {
+    var em = this._em, self = this, numri = {}, keq = {};
+    em.zgjedhur.forEach(function (id) {
+      var t0 = Date.parse(em.oret[id] || ''); if (isNaN(t0)) return;
+      var d = pxseDitaBerlin(t0); numri[d] = (numri[d] || 0) + 1;
+      var lira = self._liraNeDite(d);
+      if ((lira !== null && numri[d] > lira) || t0 > Date.now() + 7 * 86400000) keq[id] = true;
+    });
+    return keq;
+  };
+  PxSinjaleEmail.prototype._kufiriZgjedhjes = function () { var m = this._em.mbetur; return m == null ? 3 : Math.max(0, Math.min(3, m)); };
+  PxSinjaleEmail.prototype._ngarkoDergimet = function () {
+    var self = this, em = this._em;
+    if (em.studim !== 'gati' || !em.domaini) return;
+    fetch(this._api() + '/dergimet?seanca=' + pxseSeanca() + '&domaini=' + encodeURIComponent(em.domaini))
+      .then(function (r) { return r.json(); }).then(function (j) {
+        if (!j || !j.ok) return;
+        em.dergimet = j.dergimet || []; em.mbetur = j.mbetur;
+        // Kur klienti kthehet: shfaqet email-i qe dergoi (subjekti, mesazhi, emri dhe dizajni)
+        if (em.rikthim && j.email) {
+          em.subjekti = j.email.subjekti || em.subjekti; em.trupi = j.email.trupi || em.trupi; em.marka = j.email.marka || em.marka;
+          if (j.email.dizajn) em.dizajn = Object.assign({}, em.dizajn, j.email.dizajn);
+        }
+        self._rivizatoEmail();
+      }).catch(function () {});
+    // Statusi rifreskohet cdo minute (derguar, hapur, klikuar, cregjistruar)
+    clearInterval(this._dergimetOra);
+    this._dergimetOra = setInterval(function () {
+      if (!self.isConnected) { clearInterval(self._dergimetOra); return; }
+      if (!em.dergimet.length) return;
+      fetch(self._api() + '/dergimet?seanca=' + pxseSeanca() + '&domaini=' + encodeURIComponent(em.domaini))
+        .then(function (r) { return r.json(); }).then(function (j) {
+          if (!j || !j.ok || JSON.stringify(j.dergimet) === JSON.stringify(em.dergimet)) return;
+          em.dergimet = j.dergimet || []; em.mbetur = j.mbetur; self._rivizatoEmail();
+        }).catch(function () {});
+    }, 60000);
+  };
+  PxSinjaleEmail.prototype._htmlDergimet = function () {
+    var t = this._t.bind(this), em = this._em;
+    if (!em.dergimet.length) return '';
+    var ora = function (x) { try { return new Date(x).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }); } catch (e) { return String(x); } };
+    var st = function (s, d) { return s === 'derguar' ? t('stDerguar') : (s === 'deshtoi' ? t('stDeshtoi') : (d && d.vonuar ? t('stVonuar') : t('stNeRadhe'))); };
+    var po = function (b) { return b ? '<span class="px-po">✓</span>' : '<span class="px-jo">—</span>'; };
+    return '<div class="px-hapi" style="margin-bottom:12px"><div class="px-hapi-koka"><span class="px-nr">4</span><h3>' + esc(t('eEmailetE')) + '</h3></div>' +
+      '<div class="px-tabela-mbajtese"><table class="px-tabela"><thead><tr><th>' + esc(t('eKolMarresi')) + '</th><th>' + esc(t('eKolOra')) + '</th><th>' + esc(t('eKolStatusi')) + '</th><th>' +
+      esc(t('eKolHapur')) + '</th><th>' + esc(t('eKolKlikuar')) + '</th><th>' + esc(t('eKolCregj')) + '</th></tr></thead><tbody>' +
+      em.dergimet.map(function (d) {
+        return '<tr><td><b>' + esc(d.marresi) + '</b><small>' + esc(d.domaini) + '</small></td><td>' + esc(ora(d.derguar_at || d.ora)) + '</td>' +
+          '<td><span class="px-st px-st-' + esc(d.vonuar && d.statusi === 'ne_radhe' ? 'vonuar' : d.statusi) + '">' + esc(st(d.statusi, d)) + '</span></td><td>' + po(d.hapur) + '</td><td>' + po(d.klikuar) + '</td><td>' + po(d.cregj) + '</td></tr>';
+      }).join('') + '</tbody></table></div>' +
+      '<p class="px-studio-stat" style="margin:8px 0 0">' + esc(t('eShenimHapjet')) + '</p></div>';
   };
 
   PxSinjaleEmail.prototype._htmlEmail = function () {
     var t = this._t.bind(this), gj = this._gjuha(), em = this._em, self = this;
     var d = em.domaini || t('eDomaini');
     // Kusht: email-i vjen vetem nga domaini i studiuar me AI (nuk plotesohet me dore pa domain).
-    var gati = em.studim === 'gati';
+    // "mbyllur" = prova ka perfunduar (3 email-et u perdoren): email-i shfaqet vetem per lexim, pa marres dhe pa "Send".
+    var mbyllur = em.studim === 'gati' && em.mbetur === 0;
+    var gati = em.studim === 'gati' && !mbyllur;
     var emriKat = function (v) { var k = KATEGORITE.find(function (x) { return x.v === v; }); return k ? k[gj] : v; };
 
     // kategorite: te rekomanduarat (pas studimit me AI) dalin te parat
@@ -768,26 +933,39 @@
 
     var lista = BIZNESET.filter(function (b) { return !self._kategoria || b.kat === self._kategoria; })
       .sort(function (a, b) { return a.dite - b.dite; });
-    var bizneset = !BIZNESET.length ? '<div class="px-shenim">' + esc(t('eDirektoriaSeShpejti')) + '</div>' : '<div class="px-bizneset">' + lista.map(function (b) {
+    var bizneset = !BIZNESET.length ? '<div class="px-shenim">' + esc(KATEGORITE.length ? t('eAsnjeNeKat') : t('eDirektoriaSeShpejti')) + '</div>' : '<div class="px-bizneset">' + lista.map(function (b) {
       var po = em.zgjedhur.indexOf(b.id) >= 0;
       return '<label class="px-biznes"><input type="checkbox" data-e="biznes" value="' + b.id + '"' + (po ? ' checked' : '') + '>' +
         '<span>' + esc(b.emri) + '<small>' + esc(b.domaini) + ' · ✓ email</small></span>' +
         '<em>' + esc(t('eShtuar').replace('{n}', b.dite)) + '</em></label>';
     }).join('') + '</div>';
 
-    var keq = this._shkeljet(), kaKeq = Object.keys(keq).length > 0;
+    var keq = this._shkeljet(), plotZ = this._ditetPlot(), kaKeq = Object.keys(keq).length > 0 || Object.keys(plotZ).length > 0;
     var oraret = em.zgjedhur.length ? em.zgjedhur.map(function (id) {
-      var b = BIZNESET.find(function (x) { return x.id === id; });
-      return '<div class="px-orari' + (keq[id] ? ' px-gabim' : '') + '"><b>' + esc(b.emri) + '</b>' +
-        '<input class="px-input" type="datetime-local" data-e="ora" data-id="' + id + '" value="' + esc(em.oret[id] || '') + '"></div>';
+      var b = self._biz(id) || { emri: id };
+      return '<div class="px-orari' + (keq[id] || plotZ[id] ? ' px-gabim' : '') + '"><b>' + esc(b.emri) + '</b>' +
+        '<input class="px-input" type="datetime-local" data-e="ora" data-id="' + id + '" min="' + esc(dtLokale(new Date())) + '" max="' + esc(dtLokale(new Date(Date.now() + 7 * 86400000))) + '" value="' + esc(em.oret[id] || '') + '">' +
+        (plotZ[id] ? '<small class="px-keq" style="display:block;margin-top:4px">' + esc(Date.parse(em.oret[id]) > Date.now() + 7 * 86400000 ? t('eMaks7') : t('eDitaEZgjedhurPlot')) + '</small>' : '') + '</div>';
     }).join('') : '<div class="px-shenim" style="margin-top:0">' + esc(t('eOraretBosh')) + '</div>';
 
     var paralajmero = function (tekst) {
       return '<div class="px-paralajmero" role="alert"><p>' + esc(tekst) + '</p><button class="px-hyrje" data-e="hyr">' + SVG_HYRJE + '<span>' + esc(t('eHyr')) + '</span>' + SVG_DJATHTAS + '</button></div>';
     };
+    // Ditet me vend te lire (kapaciteti ditor i email-eve tona, i perbashket per te gjitha provat)
+    var sotD = pxseDitaBerlin(Date.now()), neserD = pxseDitaBerlin(Date.now() + 86400000);
+    var ditet = !em.ditet.length ? '' : '<div class="px-etiketa" style="margin-top:4px">' + esc(t('eDitetLira')) + '</div><div class="px-ditet">' +
+      em.ditet.map(function (x) {
+        var emri = x.dita === sotD ? t('eSot') : (x.dita === neserD ? t('eNeser') : new Date(x.dita + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }));
+        return '<span class="px-dita' + (x.lira ? '' : ' px-dita-plot') + '"><b>' + esc(emri) + '</b>' + esc(x.lira ? t('eDitaLira').replace('{n}', x.lira) : t('eDitaPlot')) + '</span>';
+      }).join('') + '</div>';
+    var plotSot = em.ditet.length && this._liraNeDite(sotD) === 0;
+    var fundiHtml = '<div class="px-paralajmero" role="alert"><p><b>' + esc(t('pFundiTitulli')) + '</b></p><ol class="px-kushtet"><li>' + esc(t('pFundi1')) + '</li><li>' + esc(t('pFundi2')) + '</li><li>' + esc(t('pFundi3')) + '</li></ol>' +
+      '<button class="px-hyrje" data-e="hyr">' + SVG_HYRJE + '<span>' + esc(t('eHyr')) + '</span>' + SVG_DJATHTAS + '</button></div>';
     var njoftim = '';
-    if (em.njoftim === 'limit') njoftim = paralajmero(t('eLimit3'));
-    else if (em.njoftim === 'fundi') njoftim = paralajmero(t('pFundiHyr'));
+    if (mbyllur) njoftim = '';
+    else if (em.njoftim === 'plot' || (gati && plotSot && !em.zgjedhur.length)) njoftim = paralajmero(t('ePlotSot'));
+    else if (em.njoftim === 'limit') njoftim = paralajmero(t('eLimit3'));
+    else if (em.njoftim === 'fundi') njoftim = fundiHtml;
     else if (kaKeq) njoftim = paralajmero(t('eKufiri4'));
 
     var stat = em.studim === 'duke' ? '<p class="px-studio-stat">' + esc(t('eDukeStudiuar').replace('{d}', d)) + '</p>' :
@@ -795,12 +973,19 @@
       (em.studim === 'gabim' ? '<p class="px-studio-stat px-keq">' + esc(t('eGabimStudim').replace('{e}', em.gabim || '')) + '</p>' :
       (em.studim === 'b2c' ? '<p class="px-studio-stat px-keq">' + esc(t('eB2C').replace('{d}', d)) + '</p>' :
       (em.studim === 'perdorur' ? paralajmero(t('ePerdorur').replace('{d}', d)) : ''))));
+    if (mbyllur) stat = paralajmero(t('eOfertaMbaroi').replace('{d}', d)) + (em.rikthim ? '<p class="px-studio-stat">' + esc(t('eRikthim').replace('{d}', d)) + '</p>' : '');
+    else if (em.studim === 'gati' && em.rikthim && em.dergimet.length) stat = '<p class="px-studio-stat px-ok">✓ ' + esc(t('eRikthim').replace('{d}', d)) + '</p>';
+    if (em.njoftim === 'fundi' && mbyllur) stat = fundiHtml + stat;
 
     return '<span class="px-eyebrow">' + esc(t('eEyebrow')) + '</span>' +
       '<h2>' + esc(t('eTitulli2')) + '</h2>' +
       '<p class="px-nen">' + esc(t('eNen2')) + '</p>' +
       '<div class="px-b2b">' + esc(t('eVetemB2B')) + ' <small>· ' + esc(t('eVetemB2BNen')) + '</small></div>' +
-      '<div class="px-statistika px-vetem-gjere"><div><b>0</b><span>' + esc(t('eDerguar')) + '</span></div><div><b>0</b><span>' + esc(t('ePergjigje')) + '</span></div><div><b>0</b><span>' + esc(t('eCregjistruar')) + '</span></div></div>' +
+      // Permbledhja e email-eve te kesaj prove (numrat vijne nga serveri; tabela e plote eshte te hapi 4)
+      '<div class="px-statistika px-vetem-gjere"><div><b>' + em.dergimet.filter(function (x) { return x.statusi === 'derguar'; }).length + '</b><span>' + esc(t('eDerguar')) + '</span></div>' +
+      '<div><b>' + em.dergimet.filter(function (x) { return x.hapur; }).length + '</b><span>' + esc(t('eHapur')) + '</span></div>' +
+      '<div><b>' + em.dergimet.filter(function (x) { return x.klikuar; }).length + '</b><span>' + esc(t('eKlikuar')) + '</span></div>' +
+      '<div><b>' + em.dergimet.filter(function (x) { return x.cregj; }).length + '</b><span>' + esc(t('eCregjistruar')) + '</span></div></div>' +
 
       // Rreshti i siperm (vlen per mesazhin dhe per marresit):
       //  - versioni i ngushte: "Try it" + hyrja; kur klikohet "Try it", pjesa zgjerohet dhe del fusha e domainit
@@ -820,50 +1005,50 @@
       // 1. Mesazhi (me studimin e biznesit me AI ne versionin e gjere)
       '<div class="px-hapi"><div class="px-hapi-koka"><span class="px-nr">1</span><h3>' + esc(t('eMesazhi')) + '</h3></div>' +
       '<label class="px-etiketa">' + esc(t('eSubjekti')) + '</label>' +
-      '<input class="px-input" style="width:100%" data-e="subjekti"' + (gati ? '' : ' readonly') + ' placeholder="' + esc(t('eSubjektiVlera')) + '" value="' + esc(gati ? em.subjekti : '') + '">' +
+      '<input class="px-input" style="width:100%" data-e="subjekti"' + (gati ? '' : ' readonly') + ' placeholder="' + esc(t('eSubjektiVlera')) + '" value="' + esc(gati || mbyllur ? em.subjekti : '') + '">' +
       '<div class="px-fushat">' + esc(t('eFusha')) + ' ' + ['{company}'].map(function (f) { return '<button class="px-fusha" data-fusha="' + f + '"' + (gati ? '' : ' disabled') + '>' + f + '</button>'; }).join('') + '</div>' +
       '<label class="px-etiketa">' + esc(t('eTrupi')) + '</label>' +
-      '<textarea class="px-textarea" data-e="trupi"' + (gati ? '' : ' readonly') + ' placeholder="' + esc(t('eTrupiVlera')) + '">' + esc(gati ? em.trupi : '') + '</textarea>' +
-      (gati ? '' : '<p class="px-studio-stat" style="margin:6px 0 0">' + esc(t('ePritDomainin')) + '</p>') +
-      '<div class="px-vetem-gjere"><label class="px-etiketa" style="margin-top:10px">' + esc(t('eVazhdime')) + '</label>' +
-      this._vazhdime.map(function (n) { return '<div class="px-vazhdim"><b>' + esc(t('eDita')) + ' ' + n + '</b><span>' + esc(t('eVazhdimiTekst')) + '</span></div>'; }).join('') +
-      '<button class="px-buton px-buton-dyte" style="margin-top:8px" data-veprim="vazhdim">' + esc(t('eShtoVazhdim')) + '</button></div>' +
+      '<textarea class="px-textarea" data-e="trupi"' + (gati ? '' : ' readonly') + ' placeholder="' + esc(t('eTrupiVlera')) + '">' + esc(gati || mbyllur ? em.trupi : '') + '</textarea>' +
+      (gati || mbyllur ? '' : '<p class="px-studio-stat" style="margin:6px 0 0">' + esc(t('ePritDomainin')) + '</p>') +
       '</div>' +
       // Parapamja e drejtperdrejte: vetem ne versionin e gjere (ne 50/50 mbetet vetem "Your email")
       '<div class="px-hapi px-vetem-gjere" data-vendi="pamja">' + this._htmlPamja() + '</div>' +
       '</div>' +
 
+      (mbyllur ? this._htmlDergimet() + '<div class="px-shenim">' + esc(t('eLigjore')) + '</div>' : (
       // 2. Marresit: kategoria (te rekomanduarat pas studimit) dhe bizneset me te reja; zgjidhen deri ne 3
       '<div class="px-hapi"><div class="px-hapi-koka"><span class="px-nr">2</span><h3>' + esc(t('eMarresit')) + '</h3></div>' +
       '<label class="px-etiketa">' + esc(t('eKategoria')) + '</label>' + kat +
-      '<div class="px-vetem-gjere" style="margin-top:8px"><label class="px-etiketa">' + esc(t('eVendi')) + '</label><select class="px-select" style="width:100%"><option>United States</option><option>United Kingdom</option><option>Germany</option><option>—</option></select></div>' +
-      '<label class="px-kontroll"><input type="checkbox" checked> ' + esc(t('eVetemVerifikuar')) + '</label>' +
+      '<div class="px-shenim">✓ ' + esc(t('eVetemVerifikuar')) + '</div>' +
       '<div class="px-shenim">' + esc(t('eTeRejat')) + '</div>' +
       bizneset +
       '<div class="px-numerues">' + esc(t('eZgjedhur').replace('{n}', em.zgjedhur.length)) + '</div>' +
+      (gati && em.mbetur != null ? '<div class="px-shenim">' + esc(t('eMbetur').replace('{n}', em.mbetur).replace('{d}', d)) + '</div>' : '') +
       '</div>' +
       '<div style="height:12px"></div>' +
 
       // 3. Planifikimi: nje ore per cdo email, te pakten 4 ore diference
       '<div class="px-hapi" style="margin-bottom:12px"><div class="px-hapi-koka"><span class="px-nr">3</span><h3>' + esc(t('eOraretTitulli')) + '</h3></div>' +
       '<p class="px-hapi-nen">' + esc(t('eRregulli')) + '</p>' +
-      oraret +
-      '<label class="px-kontroll"><input type="checkbox" checked> ' + esc(t('eZonaKohore')) + '</label>' +
+      ditet + oraret +
       '</div>' +
+      this._htmlDergimet() +
 
       // (Lidhja e email-it dergues behet vetem pas hyrjes ne llogari, ne panelin e perdoruesit.)
       njoftim +
       '<div class="px-veprimi"><button class="px-buton px-buton-dyte" data-e="preview"' + (gati ? '' : ' disabled') + '>' + esc(t('ePreview')) + '</button>' +
-      '<button class="px-buton" data-e="dergo"' + (!gati || !em.zgjedhur.length || kaKeq ? ' disabled' : '') + '>' + esc(t('eDergo')) + '</button>' +
+      '<button class="px-buton" data-e="dergo"' + (!gati || !em.zgjedhur.length || kaKeq || em.dergimi === 'duke' || em.mbetur === 0 ? ' disabled' : '') + '>' + esc(em.dergimi === 'duke' ? t('eDukeDerguar') : t('eDergo')) + '</button>' +
       '<span class="px-falas">✓ ' + esc(t('eFalas')) + '</span></div>' +
-      '<div class="px-shenim">' + esc(t('eLigjore')) + '</div>';
+      (em.dergimi === 'ok' ? '<p class="px-studio-stat px-ok">✓ ' + esc(t('eUPlanifikua')) + '</p>' : '') +
+      (em.gabimDergimi ? '<p class="px-studio-stat px-keq" role="alert">' + esc(t('eGabimDergimi').replace('{e}', em.gabimDergimi)) + '</p>' : '') +
+      '<div class="px-shenim">' + esc(t('eLigjore')) + '</div>'));
   };
 
   // ---------- PARAPAMJA E DREJTPERDREJTE (djathtas "Your email", vetem ne versionin e gjere) ----------
   PxSinjaleEmail.prototype._marka = function () { return String(this._em.marka || '').trim() || emerMarke(this._em.domaini); };
   PxSinjaleEmail.prototype._marresiPamjes = function () {
     var em = this._em, t = this._t.bind(this);
-    var b = em.zgjedhur.map(function (id) { return BIZNESET.find(function (x) { return x.id === id; }); }).filter(Boolean)[0];
+    var self = this, b = em.zgjedhur.map(function (id) { return self._biz(id); }).filter(Boolean)[0];
     return b || { emri: t('eMarresShembull'), domaini: 'example.com', shembull: true };
   };
   PxSinjaleEmail.prototype._htmlPamjaEmail = function () {
@@ -879,7 +1064,7 @@
       '<span class="px-inbox-ora">' + esc(t('pTani')) + '</span></div>' +
       '<div class="px-etiketa-vogel">' + esc(t('pHapur')) + '</div>' +
       '<div class="px-hapur"><div class="px-hapur-koka"><div style="font-size:16px;font-weight:600;color:#202124;margin-bottom:4px">' + esc(subjekti) + '</div>' +
-      '<b>' + esc(t('eNga')) + ':</b> ' + esc(marka) + ' &lt;outreach@mail.phronexusai.com&gt;<br>' +
+      '<b>' + esc(t('eNga')) + ':</b> ' + esc(marka) + '<br>' +
       '<b>' + esc(t('ePer')) + ':</b> ' + esc(b.emri) + '</div>' +
       '<div class="px-hapur-trupi">' + html + '</div></div>';
   };
@@ -893,7 +1078,7 @@
     }).join('') + '</div>';
   };
   PxSinjaleEmail.prototype._htmlPamja = function () {
-    var t = this._t.bind(this), em = this._em, gati = em.studim === 'gati', d = em.dizajn;
+    var t = this._t.bind(this), em = this._em, gati = em.studim === 'gati' && em.mbetur !== 0, d = em.dizajn;
     var koka = '<div class="px-pamja-koka"><div class="px-hapi-koka" style="margin:0"><h3>' + esc(t('pPamja')) + '</h3></div>' +
       (gati ? '<button class="px-redakto" data-e="redakto" aria-expanded="' + !!em.hapurDizajni + '">' +
         '<span class="px-redakto-ngj" style="background:' + esc(pxseNgjyra(d.ngjyra)) + '"></span>' + esc(t('pDizajnet')) + ' ' + esc(d.id) +
@@ -990,7 +1175,7 @@
   }
   PxSinjaleEmail.prototype._hapParapamjen = function (nr) {
     var t = this._t.bind(this), em = this._em, self = this, r = this._rrenja;
-    var marresit = em.zgjedhur.map(function (id) { return BIZNESET.find(function (x) { return x.id === id; }); }).filter(Boolean);
+    var marresit = em.zgjedhur.map(function (id) { return self._biz(id); }).filter(Boolean);
     var shembull = !marresit.length;
     if (shembull) {
       var lista = BIZNESET.filter(function (b) { return !self._kategoria || b.kat === self._kategoria; });
@@ -1013,9 +1198,8 @@
       '</div></div>' +
       '<div class="px-modal-trup"><div class="px-postieri' + (self._pvMobil ? ' px-mobil' : '') + '">' +
       '<div class="px-postieri-koka"><div class="px-postieri-subjekti">' + esc(subjekti) + '</div>' +
-      '<b>' + esc(t('eNga')) + ':</b> ' + esc(marka) + ' &lt;outreach@mail.phronexusai.com&gt;<br>' +
-      '<b>' + esc(t('ePergjigjuNe')) + ':</b> ' + esc(t('eReplyVlera')) + '<br>' +
-      '<b>' + esc(t('ePer')) + ':</b> ' + esc(b.emri) + ' &lt;hello@' + esc(b.domaini) + '&gt;</div>' +
+      '<b>' + esc(t('eNga')) + ':</b> ' + esc(marka) + '<br>' +
+      '<b>' + esc(t('ePer')) + ':</b> ' + esc(b.emri) + ' (' + esc(b.domaini) + ')</div>' +
       '<div class="px-postieri-mesazhi">' + pxseNdertoEmailin({ subjekti: em.subjekti, trupi: em.trupi, marres: b, marka: marka, domaini: em.domaini, dizajn: em.dizajn, t: t }).replace(/<a /g, '<a data-p="asgje" ') + '</div>' +
       '</div></div></div>';
     r.appendChild(m);
@@ -1060,7 +1244,7 @@
       var gj = self._gjuha();
       var api = (self.getAttribute('api') || '/api/pxse').replace(/\/$/, '');
       fetch(api + '/email-ai', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domaini: d, seanca: pxseSeanca(), kategorite: KATEGORITE.map(function (k) { return { v: k.v, emri: k.en }; }) }) })
+        body: JSON.stringify({ domaini: d, seanca: pxseSeanca() }) })
         .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; }); })
         .then(function (x) {
           if (x.j && x.j.perdorur) { em.studim = 'perdorur'; self._rivizatoEmail(); return; }
@@ -1075,8 +1259,11 @@
           em.marka = j.emri || em.marka; em.dizajn.meButon = true; em.dizajn.butoniTekst = j.butoniTekst || 'Visit our website'; em.dizajn.butoniLink = 'https://' + em.domaini;
           em.rekomanduar = (j.kategorite || []).slice(0, 2);
           if (em.rekomanduar.length) self._kategoria = em.rekomanduar[0];
-          em.studim = 'gati';
+          em.studim = 'gati'; em.dergimi = ''; em.gabimDergimi = ''; em.rikthim = !!j.rikthim; em.dergimet = []; em.mbetur = null;
           self._rivizatoEmail();
+          self._ngarkoDitet();    // ditet me vend te lire
+          self._ngarkoBizneset(); // bizneset e kategorise se rekomanduar, pa ato qe ky domain i ka kontaktuar
+          self._ngarkoDergimet(); // email-et e meparshme te ketij domaini dhe sa falas kane mbetur
         })
         .catch(function (e) { em.studim = 'gabim'; em.gabim = String(e && e.message || e); self._rivizatoEmail(); });
       void gj;
@@ -1111,7 +1298,7 @@
     });
 
     var kat = q('[data-e="kategoria"]');
-    kat.addEventListener('change', function () { self._kategoria = kat.value; self._rivizatoEmail(); });
+    if (kat) kat.addEventListener('change', function () { self._kategoria = kat.value; self._rivizatoEmail(); self._ngarkoBizneset(); });
 
     // Zgjedhja e bizneseve: maksimumi 3 ne proven falas
     qa('[data-e="biznes"]').forEach(function (c) {
@@ -1119,14 +1306,18 @@
         var id = c.value, i = em.zgjedhur.indexOf(id);
         em.njoftim = '';
         if (c.checked) {
-          if (em.zgjedhur.length >= 3) { c.checked = false; em.njoftim = 'limit'; self._rivizatoEmail(); return; }
+          if (em.zgjedhur.length >= self._kufiriZgjedhjes()) { c.checked = false; em.njoftim = 'limit'; self._rivizatoEmail(); return; }
           em.zgjedhur.push(id);
+          var bz = BIZNESET.find(function (x) { return x.id === id; }); if (bz) em.bizCache[id] = bz;
           if (!em.oret[id]) {
             // ora paresore: neser 09:00, pastaj +4 ore pas email-it te fundit
-            var fundit = em.zgjedhur.slice(0, -1).map(function (x) { return Date.parse(em.oret[x] || ''); }).filter(function (x) { return !isNaN(x); });
+            var fundit = em.zgjedhur.slice(0, -1).map(function (x) { return Date.parse(em.oret[x] || ''); })
+              .concat(em.dergimet.map(function (x) { return Date.parse(x.ora); })).filter(function (x) { return !isNaN(x) && x > Date.now(); });
             var dt;
             if (fundit.length) dt = new Date(Math.max.apply(null, fundit) + KATER_ORE);
             else { dt = new Date(); dt.setDate(dt.getDate() + 1); dt.setHours(9, 0, 0, 0); }
+            // ditet plot anashkalohen (deri ne 7 dite perpara)
+            for (var k = 0; k < 7 && self._liraNeDite(pxseDitaBerlin(dt.getTime())) === 0; k++) { dt.setDate(dt.getDate() + 1); dt.setHours(9, 0, 0, 0); }
             em.oret[id] = dtLokale(dt);
           }
         } else if (i >= 0) { em.zgjedhur.splice(i, 1); }
@@ -1148,9 +1339,30 @@
     var pv = q('[data-e="preview"]');
     if (pv) pv.addEventListener('click', function () { self._hapParapamjen(0); });
 
-    q('[data-e="dergo"]').addEventListener('click', function () {
-      self.dispatchEvent(new CustomEvent('px-veprim', { detail: { veprimi: 'dergo', email: { subjekti: subj.value, trupi: trupi.value, marka: self._marka(), domaini: em.domaini, dizajn: Object.assign({}, em.dizajn), marresit: em.zgjedhur.slice(), oret: em.zgjedhur.map(function (x) { return em.oret[x]; }) } }, bubbles: true, composed: true }));
-      self._toast(self._t('eToast'));
+    // "Send": serveri i kontrollon perseri te gjitha rregullat, ndertoi email-in me te njejtin dizajn dhe e vendos ne radhe.
+    var dergoB = q('[data-e="dergo"]');
+    if (dergoB) dergoB.addEventListener('click', function () {
+      if (em.dergimi === 'duke') return;
+      var oret = em.zgjedhur.map(function (x) { var t0 = new Date(em.oret[x]); return isNaN(t0) ? '' : t0.toISOString(); }); // ora lokale -> ISO
+      em.dergimi = 'duke'; em.gabimDergimi = ''; em.njoftim = ''; self._rivizatoEmail();
+      fetch(self._api() + '/dergo', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seanca: pxseSeanca(), domaini: em.domaini, subjekti: em.subjekti, trupi: em.trupi, marka: self._marka(),
+          dizajn: Object.assign({}, em.dizajn), marresit: em.zgjedhur.slice(), oret: oret }) })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (x) {
+          var j = x.j || {};
+          if (x.ok && j.ok) {
+            em.dergimi = 'ok'; em.dergimet = j.dergimet || []; em.mbetur = j.mbetur; em.zgjedhur = []; em.oret = {};
+            self._rivizatoEmail(); self._ngarkoBizneset(); self._ngarkoDergimet(); self._ngarkoDitet(); return;
+          }
+          em.dergimi = '';
+          if (j.plot) { em.ditet = j.ditet || em.ditet; em.njoftim = 'plot'; }
+          else if (j.mbaroi) { em.mbetur = 0; }
+          else if (j.limit) { if (j.mbetur != null) em.mbetur = j.mbetur; em.njoftim = 'limit'; }
+          else em.gabimDergimi = j.error || 'error';
+          self._rivizatoEmail();
+        })
+        .catch(function (e) { em.dergimi = ''; em.gabimDergimi = String(e && e.message || e); self._rivizatoEmail(); });
     });
   };
 
@@ -1236,7 +1448,6 @@
         var v = el.getAttribute('data-veprim');
         if (v === 'planifiko' || v === 'hape') self._toast(self._t('eToast'));
         if (v === 'regjistrohu') { self.dispatchEvent(new CustomEvent('px-veprim', { detail: { veprimi: 'hyr', nga: 'sinjale', domaini: self._em.domaini || '', seanca: pxseSeanca() }, bubbles: true, composed: true })); return; }
-        if (v === 'vazhdim') { self._vazhdime.push(self._vazhdime[self._vazhdime.length - 1] + 4); self._rivizatoEmail(); }
         // Ngjarje per faqen qe e perdor komponentin (p.sh. hap dritaren e regjistrimit te projekti real).
         self.dispatchEvent(new CustomEvent('px-veprim', { detail: { veprimi: v }, bubbles: true, composed: true }));
       });
