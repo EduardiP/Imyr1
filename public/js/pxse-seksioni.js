@@ -97,9 +97,9 @@
       eVetemB2B: 'Only for B2B',
       eVetemB2BNen: 'for businesses that sell to other businesses',
       eProvoAI: 'Try it: generate your email with AI',
-      eStudio: 'Study my business with AI',
+      eStudio: 'Write my email with AI',
       eDomaini: 'yourcompany.com',
-      eDukeStudiuar: 'AI is studying {d}…',
+      eDukeStudiuar: 'AI is reading {d} and writing your email…',
       eStudiuar: 'Done. AI wrote the subject and message and picked the best categories for {d}. You can still edit everything.',
       eMesazhi: 'Your email',
       eMarresit: 'Recipients',
@@ -261,9 +261,9 @@
       eVetemB2B: 'Vetëm për B2B',
       eVetemB2BNen: 'për biznese që u shesin biznesesh të tjera',
       eProvoAI: 'Bëj një provë: gjenero email-in me AI',
-      eStudio: 'Studio biznesin tim me AI',
+      eStudio: 'Shkruaj email-in tim me AI',
       eDomaini: 'kompaniajote.com',
-      eDukeStudiuar: 'AI po studion {d}…',
+      eDukeStudiuar: 'AI po lexon {d} dhe po shkruan email-in…',
       eStudiuar: 'U krye. AI shkroi subjektin dhe mesazhin dhe zgjodhi kategoritë më të mira për {d}. Mund t\'i ndryshosh të gjitha.',
       eMesazhi: 'Email-i yt',
       eMarresit: 'Marrësit',
@@ -431,7 +431,7 @@
     '.px-input,.px-select,.px-textarea{background:var(--px-sfondi);border:1px solid var(--px-kufiri);border-radius:var(--px-rrezja-vogel);padding:10px 12px;min-width:0}',
     '.px-input:focus,.px-select:focus,.px-textarea:focus{outline:none;border-color:var(--px-theks);box-shadow:0 0 0 3px var(--px-theks-lehte)}',
     '.px-input{flex:1 1 200px}',
-    '.px-textarea{width:100%;min-height:120px;resize:vertical}',
+    '.px-textarea{width:100%;min-height:260px;resize:vertical;line-height:1.55;overflow:hidden}',
     '.px-buton{background:var(--px-theks);color:var(--px-theks-teksti);border:0;border-radius:var(--px-rrezja-vogel);padding:10px 16px;font-weight:600;cursor:pointer;transition:filter .15s}',
     '.px-buton:hover{filter:brightness(1.08)}',
     '.px-buton:focus-visible{outline:2px solid var(--px-theks);outline-offset:2px}',
@@ -1270,6 +1270,10 @@
     });
 
     var subj = q('[data-e="subjekti"]'), trupi = q('[data-e="trupi"]');
+    // Fusha e mesazhit zgjatet sa i gjithe teksti (pa rreshtat e fshehur poshte)
+    var rritFushen = function () { if (!trupi) return; trupi.style.height = 'auto'; trupi.style.height = Math.max(260, trupi.scrollHeight + 2) + 'px'; };
+    rritFushen(); setTimeout(rritFushen, 0); setTimeout(rritFushen, 500);
+    if (trupi) trupi.addEventListener('input', rritFushen);
     subj.addEventListener('input', function () { em.subjekti = subj.value; self._rifreskoPamjen(); });
     trupi.addEventListener('input', function () { em.trupi = trupi.value; self._rifreskoPamjen(); });
 
