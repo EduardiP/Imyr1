@@ -143,26 +143,20 @@
       eDirektoriaSeShpejti: 'The business directory is coming soon.',
       eMarresShembull: 'Example Company',
       pPamja: 'How it will look',
-      pPlain: 'Plain',
-      pDesigned: 'Designed',
       pPritStudimin: 'Study your business with AI to see your email here.',
       pInbox: 'In the inbox',
       pHapur: 'When opened',
       pTani: '9:00 AM',
-      pDizajnAI: 'Make it look professional with AI',
-      pDizajnDuke: 'AI is designing your email…',
-      pDizajnGati: 'Done. You can change the color, logo and button.',
       pNgjyra: 'Color',
       pLogo: 'Logo URL (https://…)',
       pMeButon: 'Add a button to your website',
       pButoniTekst: 'Button text',
       pButoniLink: 'Button link',
-      pPromotions: 'Designed emails may land in the Promotions tab. Plain emails usually reach the main inbox.',
-      pFundiInfo: 'Every free email ends with a small "Sent with PhronexusAI" line.',
-      pHiqFundin: 'Remove',
       pFundiHyr: 'Sending stays 100% free. Sign in to remove the PhronexusAI footer.',
-      fDergimMe: 'Sent with PhronexusAI',
-      fDergimMe2: 'Email new customers with PhronexusAI',
+      fDergimMe: 'Powered by PhronexusAI',
+      fDergimMe2: 'Send emails, 100% free',
+      pDizajnet: 'Design',
+      pHiqStickerin: 'Remove the PhronexusAI footer',
     },
     sq: {
       shembull: 'Të dhëna shembull',
@@ -281,26 +275,20 @@
       eDirektoriaSeShpejti: 'Direktoria e bizneseve vjen së shpejti.',
       eMarresShembull: 'Kompani Shembull',
       pPamja: 'Si do të duket',
-      pPlain: 'Tekst',
-      pDesigned: 'Me dizajn',
       pPritStudimin: 'Studio biznesin me AI që ta shohësh email-in këtu.',
       pInbox: 'Në kutinë e postës',
       pHapur: 'Kur hapet',
       pTani: '9:00',
-      pDizajnAI: 'Bëje profesional me AI',
-      pDizajnDuke: 'AI po e dizajnon email-in…',
-      pDizajnGati: 'U krye. Mund të ndryshosh ngjyrën, logon dhe butonin.',
       pNgjyra: 'Ngjyra',
       pLogo: 'URL e logos (https://…)',
       pMeButon: 'Shto një buton për faqen tënde',
       pButoniTekst: 'Teksti i butonit',
       pButoniLink: 'Lidhja e butonit',
-      pPromotions: 'Email-et me dizajn mund të shkojnë te "Promotions". Email-et me tekst zakonisht arrijnë në kutinë kryesore.',
-      pFundiInfo: 'Çdo email falas mbyllet me një rresht të vogël "Sent with PhronexusAI".',
-      pHiqFundin: 'Hiqe',
       pFundiHyr: 'Dërgimi mbetet 100% falas. Hyr në llogari për ta hequr fundin e PhronexusAI.',
-      fDergimMe: 'Sent with PhronexusAI',
-      fDergimMe2: 'Email new customers with PhronexusAI',
+      fDergimMe: 'Powered by PhronexusAI',
+      fDergimMe2: 'Send emails, 100% free',
+      pDizajnet: 'Dizajni',
+      pHiqStickerin: 'Hiq fundin e PhronexusAI',
     }
   };
 
@@ -505,9 +493,6 @@
     '.px-paralajmero p{margin:0;flex:1 1 240px}',
     // parapamja e drejtperdrejte (vetem ne versionin e gjere)
     '.px-pamja-koka{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}',
-    '.px-modi{display:inline-flex;border:1px solid var(--px-kufiri);border-radius:999px;overflow:hidden}',
-    '.px-modi button{border:0;background:var(--px-sfondi);padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;color:var(--px-zbehur)}',
-    '.px-modi button[aria-pressed="true"]{background:var(--px-theks);color:var(--px-theks-teksti)}',
     '.px-etiketa-vogel{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--px-zbehur);margin:12px 0 6px}',
     '.px-inbox{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e3e6ea;border-radius:8px;padding:10px 12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#202124;min-width:0}',
     '.px-inbox-avatar{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;flex:0 0 auto}',
@@ -522,6 +507,17 @@
     '.px-dizajn-kontrollet{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}',
     '.px-dizajn-kontrollet .px-input{width:100%}',
     '.px-dizajn-kontrollet input[type=color]{width:100%;height:42px;padding:3px;border:1px solid var(--px-kufiri);border-radius:var(--px-rrezja-vogel);background:var(--px-sfondi)}',
+    '.px-galeria{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:6px}',
+    '.px-dz{position:relative;padding:0;border:2px solid var(--px-kufiri);border-radius:9px;background:#fff;cursor:pointer;overflow:hidden;height:96px}',
+    '.px-dz[aria-checked="true"]{border-color:var(--px-theks);box-shadow:0 0 0 3px var(--px-theks-lehte)}',
+    '.px-dz:hover{border-color:var(--px-theks)}',
+    '.px-dz-pamja{position:absolute;inset:0;overflow:hidden;pointer-events:none}',
+    '.px-dz-brenda{display:block;width:600px;transform:scale(.2);transform-origin:top left}',
+    '.px-dz-nr{position:absolute;left:5px;bottom:5px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--px-teksti);color:var(--px-sfondi);font-size:11px;font-weight:700;display:grid;place-items:center}',
+    '.px-dz[aria-checked="true"] .px-dz-nr{background:var(--px-theks)}',
+    '@container (max-width: 520px){ .px-galeria{grid-template-columns:repeat(3,minmax(0,1fr))} }',
+    '.px-sticker-x{position:absolute;top:-9px;right:-9px;width:22px;height:22px;border-radius:50%;border:1px solid #d5d9e0;background:#fff;color:#5b6472;font-size:12px;line-height:1;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.15);display:grid;place-items:center;padding:0}',
+    '.px-sticker-x:hover{color:#b42318;border-color:#b42318}',
     '.px-fundi-kontroll{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--px-zbehur);margin-top:8px}',
     '.px-fundi-kontroll button{border:1px solid var(--px-kufiri);background:var(--px-sfondi);border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer}',
     '.px-fundi-kontroll button:hover{border-color:var(--px-theks);color:var(--px-theks)}',
@@ -582,7 +578,7 @@
       this._vazhdime = [3, 7];
       // gjendja e seksionit te email-eve
       this._em = { domaini: '', studim: '', subjekti: null, trupi: null, rekomanduar: [], zgjedhur: [], oret: {}, njoftim: '',
-        modi: 'plain', dizajn: { ngjyra: '#3b6ef0', logo: '', meButon: false, butoniTekst: '', butoniLink: '' }, dizajnStudim: '' };
+        dizajn: { id: '2', ngjyra: '#3b6ef0', logo: '', meButon: false, butoniTekst: '', butoniLink: '' } };
       var selfL = this;
       this._neResize = function () { selfL._lartesia(); };
       window.addEventListener('resize', this._neResize);
@@ -853,8 +849,8 @@
     if (em.studim !== 'gati') return '<div class="px-shenim" style="margin-top:0">' + esc(t('pPritStudimin')) + '</div>';
     var b = this._marresiPamjes(), marka = emerMarke(em.domaini);
     var subjekti = zevendeso(em.subjekti, b), trupi = zevendeso(em.trupi, b).replace(/\s+/g, ' ').trim();
-    var ngj = em.modi === 'dizajn' ? pxseNgjyra(em.dizajn.ngjyra) : '#5f6368';
-    var html = pxseNdertoEmailin({ modi: em.modi, subjekti: em.subjekti, trupi: em.trupi, marres: b, marka: marka, domaini: em.domaini, dizajn: em.dizajn, t: t });
+    var ngj = pxseNgjyra(em.dizajn.ngjyra);
+    var html = pxseNdertoEmailin({ subjekti: em.subjekti, trupi: em.trupi, marres: b, marka: marka, domaini: em.domaini, dizajn: em.dizajn, t: t });
     return '<div class="px-etiketa-vogel">' + esc(t('pInbox')) + (b.shembull ? ' <span class="px-shembull">' + esc(t('eShembullMarres')) + '</span>' : '') + '</div>' +
       '<div class="px-inbox"><span class="px-inbox-avatar" style="background:' + ngj + '">' + esc(marka.charAt(0)) + '</span>' +
       '<span class="px-inbox-teksti"><b>' + esc(marka) + '</b>&nbsp;&nbsp;<b>' + esc(subjekti) + '</b> <span>— ' + esc(trupi.slice(0, 140)) + '</span></span>' +
@@ -863,40 +859,60 @@
       '<div class="px-hapur"><div class="px-hapur-koka"><div style="font-size:16px;font-weight:600;color:#202124;margin-bottom:4px">' + esc(subjekti) + '</div>' +
       '<b>' + esc(t('eNga')) + ':</b> ' + esc(marka) + ' &lt;outreach@mail.phronexusai.com&gt;<br>' +
       '<b>' + esc(t('ePer')) + ':</b> ' + esc(b.emri) + '</div>' +
-      '<div class="px-hapur-trupi">' + html + '</div></div>' +
-      '<div class="px-fundi-kontroll"><span>' + esc(t('pFundiInfo')) + '</span><button data-e="hiq-fundin">✕ ' + esc(t('pHiqFundin')) + '</button></div>';
+      '<div class="px-hapur-trupi">' + html + '</div></div>';
+  };
+  PxSinjaleEmail.prototype._htmlGaleria = function () {
+    var t = this._t.bind(this), em = this._em, self = this, b = this._marresiPamjes(), marka = emerMarke(em.domaini);
+    return '<div class="px-galeria" role="radiogroup" aria-label="' + esc(t('pDizajnet')) + '">' + pxseDizajnetLista().map(function (dz) {
+      var html = pxseNdertoEmailin({ subjekti: em.subjekti, trupi: em.trupi, marres: b, marka: marka, domaini: em.domaini, dizajn: Object.assign({}, em.dizajn, { id: dz.id }), t: t });
+      var po = dz.id === em.dizajn.id;
+      return '<button class="px-dz" role="radio" aria-checked="' + po + '" data-dizajni="' + esc(dz.id) + '" title="' + esc(t('pDizajnet')) + ' ' + esc(dz.id) + '">' +
+        '<span class="px-dz-pamja" aria-hidden="true"><span class="px-dz-brenda">' + html + '</span></span><span class="px-dz-nr">' + esc(dz.id) + '</span></button>';
+    }).join('') + '</div>';
   };
   PxSinjaleEmail.prototype._htmlPamja = function () {
     var t = this._t.bind(this), em = this._em, gati = em.studim === 'gati', d = em.dizajn;
-    var kontrollet = '';
-    if (em.modi === 'dizajn') {
-      var st = em.dizajnStudim === 'duke' ? '<p class="px-studio-stat">' + esc(t('pDizajnDuke')) + '</p>' :
-        (em.dizajnStudim === 'gati' ? '<p class="px-studio-stat px-ok">✓ ' + esc(t('pDizajnGati')) + '</p>' :
-        (em.dizajnStudim === 'gabim' ? '<p class="px-studio-stat px-keq">' + esc(em.dizajnGabim || '') + '</p>' : ''));
-      kontrollet = '<button class="px-buton" data-e="dizajn-ai"' + (gati && em.dizajnStudim !== 'duke' ? '' : ' disabled') + '>✦ ' + esc(t('pDizajnAI')) + '</button>' + st +
-        '<div class="px-dizajn-kontrollet">' +
-        '<div><label class="px-etiketa">' + esc(t('pNgjyra')) + '</label><input type="color" data-d="ngjyra" value="' + esc(pxseNgjyra(d.ngjyra)) + '"></div>' +
-        '<div><label class="px-etiketa">' + esc(t('pLogo')) + '</label><input class="px-input" data-d="logo" type="url" placeholder="https://" value="' + esc(d.logo) + '"></div>' +
-        '<div style="grid-column:1 / -1"><label class="px-kontroll" style="margin-top:0"><input type="checkbox" data-d="meButon"' + (d.meButon ? ' checked' : '') + '> ' + esc(t('pMeButon')) + '</label></div>' +
-        (d.meButon ? '<div><label class="px-etiketa">' + esc(t('pButoniTekst')) + '</label><input class="px-input" data-d="butoniTekst" maxlength="40" value="' + esc(d.butoniTekst) + '"></div>' +
-          '<div><label class="px-etiketa">' + esc(t('pButoniLink')) + '</label><input class="px-input" data-d="butoniLink" type="url" placeholder="https://' + esc(em.domaini || '') + '" value="' + esc(d.butoniLink) + '"></div>' : '') +
-        '</div><p class="px-shenim" style="margin-top:0">' + esc(t('pPromotions')) + '</p>';
-    }
-    return '<div class="px-pamja-koka"><div class="px-hapi-koka" style="margin:0"><h3>' + esc(t('pPamja')) + '</h3></div>' +
-      '<div class="px-modi" role="group"><button data-modi="plain" aria-pressed="' + (em.modi !== 'dizajn') + '">' + esc(t('pPlain')) + '</button>' +
-      '<button data-modi="dizajn" aria-pressed="' + (em.modi === 'dizajn') + '">' + esc(t('pDesigned')) + '</button></div></div>' +
+    var kontrollet = !gati ? '' :
+      '<div class="px-etiketa-vogel" style="margin-top:0">' + esc(t('pDizajnet')) + '</div>' + this._htmlGaleria() +
+      '<div class="px-dizajn-kontrollet">' +
+      '<div><label class="px-etiketa">' + esc(t('pNgjyra')) + '</label><input type="color" data-d="ngjyra" value="' + esc(pxseNgjyra(d.ngjyra)) + '"></div>' +
+      '<div><label class="px-etiketa">' + esc(t('pLogo')) + '</label><input class="px-input" data-d="logo" type="url" placeholder="https://" value="' + esc(d.logo) + '"></div>' +
+      '<div style="grid-column:1 / -1"><label class="px-kontroll" style="margin-top:0"><input type="checkbox" data-d="meButon"' + (d.meButon ? ' checked' : '') + '> ' + esc(t('pMeButon')) + '</label></div>' +
+      (d.meButon ? '<div><label class="px-etiketa">' + esc(t('pButoniTekst')) + '</label><input class="px-input" data-d="butoniTekst" maxlength="40" value="' + esc(d.butoniTekst) + '"></div>' +
+        '<div><label class="px-etiketa">' + esc(t('pButoniLink')) + '</label><input class="px-input" data-d="butoniLink" type="url" placeholder="https://' + esc(em.domaini || '') + '" value="' + esc(d.butoniLink) + '"></div>' : '') +
+      '</div>';
+    return '<div class="px-pamja-koka"><div class="px-hapi-koka" style="margin:0"><h3>' + esc(t('pPamja')) + '</h3></div></div>' +
       kontrollet + '<div data-vendi="pamja-email">' + this._htmlPamjaEmail() + '</div>';
   };
   // Rifreskon vetem email-in ne parapamje (fushat ku shkruan klienti nuk preken, kursori mbetet aty).
   PxSinjaleEmail.prototype._rifreskoPamjen = function () {
     var v = this._rrenja.querySelector('[data-vendi="pamja-email"]'); if (!v) return;
     v.innerHTML = this._htmlPamjaEmail(); this._lidhPamjen();
+    var g = this._rrenja.querySelector('.px-galeria');
+    if (g) { clearTimeout(this._galeriaOra); var self = this; this._galeriaOra = setTimeout(function () { var g2 = self._rrenja.querySelector('.px-galeria'); if (g2) { g2.outerHTML = self._htmlGaleria(); self._lidhGalerine(); } }, 250); }
+  };
+  PxSinjaleEmail.prototype._lidhGalerine = function () {
+    var self = this, em = this._em;
+    this._rrenja.querySelectorAll('[data-vendi="pamja"] [data-dizajni]').forEach(function (b) {
+      b.addEventListener('click', function () { em.dizajn.id = b.getAttribute('data-dizajni'); self._rivizatoEmail(); });
+    });
   };
   PxSinjaleEmail.prototype._lidhPamjen = function () {
     var self = this, r = this._rrenja, em = this._em;
-    var h = r.querySelector('[data-vendi="pamja-email"] [data-e="hiq-fundin"]');
-    if (h) h.addEventListener('click', function () { em.njoftim = 'fundi'; self._rivizatoEmail(); var p = self._rrenja.querySelector('.px-paralajmero'); if (p && p.scrollIntoView) p.scrollIntoView({ block: 'center', behavior: 'smooth' }); });
     r.querySelectorAll('[data-vendi="pamja-email"] a').forEach(function (a) { a.addEventListener('click', function (ev) { ev.preventDefault(); }); });
+    var st = r.querySelector('[data-vendi="pamja-email"] .px-hapur-trupi a[href="https://phronexusai.com/"]');
+    if (st && st.parentNode) {
+      st.parentNode.style.position = 'relative';
+      var x = document.createElement('button');
+      x.className = 'px-sticker-x'; x.type = 'button'; x.textContent = '✕';
+      x.setAttribute('aria-label', this._t('pHiqStickerin')); x.title = this._t('pHiqStickerin');
+      x.addEventListener('click', function (ev) {
+        ev.preventDefault(); ev.stopPropagation();
+        em.njoftim = 'fundi'; self._rivizatoEmail();
+        var p = self._rrenja.querySelector('.px-paralajmero'); if (p && p.scrollIntoView) p.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      });
+      st.parentNode.appendChild(x);
+    }
   };
 
   // Rivizaton vetem seksionin e email-eve (pa humbur vendin ku ke levizur).
@@ -921,39 +937,29 @@
     var n = parseInt(pxseNgjyra(c).slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
     return (0.299 * r + 0.587 * g + 0.114 * b) > 170 ? '#141625' : '#ffffff';
   }
-  // Ndertimi i email-it. E njejta HTML perdoret per parapamjen dhe (me vone) per dergimin e vertete.
-  // o = { modi:'plain'|'dizajn', subjekti, trupi, marres:{emri}, marka, domaini, dizajn:{ngjyra,logo,meButon,butoniTekst,butoniLink}, t }
+  // Ndertimi i email-it me dizajnin e zgjedhur nga lista e miratuar (window.pxseDizajnet, skedari pxse-dizajnet.js).
+  // E njejta funksion dhe i njejti skedar dizajnesh perdoren per parapamjen dhe per dergimin: ajo qe sheh klienti eshte ajo qe dergohet.
+  // o = { subjekti, trupi, marres:{emri}, marka, domaini, dizajn:{id,ngjyra,logo,meButon,butoniTekst,butoniLink}, t }
+  function pxseDizajnetLista() { return (window.pxseDizajnet && window.pxseDizajnet.length) ? window.pxseDizajnet : []; }
+  function pxseVleratEmailit(o) {
+    var d = o.dizajn || {}, lidhja = o.domaini ? 'https://' + o.domaini : '';
+    return {
+      marka: o.marka, domaini: o.domaini || '', logo: pxseHttps(d.logo), ngjyra: pxseNgjyra(d.ngjyra),
+      paragrafet: zevendeso(o.trupi, o.marres).split(/\n\s*\n/).map(function (x) { return x.trim(); }).filter(Boolean),
+      butoni: d.meButon ? { tekst: String(d.butoniTekst || 'Visit our website').slice(0, 40), link: pxseHttps(d.butoniLink) || lidhja } : null,
+      fundiJo: o.t('eFooterJo'), cregj: o.t('eCregjistrohu'),
+      sticker: { rreshti1: o.t('fDergimMe'), rreshti2: o.t('fDergimMe2') }
+    };
+  }
   function pxseNdertoEmailin(o) {
-    var t = o.t, F = 'font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;';
-    var lidhjaDerguesit = o.domaini ? 'https://' + o.domaini : '';
-    var paragrafet = zevendeso(o.trupi, o.marres).split(/\n\s*\n/).filter(function (x) { return x.trim(); });
-    var fundiJo = esc(t('eFooterJo')) + ' &middot; <a href="#" style="color:#9aa4b2;">' + esc(t('eCregjistrohu')) + '</a>';
-    var px = '<a href="https://phronexusai.com/" style="color:#9aa4b2;text-decoration:none;"><img src="https://phronexusai.com/favicon-192.png" width="14" height="14" alt="PhronexusAI" style="vertical-align:-2px;border-radius:3px;border:0;"> ' + esc(t('fDergimMe')) + '</a>' +
-      ' &middot; <a href="https://phronexusai.com/" style="color:#9aa4b2;">' + esc(t('fDergimMe2')) + '</a>';
-    if (o.modi !== 'dizajn') {
-      return '<div style="' + F + 'font-size:15px;line-height:1.6;color:#202124;max-width:600px;">' +
-        paragrafet.map(function (x) { return '<p style="margin:0 0 14px;">' + esc(x.trim()).replace(/\n/g, '<br>') + '</p>'; }).join('') +
-        '<p style="margin:18px 0 0;font-size:14px;color:#3c4043;"><b>' + esc(o.marka) + '</b>' + (lidhjaDerguesit ? '<br><a href="' + esc(lidhjaDerguesit) + '" style="color:#1a73e8;">' + esc(o.domaini) + '</a>' : '') + '</p>' +
-        '<p style="margin:22px 0 0;font-size:12px;color:#9aa4b2;">' + fundiJo + '</p>' +
-        '<p style="margin:8px 0 0;font-size:12px;color:#9aa4b2;">' + px + '</p></div>';
-    }
-    var d = o.dizajn || {}, ngj = pxseNgjyra(d.ngjyra), mbi = pxseTekstMbiNgjyre(ngj), logo = pxseHttps(d.logo);
-    var linkB = pxseHttps(d.butoniLink) || lidhjaDerguesit;
-    var shenja = logo ? '<img src="' + esc(logo) + '" width="28" height="28" alt="' + esc(o.marka) + '" style="display:block;border-radius:7px;border:0;">'
-      : '<div style="width:28px;height:28px;border-radius:7px;background:' + mbi + ';color:' + ngj + ';' + F + 'font-size:14px;font-weight:700;text-align:center;line-height:28px;">' + esc(String(o.marka || '?').charAt(0)) + '</div>';
-    return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef0f3;"><tr><td align="center" style="padding:24px 12px;">' +
-      '<table role="presentation" width="580" cellpadding="0" cellspacing="0" style="max-width:580px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;">' +
-      '<tr><td style="background:' + ngj + ';padding:18px 28px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td>' + shenja + '</td>' +
-      '<td style="padding-left:10px;' + F + 'font-size:15px;font-weight:600;color:' + mbi + ';">' + esc(o.marka) + '</td></tr></table></td></tr>' +
-      '<tr><td style="padding:28px 28px 8px;' + F + 'font-size:15px;line-height:1.65;color:#3d4451;">' +
-      paragrafet.map(function (x) { return '<p style="margin:0 0 14px;">' + esc(x.trim()).replace(/\n/g, '<br>') + '</p>'; }).join('') + '</td></tr>' +
-      (d.meButon && linkB ? '<tr><td style="padding:4px 28px 22px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:' + ngj + ';border-radius:7px;">' +
-        '<a href="' + esc(linkB) + '" style="display:inline-block;padding:11px 24px;' + F + 'font-size:14px;font-weight:600;color:' + mbi + ';text-decoration:none;">' + esc(d.butoniTekst || 'Visit our website') + '</a></td></tr></table></td></tr>' : '') +
-      '<tr><td style="padding:0 28px 24px;' + F + 'font-size:14px;line-height:1.6;color:#1c2128;"><b>' + esc(o.marka) + '</b>' + (lidhjaDerguesit ? '<br><a href="' + esc(lidhjaDerguesit) + '" style="color:#1a73e8;">' + esc(o.domaini) + '</a>' : '') + '</td></tr>' +
-      '<tr><td style="border-top:1px solid #edeef1;padding:14px 28px;' + F + 'font-size:12px;color:#9aa4b2;">' + fundiJo + '</td></tr>' +
-      '</table>' +
-      '<p style="margin:12px 0 0;' + F + 'font-size:12px;color:#9aa4b2;">' + px + '</p>' +
-      '</td></tr></table>';
+    var lista = pxseDizajnetLista(), id = (o.dizajn && o.dizajn.id) || '2';
+    var dz = lista.filter(function (x) { return x.id === id; })[0] || lista[0];
+    var v = pxseVleratEmailit(o);
+    if (dz) return dz.nderto(v);
+    // (vetem nese pxse-dizajnet.js nuk u ngarkua) tekst i thjeshte
+    return '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#202124;">' +
+      v.paragrafet.map(function (x) { return '<p style="margin:0 0 14px;">' + esc(x).replace(/\n/g, '<br>') + '</p>'; }).join('') +
+      '<p><b>' + esc(v.marka) + '</b></p><p style="font-size:12px;color:#9aa4b2;">' + esc(v.fundiJo) + '</p></div>';
   }
   PxSinjaleEmail.prototype._hapParapamjen = function (nr) {
     var t = this._t.bind(this), em = this._em, self = this, r = this._rrenja;
@@ -983,7 +989,7 @@
       '<b>' + esc(t('eNga')) + ':</b> ' + esc(marka) + ' &lt;outreach@mail.phronexusai.com&gt;<br>' +
       '<b>' + esc(t('ePergjigjuNe')) + ':</b> ' + esc(t('eReplyVlera')) + '<br>' +
       '<b>' + esc(t('ePer')) + ':</b> ' + esc(b.emri) + ' &lt;hello@' + esc(b.domaini) + '&gt;</div>' +
-      '<div class="px-postieri-mesazhi">' + pxseNdertoEmailin({ modi: em.modi, subjekti: em.subjekti, trupi: em.trupi, marres: b, marka: marka, domaini: em.domaini, dizajn: em.dizajn, t: t }).replace(/<a /g, '<a data-p="asgje" ') + '</div>' +
+      '<div class="px-postieri-mesazhi">' + pxseNdertoEmailin({ subjekti: em.subjekti, trupi: em.trupi, marres: b, marka: marka, domaini: em.domaini, dizajn: em.dizajn, t: t }).replace(/<a /g, '<a data-p="asgje" ') + '</div>' +
       '</div></div></div>';
     r.appendChild(m);
     var mbyll = function () { m.remove(); document.removeEventListener('keydown', esc_); var pb = r.querySelector('[data-e="preview"]'); if (pb) pb.focus(); };
@@ -1052,31 +1058,14 @@
     subj.addEventListener('input', function () { em.subjekti = subj.value; self._rifreskoPamjen(); });
     trupi.addEventListener('input', function () { em.trupi = trupi.value; self._rifreskoPamjen(); });
 
-    // Parapamja: Plain / Designed, dizajni me AI dhe personalizimi
-    qa('[data-modi]').forEach(function (b) {
-      b.addEventListener('click', function () { em.modi = b.getAttribute('data-modi') === 'dizajn' ? 'dizajn' : 'plain'; self._rivizatoEmail(); });
-    });
+    // Parapamja: zgjedhja e dizajnit dhe personalizimi (ngjyra, logo, butoni)
+    this._lidhGalerine();
     qa('[data-d]').forEach(function (inp) {
       var k = inp.getAttribute('data-d');
       inp.addEventListener(inp.type === 'checkbox' ? 'change' : 'input', function () {
         if (k === 'meButon') { em.dizajn.meButon = inp.checked; if (inp.checked && !em.dizajn.butoniTekst) em.dizajn.butoniTekst = 'Visit our website'; self._rivizatoEmail(); return; }
         em.dizajn[k] = inp.value; self._rifreskoPamjen();
       });
-    });
-    var dAI = q('[data-e="dizajn-ai"]');
-    if (dAI) dAI.addEventListener('click', function () {
-      em.dizajnStudim = 'duke'; self._rivizatoEmail();
-      var api = (self.getAttribute('api') || '/api/pxse').replace(/\/$/, '');
-      fetch(api + '/email-dizajn', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ domaini: em.domaini, seanca: pxseSeanca() }) })
-        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; }); })
-        .then(function (x) {
-          if (!x.ok || !x.j.ok) { em.dizajnStudim = 'gabim'; em.dizajnGabim = (x.j && x.j.error) || 'error'; self._rivizatoEmail(); return; }
-          var d = x.j.dizajn || {};
-          em.dizajn.ngjyra = pxseNgjyra(d.ngjyra); if (pxseHttps(d.logo)) em.dizajn.logo = d.logo;
-          em.dizajn.meButon = !!d.meButon; em.dizajn.butoniTekst = d.butoniTekst || em.dizajn.butoniTekst;
-          em.dizajnStudim = 'gati'; self._rivizatoEmail();
-        })
-        .catch(function (e) { em.dizajnStudim = 'gabim'; em.dizajnGabim = String(e && e.message || e); self._rivizatoEmail(); });
     });
     this._lidhPamjen();
     qa('[data-fusha]').forEach(function (b) {
@@ -1128,7 +1117,7 @@
     if (pv) pv.addEventListener('click', function () { self._hapParapamjen(0); });
 
     q('[data-e="dergo"]').addEventListener('click', function () {
-      self.dispatchEvent(new CustomEvent('px-veprim', { detail: { veprimi: 'dergo', email: { subjekti: subj.value, trupi: trupi.value, marresit: em.zgjedhur.slice(), oret: em.zgjedhur.map(function (x) { return em.oret[x]; }) } }, bubbles: true, composed: true }));
+      self.dispatchEvent(new CustomEvent('px-veprim', { detail: { veprimi: 'dergo', email: { subjekti: subj.value, trupi: trupi.value, marka: emerMarke(em.domaini), domaini: em.domaini, dizajn: Object.assign({}, em.dizajn), marresit: em.zgjedhur.slice(), oret: em.zgjedhur.map(function (x) { return em.oret[x]; }) } }, bubbles: true, composed: true }));
       self._toast(self._t('eToast'));
     });
   };
