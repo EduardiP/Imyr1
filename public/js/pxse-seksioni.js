@@ -482,6 +482,11 @@
     '.px-postieri-fundi a{color:#80868b}',
     '.px-studio{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}',
     '.px-studio .px-input{flex:1 1 220px}',
+    // fusha + butoni ngjitur si nje bllok i vetem
+    '.px-studio-bashke{flex-wrap:nowrap;gap:0}',
+    '.px-studio-bashke .px-input{border-top-right-radius:0;border-bottom-right-radius:0;border-right:0;min-width:0}',
+    '.px-studio-bashke .px-buton{border-top-left-radius:0;border-bottom-left-radius:0;white-space:nowrap}',
+    '.px-hyrje-rresht{margin:4px 0 22px;padding-top:14px;border-top:1px dashed var(--px-kufiri)}',
     '.px-studio-stat{font-size:13px;color:var(--px-zbehur);margin:0 0 10px}',
     '.px-studio-stat.px-ok{color:var(--px-sukses)}',
     '.px-email-rreshti{display:grid;grid-template-columns:1fr;gap:12px;align-items:start;margin-bottom:12px}',
@@ -515,9 +520,10 @@
     '.px-dizajn-kontrollet{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}',
     '.px-dizajn-kontrollet .px-input{width:100%}',
     '.px-dizajn-kontrollet input[type=color]{width:100%;height:42px;padding:3px;border:1px solid var(--px-kufiri);border-radius:var(--px-rrezja-vogel);background:var(--px-sfondi)}',
-    '.px-redakto{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--px-kufiri);background:var(--px-sfondi);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--px-teksti)}',
-    '.px-redakto:hover,.px-redakto[aria-expanded="true"]{border-color:var(--px-theks);color:var(--px-theks)}',
-    '.px-redakto-ngj{width:14px;height:14px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}',
+    '.px-redakto{display:inline-flex;align-items:center;gap:8px;border:0;background:var(--px-theks);border-radius:999px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;color:var(--px-theks-teksti);box-shadow:0 4px 12px rgba(79,70,229,.30);transition:transform .15s,box-shadow .15s}',
+    '.px-redakto:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(79,70,229,.38)}',
+    '.px-redakto[aria-expanded="true"]{background:var(--px-teksti);box-shadow:0 4px 12px rgba(20,22,37,.25)}',
+    '.px-redakto-ngj{width:14px;height:14px;border-radius:50%;box-shadow:0 0 0 2px #fff}',
     '.px-redakto-shigj{font-size:11px}',
     '.px-redaktori{border:1px solid var(--px-kufiri);border-radius:var(--px-rrezja-vogel);padding:12px;margin-bottom:12px;background:var(--px-siperfaqja)}',
     '.px-galeria{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:6px}',
@@ -798,16 +804,17 @@
 
       // Rreshti i siperm (vlen per mesazhin dhe per marresit):
       //  - versioni i ngushte: "Try it" + hyrja; kur klikohet "Try it", pjesa zgjerohet dhe del fusha e domainit
-      //  - versioni i gjere: "Study my business" + domaini, dhe hyrja ne te njejtin rresht
+      //  - versioni i gjere: fusha e domainit me butonin "Study my business" ngjitur ne te djathte te saj;
+      //    hyrja ne rresht me vete poshte, larg fushes (qe njerezit te mos klikojne hyrjen pasi shkruajne domainin)
       '<div class="px-veprimet-siper">' +
       '<button class="px-buton px-provo px-vetem-ngushte" data-e="provo">✦ ' + esc(t('eProvoAI')) + '</button>' +
-      '<div class="px-studio px-vetem-gjere">' +
-      '<button class="px-buton" data-e="studio"' + (em.studim === 'duke' ? ' disabled' : '') + '>✦ ' + esc(t('eStudio')) + '</button>' +
+      '<div class="px-studio px-studio-bashke px-vetem-gjere">' +
       '<input class="px-input" data-e="domaini" type="text" inputmode="url" autocomplete="off" placeholder="' + esc(t('eDomaini')) + '" value="' + esc(em.domaini) + '" aria-label="' + esc(t('eDomaini')) + '">' +
+      '<button class="px-buton" data-e="studio"' + (em.studim === 'duke' ? ' disabled' : '') + '>✦ ' + esc(t('eStudio')) + '</button>' +
       '</div>' +
-      '<button class="px-hyrje" data-e="hyr">' + SVG_HYRJE + '<span>' + esc(t('eHyr')) + '</span>' + SVG_DJATHTAS + '</button>' +
       '</div>' + stat +
       '<p class="px-studio-stat" style="margin:-4px 0 12px">' + esc(t('eNjeProve')) + '</p>' +
+      '<div class="px-hyrje-rresht"><button class="px-hyrje" data-e="hyr">' + SVG_HYRJE + '<span>' + esc(t('eHyr')) + '</span>' + SVG_DJATHTAS + '</button></div>' +
 
       '<div class="px-email-rreshti">' +
       // 1. Mesazhi (me studimin e biznesit me AI ne versionin e gjere)
