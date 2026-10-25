@@ -54,6 +54,17 @@
       sPeriudha: 'Period',
       sJava: 'Last 7 days',
       sMuaji: 'Last 30 days',
+      sPese: 'Last 5 months',
+      sStatGjetur: 'posts checked by AI',
+      sKonfirmoB2B: 'We think your customers are businesses (B2B). Correct?',
+      sKonfirmoB2C: 'We think your customers are individual consumers (B2C). Correct?',
+      sPo: 'Yes',
+      sJoIndivide: 'No, they are individuals',
+      sJoBiznese: 'No, they are businesses',
+      sPerdorur: 'The free search for this domain has already been used.',
+      sAsnjeFort: 'No strong signals in the last 5 months.',
+      sDukeFilluar: 'Starting…',
+      sKohaPritjes: 'This takes about a minute. You can keep this page open.',
       sHape: 'Open post',
       sArsye: 'Why it fits',
       sTermat: 'Matched terms',
@@ -135,7 +146,7 @@
       eNjeProve: 'Free: one try per domain. Your email is written by AI from your domain.',
       ePritDomainin: 'Enter your domain and study your business first: AI writes the email from it.',
       ePerdorur: 'Your free try for {d} has ended. Sign in to keep sending, with no limit.',
-      sSeShpejti: 'Signal search is coming soon. Sign in and we will start finding signals for your business as soon as it launches.',
+      sSeShpejti: 'Enter your domain and AI finds people who are looking for what you sell.',
       eDirektoriaSeShpejti: 'The business directory is coming soon.',
       eAsnjeNeKat: 'No more businesses to email in this category. Choose another category.',
       eMarresShembull: 'Example Company',
@@ -218,6 +229,17 @@
       sPeriudha: 'Periudha',
       sJava: '7 ditët e fundit',
       sMuaji: '30 ditët e fundit',
+      sPese: '5 muajt e fundit',
+      sStatGjetur: 'postime të kontrolluara nga AI',
+      sKonfirmoB2B: 'Mendojmë që klientët e tu janë biznese (B2B). E saktë?',
+      sKonfirmoB2C: 'Mendojmë që klientët e tu janë individë (B2C). E saktë?',
+      sPo: 'Po',
+      sJoIndivide: 'Jo, janë individë',
+      sJoBiznese: 'Jo, janë biznese',
+      sPerdorur: 'Kërkimi falas për këtë domain është përdorur tashmë.',
+      sAsnjeFort: 'Asnjë sinjal i fortë në 5 muajt e fundit.',
+      sDukeFilluar: 'Po fillon…',
+      sKohaPritjes: 'Zgjat rreth një minutë. Mbaje faqen të hapur.',
       sHape: 'Hape postimin',
       sArsye: 'Pse përputhet',
       sTermat: 'Termat',
@@ -299,7 +321,7 @@
       eNjeProve: 'Falas: një provë për domain. Email-in e shkruan AI nga domaini yt.',
       ePritDomainin: 'Jep domainin dhe studio biznesin fillimisht: AI e shkruan email-in prej tij.',
       ePerdorur: 'Prova falas për {d} ka përfunduar. Hyr në llogari për të vazhduar dërgimin, pa kufi.',
-      sSeShpejti: 'Kërkimi i sinjaleve vjen së shpejti. Hyr dhe do të nisim të gjejmë sinjale për biznesin tënd sapo të niset.',
+      sSeShpejti: 'Jep domainin dhe AI gjen njerëzit që kërkojnë atë që shet ti.',
       eDirektoriaSeShpejti: 'Direktoria e bizneseve vjen së shpejti.',
       eAsnjeNeKat: 'Nuk ka më biznese për të kontaktuar në këtë kategori. Zgjidh një kategori tjetër.',
       eMarresShembull: 'Kompani Shembull',
@@ -357,7 +379,16 @@
   };
 
   // Sinjalet e verteta vijne nga motori kur te ndertohet kerkimi; tani lista eshte bosh (pa shembuj).
-  var SINJALE = [];
+  var SINJALE = []; // mbushet nga rezultatet e kerkimit te vertete (pxseSinjaleNgaServeri)
+  var PXSE_BURIMET = { reddit: 'Reddit', ih: 'Indie Hackers', hn: 'Hacker News', se: 'Stack Exchange' };
+  function pxseSinjaleNgaServeri(lista) {
+    SINJALE.length = 0;
+    (lista || []).forEach(function (x) {
+      var t0 = Date.parse(x.publikuar || '');
+      SINJALE.push({ burimi: PXSE_BURIMET[x.burimi] || x.burimi, vendi: x.vendi || '', dite: isNaN(t0) ? null : Math.max(0, Math.floor((Date.now() - t0) / 86400000)),
+        pike: Number(x.pike) || 0, titulli: x.titulli || '', teksti: x.teksti || '', arsye: x.arsye || '', url: /^https:\/\//.test(x.url || '') ? x.url : '' });
+    });
+  }
   // Kategorite dhe bizneset vijne nga direktoria e vertete ne databaze (GET /api/pxse/kategorite dhe /api/pxse/bizneset).
   // Faqja merr vetem emrin dhe domainin e biznesit, kurre adresen e email-it.
   var KATEGORITE = [];
@@ -379,7 +410,6 @@
   var SVG_MAJTAS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>';
   var SVG_DJATHTAS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
   var SVG_HYRJE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>';
-  var VISIBLE_FALAS = 3; // sa sinjale shihen pa regjistrim
 
   var CSS = [
     ':host{',
@@ -471,6 +501,8 @@
     '.px-mbyllur-cta{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:16px;background:linear-gradient(to bottom,rgba(255,255,255,0),var(--px-sfondi) 40%)}',
     '.px-mbyllur-cta p{margin:0;font-weight:600;max-width:42ch}',
     '.px-bosh{color:var(--px-zbehur);font-size:14px;padding:12px 0}',
+    '.px-rrotull{display:inline-block;width:12px;height:12px;border:2px solid var(--px-kufiri);border-top-color:var(--px-theks);border-radius:50%;animation:px-rr 0.8s linear infinite;vertical-align:-1px}',
+    '@keyframes px-rr{to{transform:rotate(360deg)}}',
     '.px-ngarkim{color:var(--px-zbehur);font-size:14px;padding:16px 0}',
     // email-et
     '.px-hapat{display:grid;gap:12px}',
@@ -659,7 +691,8 @@
       this._rrenja = this.attachShadow({ mode: 'open' });
       this._gjendja = 'ndare';          // 'ndare' | 'majte' | 'djathte'
       this._domaini = '';
-      this._filtri = { burimi: '', min: 40, dite: 30 }; // shfaqen vetem rezultatet me 40+ pike nga AI
+      this._filtri = { burimi: '', min: 40, dite: 150 }; // shfaqen vetem rezultatet me 40+ pike nga AI; paracaktim 5 muaj
+      this._sj = { gjendja: '', hapi: '', gabim: '', lloji: '', numri: 0, domaini: '' }; // gjendja e kerkimit te sinjaleve
       this._lidhur = '';
       this._kategoria = ''; // '' = te gjitha kategorite (me te rejat ne fillim)
       // gjendja e seksionit te email-eve
@@ -697,39 +730,121 @@
   PxSinjaleEmail.prototype._htmlSinjalet = function () {
     var t = this._t.bind(this), f = this._filtri, gj = this._gjuha();
     var lista = SINJALE.filter(function (s) {
-      return s.pike >= 40 && (!f.burimi || s.burimi === f.burimi) && s.pike >= f.min && s.dite <= f.dite;
+      return s.pike >= 40 && (!f.burimi || s.burimi === f.burimi) && s.pike >= f.min && (s.dite === null ? f.dite >= 150 : s.dite <= f.dite);
     }).sort(function (a, b) { return b.pike - a.pike; });
     var burimet = Array.from(new Set(SINJALE.map(function (s) { return s.burimi; })));
     var karta = function (s) {
       var klasa = s.pike >= 80 ? 'px-pike-larte' : (s.pike >= 60 ? 'px-pike-mesme' : 'px-pike-ulet');
       return '<article class="px-karta">' +
-        '<div class="px-karta-koka"><span>' + esc(s.burimi) + ' · ' + esc(s.vendi) + ' · ' + s.dite + 'd</span><span class="px-pike ' + klasa + '">' + s.pike + '/100</span></div>' +
+        '<div class="px-karta-koka"><span>' + esc(s.burimi) + (s.vendi && s.vendi !== s.burimi ? ' · ' + esc(s.vendi) : '') + (s.dite !== null ? ' · ' + s.dite + 'd' : '') + '</span><span class="px-pike ' + klasa + '">' + s.pike + '/100</span></div>' +
         '<h3>' + esc(s.titulli) + '</h3><p>' + esc(s.teksti) + '</p>' +
-        '<div class="px-arsye"><b>' + esc(t('sArsye')) + ':</b> ' + esc(s.arsye[gj]) + '</div>' +
-        '<div class="px-termat">' + s.termat.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') + '</div>' +
-        '<a class="px-lidhje" href="#" data-veprim="hape">' + esc(t('sHape')) + ' →</a>' +
+        (s.arsye ? '<div class="px-arsye"><b>' + esc(t('sArsye')) + ':</b> ' + esc(s.arsye) + '</div>' : '') +
+        (s.url ? '<a class="px-lidhje" href="' + esc(s.url) + '" target="_blank" rel="noopener noreferrer nofollow">' + esc(t('sHape')) + ' →</a>' : '') +
         '</article>';
     };
-    var html = '';
-    if (!SINJALE.length) return '<div class="px-bosh">' + esc(t('sSeShpejti')) + '</div>';
+    if (this._sj.gjendja !== 'gati') return '';
+    if (!SINJALE.length) return '<div class="px-bosh">' + esc(t('sAsnjeFort')) + '</div>';
     if (!lista.length) return '<div class="px-bosh">' + esc(t('sAsnje')) + '</div>';
-    html += '<div class="px-lista">' + lista.slice(0, VISIBLE_FALAS).map(karta).join('') + '</div>';
-    if (lista.length > VISIBLE_FALAS) {
-      html += '<div class="px-mbyllur" style="margin-top:10px"><div class="px-lista" aria-hidden="true">' + lista.slice(VISIBLE_FALAS, VISIBLE_FALAS + 2).map(karta).join('') + '</div>' +
-        '<div class="px-mbyllur-cta"><p>' + esc(t('sMbyllur').replace('{n}', String(lista.length + 9))) + '</p>' +
-        '<button class="px-buton" data-veprim="regjistrohu">' + esc(t('sRegjistrohu')) + '</button></div></div>';
+    void burimet; void gj;
+    // Prova falas: shfaqen te gjitha rezultatet me 40+ (nga me te mirat te me te dobetat)
+    return '<div class="px-lista">' + lista.map(karta).join('') + '</div>';
+  };
+
+  // Zona e rezultateve te sinjaleve: gjendja e kerkimit, konfirmimi B2B/B2C, numrat, filtrat dhe lista.
+  PxSinjaleEmail.prototype._htmlSinjaleZona = function () {
+    var t = this._t.bind(this), self = this, sj = this._sj;
+    var hyrje = '<button class="px-hyrje" data-e="hyr-sinjale2">' + SVG_HYRJE + '<span>' + esc(t('eHyr')) + '</span>' + SVG_DJATHTAS + '</button>';
+    if (sj.gjendja === 'analiza' || sj.gjendja === 'kerkim' || sj.gjendja === 'vleresim' || sj.gjendja === 'nis')
+      return '<p class="px-studio-stat" role="status"><span class="px-rrotull" aria-hidden="true"></span> ' + esc(sj.hapi || t('sDukeFilluar')) + '</p><p class="px-studio-stat">' + esc(t('sKohaPritjes')) + '</p>';
+    if (sj.gjendja === 'konfirmo') {
+      var b2b = sj.lloji !== 'b2c';
+      return '<div class="px-paralajmero" role="alert"><p>' + esc(t(b2b ? 'sKonfirmoB2B' : 'sKonfirmoB2C')) + '</p>' +
+        '<button class="px-buton" data-konfirmo="' + (b2b ? 'b2b' : 'b2c') + '">' + esc(t('sPo')) + '</button>' +
+        '<button class="px-buton px-buton-dyte" data-konfirmo="' + (b2b ? 'b2c' : 'b2b') + '">' + esc(t(b2b ? 'sJoIndivide' : 'sJoBiznese')) + '</button></div>';
     }
-    void burimet;
-    return html;
+    if (sj.gjendja === 'perdorur') return '<div class="px-paralajmero" role="alert"><p>' + esc(t('sPerdorur')) + '</p>' + hyrje + '</div>';
+    if (sj.gjendja === 'gabim') return '<p class="px-studio-stat px-keq" role="alert">' + esc(sj.gabim || 'Error') + '</p>';
+    if (sj.gjendja !== 'gati') return '<div class="px-bosh">' + esc(t('sSeShpejti')) + '</div>';
+    var burimet = Array.from(new Set(SINJALE.map(function (s) { return s.burimi; })));
+    var teMira = SINJALE.filter(function (s) { return s.pike >= 80; }).length;
+    return '<div class="px-info"><strong>' + esc(t('sRezultatetPer')) + ' ' + esc(sj.domaini) + '</strong>' +
+      '<span class="px-lloji"><b>' + (sj.lloji === 'b2c' ? 'B2C' : 'B2B') + '</b> · ' + esc(t('sLloji')) + '</span></div>' +
+      '<div class="px-stat"><div><b>' + (sj.numri || 0) + '</b><span>' + esc(t('sStatGjetur')) + '</span></div>' +
+      '<div><b>' + teMira + '</b><span>' + esc(t('sStatTeMira')) + '</span></div>' +
+      '<div><b>' + burimet.length + '</b><span>' + esc(t('sStatBurime')) + '</span></div></div>' +
+      (SINJALE.length ? '<div class="px-filtrat" role="group" aria-label="' + esc(t('sFiltri')) + '">' +
+      '<div><label class="px-etiketa">' + esc(t('sBurimi')) + '</label><select class="px-select" data-filtri="burimi"><option value="">' + esc(t('sTeGjitha')) + '</option>' +
+      burimet.map(function (b) { return '<option' + (self._filtri.burimi === b ? ' selected' : '') + '>' + esc(b) + '</option>'; }).join('') + '</select></div>' +
+      '<div><label class="px-etiketa">' + esc(t('sPikeMin')) + '</label><select class="px-select" data-filtri="min">' +
+      [[40, t('sCdoPike')], [60, '60+'], [80, '80+']].map(function (o) { return '<option value="' + o[0] + '"' + (self._filtri.min === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></div>' +
+      '<div><label class="px-etiketa">' + esc(t('sPeriudha')) + '</label><select class="px-select" data-filtri="dite">' +
+      [[7, t('sJava')], [30, t('sMuaji')], [150, t('sPese')]].map(function (o) { return '<option value="' + o[0] + '"' + (self._filtri.dite === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></div>' +
+      '</div>' : '') +
+      '<div data-vendi="sinjalet">' + this._htmlSinjalet() + '</div>' +
+      (!SINJALE.length ? hyrje : '');
+  };
+  PxSinjaleEmail.prototype._rivizatoSinjalet = function () {
+    var z = this._rrenja.querySelector('[data-vendi="sinjale-zona"]'); if (!z) return;
+    z.innerHTML = this._htmlSinjaleZona(); this._lidhSinjalet();
+  };
+  PxSinjaleEmail.prototype._lidhSinjalet = function () {
+    var self = this, r = this._rrenja;
+    r.querySelectorAll('[data-vendi="sinjale-zona"] [data-filtri]').forEach(function (s) {
+      s.addEventListener('change', function () {
+        var k = s.getAttribute('data-filtri');
+        self._filtri[k] = k === 'burimi' ? s.value : Number(s.value);
+        var l = r.querySelector('[data-vendi="sinjalet"]'); if (l) l.innerHTML = self._htmlSinjalet();
+      });
+    });
+    r.querySelectorAll('[data-vendi="sinjale-zona"] [data-konfirmo]').forEach(function (b) {
+      b.addEventListener('click', function () { self._konfirmoLlojin(b.getAttribute('data-konfirmo')); });
+    });
+    var h2 = r.querySelector('[data-e="hyr-sinjale2"]');
+    if (h2) h2.addEventListener('click', function () {
+      self.dispatchEvent(new CustomEvent('px-veprim', { detail: { veprimi: 'hyr', nga: 'sinjale', domaini: self._sj.domaini || '', seanca: pxseSeanca() }, bubbles: true, composed: true }));
+    });
+  };
+  // Vendos gjendjen nga pergjigja e serverit dhe vazhdon te pyese derisa kerkimi te mbaroje.
+  PxSinjaleEmail.prototype._gjendjaSinjaleve = function (ok, j) {
+    var sj = this._sj, self = this;
+    j = j || {};
+    clearTimeout(this._sjOra);
+    if (j.perdorur) { sj.gjendja = 'perdorur'; }
+    else if (!ok || j.ok === false) { sj.gjendja = 'gabim'; sj.gabim = j.error || 'Error'; }
+    else {
+      sj.gjendja = j.gjendja === 'asnje' ? '' : j.gjendja; sj.hapi = j.hapi || ''; sj.gabim = j.error || ''; sj.lloji = j.lloji || sj.lloji;
+      if (j.gjendja === 'gati') { sj.numri = j.numri || 0; pxseSinjaleNgaServeri(j.rezultatet); }
+      if (['analiza', 'kerkim', 'vleresim'].indexOf(j.gjendja) >= 0) {
+        this._sjOra = setTimeout(function () {
+          if (!self.isConnected) return;
+          fetch(self._api() + '/sinjale?seanca=' + pxseSeanca() + '&domaini=' + encodeURIComponent(sj.domaini))
+            .then(function (r) { return r.json().then(function (x) { return { ok: r.ok, j: x }; }); })
+            .then(function (x) { self._gjendjaSinjaleve(x.ok, x.j); })
+            .catch(function () { self._gjendjaSinjaleve(true, { gjendja: sj.gjendja, hapi: sj.hapi }); });
+        }, 2000);
+      }
+    }
+    this._rivizatoSinjalet();
+  };
+  PxSinjaleEmail.prototype._kerkoSinjale = function (d) {
+    var sj = this._sj, self = this;
+    sj.domaini = d; sj.gjendja = 'nis'; sj.hapi = ''; sj.gabim = ''; SINJALE.length = 0; this._rivizatoSinjalet();
+    fetch(this._api() + '/sinjale', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ domaini: d, seanca: pxseSeanca() }) })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (x) { if (x.j && x.j.domaini) sj.domaini = x.j.domaini; self._gjendjaSinjaleve(x.ok, x.j); })
+      .catch(function (e) { self._gjendjaSinjaleve(false, { error: String(e && e.message || e) }); });
+  };
+  PxSinjaleEmail.prototype._konfirmoLlojin = function (lloji) {
+    var sj = this._sj, self = this;
+    sj.gjendja = 'kerkim'; sj.hapi = ''; this._rivizatoSinjalet();
+    fetch(this._api() + '/sinjale/konfirmo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ domaini: sj.domaini, seanca: pxseSeanca(), lloji: lloji }) })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (x) { self._gjendjaSinjaleve(x.ok, x.j); })
+      .catch(function (e) { self._gjendjaSinjaleve(false, { error: String(e && e.message || e) }); });
   };
 
   PxSinjaleEmail.prototype._vizato = function () {
     var t = this._t.bind(this), gj = this._gjuha(), self = this;
-    var burimet = Array.from(new Set(SINJALE.map(function (s) { return s.burimi; })));
-    var kat = KATEGORITE.find(function (k) { return k.v === self._kategoria; }) || KATEGORITE[0];
-    var sot = new Date(); sot.setDate(sot.getDate() + 1);
-    var dataNeser = sot.toISOString().slice(0, 10);
-    var teMira = SINJALE.filter(function (s) { return s.pike >= 80; }).length;
 
     this._rrenja.innerHTML =
       '<style>' + CSS + '</style>' +
@@ -764,20 +879,7 @@
       // Prova falas: nje kerkim i vetem (sinjale te pergjithshme, 5 muajt e fundit). Sinjalet e reja cdo dite vetem pas hyrjes.
       '<p class="px-studio-stat" style="margin:6px 0 10px">' + esc(t('sNjeKerkim')) + '</p>' +
       '<button class="px-hyrje" data-e="hyr-sinjale" style="margin-bottom:4px">' + SVG_HYRJE + '<span>' + esc(t('sHyr')) + '</span>' + SVG_DJATHTAS + '</button>' +
-      (SINJALE.length ? '<div class="px-info"><strong>' + esc(t('sRezultatetPer')) + ' ' + esc(this._domaini) + '</strong>' +
-      '<span class="px-lloji"><b>B2B</b> · ' + esc(t('sLloji')) + '</span></div>' +
-      '<div class="px-stat"><div><b>' + (SINJALE.length + 9) + '</b><span>' + esc(t('sStatJava')) + '</span></div>' +
-      '<div><b>' + teMira + '</b><span>' + esc(t('sStatTeMira')) + '</span></div>' +
-      '<div><b>' + burimet.length + '</b><span>' + esc(t('sStatBurime')) + '</span></div></div>' +
-      '<div class="px-filtrat" role="group" aria-label="' + esc(t('sFiltri')) + '">' +
-      '<div><label class="px-etiketa">' + esc(t('sBurimi')) + '</label><select class="px-select" data-filtri="burimi"><option value="">' + esc(t('sTeGjitha')) + '</option>' +
-      burimet.map(function (b) { return '<option' + (self._filtri.burimi === b ? ' selected' : '') + '>' + esc(b) + '</option>'; }).join('') + '</select></div>' +
-      '<div><label class="px-etiketa">' + esc(t('sPikeMin')) + '</label><select class="px-select" data-filtri="min">' +
-      [[40, t('sCdoPike')], [60, '60+'], [80, '80+']].map(function (o) { return '<option value="' + o[0] + '"' + (self._filtri.min === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></div>' +
-      '<div><label class="px-etiketa">' + esc(t('sPeriudha')) + '</label><select class="px-select" data-filtri="dite">' +
-      [[7, t('sJava')], [30, t('sMuaji')]].map(function (o) { return '<option value="' + o[0] + '"' + (self._filtri.dite === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></div>' +
-      '</div>' : '') +
-      '<div data-vendi="sinjalet">' + this._htmlSinjalet() + '</div>' +
+      '<div data-vendi="sinjale-zona">' + this._htmlSinjaleZona() + '</div>' +
       '</div></div>' +
 
       '</div>' +
@@ -1416,28 +1518,25 @@
     var forma = r.querySelector('[data-forma="sinjale"]');
     forma.addEventListener('submit', function (ev) {
       ev.preventDefault();
-      // VETEM STRUKTURA: kerkimi i sinjaleve nuk eshte ndertuar ende, ndaj butoni nuk ben asnje kerkim.
-      // Te dhenat dhe filtrat me poshte mbeten shembujt e njejte.
       if (!self._ePara) self._ePara = 'sinjale';
       // Ne versionin e ngushte fusha e domainit eshte e fshehur: butoni e zgjeron pjesen dhe e shfaq fushen.
       if (self._gjendja !== 'djathte') {
         self._gjendja = 'djathte'; self._apliko();
         setTimeout(function () { forma.domain.focus(); }, 480);
+        return;
       }
+      var d = String(forma.domain.value || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/[\/?#].*$/, '').replace(/^www\./, '');
+      if (!d) { forma.domain.focus(); return; }
+      self._domaini = d;
+      if (['nis', 'analiza', 'kerkim', 'vleresim'].indexOf(self._sj.gjendja) >= 0 && self._sj.domaini === d) return; // kerkimi po vazhdon
+      self._kerkoSinjale(d);
     });
     r.querySelector('[data-e="hyr-sinjale"]').addEventListener('click', function () {
       var dS = String((forma.domain && forma.domain.value) || self._em.domaini || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/[\/?#].*$/, '');
       self.dispatchEvent(new CustomEvent('px-veprim', { detail: { veprimi: 'hyr', nga: 'sinjale', domaini: dS, seanca: pxseSeanca() }, bubbles: true, composed: true }));
     });
 
-    r.querySelectorAll('[data-filtri]').forEach(function (s) {
-      s.addEventListener('change', function () {
-        var k = s.getAttribute('data-filtri');
-        self._filtri[k] = k === 'burimi' ? s.value : Number(s.value);
-        r.querySelector('[data-vendi="sinjalet"]').innerHTML = self._htmlSinjalet();
-        self._lidhVeprimet();
-      });
-    });
+    this._lidhSinjalet();
 
     this._lidhEmail();
     this._lidhVeprimet();
