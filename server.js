@@ -3113,6 +3113,7 @@ require('./marketing-email')(app, pool, iAdmin);
 require('./pxse-prova')(app, pool, iLoguar);
 require('./pxse-dergimi')(app, pool, iAdmin);
 require('./pxse-sinjalet')(app, pool);
+require('./pxse-alertet')(app, pool, iAdmin);
 
 // Resend (dergim email-esh) — nese RESEND_API_KEY s'eshte vendosur, resendKlient
 // mbetet null dhe ekipi.js e trajton pa u thyer (thjesht s'dergon email, fail-open).
