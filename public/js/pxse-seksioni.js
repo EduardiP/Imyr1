@@ -77,7 +77,7 @@
       eSubjekti: 'Subject',
       eSubjektiVlera: 'Quick idea for {company}',
       eTrupi: 'Message',
-      eTrupiVlera: 'Hi {company} team,\n\nI noticed {domain} helps … and thought this could be useful for you.\n\nBest,\nYour name',
+      eTrupiVlera: 'Hi {company} team,\n\nAI writes your message here after it studies your business.',
       eFusha: 'Insert field:',
       eVazhdime: 'Follow-ups',
       eDita: 'Day',
@@ -212,7 +212,7 @@
       eSubjekti: 'Subjekti',
       eSubjektiVlera: 'Një ide e shpejtë për {company}',
       eTrupi: 'Mesazhi',
-      eTrupiVlera: 'Përshëndetje ekipi i {company},\n\nPashë që {domain} ndihmon… dhe mendova se kjo mund t\'ju vlejë.\n\nMe respekt,\nEmri yt',
+      eTrupiVlera: 'Përshëndetje ekipi i {company},\n\nAI e shkruan mesazhin këtu pasi të studiojë biznesin tënd.',
       eFusha: 'Shto fushë:',
       eVazhdime: 'Vazhdimet',
       eDita: 'Dita',
@@ -342,7 +342,9 @@
     'button,input,select,textarea{font:inherit;color:inherit}',
     // e gjere sa ekrani, pa kornize "tabele"; ngjyra e sfondit ndan dy seksionet
     '.px{position:relative;background:var(--px-sfondi);overflow:clip;display:flex;flex-direction:column;height:var(--px-lartesia)}',
-    '.px-koka{padding:14px 24px;text-align:center;font-size:15px;font-weight:700;letter-spacing:.02em;color:var(--px-theks);background:var(--px-sfondi);border-bottom:1px solid var(--px-kufiri)}',
+    // Koka e perbashket "100% free": e dukshme, vlen per te dy sherbimet
+    '.px-koka{padding:16px 24px;text-align:center;background:var(--px-sfondi);border-bottom:1px solid var(--px-kufiri)}',
+    '.px-koka span{display:inline-flex;align-items:center;gap:8px;padding:8px 22px;border-radius:999px;background:var(--px-theks);color:var(--px-theks-teksti);font-size:20px;font-weight:800;letter-spacing:.03em;box-shadow:0 4px 14px rgba(79,70,229,.25)}',
     '.px-pjesa-email{background:var(--px-sfondi-email)}',
     '.px-pjesa-sinjale{background:var(--px-sfondi-sinjale)}',
     '.px-korniza{display:flex;flex:1 1 auto;min-height:0}',
@@ -659,7 +661,7 @@
       '<style>' + CSS + '</style>' +
       '<section class="px" data-gjendja="' + this._gjendja + '">' +
       // ---------- HEADER I PERBASHKET ----------
-      '<header class="px-koka">' + esc(t('kokaTeksti')) + '</header>' +
+      '<header class="px-koka"><span>✓ ' + esc(t('kokaTeksti')) + '</span></header>' +
       '<div class="px-korniza">' +
 
       // ---------- PJESA E MAJTE: EMAIL-ET (permbajtja ndertohet te _htmlEmail) ----------
