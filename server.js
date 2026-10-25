@@ -3112,6 +3112,7 @@ require('./marketing-email')(app, pool, iAdmin);
 // Seksioni publik "Sinjalet + Dergimi i email-eve": studimi me AI te pxse-prova.js, dergimi te pxse-dergimi.js
 require('./pxse-prova')(app, pool, iLoguar);
 require('./pxse-dergimi')(app, pool, iAdmin);
+require('./pxse-sinjalet')(app, pool);
 
 // Resend (dergim email-esh) — nese RESEND_API_KEY s'eshte vendosur, resendKlient
 // mbetet null dhe ekipi.js e trajton pa u thyer (thjesht s'dergon email, fail-open).
