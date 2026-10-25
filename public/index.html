@@ -133,14 +133,9 @@ function pxaThemeToggle(){
 
 <!-- ═══ HAPESIRA E PARE: SHERBIMI FALAS (email + kapja e interesit) ═══
      Vendi ku do te futet pershkrimi dhe kodi i sherbimit. Prezantimi aktual vjen poshte, i pandryshuar. -->
-<section class="pxa-section" id="free-tool" style="padding-top:48px;padding-bottom:48px;">
-  <div class="pxa-wrap" style="max-width:960px;">
-    <div id="pxaFreeToolSlot" style="border:1px dashed var(--pxa-line2, rgba(255,255,255,.15));border-radius:16px;padding:40px 24px;text-align:center;">
-      <!-- PERSHKRIMI + KODI I SHERBIMIT VENDOSEN KETU -->
-      <p class="pxa-sec-eyebrow" style="color:#34d399;margin:0 0 8px;">Free tool</p>
-      <h2 class="pxa-sec-h2" style="margin:0 0 8px;">Coming soon</h2>
-    </div>
-  </div>
+<section id="free-tool" style="padding:124px 24px 24px;"><!-- 124px = shiriti i siperm (36px) + menuja fikse + 24px -->
+  <!-- Sherbimet falas: email-et + sinjalet. Komponenti dhe CSS-ja e tij jane te izoluara (Shadow DOM) te /js/pxse-seksioni.js -->
+  <px-sinjale-email lang="en" api="/api/pxse"></px-sinjale-email>
 </section>
 <!-- ═══ FUND I HAPESIRES SE PARE ═══ -->
 
@@ -925,6 +920,8 @@ window.addEventListener('pageshow', function(event){
 <script src="/js/hcarousel.js?v=80"></script>
 <script src="/js/kreative-permasa.js"></script>
 <script src="/js/kreative-chat-ui.js"></script>
+<script src="/js/pxse-seksioni.js?v=1"></script>
+<script src="/js/pxse-lidhja.js?v=1"></script>
 <script>boot();</script>
 <script type="text/javascript">
 _linkedin_partner_id = "10943817";
