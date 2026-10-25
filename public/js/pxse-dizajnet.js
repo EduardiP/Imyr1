@@ -46,9 +46,8 @@
       '<a href="' + e(https(v.butoni.link)) + '" style="display:inline-block;padding:11px 22px;' + F + 'font-size:14px;font-weight:600;color:' + mbiNgjyre(c) + ';text-decoration:none;">' + e(v.butoni.tekst || 'Visit our website') + '</a></td></tr></table>';
   }
   function nenshkrimi(v, ngjEmri) {
-    var lidhja = v.domaini ? 'https://' + v.domaini : '';
-    return '<p style="margin:4px 0 0;' + F + 'font-size:14px;line-height:1.6;color:#1c2128;"><b style="' + (ngjEmri ? 'color:' + ngjEmri + ';' : '') + '">' + e(v.marka) + '</b>' +
-      (lidhja ? '<br><a href="' + e(lidhja) + '" style="color:#1a73e8;">' + e(v.domaini) + '</a>' : '') + '</p>';
+    // Vetem emri i derguesit; lidhja e faqes se tij eshte butoni (qe klienti e ndryshon ose e heq).
+    return '<p style="margin:4px 0 0;' + F + 'font-size:14px;line-height:1.6;color:#1c2128;"><b style="' + (ngjEmri ? 'color:' + ngjEmri + ';' : '') + '">' + e(v.marka) + '</b></p>';
   }
   function fundi(v) {
     return '<p style="margin:0;' + F + 'font-size:12px;line-height:1.5;color:#9aa4b2;">' + e(v.fundiJo) + ' &middot; <a href="#" style="color:#9aa4b2;">' + e(v.cregj || 'Unsubscribe') + '</a></p>';
@@ -145,12 +144,12 @@
 
   // 8 — Karte nenshkrimi: tekst i thjeshte, nenshkrimi ne nje kuti me logo (pa header)
   D.push({ id: '8', nderto: function (v) {
-    var ng = ngjyra(v.ngjyra), lidhja = v.domaini ? 'https://' + v.domaini : '';
+    var ng = ngjyra(v.ngjyra);
     return '<div style="' + F + 'font-size:15px;line-height:1.6;color:#202124;max-width:580px;">' + teksti(v) + butoni(v) +
       '<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:10px;border-left:3px solid ' + ng + ';"><tr>' +
       '<td style="padding:4px 12px 4px 12px;">' + logoja(v, 36, 8) + '</td>' +
       '<td style="padding:4px 0;' + F + 'font-size:14px;line-height:1.5;color:#1c2128;"><b>' + e(v.marka) + '</b>' +
-      (lidhja ? '<br><a href="' + e(lidhja) + '" style="color:#1a73e8;">' + e(v.domaini) + '</a>' : '') + '</td></tr></table>' +
+      '</td></tr></table>' +
       '<div style="margin-top:22px;">' + fundi(v) + '</div>' + sticker(v) + '</div>';
   } });
 
