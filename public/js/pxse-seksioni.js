@@ -55,6 +55,12 @@
       sJava: 'Last 7 days',
       sMuaji: 'Last 30 days',
       sPese: 'Last 5 months',
+      sPiketTitulli: 'What the score means:',
+      sPiketNen: 'AI rates each post from 0 to 100 for how likely the author needs your product now.',
+      sPiket80: 'they ask for a tool like yours, often while describing the problem.',
+      sPiket60: 'they describe the exact problem your product solves.',
+      sPiket40: 'your product could help, but they do not ask for it.',
+      sPiketFsheh: 'Posts under 40 are hidden.',
       sStatGjetur: 'posts checked by AI',
       sKonfirmoB2B: 'We think your customers are businesses (B2B). Correct?',
       sKonfirmoB2C: 'We think your customers are individual consumers (B2C). Correct?',
@@ -230,6 +236,12 @@
       sJava: '7 ditët e fundit',
       sMuaji: '30 ditët e fundit',
       sPese: '5 muajt e fundit',
+      sPiketTitulli: 'Çfarë tregojnë pikët:',
+      sPiketNen: 'AI i jep çdo postimi 0 deri në 100 pikë, sa e mundshme është që autori të ketë nevojë tani për produktin tënd.',
+      sPiket80: 'kërkojnë një mjet si yti, shpesh duke përshkruar problemin.',
+      sPiket60: 'përshkruajnë pikërisht problemin që zgjidh produkti yt.',
+      sPiket40: 'produkti yt mund t\'i ndihmojë, por nuk e kërkojnë.',
+      sPiketFsheh: 'Postimet nën 40 pikë fshihen.',
       sStatGjetur: 'postime të kontrolluara nga AI',
       sKonfirmoB2B: 'Mendojmë që klientët e tu janë biznese (B2B). E saktë?',
       sKonfirmoB2C: 'Mendojmë që klientët e tu janë individë (B2C). E saktë?',
@@ -501,6 +513,10 @@
     '.px-mbyllur-cta{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:16px;background:linear-gradient(to bottom,rgba(255,255,255,0),var(--px-sfondi) 40%)}',
     '.px-mbyllur-cta p{margin:0;font-weight:600;max-width:42ch}',
     '.px-bosh{color:var(--px-zbehur);font-size:14px;padding:12px 0}',
+    '.px-piket-shpjegim{font-size:13px;line-height:1.5;color:var(--px-zbehur);background:var(--px-siperfaqja);border-radius:var(--px-rrezja-vogel);padding:10px 12px;margin:0 0 12px}',
+    '.px-piket-shpjegim b{color:var(--px-teksti)}',
+    '.px-piket-shpjegim ul{list-style:none;margin:6px 0;padding:0;display:grid;gap:4px}',
+    '.px-piket-shpjegim .px-pike{display:inline-block;min-width:58px;text-align:center;margin-right:6px}',
     '.px-rrotull{display:inline-block;width:12px;height:12px;border:2px solid var(--px-kufiri);border-top-color:var(--px-theks);border-radius:50%;animation:px-rr 0.8s linear infinite;vertical-align:-1px}',
     '@keyframes px-rr{to{transform:rotate(360deg)}}',
     '.px-ngarkim{color:var(--px-zbehur);font-size:14px;padding:16px 0}',
@@ -772,6 +788,10 @@
       '<div class="px-stat"><div><b>' + (sj.numri || 0) + '</b><span>' + esc(t('sStatGjetur')) + '</span></div>' +
       '<div><b>' + teMira + '</b><span>' + esc(t('sStatTeMira')) + '</span></div>' +
       '<div><b>' + burimet.length + '</b><span>' + esc(t('sStatBurime')) + '</span></div></div>' +
+      (SINJALE.length ? '<div class="px-piket-shpjegim"><b>' + esc(t('sPiketTitulli')) + '</b> ' + esc(t('sPiketNen')) +
+      '<ul><li><span class="px-pike px-pike-larte">80–100</span> ' + esc(t('sPiket80')) + '</li>' +
+      '<li><span class="px-pike px-pike-mesme">60–79</span> ' + esc(t('sPiket60')) + '</li>' +
+      '<li><span class="px-pike px-pike-ulet">40–59</span> ' + esc(t('sPiket40')) + '</li></ul>' + esc(t('sPiketFsheh')) + '</div>' : '') +
       (SINJALE.length ? '<div class="px-filtrat" role="group" aria-label="' + esc(t('sFiltri')) + '">' +
       '<div><label class="px-etiketa">' + esc(t('sBurimi')) + '</label><select class="px-select" data-filtri="burimi"><option value="">' + esc(t('sTeGjitha')) + '</option>' +
       burimet.map(function (b) { return '<option' + (self._filtri.burimi === b ? ' selected' : '') + '>' + esc(b) + '</option>'; }).join('') + '</select></div>' +
