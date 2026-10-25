@@ -132,6 +132,8 @@ function pxsePromptEmail(domaini, faqja, kategorite, korrigjime) {
     'ALLOWED RECIPIENT CATEGORIES (id: name):\n' + kategorite.map(k => k.v + ': ' + k.emri).join('\n') + '\n\n' +
     'Return ONLY a JSON object with these keys:\n' +
     '"pershkrimi": 2 English sentences: what the sender sells and to whom.\n' +
+    '"emri": the sender brand name exactly as written on the website (for example "PhronexusAI", not "Phronexusai").\n' +
+    '"butoni_tekst": 2 to 4 calm words for a button that links to the sender website, like "Visit our website" or "See how it works" (no "free", no "now", no urgency, no exclamation marks).\n' +
     '"lloji": "b2b" if the main customers are businesses, teams, founders or professionals using it for work; "b2c" if they are consumers for personal use; "te-dyja" if clearly both.\n' +
     '"siguria": "high" or "low" (how sure you are about "lloji").\n' +
     '"kategorite": array of 1 or 2 category ids from the allowed list: the recipient businesses most likely to need the sender\'s product.\n' +
@@ -143,7 +145,7 @@ function pxsePromptEmail(domaini, faqja, kategorite, korrigjime) {
     '- Body: 50 to 110 words, plain text, 3 or 4 short paragraphs separated by a blank line.\n' +
     '- Start with "Hi {company} team," on its own line. {company} is the ONLY placeholder: it is replaced with the recipient business name. Do not use any other placeholder. Never invent facts about the recipient.\n' +
     '- One sentence on why you are writing to them, one or two sentences on the concrete problem the sender solves for businesses like theirs, in plain words, without hype or superlatives.\n' +
-    '- End with ONE low-pressure question (for example whether it is relevant or worth a short chat), then a sign-off with the sender brand name only.\n' +
+    '- End with ONE low-pressure question (for example whether it is relevant or worth a short chat). Do NOT add a sign-off, a name or "Best regards" at the end: the system adds the signature.\n' +
     '- No links, no web addresses, no attachments, no images, no prices, discounts, offers or claims that cannot be checked, no "free", "guarantee", "urgent", "limited time", "click here", "act now".\n' +
     '- Do not write any unsubscribe or "reply no" sentence: the system adds it.\n' +
     '- Write in English, polite and direct, no flattery, no fake familiarity, no pressure.\n' +
@@ -253,6 +255,8 @@ module.exports = function (app, pool, iLoguar) {
         subjekti: String(o.subjekti || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 120),
         trupi: String(o.trupi || '').replace(/\r/g, '').trim().slice(0, 2000),
         paralajmerime: probleme,
+        emri: String(o.emri || '').replace(/[\r\n<>]/g, ' ').trim().slice(0, 60),
+        butoniTekst: (function (x) { x = String(x || '').replace(/[!\r\n<>]/g, '').trim().slice(0, 40); return x && !PXSE_FJALE_SPAM.some(f => x.toLowerCase().includes(f)) ? x : 'Visit our website'; })(o.butoni_tekst),
         ngjyra: faqja.ngjyraTemes || '',
         ikona: faqja.ikona || ''
       };
