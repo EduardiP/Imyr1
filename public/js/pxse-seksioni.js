@@ -157,6 +157,9 @@
       fDergimMe2: 'Send emails, 100% free',
       pDizajnet: 'Design',
       pHiqStickerin: 'Remove the PhronexusAI footer',
+      pRedakto: 'Edit design',
+      pMbyllRedaktimin: 'Done',
+      pEmriDerguesit: 'Sender name',
     },
     sq: {
       shembull: 'Të dhëna shembull',
@@ -289,6 +292,9 @@
       fDergimMe2: 'Send emails, 100% free',
       pDizajnet: 'Dizajni',
       pHiqStickerin: 'Hiq fundin e PhronexusAI',
+      pRedakto: 'Ndrysho dizajnin',
+      pMbyllRedaktimin: 'Mbyll',
+      pEmriDerguesit: 'Emri i dërguesit',
     }
   };
 
@@ -507,6 +513,11 @@
     '.px-dizajn-kontrollet{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}',
     '.px-dizajn-kontrollet .px-input{width:100%}',
     '.px-dizajn-kontrollet input[type=color]{width:100%;height:42px;padding:3px;border:1px solid var(--px-kufiri);border-radius:var(--px-rrezja-vogel);background:var(--px-sfondi)}',
+    '.px-redakto{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--px-kufiri);background:var(--px-sfondi);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--px-teksti)}',
+    '.px-redakto:hover,.px-redakto[aria-expanded="true"]{border-color:var(--px-theks);color:var(--px-theks)}',
+    '.px-redakto-ngj{width:14px;height:14px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}',
+    '.px-redakto-shigj{font-size:11px}',
+    '.px-redaktori{border:1px solid var(--px-kufiri);border-radius:var(--px-rrezja-vogel);padding:12px;margin-bottom:12px;background:var(--px-siperfaqja)}',
     '.px-galeria{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:6px}',
     '.px-dz{position:relative;padding:0;border:2px solid var(--px-kufiri);border-radius:9px;background:#fff;cursor:pointer;overflow:hidden;height:96px}',
     '.px-dz[aria-checked="true"]{border-color:var(--px-theks);box-shadow:0 0 0 3px var(--px-theks-lehte)}',
@@ -578,7 +589,8 @@
       this._vazhdime = [3, 7];
       // gjendja e seksionit te email-eve
       this._em = { domaini: '', studim: '', subjekti: null, trupi: null, rekomanduar: [], zgjedhur: [], oret: {}, njoftim: '',
-        dizajn: { id: '2', ngjyra: '#3b6ef0', logo: '', meButon: false, butoniTekst: '', butoniLink: '' } };
+        marka: '', hapurDizajni: false,
+        dizajn: { id: '2', ngjyra: '#3b6ef0', logo: '', meButon: true, butoniTekst: '', butoniLink: '' } };
       var selfL = this;
       this._neResize = function () { selfL._lartesia(); };
       window.addEventListener('resize', this._neResize);
@@ -839,6 +851,7 @@
   };
 
   // ---------- PARAPAMJA E DREJTPERDREJTE (djathtas "Your email", vetem ne versionin e gjere) ----------
+  PxSinjaleEmail.prototype._marka = function () { return String(this._em.marka || '').trim() || emerMarke(this._em.domaini); };
   PxSinjaleEmail.prototype._marresiPamjes = function () {
     var em = this._em, t = this._t.bind(this);
     var b = em.zgjedhur.map(function (id) { return BIZNESET.find(function (x) { return x.id === id; }); }).filter(Boolean)[0];
@@ -847,7 +860,7 @@
   PxSinjaleEmail.prototype._htmlPamjaEmail = function () {
     var t = this._t.bind(this), em = this._em;
     if (em.studim !== 'gati') return '<div class="px-shenim" style="margin-top:0">' + esc(t('pPritStudimin')) + '</div>';
-    var b = this._marresiPamjes(), marka = emerMarke(em.domaini);
+    var b = this._marresiPamjes(), marka = this._marka();
     var subjekti = zevendeso(em.subjekti, b), trupi = zevendeso(em.trupi, b).replace(/\s+/g, ' ').trim();
     var ngj = pxseNgjyra(em.dizajn.ngjyra);
     var html = pxseNdertoEmailin({ subjekti: em.subjekti, trupi: em.trupi, marres: b, marka: marka, domaini: em.domaini, dizajn: em.dizajn, t: t });
@@ -862,7 +875,7 @@
       '<div class="px-hapur-trupi">' + html + '</div></div>';
   };
   PxSinjaleEmail.prototype._htmlGaleria = function () {
-    var t = this._t.bind(this), em = this._em, self = this, b = this._marresiPamjes(), marka = emerMarke(em.domaini);
+    var t = this._t.bind(this), em = this._em, self = this, b = this._marresiPamjes(), marka = this._marka();
     return '<div class="px-galeria" role="radiogroup" aria-label="' + esc(t('pDizajnet')) + '">' + pxseDizajnetLista().map(function (dz) {
       var html = pxseNdertoEmailin({ subjekti: em.subjekti, trupi: em.trupi, marres: b, marka: marka, domaini: em.domaini, dizajn: Object.assign({}, em.dizajn, { id: dz.id }), t: t });
       var po = dz.id === em.dizajn.id;
@@ -872,17 +885,22 @@
   };
   PxSinjaleEmail.prototype._htmlPamja = function () {
     var t = this._t.bind(this), em = this._em, gati = em.studim === 'gati', d = em.dizajn;
-    var kontrollet = !gati ? '' :
+    var koka = '<div class="px-pamja-koka"><div class="px-hapi-koka" style="margin:0"><h3>' + esc(t('pPamja')) + '</h3></div>' +
+      (gati ? '<button class="px-redakto" data-e="redakto" aria-expanded="' + !!em.hapurDizajni + '">' +
+        '<span class="px-redakto-ngj" style="background:' + esc(pxseNgjyra(d.ngjyra)) + '"></span>' + esc(t('pDizajnet')) + ' ' + esc(d.id) +
+        ' · ' + esc(em.hapurDizajni ? t('pMbyllRedaktimin') : t('pRedakto')) + ' <span class="px-redakto-shigj" aria-hidden="true">' + (em.hapurDizajni ? '▴' : '▾') + '</span></button>' : '') + '</div>';
+    var redaktori = !(gati && em.hapurDizajni) ? '' :
+      '<div class="px-redaktori">' +
       '<div class="px-etiketa-vogel" style="margin-top:0">' + esc(t('pDizajnet')) + '</div>' + this._htmlGaleria() +
       '<div class="px-dizajn-kontrollet">' +
+      '<div style="grid-column:1 / -1"><label class="px-etiketa">' + esc(t('pEmriDerguesit')) + '</label><input class="px-input" data-e="marka" maxlength="60" value="' + esc(this._marka()) + '"></div>' +
       '<div><label class="px-etiketa">' + esc(t('pNgjyra')) + '</label><input type="color" data-d="ngjyra" value="' + esc(pxseNgjyra(d.ngjyra)) + '"></div>' +
       '<div><label class="px-etiketa">' + esc(t('pLogo')) + '</label><input class="px-input" data-d="logo" type="url" placeholder="https://" value="' + esc(d.logo) + '"></div>' +
       '<div style="grid-column:1 / -1"><label class="px-kontroll" style="margin-top:0"><input type="checkbox" data-d="meButon"' + (d.meButon ? ' checked' : '') + '> ' + esc(t('pMeButon')) + '</label></div>' +
       (d.meButon ? '<div><label class="px-etiketa">' + esc(t('pButoniTekst')) + '</label><input class="px-input" data-d="butoniTekst" maxlength="40" value="' + esc(d.butoniTekst) + '"></div>' +
         '<div><label class="px-etiketa">' + esc(t('pButoniLink')) + '</label><input class="px-input" data-d="butoniLink" type="url" placeholder="https://' + esc(em.domaini || '') + '" value="' + esc(d.butoniLink) + '"></div>' : '') +
-      '</div>';
-    return '<div class="px-pamja-koka"><div class="px-hapi-koka" style="margin:0"><h3>' + esc(t('pPamja')) + '</h3></div></div>' +
-      kontrollet + '<div data-vendi="pamja-email">' + this._htmlPamjaEmail() + '</div>';
+      '</div></div>';
+    return koka + redaktori + '<div data-vendi="pamja-email">' + this._htmlPamjaEmail() + '</div>';
   };
   // Rifreskon vetem email-in ne parapamje (fushat ku shkruan klienti nuk preken, kursori mbetet aty).
   PxSinjaleEmail.prototype._rifreskoPamjen = function () {
@@ -970,7 +988,7 @@
       marresit = [lista[0] || BIZNESET[0] || { emri: t('eMarresShembull'), domaini: 'example.com' }];
     }
     nr = Math.max(0, Math.min(nr || 0, marresit.length - 1));
-    var b = marresit[nr], marka = emerMarke(em.domaini);
+    var b = marresit[nr], marka = this._marka();
     var subjekti = zevendeso(em.subjekti, b);
     var vjeter = r.querySelector('.px-modal'); if (vjeter) vjeter.remove();
     var m = document.createElement('div');
@@ -1045,6 +1063,7 @@
           em.subjekti = j.subjekti; em.trupi = j.trupi;
           if (/^#[0-9a-f]{6}$/i.test(j.ngjyra || '')) em.dizajn.ngjyra = j.ngjyra;
           if (pxseHttps(j.ikona)) em.dizajn.logo = j.ikona;
+          em.marka = j.emri || em.marka; em.dizajn.meButon = true; em.dizajn.butoniTekst = j.butoniTekst || 'Visit our website'; em.dizajn.butoniLink = 'https://' + em.domaini;
           em.rekomanduar = (j.kategorite || []).slice(0, 2);
           if (em.rekomanduar.length) self._kategoria = em.rekomanduar[0];
           em.studim = 'gati';
@@ -1060,6 +1079,10 @@
 
     // Parapamja: zgjedhja e dizajnit dhe personalizimi (ngjyra, logo, butoni)
     this._lidhGalerine();
+    var red = q('[data-e="redakto"]');
+    if (red) red.addEventListener('click', function () { em.hapurDizajni = !em.hapurDizajni; self._rivizatoEmail(); });
+    var mk = q('[data-e="marka"]');
+    if (mk) mk.addEventListener('input', function () { em.marka = mk.value; self._rifreskoPamjen(); });
     qa('[data-d]').forEach(function (inp) {
       var k = inp.getAttribute('data-d');
       inp.addEventListener(inp.type === 'checkbox' ? 'change' : 'input', function () {
@@ -1117,7 +1140,7 @@
     if (pv) pv.addEventListener('click', function () { self._hapParapamjen(0); });
 
     q('[data-e="dergo"]').addEventListener('click', function () {
-      self.dispatchEvent(new CustomEvent('px-veprim', { detail: { veprimi: 'dergo', email: { subjekti: subj.value, trupi: trupi.value, marka: emerMarke(em.domaini), domaini: em.domaini, dizajn: Object.assign({}, em.dizajn), marresit: em.zgjedhur.slice(), oret: em.zgjedhur.map(function (x) { return em.oret[x]; }) } }, bubbles: true, composed: true }));
+      self.dispatchEvent(new CustomEvent('px-veprim', { detail: { veprimi: 'dergo', email: { subjekti: subj.value, trupi: trupi.value, marka: self._marka(), domaini: em.domaini, dizajn: Object.assign({}, em.dizajn), marresit: em.zgjedhur.slice(), oret: em.zgjedhur.map(function (x) { return em.oret[x]; }) } }, bubbles: true, composed: true }));
       self._toast(self._t('eToast'));
     });
   };
