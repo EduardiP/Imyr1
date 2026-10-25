@@ -311,3 +311,10 @@ module.exports = function (app, pool, iLoguar) {
 };
 // Kontrolli kunder spam-it perdoret edhe nga pxse-dergimi.js para dergimit.
 module.exports.pxseKontrolloEmailin = pxseKontrolloEmailin;
+// Leximi i sigurt i faqes dhe ndihmesat e perbashketa perdoren edhe nga pxse-sinjalet.js (pa i kopjuar).
+module.exports.pxseLexoFaqen = pxseLexoFaqen;
+module.exports.pxsePastroDomain = pxsePastroDomain;
+module.exports.pxseHashIP = pxseHashIP;
+module.exports.pxseFetchKohe = pxseFetchKohe;
+module.exports.pxseTekstNgaHtml = pxseTekstNgaHtml;
+module.exports.pxseSeancaVlefshme = pxseSeancaVlefshme;
