@@ -192,6 +192,11 @@ module.exports = function (app, pool, iAdmin) {
       }
       // Rezultatet e marra para se feed-i te kishte kategori e marrin tani
       if (f.nr) await pool.query('UPDATE pxse_alertet_rezultate SET nr=$2, kategoria=$3, lloji=$4 WHERE kodi=$1 AND nr IS NULL', [f.kodi, f.nr, f.kategoria, f.lloji]);
+      // Analitika e admin-it: sinjalet e reja te dites sipas llojit dhe kategorise (mbeten edhe pasi sinjalet fshihen pas 3 javesh)
+      if (te_reja) pool.query(`INSERT INTO pxse_burimet_ditore (dita, burimi, tipi, kategoria, kerkime, rezultate, kredite)
+          VALUES ((now() AT TIME ZONE 'Europe/Berlin')::date, 'alerts', $1, $2, 1, $3, 0)
+          ON CONFLICT (dita, burimi, tipi, kategoria) DO UPDATE SET kerkime = pxse_burimet_ditore.kerkime + 1, rezultate = pxse_burimet_ditore.rezultate + EXCLUDED.rezultate`,
+        [f.lloji || '', f.kategoria || '', te_reja]).catch(() => {});
       return te_reja;
     } catch (e) {
       await pool.query('UPDATE pxse_alertet_feedet SET lexuar_at=now(), gabimi=$2 WHERE kodi=$1', [f.kodi, String(e.message || e).slice(0, 300)]).catch(() => {});
