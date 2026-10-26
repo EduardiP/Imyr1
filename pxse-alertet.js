@@ -10,7 +10,7 @@
 //     krahasohet me tekstin e alertit te CSV-se dhe lidhja ruhet te pxse_alertet_feedet: kodi i feed-it -> nr, kategoria, lloji.
 //  4. Cdo rezultat i ri ruhet te pxse_alertet_rezultate me kategorine dhe llojin e feed-it (lidhja e vertete, jo ajo e Google).
 //  5. Fshirja: rezultatet qe kane ardhur para me shume se 3 javesh fshihen, pervec atyre te kategorive qe i ka te pakten nje klient
-//     (tabela pxse_alertet_klientet; mbushet me vone, kur AI t'u caktoje klienteve alertet).
+//     (tabela pxse_alertet_klientet: e mbush pxse-sinjalet.js kur AI i zgjedh alertet e nje klienti; prova pa login mban 1 jave, pas login-it pa kufi).
 //  Admin: GET /api/admin/pxse/alertet (permbledhja), POST /api/admin/pxse/alertet/lexo (lexim menjehere).
 const fs = require('fs');
 const path = require('path');
@@ -220,6 +220,9 @@ module.exports = function (app, pool, iAdmin) {
   }
   async function pxsaFshi() {
     if (!(await gati)) return;
+    // Klientet e provës pa login e "mbajne" kategorine 1 jave; pas login-it (seanca e lidhur me llogari) pa kufi
+    await pool.query(`DELETE FROM pxse_alertet_klientet k WHERE k.klienti LIKE 'seanca:%' AND k.shtuar_at < now() - interval '7 days'
+      AND NOT EXISTS (SELECT 1 FROM pxse_seanca_llogaria l WHERE 'seanca:' || l.seanca = k.klienti)`).catch(() => {});
     await pool.query(`DELETE FROM pxse_alertet_rezultate r WHERE r.marre_at < now() - interval '${PXSA_DITE_RUAJTJE} days'
       AND NOT EXISTS (SELECT 1 FROM pxse_alertet_klientet k WHERE k.kategoria = r.kategoria)`).catch(e => console.error('pxse-alertet fshirja:', e.message));
   }
