@@ -6,12 +6,13 @@
 // Te tjerat i shkruajne vete pxse-prova.js, pxse-dergimi.js dhe pxse-sinjalet.js: studimi, login-i, email-et e planifikuara/derguara.
 // Ngjarjet NUK fshihen bashke me provat (1 jave): mbahen 13 muaj, qe numrat e kaluar te mbeten.
 //
-//   Hyrje e re = hera e pare qe nje shfletues hap faqen; Rikthim = hapje e re e faqes nga i njejti shfletues, pas me shume se 30 minutash.
+//   Hyrje e re = hera e pare qe nje shfletues hap faqen; Vizite perseri = hapje e re e faqes nga i njejti shfletues pas me shume se 30 minutash.
+//   Rikthim = dikush jep perseri nje domain qe e ka perdorur proven falas (shpreson ta marre perseri falas).
 //
 // Rruget e admin-it: GET /api/admin/pxse/analitika/email?nga=YYYY-MM-DD&deri=YYYY-MM-DD
 //                    GET /api/admin/pxse/analitika/bizneset   GET /api/admin/pxse/analitika/biznes/:id
 const PXAN_ZONA = 'Europe/Berlin';
-const PXAN_FAQJA = ['vizite', 'klik_x', 'klik_hyr'];
+const PXAN_FAQJA = ['vizite', 'klik_x', 'klik_hyr', 'klik_studio'];
 
 const pxanData = s => /^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) ? String(s) : null;
 const pxanSot = () => new Intl.DateTimeFormat('en-CA', { timeZone: PXAN_ZONA, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
@@ -25,7 +26,7 @@ module.exports = function (app, pool, iAdmin) {
   (async () => {
     await pool.query(`CREATE TABLE IF NOT EXISTS pxse_ngjarjet (
       id BIGSERIAL PRIMARY KEY,
-      lloji TEXT NOT NULL,   -- hyrje_e_re | rikthim | klik_x | klik_hyr | login | studim_email | studim_sinjale | email_planifikuar | email_derguar
+      lloji TEXT NOT NULL,   -- hyrje_e_re | rikthim | klik_x | klik_hyr | klik_studio | login | studim_email | studim_sinjale | email_planifikuar | email_derguar
       nga TEXT,              -- 'email' | 'sinjale' (seksioni)
       seanca TEXT,
       biznes_id INT,
@@ -62,8 +63,8 @@ module.exports = function (app, pool, iAdmin) {
         const x = r.rows[0];
         if (x.iri) await pool.query("INSERT INTO pxse_ngjarjet (lloji, seanca) VALUES ('hyrje_e_re', $1)", [seanca]);
         else {
-          const prev = await pool.query("SELECT 1 FROM pxse_ngjarjet WHERE seanca=$1 AND lloji IN ('hyrje_e_re','rikthim') AND koha > now() - interval '30 minutes' LIMIT 1", [seanca]);
-          if (!prev.rows.length) await pool.query("INSERT INTO pxse_ngjarjet (lloji, seanca) VALUES ('rikthim', $1)", [seanca]);
+          const prev = await pool.query("SELECT 1 FROM pxse_ngjarjet WHERE seanca=$1 AND lloji IN ('hyrje_e_re','rikthim','vizite_perseri') AND koha > now() - interval '30 minutes' LIMIT 1", [seanca]);
+          if (!prev.rows.length) await pool.query("INSERT INTO pxse_ngjarjet (lloji, seanca) VALUES ('vizite_perseri', $1)", [seanca]);
         }
       } else {
         await pool.query('INSERT INTO pxse_ngjarjet (lloji, nga, seanca) VALUES ($1,$2,$3)', [lloji, nga, seanca]);
@@ -74,7 +75,7 @@ module.exports = function (app, pool, iAdmin) {
 
   // ---------- Admin: Email-et ----------
   // Kolonat e tabeles (ne kete renditje)
-  const KOLONAT = ['derguar', 'klik_x', 'klik_hyr', 'login', 'snippet', 'email_dergues', 'rikthim', 'hyrje_e_re', 'prova'];
+  const KOLONAT = ['derguar', 'klik_x', 'klik_hyr', 'login', 'snippet', 'email_dergues', 'rikthim', 'hyrje_e_re', 'klik_studio', 'prova'];
   app.get('/api/admin/pxse/analitika/email', iAdmin, async (req, res) => {
     try {
       const sot = pxanSot();
@@ -94,7 +95,7 @@ module.exports = function (app, pool, iAdmin) {
           FROM pxse_seanca_llogaria l JOIN snippetet s ON s.biznes_id = l.biznes_id AND s.snippet_active = true AND COALESCE(s.pauzuar, false) = false
           WHERE l.nga = 'email' AND (l.lidhur_at AT TIME ZONE '${PXAN_ZONA}')::date BETWEEN $1::date AND $2::date GROUP BY 1`, kufijt)).rows;
       } catch (e) { snip = []; }
-      const bosh = () => ({ derguar: 0, klik_x: 0, klik_hyr: 0, login: 0, snippet: 0, email_dergues: null, rikthim: 0, hyrje_e_re: 0, prova: 0 });
+      const bosh = () => ({ derguar: 0, klik_x: 0, klik_hyr: 0, login: 0, snippet: 0, email_dergues: null, rikthim: 0, hyrje_e_re: 0, klik_studio: 0, prova: 0 });
       const sipasDites = {}; ditet.forEach(d => { sipasDites[d] = bosh(); });
       const kubat = { hyrje: {}, hyrje_e_re: {}, login: {}, rikthim: {} };
       q.rows.forEach(r => {
@@ -103,13 +104,14 @@ module.exports = function (app, pool, iAdmin) {
         if (r.lloji === 'klik_x') x.klik_x += r.n;
         if (r.lloji === 'klik_hyr' && r.nga !== 'sinjale') x.klik_hyr += r.n;
         if (r.lloji === 'login' && r.nga !== 'sinjale') x.login += r.n;
-        if (r.lloji === 'rikthim') x.rikthim += r.n;
+        if (r.lloji === 'rikthim_domain' && r.nga !== 'sinjale') x.rikthim += r.n;
         if (r.lloji === 'hyrje_e_re') x.hyrje_e_re += r.n;
         if (r.lloji === 'studim_email') x.prova += r.n;
+        if (r.lloji === 'klik_studio') x.klik_studio += r.n;
         const shto = (k, v) => { kubat[k][r.pika] = (kubat[k][r.pika] || 0) + v; };
-        if (r.lloji === 'hyrje_e_re' || r.lloji === 'rikthim') shto('hyrje', r.n);
+        if (r.lloji === 'hyrje_e_re' || r.lloji === 'rikthim' || r.lloji === 'vizite_perseri') shto('hyrje', r.n); // te gjitha hapjet e faqes
         if (r.lloji === 'hyrje_e_re') shto('hyrje_e_re', r.n);
-        if (r.lloji === 'rikthim') shto('rikthim', r.n);
+        if (r.lloji === 'rikthim_domain' && r.nga !== 'sinjale') shto('rikthim', r.n);
         if (r.lloji === 'login') shto('login', r.n); // login-et nga i gjithe seksioni falas
       });
       snip.forEach(r => { if (sipasDites[r.dita]) sipasDites[r.dita].snippet = r.n; });
