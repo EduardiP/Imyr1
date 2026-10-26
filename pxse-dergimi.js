@@ -327,6 +327,7 @@ module.exports = function (app, pool, iAdmin) {
             [token, b.seanca, domaini, marka, x.id, x.email, sub, nd.html, nd.tekst, JSON.stringify(dizajn), dizajn.meButon ? dizajn.butoniLink : null, new Date(oret[i]), subjekti, trupi]);
         }
         await kl.query('COMMIT');
+        for (let i = 0; i < marresit.length; i++) pool.query('INSERT INTO pxse_ngjarjet (lloji, nga, seanca, biznes_id) VALUES ($1,$2,$3,$4)', ['email_planifikuar', 'email', b.seanca, null]).catch(() => {}); // analitika
       } catch (e) {
         await kl.query('ROLLBACK').catch(() => {});
         if (/duplicate key/i.test(e.message)) return res.status(409).json({ error: 'You already emailed one of these businesses.' });
@@ -349,7 +350,7 @@ module.exports = function (app, pool, iAdmin) {
       for (let i = 0; i < 10; i++) {
         const r = await pool.query(`UPDATE pxse_dergimet SET statusi='duke' WHERE id = (
             SELECT id FROM pxse_dergimet WHERE statusi='ne_radhe' AND ora <= now() ORDER BY ora LIMIT 1 FOR UPDATE SKIP LOCKED)
-          RETURNING id, token, marka, marres_email, subjekti, html, tekst`);
+          RETURNING id, token, seanca, marka, marres_email, subjekti, html, tekst`);
         if (!r.rows.length) break;
         const d = r.rows[0];
         if (await pxseNeMosKontakto(d.marres_email)) { await pool.query("UPDATE pxse_dergimet SET statusi='deshtoi', gabimi='do-not-contact' WHERE id=$1", [d.id]); continue; }
@@ -372,6 +373,7 @@ module.exports = function (app, pool, iAdmin) {
             headers: { 'List-Unsubscribe': '<' + cregj + '>, <mailto:' + zgjedhur + '?subject=unsubscribe>', 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
           });
           await pool.query("UPDATE pxse_dergimet SET statusi='derguar', llogaria=$2, derguar_at=now(), gabimi=NULL WHERE id=$1", [d.id, zgjedhur]);
+          pool.query('INSERT INTO pxse_ngjarjet (lloji, nga, seanca, biznes_id) VALUES ($1,$2,$3,$4)', ['email_derguar', 'email', d.seanca, null]).catch(() => {}); // analitika
         } catch (e) {
           await pool.query("UPDATE pxse_dergimet SET statusi='deshtoi', llogaria=$2, gabimi=$3 WHERE id=$1", [d.id, zgjedhur, String(e.message || e).slice(0, 300)]);
           console.error('pxse dergimi deshtoi:', e.message);
