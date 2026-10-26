@@ -1369,6 +1369,7 @@
     q('[data-e="studio"]').addEventListener('click', function () {
       var d = String(dom.value || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/[\/?#].*$/, '');
       if (!d) { dom.focus(); return; }
+      pxseNgjarje(self._api(), 'klik_studio'); // analitika: klikimi i "Write my email with AI"
       if (!self._ePara) self._ePara = 'email';
       em.domaini = d; em.studim = 'duke'; em.gabim = ''; self._rivizatoEmail();
       var gj = self._gjuha();
