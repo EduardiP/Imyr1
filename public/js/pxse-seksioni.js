@@ -57,6 +57,14 @@
       sPese: 'Last 5 months',
       sShfaqen: 'Showing {n} signals',
       sShfaqen1: 'Showing 1 signal',
+      sStatusi: 'Status',
+      stAll: 'All', stNew: 'New', stSaved: 'Saved', stReplied: 'Replied', stRejected: 'Rejected',
+      bSave: 'Save', bReplied: 'Replied', bReject: 'Reject',
+      bAI: 'AI reply', bAIMbetur: '{n} free',
+      aiTitulli: 'AI reply draft', aiKopjo: 'Copy', aiKopjuar: 'Copied', aiShenim: 'Review it, change what you want, then post it yourself.',
+      aiDuke: 'AI is writing a reply…',
+      aiLimitTitulli: 'AI replies stay free. To use them without limits:',
+      aiLimitPerfundo: 'Sign in, complete your profile (AI fills it in for you) and add the PhronexusAI snippet to your website.',
       sPiketTitulli: 'What the score means:',
       sPiketNen: 'AI rates each post from 0 to 100 for how likely the author needs your product now.',
       sPiket80: 'they ask for a tool like yours, often while describing the problem.',
@@ -240,6 +248,14 @@
       sPese: '5 muajt e fundit',
       sShfaqen: 'Po shfaqen {n} sinjale',
       sShfaqen1: 'Po shfaqet 1 sinjal',
+      sStatusi: 'Statusi',
+      stAll: 'Të gjitha', stNew: 'Të reja', stSaved: 'Të ruajtura', stReplied: 'U përgjigja', stRejected: 'Të refuzuara',
+      bSave: 'Ruaj', bReplied: 'U përgjigja', bReject: 'Refuzo',
+      bAI: 'Përgjigje me AI', bAIMbetur: '{n} falas',
+      aiTitulli: 'Drafti i përgjigjes me AI', aiKopjo: 'Kopjo', aiKopjuar: 'U kopjua', aiShenim: 'Lexoje, ndrysho çfarë do, pastaj postoje vetë.',
+      aiDuke: 'AI po shkruan përgjigjen…',
+      aiLimitTitulli: 'Përgjigjet me AI mbeten falas. Për t\'i përdorur pa kufi:',
+      aiLimitPerfundo: 'Hyr, plotëso profilin (AI e plotëson për ty) dhe shto snippet-in e PhronexusAI në faqen tënde.',
       sPiketTitulli: 'Çfarë tregojnë pikët:',
       sPiketNen: 'AI i jep çdo postimi 0 deri në 100 pikë, sa e mundshme është që autori të ketë nevojë tani për produktin tënd.',
       sPiket80: 'kërkojnë një mjet si yti, shpesh duke përshkruar problemin.',
@@ -397,12 +413,13 @@
   // Sinjalet e verteta vijne nga motori kur te ndertohet kerkimi; tani lista eshte bosh (pa shembuj).
   var SINJALE = []; // mbushet nga rezultatet e kerkimit te vertete (pxseSinjaleNgaServeri)
   var PXSE_BURIMET = { reddit: 'Reddit', ih: 'Indie Hackers', hn: 'Hacker News', se: 'Stack Exchange', alerts: 'Google Alerts' };
-  function pxseSinjaleNgaServeri(lista) {
-    SINJALE.length = 0;
+  function pxseSinjaleNgaServeri(lista, statuset, pergjigjet) {
+    SINJALE.length = 0; statuset = statuset || {}; pergjigjet = pergjigjet || {};
     (lista || []).forEach(function (x) {
       var t0 = Date.parse(x.publikuar || '');
       SINJALE.push({ b: x.burimi, burimi: PXSE_BURIMET[x.burimi] || x.burimi, vendi: x.vendi || '', dite: isNaN(t0) ? null : Math.max(0, Math.floor((Date.now() - t0) / 86400000)),
-        pike: Number(x.pike) || 0, titulli: x.titulli || '', teksti: x.teksti || '', arsye: x.arsye || '', url: /^https:\/\//.test(x.url || '') ? x.url : '' });
+        pike: Number(x.pike) || 0, titulli: x.titulli || '', teksti: x.teksti || '', arsye: x.arsye || '', url: /^https:\/\//.test(x.url || '') ? x.url : '',
+        statusi: statuset[x.url] || 'new', pergjigja: pergjigjet[x.url] || '' });
     });
   }
   // Kategorite dhe bizneset vijne nga direktoria e vertete ne databaze (GET /api/pxse/kategorite dhe /api/pxse/bizneset).
@@ -498,8 +515,32 @@
     '.px-filtrat{display:none;gap:8px;margin-bottom:12px;flex-wrap:wrap}',
     '.px-filtrat > div{flex:1 1 150px}',
     '.px-filtrat .px-select{width:100%}',
-    '.px-lista{display:grid;gap:10px}',
-    '.px-karta{border:1px solid var(--px-kufiri);border-radius:var(--px-rrezja-vogel);padding:14px;background:var(--px-sfondi)}',
+    '.px-lista{display:grid;gap:30px 10px;padding-bottom:16px}',
+    '.px-karta{position:relative;border:1px solid var(--px-kufiri);border-radius:var(--px-rrezja-vogel);padding:14px 14px 26px;background:var(--px-sfondi);cursor:pointer;transition:border-color .15s,box-shadow .15s}',
+    '.px-karta:hover{border-color:var(--px-theks);box-shadow:0 6px 18px rgba(20,22,37,.08)}',
+    '.px-karta:focus-visible{outline:2px solid var(--px-theks);outline-offset:2px}',
+    '.px-karta-rejected{opacity:.62}',
+    '.px-karta-replied{border-color:#b7e4c7}',
+    '.px-karta-saved{border-color:#f3d38a}',
+    // butonat qe mbulojne kufirin poshte majtas
+    '.px-sj-veprime{position:absolute;left:12px;bottom:-15px;display:flex;gap:6px;flex-wrap:wrap;max-width:calc(100% - 24px)}',
+    '.px-sj-b{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--px-kufiri);background:var(--px-sfondi);color:var(--px-teksti);font:600 12px/1 inherit;font-family:inherit;cursor:pointer;box-shadow:0 2px 6px rgba(20,22,37,.08);transition:all .15s;white-space:nowrap}',
+    '.px-sj-b:hover{border-color:var(--px-theks);color:var(--px-theks);transform:translateY(-1px)}',
+    '.px-sj-saved.px-aktiv{background:#fff4d6;border-color:#f3d38a;color:#8a5a00}',
+    '.px-sj-replied.px-aktiv{background:#e6f6ec;border-color:#b7e4c7;color:#17733a}',
+    '.px-sj-rejected.px-aktiv{background:#f1f2f4;border-color:#d0d4da;color:#5b6472}',
+    '.px-sj-ai{background:linear-gradient(135deg,var(--px-theks),#7c3aed);border-color:transparent;color:#fff}',
+    '.px-sj-ai:hover{color:#fff;border-color:transparent;filter:brightness(1.06)}',
+    '.px-sj-ai[disabled]{opacity:.7;cursor:progress;transform:none}',
+    '.px-sj-mbetur{font-weight:500;font-size:11px;background:rgba(255,255,255,.22);border-radius:999px;padding:2px 7px}',
+    '.px-ai-kuti{cursor:auto;margin:8px 0 10px;padding:10px 12px;border-radius:10px;background:linear-gradient(180deg,#f5f3ff,#eef2ff);border:1px solid #dcd6ff;font-size:13px;color:var(--px-teksti)}',
+    '.px-ai-koka{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}',
+    '.px-ai-koka b{font-size:12px;color:#5b3fd6;text-transform:uppercase;letter-spacing:.04em}',
+    '.px-ai-tekst{white-space:pre-wrap;line-height:1.55;user-select:text}',
+    '.px-ai-kuti small{display:block;margin-top:6px;color:var(--px-zbehur);font-size:11px}',
+    '.px-ai-kopjo{height:26px;padding:0 12px;border-radius:999px;border:1px solid #c9c0ff;background:#fff;color:#5b3fd6;font:600 12px/1 inherit;font-family:inherit;cursor:pointer}',
+    '.px-ai-kopjo:hover{background:#5b3fd6;color:#fff}',
+    '.px-ai-kopjo.px-kopjuar{background:#17733a;border-color:#17733a;color:#fff}',
     '.px-karta-koka{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--px-zbehur);margin-bottom:6px}',
     '.px-pike{font-weight:700;font-size:12px;border-radius:999px;padding:2px 9px;white-space:nowrap}',
     '.px-pike-larte{background:#e7f7f0;color:var(--px-sukses)}',
@@ -717,7 +758,7 @@
       this._rrenja = this.attachShadow({ mode: 'open' });
       this._gjendja = 'ndare';          // 'ndare' | 'majte' | 'djathte'
       this._domaini = '';
-      this._filtri = { burimi: '', min: 40, dite: 150 }; // shfaqen vetem rezultatet me 40+ pike nga AI; paracaktim 5 muaj
+      this._filtri = { burimi: '', min: 40, dite: 150, statusi: 'new' }; // shfaqen vetem rezultatet me 40+ pike nga AI; paracaktim 5 muaj
       this._sj = { gjendja: '', hapi: '', gabim: '', lloji: '', numri: 0, domaini: '' }; // gjendja e kerkimit te sinjaleve
       this._lidhur = '';
       this._kategoria = ''; // '' = te gjitha kategorite (me te rejat ne fillim)
@@ -756,25 +797,39 @@
 
   PxSinjaleEmail.prototype._htmlSinjalet = function () {
     var t = this._t.bind(this), f = this._filtri, gj = this._gjuha();
+    var sj = this._sj;
     var lista = SINJALE.filter(function (s) {
-      return s.pike >= 40 && (!f.burimi || s.burimi === f.burimi) && s.pike >= f.min; // pa filter periudhe: te gjitha jane nga 5 muajt e fundit
+      return s.pike >= 40 && (!f.burimi || s.burimi === f.burimi) && s.pike >= f.min && (f.statusi === 'all' || s.statusi === f.statusi); // pa filter periudhe
     }).sort(function (a, b) { return b.pike - a.pike; });
     var burimet = Array.from(new Set(SINJALE.map(function (s) { return s.burimi; })));
     var karta = function (s) {
       var klasa = s.pike >= 80 ? 'px-pike-larte' : (s.pike >= 60 ? 'px-pike-mesme' : 'px-pike-ulet');
-      return '<article class="px-karta">' +
+      var st = function (k, tekst, ikona) { return '<button type="button" class="px-sj-b px-sj-' + k + (s.statusi === k ? ' px-aktiv' : '') + '" data-st="' + k + '" aria-pressed="' + (s.statusi === k) + '">' + ikona + ' ' + esc(tekst) + '</button>'; };
+      var duke = sj.aiDuke === s.url;
+      var aiBtn = '<button type="button" class="px-sj-b px-sj-ai" data-ai' + (duke ? ' disabled' : '') + '>✦ ' + esc(t('bAI')) +
+        (!s.pergjigja && sj.aiMbetur > 0 ? ' <span class="px-sj-mbetur">' + esc(t('bAIMbetur').replace('{n}', sj.aiMbetur)) + '</span>' : '') + '</button>';
+      var kuti = duke ? '<div class="px-ai-kuti"><span class="px-rrotull" aria-hidden="true"></span> ' + esc(t('aiDuke')) + '</div>' :
+        (s.pergjigja ? '<div class="px-ai-kuti"><div class="px-ai-koka"><b>✦ ' + esc(t('aiTitulli')) + '</b><button type="button" class="px-ai-kopjo" data-kopjo>' + esc(t('aiKopjo')) + '</button></div>' +
+          '<div class="px-ai-tekst">' + esc(s.pergjigja) + '</div><small>' + esc(t('aiShenim')) + '</small></div>' : '') +
+        (sj.aiGabim && sj.aiGabim.url === s.url ? '<p class="px-studio-stat px-keq" style="margin:6px 0 0">' + esc(sj.aiGabim.teksti) + '</p>' : '');
+      return '<article class="px-karta px-karta-' + esc(s.statusi) + '" data-url="' + esc(s.url) + '" data-b="' + esc(s.b || '') + '" tabindex="0">' +
         '<div class="px-karta-koka"><span>' + esc(s.burimi) + (s.vendi && s.vendi !== s.burimi ? ' · ' + esc(s.vendi) : '') + (s.dite !== null ? ' · ' + s.dite + 'd' : '') + '</span><span class="px-pike ' + klasa + '">' + s.pike + '/100</span></div>' +
         '<h3>' + esc(s.titulli) + '</h3><p>' + esc(s.teksti) + '</p>' +
         (s.arsye ? '<div class="px-arsye"><b>' + esc(t('sArsye')) + ':</b> ' + esc(s.arsye) + '</div>' : '') +
+        kuti +
         (s.url ? '<a class="px-lidhje" data-burimi="' + esc(s.b || '') + '" href="' + esc(s.url) + '" target="_blank" rel="noopener noreferrer nofollow">' + esc(t('sHape')) + ' →</a>' : '') +
+        // butonat qe mbulojne kufirin poshte majtas te kartes
+        '<div class="px-sj-veprime" role="group" aria-label="' + esc(t('sStatusi')) + '">' + st('saved', s.statusi === 'saved' ? t('stSaved') : t('bSave'), '☆') + st('replied', t('bReplied'), '✓') + st('rejected', s.statusi === 'rejected' ? t('stRejected') : t('bReject'), '✕') + aiBtn + '</div>' +
         '</article>';
     };
     if (this._sj.gjendja !== 'gati') return '';
     if (!SINJALE.length) return '<div class="px-bosh">' + esc(t('sAsnjeFort')) + '</div>';
-    if (!lista.length) return '<div class="px-bosh">' + esc(t('sAsnje')) + '</div>';
+    if (!lista.length) return '<p class="px-numri-sinjaleve">' + esc(t('sShfaqen').replace('{n}', 0)) + '</p><div class="px-bosh">' + esc(t('sAsnje')) + '</div>';
     void burimet; void gj;
     // Prova falas: shfaqen te gjitha rezultatet me 40+ (nga me te mirat te me te dobetat); numri ndryshon sipas filtrave
-    return '<p class="px-numri-sinjaleve">' + esc(lista.length === 1 ? t('sShfaqen1') : t('sShfaqen').replace('{n}', lista.length)) + '</p>' +
+    var limit = sj.aiLimit ? '<div class="px-paralajmero" role="alert"><p><b>' + esc(t('aiLimitTitulli')) + '</b></p><ol class="px-kushtet"><li>' + esc(t('pFundi1')) + '</li><li>' + esc(t('pFundi2')) + '</li><li>' + esc(t('pFundi3')) + '</li></ol>' +
+      '<button class="px-hyrje" data-e="hyr-sinjale2">' + SVG_HYRJE + '<span>' + esc(t('eHyr')) + '</span>' + SVG_DJATHTAS + '</button></div>' : '';
+    return limit + '<p class="px-numri-sinjaleve">' + esc(lista.length === 1 ? t('sShfaqen1') : t('sShfaqen').replace('{n}', lista.length)) + '</p>' +
       '<div class="px-lista">' + lista.map(karta).join('') + '</div>';
   };
 
@@ -809,9 +864,45 @@
       burimet.map(function (b) { return '<option' + (self._filtri.burimi === b ? ' selected' : '') + '>' + esc(b) + '</option>'; }).join('') + '</select></div>' +
       '<div><label class="px-etiketa">' + esc(t('sPikeMin')) + '</label><select class="px-select" data-filtri="min">' +
       [[40, t('sCdoPike')], [60, '60+'], [80, '80+']].map(function (o) { return '<option value="' + o[0] + '"' + (self._filtri.min === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></div>' +
+      '<div><label class="px-etiketa">' + esc(t('sStatusi')) + '</label><select class="px-select" data-filtri="statusi">' +
+      [['all', t('stAll')], ['new', t('stNew')], ['saved', t('stSaved')], ['replied', t('stReplied')], ['rejected', t('stRejected')]].map(function (o) {
+        var n = o[0] === 'all' ? SINJALE.length : SINJALE.filter(function (x) { return x.statusi === o[0]; }).length;
+        return '<option value="' + o[0] + '"' + (self._filtri.statusi === o[0] ? ' selected' : '') + '>' + esc(o[1]) + ' (' + n + ')</option>';
+      }).join('') + '</select></div>' +
       '</div>' : '') +
       '<div data-vendi="sinjalet">' + this._htmlSinjalet() + '</div>' +
       (!SINJALE.length ? hyrje : '');
+  };
+  // Statusi: klikimi i statusit aktiv e kthen sinjalin te "New"
+  PxSinjaleEmail.prototype._statusiSinjalit = function (url, statusi) {
+    var self = this, x = SINJALE.filter(function (s) { return s.url === url; })[0]; if (!x) return;
+    var iri = x.statusi === statusi ? 'new' : statusi, vjeter = x.statusi;
+    x.statusi = iri; this._rivizatoSinjalet();
+    fetch(this._api() + '/sinjale/statusi', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seanca: pxseSeanca(), domaini: this._sj.domaini, url: url, statusi: iri }) })
+      .then(function (r) { if (!r.ok) throw new Error('x'); })
+      .catch(function () { x.statusi = vjeter; self._rivizatoSinjalet(); });
+  };
+  // Pergjigje me AI (3 falas ne prove; pastaj kerkohet hyrja dhe hapat e regjistrimit)
+  PxSinjaleEmail.prototype._pergjigjeAI = function (url) {
+    var self = this, sj = this._sj, x = SINJALE.filter(function (s) { return s.url === url; })[0]; if (!x || sj.aiDuke) return;
+    if (sj.aiMbetur <= 0) { sj.aiLimit = true; this._rivizatoSinjalet(); var p = this._rrenja.querySelector('[data-vendi="sinjalet"] .px-paralajmero'); if (p && p.scrollIntoView) p.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
+    sj.aiDuke = url; sj.aiGabim = null; this._rivizatoSinjalet();
+    fetch(this._api() + '/sinjale/pergjigje', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seanca: pxseSeanca(), domaini: sj.domaini, url: url }) })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (o) {
+        sj.aiDuke = '';
+        if (o.ok && o.j.ok) { x.pergjigja = o.j.pergjigja; sj.aiMbetur = o.j.mbetur; }
+        else if (o.j.limit) { sj.aiMbetur = 0; sj.aiLimit = true; }
+        else sj.aiGabim = { url: url, teksti: o.j.error || 'Error' };
+        self._rivizatoSinjalet();
+      })
+      .catch(function (e) { sj.aiDuke = ''; sj.aiGabim = { url: url, teksti: String(e && e.message || e) }; self._rivizatoSinjalet(); });
+  };
+  PxSinjaleEmail.prototype._kopjoPergjigjen = function (btn, karta) {
+    var t = this._t.bind(this), tekst = (karta.querySelector('.px-ai-tekst') || {}).textContent || '';
+    var u = function () { btn.textContent = t('aiKopjuar'); btn.classList.add('px-kopjuar'); setTimeout(function () { btn.textContent = t('aiKopjo'); btn.classList.remove('px-kopjuar'); }, 1800); };
+    var rezerve = function () { var a = document.createElement('textarea'); a.value = tekst; a.style.position = 'fixed'; a.style.opacity = '0'; document.body.appendChild(a); a.select(); try { document.execCommand('copy'); } catch (e) {} a.remove(); u(); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(tekst).then(u, rezerve); else rezerve();
   };
   PxSinjaleEmail.prototype._rivizatoSinjalet = function () {
     var z = this._rrenja.querySelector('[data-vendi="sinjale-zona"]'); if (!z) return;
@@ -822,7 +913,7 @@
     r.querySelectorAll('[data-vendi="sinjale-zona"] [data-filtri]').forEach(function (s) {
       s.addEventListener('change', function () {
         var k = s.getAttribute('data-filtri');
-        self._filtri[k] = k === 'burimi' ? s.value : Number(s.value);
+        self._filtri[k] = k === 'burimi' || k === 'statusi' ? s.value : Number(s.value);
         var l = r.querySelector('[data-vendi="sinjalet"]'); if (l) l.innerHTML = self._htmlSinjalet();
       });
     });
@@ -830,18 +921,35 @@
     r.querySelectorAll('[data-vendi="sinjale-zona"]').forEach(function (z) {
       if (z._ndegjuesPostimi) return; z._ndegjuesPostimi = true;
       z.addEventListener('click', function (ev) {
-        var a = ev.target.closest && ev.target.closest('a.px-lidhje[data-burimi]');
-        if (a) pxseNgjarje(self._api(), 'klik_postim', 'sinjale', a.getAttribute('data-burimi'));
+        var c = function (sel) { return ev.target.closest && ev.target.closest(sel); };
+        var karta = c('article.px-karta'); var url = karta && karta.getAttribute('data-url');
+        if (c('[data-e="hyr-sinjale2"]')) {
+          pxseNgjarje(self._api(), 'klik_hyr', 'sinjale');
+          self.dispatchEvent(new CustomEvent('px-veprim', { detail: { veprimi: 'hyr', nga: 'sinjale', domaini: self._sj.domaini || '', seanca: pxseSeanca() }, bubbles: true, composed: true }));
+          return;
+        }
+        if (c('[data-st]')) { ev.preventDefault(); self._statusiSinjalit(url, c('[data-st]').getAttribute('data-st')); return; }
+        if (c('[data-ai]')) { ev.preventDefault(); self._pergjigjeAI(url); return; }
+        if (c('[data-kopjo]')) { ev.preventDefault(); self._kopjoPergjigjen(c('[data-kopjo]'), karta); return; }
+        var a = c('a.px-lidhje[data-burimi]');
+        if (a) { pxseNgjarje(self._api(), 'klik_postim', 'sinjale', a.getAttribute('data-burimi')); return; }
+        if (c('.px-ai-kuti')) return; // teksti i pergjigjes zgjidhet/kopjohet, nuk hap postimin
+        // e gjithe karta e klikueshme: hap postimin ne skede te re
+        if (karta && url && !(window.getSelection && String(window.getSelection()).length)) {
+          pxseNgjarje(self._api(), 'klik_postim', 'sinjale', karta.getAttribute('data-b'));
+          window.open(url, '_blank', 'noopener,noreferrer');
+        }
+      });
+      z.addEventListener('keydown', function (ev) {
+        if (ev.key !== 'Enter') return;
+        var k = ev.target.matches && ev.target.matches('article.px-karta') ? ev.target : null;
+        if (k && k.getAttribute('data-url')) { pxseNgjarje(self._api(), 'klik_postim', 'sinjale', k.getAttribute('data-b')); window.open(k.getAttribute('data-url'), '_blank', 'noopener,noreferrer'); }
       });
     });
     r.querySelectorAll('[data-vendi="sinjale-zona"] [data-konfirmo]').forEach(function (b) {
       b.addEventListener('click', function () { self._konfirmoLlojin(b.getAttribute('data-konfirmo')); });
     });
-    var h2 = r.querySelector('[data-e="hyr-sinjale2"]');
-    if (h2) h2.addEventListener('click', function () {
-      pxseNgjarje(self._api(), 'klik_hyr', 'sinjale');
-      self.dispatchEvent(new CustomEvent('px-veprim', { detail: { veprimi: 'hyr', nga: 'sinjale', domaini: self._sj.domaini || '', seanca: pxseSeanca() }, bubbles: true, composed: true }));
-    });
+    // (butonat "Sign in" brenda zones trajtohen nga ndegjuesi i perbashket i zones me lart)
   };
   // Vendos gjendjen nga pergjigja e serverit dhe vazhdon te pyese derisa kerkimi te mbaroje.
   PxSinjaleEmail.prototype._gjendjaSinjaleve = function (ok, j) {
@@ -852,7 +960,7 @@
     else if (!ok || j.ok === false) { sj.gjendja = 'gabim'; sj.gabim = j.error || 'Error'; }
     else {
       sj.gjendja = j.gjendja === 'asnje' ? '' : j.gjendja; sj.hapi = j.hapi || ''; sj.gabim = j.error || ''; sj.lloji = j.lloji || sj.lloji;
-      if (j.gjendja === 'gati') { sj.numri = j.numri || 0; pxseSinjaleNgaServeri(j.rezultatet); }
+      if (j.gjendja === 'gati') { sj.numri = j.numri || 0; sj.aiMbetur = j.pergjigjeMbetur == null ? 3 : j.pergjigjeMbetur; pxseSinjaleNgaServeri(j.rezultatet, j.statuset, j.pergjigjet); }
       if (['analiza', 'kerkim', 'vleresim'].indexOf(j.gjendja) >= 0) {
         this._sjOra = setTimeout(function () {
           if (!self.isConnected) return;
