@@ -366,6 +366,7 @@ module.exports = function (app, pool) {
       await pool.query("INSERT INTO pxse_prova_domaine (domaini, sherbimi, seanca) VALUES ($1,'sinjale',$2) ON CONFLICT (domaini, sherbimi) DO NOTHING", [p.domaini, p.seanca]);
       await pool.query("INSERT INTO pxse_prova_rezultate (seanca, ip_hash, domaini, sherbimi, te_dhenat) VALUES ($1,$2,$3,'sinjale',$4)", [p.seanca, p.ipHash, p.domaini, JSON.stringify(teDhenat)]);
       Object.assign(p, { gjendja: 'gati', hapi: '', rezultatet, numri: lista.length, burimet });
+      pool.query('INSERT INTO pxse_ngjarjet (lloji, nga, seanca, biznes_id) VALUES ($1,$2,$3,$4)', ['studim_sinjale', 'sinjale', p.seanca, null]).catch(() => {}); // analitika
     } catch (e) {
       p.gjendja = 'gabim'; p.gabim = e.paNumerim ? e.message : 'Something went wrong. Try again.';
       console.error('pxse sinjalet:', e.message);
