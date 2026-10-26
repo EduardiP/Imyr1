@@ -10,7 +10,7 @@
     '.pxad-btn{padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:#0e1116;color:var(--txt);cursor:pointer;font-size:13px;font-family:inherit}',
     '.pxad-btn.on{background:#3b82f6;border-color:#3b82f6;color:#fff}',
     '.pxad-tbl{border:1px solid var(--line);border-radius:10px;overflow:auto;max-height:440px}',
-    '.pxad-tbl table{width:100%;border-collapse:collapse;font-size:13px;min-width:980px}',
+    '.pxad-tbl table{width:100%;border-collapse:collapse;font-size:13px;min-width:1080px}',
     '.pxad-tbl th{position:sticky;top:0;background:#161b22;color:#8b949e;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;text-align:right;padding:10px;border-bottom:1px solid var(--line);white-space:normal;vertical-align:bottom}',
     '.pxad-tbl th:first-child,.pxad-tbl td:first-child{text-align:left;white-space:nowrap}',
     '.pxad-tbl td{padding:9px 10px;border-bottom:1px solid #1c2230;text-align:right;font-variant-numeric:tabular-nums}',
@@ -49,15 +49,16 @@
     ['login', 'Login real'],
     ['snippet', 'Snippet i lidhur pas login'],
     ['email_dergues', 'Email dërgues i lidhur pas login'],
-    ['rikthim', 'Rikthime'],
+    ['rikthim', 'Rikthime (domain i përdorur, dhënë përsëri)'],
     ['hyrje_e_re', 'Hyrje për herë të parë'],
-    ['prova', 'Prova falas e përdorur (domaine)']
+    ['klik_studio', 'Klikime "✦ Write my email with AI"'],
+    ['prova', 'Email-e të krijuara me AI (të përfunduara)']
   ];
   var KUBAT = [
-    ['hyrje', 'Hyrje në faqe', 'të reja + rikthime'],
+    ['hyrje', 'Hyrje në faqe', 'të gjitha hapjet e faqes (të reja + përsëri pas 30 min)'],
     ['hyrje_e_re', 'Hyrje të reja', 'hera e parë e një shfletuesi'],
     ['login', 'Regjistrime / login reale', 'nga seksioni falas (email + sinjale)'],
-    ['rikthim', 'Rikthime', 'hapje e re pas më shumë se 30 min']
+    ['rikthim', 'Rikthime', 'dhanë përsëri një domain që e kishin përdorur']
   ];
   var MUAJT = ['jan', 'shk', 'mar', 'pri', 'maj', 'qer', 'kor', 'gus', 'sht', 'tet', 'nën', 'dhj'];
 
@@ -140,7 +141,7 @@
       }).join('') +
       (rr.length > 1 ? '<tr class="pxad-tot"><td>Gjithsej</td>' + KOLONAT.map(function (k) { return qeliza(d.gjithsej[k[0]], k[0] === 'email_dergues' ? 'Nuk është ndërtuar ende' : ''); }).join('') + '</tr>' : '') +
       '</tbody></table></div>' +
-      '<p class="pxad-shenim">"Snippet i lidhur pas login": llogaritë që erdhën nga prova e email-eve atë ditë dhe sot kanë snippet aktiv (jo të pauzuar). "Email dërgues": shfaqet kur të ndërtohet lidhja e email-it në dashboard.</p>';
+      '<p class="pxad-shenim">"Email-e të krijuara me AI": çdo herë që AI e përfundoi email-in; secila përdor provën falas të një domaini (kthimi me të njëjtin domain nuk numërohet, sepse AI nuk punon përsëri). "Snippet i lidhur pas login": llogaritë që erdhën nga prova e email-eve atë ditë dhe sot kanë snippet aktiv (jo të pauzuar). "Email dërgues": shfaqet kur të ndërtohet lidhja e email-it në dashboard.</p>';
     el('pxadTabela').innerHTML = html;
   }
   function kubat(d) {
