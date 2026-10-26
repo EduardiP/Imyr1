@@ -397,7 +397,7 @@
     SINJALE.length = 0;
     (lista || []).forEach(function (x) {
       var t0 = Date.parse(x.publikuar || '');
-      SINJALE.push({ burimi: PXSE_BURIMET[x.burimi] || x.burimi, vendi: x.vendi || '', dite: isNaN(t0) ? null : Math.max(0, Math.floor((Date.now() - t0) / 86400000)),
+      SINJALE.push({ b: x.burimi, burimi: PXSE_BURIMET[x.burimi] || x.burimi, vendi: x.vendi || '', dite: isNaN(t0) ? null : Math.max(0, Math.floor((Date.now() - t0) / 86400000)),
         pike: Number(x.pike) || 0, titulli: x.titulli || '', teksti: x.teksti || '', arsye: x.arsye || '', url: /^https:\/\//.test(x.url || '') ? x.url : '' });
     });
   }
@@ -697,8 +697,8 @@
   }
 
   // Analitika e admin-it: hyrja ne faqe, klikimi i ✕ te stickerit dhe i "Sign in" (pa te dhena personale).
-  function pxseNgjarje(api, lloji, nga) {
-    try { fetch(api + '/ngjarje', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seanca: pxseSeanca(), lloji: lloji, nga: nga || 'email' }) }).catch(function () {}); } catch (e) {}
+  function pxseNgjarje(api, lloji, nga, burimi) {
+    try { fetch(api + '/ngjarje', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seanca: pxseSeanca(), lloji: lloji, nga: nga || 'email', burimi: burimi || undefined }) }).catch(function () {}); } catch (e) {}
   }
 
   function PxSinjaleEmail() { return Reflect.construct(HTMLElement, [], PxSinjaleEmail); }
@@ -761,7 +761,7 @@
         '<div class="px-karta-koka"><span>' + esc(s.burimi) + (s.vendi && s.vendi !== s.burimi ? ' · ' + esc(s.vendi) : '') + (s.dite !== null ? ' · ' + s.dite + 'd' : '') + '</span><span class="px-pike ' + klasa + '">' + s.pike + '/100</span></div>' +
         '<h3>' + esc(s.titulli) + '</h3><p>' + esc(s.teksti) + '</p>' +
         (s.arsye ? '<div class="px-arsye"><b>' + esc(t('sArsye')) + ':</b> ' + esc(s.arsye) + '</div>' : '') +
-        (s.url ? '<a class="px-lidhje" href="' + esc(s.url) + '" target="_blank" rel="noopener noreferrer nofollow">' + esc(t('sHape')) + ' →</a>' : '') +
+        (s.url ? '<a class="px-lidhje" data-burimi="' + esc(s.b || '') + '" href="' + esc(s.url) + '" target="_blank" rel="noopener noreferrer nofollow">' + esc(t('sHape')) + ' →</a>' : '') +
         '</article>';
     };
     if (this._sj.gjendja !== 'gati') return '';
@@ -822,6 +822,14 @@
         var l = r.querySelector('[data-vendi="sinjalet"]'); if (l) l.innerHTML = self._htmlSinjalet();
       });
     });
+    // analitika: klikimi i "Open post" (vetem numri dhe burimi)
+    r.querySelectorAll('[data-vendi="sinjale-zona"]').forEach(function (z) {
+      if (z._ndegjuesPostimi) return; z._ndegjuesPostimi = true;
+      z.addEventListener('click', function (ev) {
+        var a = ev.target.closest && ev.target.closest('a.px-lidhje[data-burimi]');
+        if (a) pxseNgjarje(self._api(), 'klik_postim', 'sinjale', a.getAttribute('data-burimi'));
+      });
+    });
     r.querySelectorAll('[data-vendi="sinjale-zona"] [data-konfirmo]').forEach(function (b) {
       b.addEventListener('click', function () { self._konfirmoLlojin(b.getAttribute('data-konfirmo')); });
     });
@@ -855,6 +863,8 @@
   };
   PxSinjaleEmail.prototype._kerkoSinjale = function (d) {
     var sj = this._sj, self = this;
+    pxseNgjarje(this._api(), 'klik_sinjale', 'sinjale'); // analitika: klikimi i "✦ Try it free: find interest signals"
+
     sj.domaini = d; sj.gjendja = 'nis'; sj.hapi = ''; sj.gabim = ''; SINJALE.length = 0; this._rivizatoSinjalet();
     fetch(this._api() + '/sinjale', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ domaini: d, seanca: pxseSeanca() }) })
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; }); })
