@@ -273,6 +273,8 @@ module.exports = function (app, pool, iLoguar) {
         ikona: faqja.ikona || ''
       };
       await pool.query("INSERT INTO pxse_prova_domaine (domaini, sherbimi, seanca) VALUES ($1,'email',$2) ON CONFLICT (domaini, sherbimi) DO NOTHING", [domaini, b.seanca]);
+      // Analitika e admin-it (pxse-admin-analitika.js): prova falas e email-eve u perdor per kete domain
+      pool.query('INSERT INTO pxse_ngjarjet (lloji, nga, seanca, biznes_id) VALUES ($1,$2,$3,$4)', ['studim_email', 'email', b.seanca, null]).catch(() => {});
       await pool.query("INSERT INTO pxse_prova_rezultate (seanca, ip_hash, domaini, sherbimi, te_dhenat) VALUES ($1,$2,$3,'email',$4)",
         [b.seanca, ipHash, domaini, JSON.stringify(pergjigja)]);
       res.json(pergjigja);
@@ -297,6 +299,7 @@ module.exports = function (app, pool, iLoguar) {
         `INSERT INTO pxse_seanca_llogaria (seanca, biznes_id, domaini, nga) VALUES ($1,$2,$3,$4)
          ON CONFLICT (seanca) DO NOTHING RETURNING biznes_id`,
         [b.seanca, req.biznesId, String(b.domaini || '').slice(0, 253) || null, b.nga === 'sinjale' ? 'sinjale' : 'email']);
+      if (r.rows.length) pool.query('INSERT INTO pxse_ngjarjet (lloji, nga, seanca, biznes_id) VALUES ($1,$2,$3,$4)', ['login', b.nga === 'sinjale' ? 'sinjale' : 'email', b.seanca, req.biznesId]).catch(() => {}); // analitika: login real nga seksioni falas
       if (!r.rows.length) {
         const e = await pool.query('SELECT biznes_id FROM pxse_seanca_llogaria WHERE seanca=$1', [b.seanca]);
         if (!e.rows.length || e.rows[0].biznes_id !== req.biznesId) return res.status(409).json({ error: 'Session already linked.' });
