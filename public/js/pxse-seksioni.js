@@ -696,6 +696,11 @@
     return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
   }
 
+  // Analitika e admin-it: hyrja ne faqe, klikimi i ✕ te stickerit dhe i "Sign in" (pa te dhena personale).
+  function pxseNgjarje(api, lloji, nga) {
+    try { fetch(api + '/ngjarje', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seanca: pxseSeanca(), lloji: lloji, nga: nga || 'email' }) }).catch(function () {}); } catch (e) {}
+  }
+
   function PxSinjaleEmail() { return Reflect.construct(HTMLElement, [], PxSinjaleEmail); }
   PxSinjaleEmail.prototype = Object.create(HTMLElement.prototype);
   PxSinjaleEmail.prototype.constructor = PxSinjaleEmail;
@@ -719,6 +724,7 @@
       this._neResize = function () { selfL._lartesia(); };
       window.addEventListener('resize', this._neResize);
       this._ngarkoKategorite();
+      pxseNgjarje(this._api(), 'vizite');
     }
     // Ne ekrane te ngushta (telefon) 50/50 eshte shume ngushte: fillon me pjesen e majte te plote.
     var gj0 = this.getBoundingClientRect().width;
@@ -821,6 +827,7 @@
     });
     var h2 = r.querySelector('[data-e="hyr-sinjale2"]');
     if (h2) h2.addEventListener('click', function () {
+      pxseNgjarje(self._api(), 'klik_hyr', 'sinjale');
       self.dispatchEvent(new CustomEvent('px-veprim', { detail: { veprimi: 'hyr', nga: 'sinjale', domaini: self._sj.domaini || '', seanca: pxseSeanca() }, bubbles: true, composed: true }));
     });
   };
@@ -1242,6 +1249,7 @@
       x.setAttribute('aria-label', this._t('pHiqStickerin')); x.title = this._t('pHiqStickerin');
       x.addEventListener('click', function (ev) {
         ev.preventDefault(); ev.stopPropagation();
+        pxseNgjarje(self._api(), 'klik_x');
         em.njoftim = 'fundi'; self._rivizatoEmail();
         var p = self._rrenja.querySelector('.px-paralajmero'); if (p && p.scrollIntoView) p.scrollIntoView({ block: 'center', behavior: 'smooth' });
       });
@@ -1458,6 +1466,7 @@
     qa('[data-e="hyr"]').forEach(function (b) {
       b.addEventListener('click', function () {
         // Ne projektin real faqja e degjon kete ngjarje dhe hap regjistrimin / hyrjen.
+        pxseNgjarje(self._api(), 'klik_hyr', 'email');
         self.dispatchEvent(new CustomEvent('px-veprim', { detail: { veprimi: 'hyr', nga: 'email', domaini: em.domaini || '', seanca: pxseSeanca() }, bubbles: true, composed: true }));
       });
     });
@@ -1552,6 +1561,7 @@
       self._kerkoSinjale(d);
     });
     r.querySelector('[data-e="hyr-sinjale"]').addEventListener('click', function () {
+      pxseNgjarje(self._api(), 'klik_hyr', 'sinjale');
       var dS = String((forma.domain && forma.domain.value) || self._em.domaini || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/[\/?#].*$/, '');
       self.dispatchEvent(new CustomEvent('px-veprim', { detail: { veprimi: 'hyr', nga: 'sinjale', domaini: dS, seanca: pxseSeanca() }, bubbles: true, composed: true }));
     });
