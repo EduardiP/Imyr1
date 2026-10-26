@@ -9,11 +9,11 @@
 //  3. Kerkimet sipas rruges, te gjitha njekohesisht, 5 muajt e fundit:
 //     Termat kerkohen PA thonjeza (sipas kuptimit, jo fjali identike); filtrimin e sakte e ben AI ne fund.
 //       B2B: Reddit termi 1, Reddit termi 2, Indie Hackers (termi 1 OR termi 2)  = 3 kredite Serper
-//            Hacker News: termi 1 (+ termi 2 kur termi 1 sjell me pak se 10), vetem Ask HN + komente, sipas pershtatshmerise  = falas
-//            Stack Exchange: termat 1 dhe 2 si "pyetje te ngjashme" (/similar) ne seksionet e zgjedhura nga AI
+//            Hacker News: te 7 termat, secili me vete (20 per term), vetem Ask HN + komente, sipas pershtatshmerise  = falas
+//            Stack Exchange: te 7 termat si "pyetje te ngjashme" (/similar, 5 per term) ne cdo seksion te zgjedhur nga AI
 //            (kur AI s'zgjedh asnje: softwarerecs, webapps, webmasters per B2B; money, fitness, travel per B2C)  = falas
 //       B2C: Reddit termi 1, termi 2, termat 3-7 me OR (sa nxene ne ~30 fjale)  = 3 kredite Serper
-//            Stack Exchange: si me lart, ne seksione per individe. Pa Indie Hackers dhe pa Hacker News.
+//            Stack Exchange: si me lart (te 7 termat), ne seksione per individe. Pa Indie Hackers dhe pa Hacker News.
 //       B2B dhe B2C: Google Alerts: AI zgjedh deri 10 alerte (nga ato te lidhura) dhe merren sinjalet e tyre te ruajtura (deri 3 jave)  = falas
 //     (Bluesky nuk eshte ketu: shtohet me vone.)
 //  4. Ne fund, AI vlereson te gjitha rezultatet bashke (0-100, pikete i llogarit kodi nga pergjigjet po/jo).
@@ -29,8 +29,9 @@ const PXSJ_MUAJ = 5;
 const PXSJ_PRAGU = 40;
 const PXSJ_MODELI_ANALIZA = 'gpt-5-mini';
 const PXSJ_MODELI_VLERESIMI = 'gpt-5-nano';
-const PXSJ_SE_PER_KERKESE = 10;   // pyetje Stack Exchange per nje kerkese (term x seksion)
-const PXSJ_MAKS_VLERESIM = 160;   // kufi i rezultateve qe i dergohen AI-se per vleresim (kosto)
+const PXSJ_SE_PER_KERKESE = 5;    // pyetje Stack Exchange per nje kerkese (term x seksion); kerkohen te 7 termat
+const PXSJ_HN_PER_TERM = 20;       // postime Hacker News per term; kerkohen te 7 termat
+const PXSJ_MAKS_VLERESIM = 250;   // kufi i rezultateve qe i dergohen AI-se per vleresim (kosto)
 const PXSJ_KUFI_ORE = 10, PXSJ_DOMAINE_DITE = 5;
 
 const pxsjSerperKey = () => String(process.env.SERPER_API_KEY || '').trim();
@@ -179,7 +180,7 @@ function pxsjPyetjaR3(termat) {
 async function pxsjKerkoHN(termi) {
   const nga = Math.floor(pxsjNgaKoha().getTime() / 1000);
   // "search" (jo "search_by_date"): renditja sipas pershtatshmerise per gjithe 5 muajt; vetem Ask HN dhe komente
-  const p = new URLSearchParams({ query: termi, tags: '(ask_hn,comment)', numericFilters: 'created_at_i>' + nga, hitsPerPage: '50' });
+  const p = new URLSearchParams({ query: termi, tags: '(ask_hn,comment)', numericFilters: 'created_at_i>' + nga, hitsPerPage: String(PXSJ_HN_PER_TERM) });
   const r = await pxseFetchKohe('https://hn.algolia.com/api/v1/search?' + p.toString(), { headers: { accept: 'application/json', 'user-agent': 'PhronexusAI (signals)' } }, 20000);
   if (!r.ok) throw new Error('Hacker News: HTTP ' + r.status);
   const d = await r.json().catch(() => null);
@@ -374,15 +375,16 @@ module.exports = function (app, pool) {
     }
     // Google Alerts: sinjalet e ruajtura (deri 3 jave) te alerteve qe zgjodhi AI; pa kosto
     if (a.alertet && a.alertet.length) kerkesat.push({ burimi: 'alerts', fn: () => pxsjSinjaletEAlerteve(a.alertet) });
-    // Hacker News: termi 1; nese sjell me pak se 10, kerkohet edhe termi 2 (falas)
-    if (b2b) kerkesat.push({ burimi: 'hn', fn: async () => { const l = await pxsjKerkoHN(t[0]); return l.length < 10 && t[1] ? l.concat(await pxsjKerkoHN(t[1]).catch(() => [])) : l; } });
+    // Hacker News: te 7 termat, secili me vete (falas); dublikatat hiqen me pas
+    if (b2b) t.forEach(termi => kerkesat.push({ burimi: 'hn', fn: () => pxsjKerkoHN(termi) }));
     // Stack Exchange: seksionet e AI-se; kur AI s'zgjodhi asnje, nje liste baze sipas llojit (vetem ato qe ekzistojne)
     let seksionet = a.se_faqet;
     if (!seksionet.length) {
       const reale = new Set((await pxsjSeksionetSE()).map(x => x.kodi));
       seksionet = (b2b ? ['softwarerecs', 'webapps', 'webmasters'] : ['money', 'fitness', 'travel']).filter(x => !reale.size || reale.has(x));
     }
-    seksionet.forEach(s => t.slice(0, 2).forEach(termi => kerkesat.push({ burimi: 'se', fn: () => pxsjKerkoSE(termi, s) })));
+    // te 7 termat ne cdo seksion (falas; me STACKEXCHANGE_KEY kuota eshte 10,000 kerkesa ne dite)
+    seksionet.forEach(s => t.forEach(termi => kerkesat.push({ burimi: 'se', fn: () => pxsjKerkoSE(termi, s) })));
     const rez = await pxsjParalel(kerkesat.map(k => k.fn), 6);
     kredite.n = kr.reddit.n + kr.ih.n;
     await pxsjShtoKredite(kredite.n);
