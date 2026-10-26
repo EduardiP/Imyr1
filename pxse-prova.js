@@ -223,6 +223,8 @@ module.exports = function (app, pool, iLoguar) {
 
       // "Nje prove per domain": nese domaini eshte perdorur nga nje seance tjeter, prova falas ka mbaruar.
       const perdor = await pool.query("SELECT seanca FROM pxse_prova_domaine WHERE domaini=$1 AND sherbimi='email'", [domaini]);
+      // Analitika: "rikthim" = dikush jep perseri nje domain qe e ka perdorur proven falas
+      if (perdor.rows.length) pool.query('INSERT INTO pxse_ngjarjet (lloji, nga, seanca, biznes_id) VALUES ($1,$2,$3,$4)', ['rikthim_domain', 'email', b.seanca, null]).catch(() => {});
       if (perdor.rows.length && perdor.rows[0].seanca !== b.seanca) return res.status(409).json({ perdorur: true, domaini });
       if (perdor.rows.length) {
         // E njejta prove kthehet: jepet studimi i ruajtur (pa thirrje te re AI). Nese u fshi pas 1 jave, prova ka perfunduar.
