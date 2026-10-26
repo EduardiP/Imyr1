@@ -405,6 +405,7 @@ module.exports = function (app, pool) {
       const kyc = b.seanca + '|' + domaini, ne = punet.get(kyc);
       if (ne && ne.gjendja !== 'gabim') return res.json(pamjaPune(ne));
       const k = await pxsjKontrolloPerdorimin(domaini, b.seanca);
+      if (k) pool.query('INSERT INTO pxse_ngjarjet (lloji, nga, seanca, biznes_id) VALUES ($1,$2,$3,$4)', ['rikthim_domain', 'sinjale', b.seanca, null]).catch(() => {}); // analitika: domain i perdorur, dhene perseri
       if (k && k.perdorur) return res.status(409).json({ perdorur: true, domaini, error: 'The free search for this domain has already been used.' });
       if (k && k.ruajtur) return res.json(pamjaRuajtur(domaini, k.ruajtur));
       if (!pxsjOpenAIKey()) return res.status(503).json({ error: 'Try again in a few minutes.' });
