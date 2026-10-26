@@ -392,7 +392,7 @@
 
   // Sinjalet e verteta vijne nga motori kur te ndertohet kerkimi; tani lista eshte bosh (pa shembuj).
   var SINJALE = []; // mbushet nga rezultatet e kerkimit te vertete (pxseSinjaleNgaServeri)
-  var PXSE_BURIMET = { reddit: 'Reddit', ih: 'Indie Hackers', hn: 'Hacker News', se: 'Stack Exchange' };
+  var PXSE_BURIMET = { reddit: 'Reddit', ih: 'Indie Hackers', hn: 'Hacker News', se: 'Stack Exchange', alerts: 'Google Alerts' };
   function pxseSinjaleNgaServeri(lista) {
     SINJALE.length = 0;
     (lista || []).forEach(function (x) {
