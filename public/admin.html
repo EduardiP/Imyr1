@@ -158,7 +158,7 @@ const $ = id => document.getElementById(id);
 const SECTIONS = [
 { k:'bizneset', l:'Bizneset' },
 { k:'b1', l:'Kombinimet AI' }, { k:'b2', l:'Njoftime' },
-{ k:'b4', l:'Përzgjedhjet' }, { k:'mkt', l:'Marketingu' }
+{ k:'b4', l:'Përzgjedhjet' }, { k:'mkt', l:'Marketingu' }, { k:'pxse', l:'Shërbimet falas' }
 ];
 const MKT_SUB = [
 { k:'dergimet', l:'Dërgimet' }, { k:'analitika', l:'Analitika' }, { k:'emailet', l:'Email-et' }
@@ -216,6 +216,7 @@ if(curSec==='b1'){ renderKombinimet(c); return; }
 if(curSec==='b2'){ renderNjoftime(c); return; }
 if(curSec==='b4'){ renderPerzgjedhjet(c); return; }
 if(curSec==='mkt'){ renderMarketingu(c); return; }
+if(curSec==='pxse'){ if(window.pxseRenderAdmin) pxseRenderAdmin(c); return; } // /js/pxse-admin.js
 const lbl=(SECTIONS.find(s=>s.k===curSec)||{}).l||'';
 c.innerHTML='<div class="wrap"><h2 class="h">'+lbl+'</h2><p class="small" style="margin-top:8px;">Së shpejti.</p></div>';
 }
@@ -2100,5 +2101,6 @@ await Promise.all([mktAnalFushatat(), mktAnalLog()]);
 // MKT-ANALITIKA (fund)
 
 </script>
+<script src="/js/pxse-admin.js?v=1"></script>
 </body>
 </html>
