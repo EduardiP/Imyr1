@@ -272,6 +272,9 @@ module.exports = function (app, pool) {
       perditesuar TIMESTAMPTZ DEFAULT now()
     )`);
   })().catch(e => console.error('pxse-sinjalet migrim:', e.message));
+  // Kolona "lloji" te pxse_prova_domaine (tabela krijohet nga pxse-prova.js): shtohet nje here, kur duhet.
+  let pxsjKolonaGati = null;
+  const pxsjKolonaLloji = () => (pxsjKolonaGati = pxsjKolonaGati || pool.query('ALTER TABLE pxse_prova_domaine ADD COLUMN IF NOT EXISTS lloji TEXT').catch(e => { pxsjKolonaGati = null; }));
   async function pxsjShtoKredite(n) {
     if (!n) return;
     await pool.query(`INSERT INTO pxse_gjendja (celesi, vlera) VALUES ('serper_kredite', $1)
@@ -318,16 +321,17 @@ module.exports = function (app, pool) {
   async function pxsjKerko(p) {
     const a = p.analiza, b2b = a.lloji === 'b2b', t = a.termat, kredite = { n: 0 };
     p.gjendja = 'kerkim'; p.hapi = b2b ? 'Searching Reddit, Indie Hackers, Hacker News and Stack Exchange…' : 'Searching Reddit and Stack Exchange…';
-    const kerkesat = [];
+    const kerkesat = [], kr = { reddit: { n: 0 }, ih: { n: 0 } }; // kreditet Serper sipas burimit (per analitiken e admin-it)
     if (pxsjSerperKey()) {
-      kerkesat.push({ burimi: 'reddit', fn: async () => pxsjNgaReddit(await pxsjSerper(pxsjThonjeza(t[0]) + ' site:reddit.com', kredite)) });
-      kerkesat.push({ burimi: 'reddit', fn: async () => pxsjNgaReddit(await pxsjSerper(pxsjThonjeza(t[1]) + ' site:reddit.com', kredite)) });
-      if (b2b) kerkesat.push({ burimi: 'ih', fn: async () => pxsjNgaIH(await pxsjSerper('(' + pxsjThonjeza(t[0]) + ' OR ' + pxsjThonjeza(t[1]) + ') site:indiehackers.com', kredite)) });
-      else { const q3 = pxsjPyetjaR3(t.slice(2)); if (q3) kerkesat.push({ burimi: 'reddit', fn: async () => pxsjNgaReddit(await pxsjSerper(q3, kredite)) }); }
+      kerkesat.push({ burimi: 'reddit', fn: async () => pxsjNgaReddit(await pxsjSerper(pxsjThonjeza(t[0]) + ' site:reddit.com', kr.reddit)) });
+      kerkesat.push({ burimi: 'reddit', fn: async () => pxsjNgaReddit(await pxsjSerper(pxsjThonjeza(t[1]) + ' site:reddit.com', kr.reddit)) });
+      if (b2b) kerkesat.push({ burimi: 'ih', fn: async () => pxsjNgaIH(await pxsjSerper('(' + pxsjThonjeza(t[0]) + ' OR ' + pxsjThonjeza(t[1]) + ') site:indiehackers.com', kr.ih)) });
+      else { const q3 = pxsjPyetjaR3(t.slice(2)); if (q3) kerkesat.push({ burimi: 'reddit', fn: async () => pxsjNgaReddit(await pxsjSerper(q3, kr.reddit)) }); }
     }
     if (b2b) kerkesat.push({ burimi: 'hn', fn: () => pxsjKerkoHN(t[0]) });
     a.se_faqet.forEach(s => t.slice(0, 2).forEach(termi => kerkesat.push({ burimi: 'se', fn: () => pxsjKerkoSE(termi, s) })));
     const rez = await pxsjParalel(kerkesat.map(k => k.fn), 6);
+    kredite.n = kr.reddit.n + kr.ih.n;
     await pxsjShtoKredite(kredite.n);
     // Bashkimi ne nje liste, pa dublikata (burimi + id)
     const pare = new Set(), lista = [], burimet = {}; let ukerkua = 0; const gabime = [];
@@ -337,6 +341,16 @@ module.exports = function (app, pool) {
       x.v.forEach(r => { const k = r.burimi + '|' + r.id; if (pare.has(k)) return; pare.add(k); lista.push(r); burimet[r.burimi] = (burimet[r.burimi] || 0) + 1; });
     });
     if (gabime.length) console.error('pxse sinjalet (' + p.domaini + '):', gabime.join(' | '));
+    // Analitika e admin-it: numrat ditore te secilit burim (kerkime, rezultate te gjetura, kredite Serper)
+    const perBurim = {};
+    kerkesat.forEach((k, i) => { const x = perBurim[k.burimi] = perBurim[k.burimi] || { kerkime: 0, rezultate: 0 }; if (rez[i] && rez[i].ok) x.kerkime++; });
+    Object.keys(burimet).forEach(k => { (perBurim[k] = perBurim[k] || { kerkime: 0, rezultate: 0 }).rezultate = burimet[k]; });
+    for (const k of Object.keys(perBurim)) {
+      pool.query(`INSERT INTO pxse_burimet_ditore (dita, burimi, tipi, kategoria, kerkime, rezultate, kredite) VALUES ((now() AT TIME ZONE 'Europe/Berlin')::date, $1, $2, '', $3, $4, $5)
+        ON CONFLICT (dita, burimi, tipi, kategoria) DO UPDATE SET kerkime = pxse_burimet_ditore.kerkime + EXCLUDED.kerkime,
+          rezultate = pxse_burimet_ditore.rezultate + EXCLUDED.rezultate, kredite = pxse_burimet_ditore.kredite + EXCLUDED.kredite`,
+        [k, a.lloji, perBurim[k].kerkime, perBurim[k].rezultate, kr[k] ? kr[k].n : 0]).catch(() => {});
+    }
     if (!ukerkua) throw Object.assign(new Error('Search is not available right now. Try again in a few minutes.'), { paNumerim: true });
     p.kredite = kredite.n;
     return { lista, burimet };
@@ -364,9 +378,13 @@ module.exports = function (app, pool) {
       const teDhenat = { pershkrimi: p.analiza.pershkrimi, lloji: p.analiza.lloji, termat: p.analiza.termat, se_faqet: p.analiza.se_faqet,
         rezultatet, numri: lista.length, burimet, kredite: p.kredite || 0 };
       await pool.query("INSERT INTO pxse_prova_domaine (domaini, sherbimi, seanca) VALUES ($1,'sinjale',$2) ON CONFLICT (domaini, sherbimi) DO NOTHING", [p.domaini, p.seanca]);
+      // B2B/B2C mbetet prane domainit (edhe pas fshirjes se provës), qe rikthimet te dihen nese jane B2B apo B2C
+      await pxsjKolonaLloji(); pool.query("UPDATE pxse_prova_domaine SET lloji=$2 WHERE domaini=$1 AND sherbimi='sinjale'", [p.domaini, p.analiza.lloji]).catch(() => {});
       await pool.query("INSERT INTO pxse_prova_rezultate (seanca, ip_hash, domaini, sherbimi, te_dhenat) VALUES ($1,$2,$3,'sinjale',$4)", [p.seanca, p.ipHash, p.domaini, JSON.stringify(teDhenat)]);
       Object.assign(p, { gjendja: 'gati', hapi: '', rezultatet, numri: lista.length, burimet });
-      pool.query('INSERT INTO pxse_ngjarjet (lloji, nga, seanca, biznes_id) VALUES ($1,$2,$3,$4)', ['studim_sinjale', 'sinjale', p.seanca, null]).catch(() => {}); // analitika
+      // analitika: kerkimi u krye dhe sa sinjale (40+) iu dhane vizitorit
+      pool.query('INSERT INTO pxse_ngjarjet (lloji, nga, seanca, tipi) VALUES ($1,$2,$3,$4)', ['studim_sinjale', 'sinjale', p.seanca, p.analiza.lloji]).catch(() => {});
+      pool.query('INSERT INTO pxse_ngjarjet (lloji, nga, seanca, tipi, n) VALUES ($1,$2,$3,$4,$5)', ['sinjale_marre', 'sinjale', p.seanca, p.analiza.lloji, rezultatet.length]).catch(() => {});
     } catch (e) {
       p.gjendja = 'gabim'; p.gabim = e.paNumerim ? e.message : 'Something went wrong. Try again.';
       console.error('pxse sinjalet:', e.message);
@@ -388,11 +406,13 @@ module.exports = function (app, pool) {
   }
 
   async function pxsjKontrolloPerdorimin(domaini, seanca) {
-    const perdor = await pool.query("SELECT seanca FROM pxse_prova_domaine WHERE domaini=$1 AND sherbimi='sinjale'", [domaini]);
+    await pxsjKolonaLloji();
+    const perdor = await pool.query("SELECT seanca, lloji FROM pxse_prova_domaine WHERE domaini=$1 AND sherbimi='sinjale'", [domaini]);
     if (!perdor.rows.length) return null;
-    if (perdor.rows[0].seanca !== seanca) return { perdorur: true };
+    const lloji = perdor.rows[0].lloji || null;
+    if (perdor.rows[0].seanca !== seanca) return { perdorur: true, lloji };
     const r = await pool.query("SELECT te_dhenat FROM pxse_prova_rezultate WHERE seanca=$1 AND domaini=$2 AND sherbimi='sinjale' ORDER BY id DESC LIMIT 1", [seanca, domaini]);
-    return r.rows.length ? { ruajtur: r.rows[0].te_dhenat } : { perdorur: true };
+    return r.rows.length ? { ruajtur: r.rows[0].te_dhenat, lloji } : { perdorur: true, lloji };
   }
 
   // Nis kerkimin (ose kthen gjendjen / rezultatet e ruajtura)
@@ -405,7 +425,7 @@ module.exports = function (app, pool) {
       const kyc = b.seanca + '|' + domaini, ne = punet.get(kyc);
       if (ne && ne.gjendja !== 'gabim') return res.json(pamjaPune(ne));
       const k = await pxsjKontrolloPerdorimin(domaini, b.seanca);
-      if (k) pool.query('INSERT INTO pxse_ngjarjet (lloji, nga, seanca, biznes_id) VALUES ($1,$2,$3,$4)', ['rikthim_domain', 'sinjale', b.seanca, null]).catch(() => {}); // analitika: domain i perdorur, dhene perseri
+      if (k) pool.query('INSERT INTO pxse_ngjarjet (lloji, nga, seanca, tipi) VALUES ($1,$2,$3,$4)', ['rikthim_domain', 'sinjale', b.seanca, k.lloji]).catch(() => {}); // analitika: domain i perdorur, dhene perseri
       if (k && k.perdorur) return res.status(409).json({ perdorur: true, domaini, error: 'The free search for this domain has already been used.' });
       if (k && k.ruajtur) return res.json(pamjaRuajtur(domaini, k.ruajtur));
       if (!pxsjOpenAIKey()) return res.status(503).json({ error: 'Try again in a few minutes.' });
