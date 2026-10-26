@@ -55,6 +55,8 @@
       sJava: 'Last 7 days',
       sMuaji: 'Last 30 days',
       sPese: 'Last 5 months',
+      sShfaqen: 'Showing {n} signals',
+      sShfaqen1: 'Showing 1 signal',
       sPiketTitulli: 'What the score means:',
       sPiketNen: 'AI rates each post from 0 to 100 for how likely the author needs your product now.',
       sPiket80: 'they ask for a tool like yours, often while describing the problem.',
@@ -236,6 +238,8 @@
       sJava: '7 ditët e fundit',
       sMuaji: '30 ditët e fundit',
       sPese: '5 muajt e fundit',
+      sShfaqen: 'Po shfaqen {n} sinjale',
+      sShfaqen1: 'Po shfaqet 1 sinjal',
       sPiketTitulli: 'Çfarë tregojnë pikët:',
       sPiketNen: 'AI i jep çdo postimi 0 deri në 100 pikë, sa e mundshme është që autori të ketë nevojë tani për produktin tënd.',
       sPiket80: 'kërkojnë një mjet si yti, shpesh duke përshkruar problemin.',
@@ -513,6 +517,7 @@
     '.px-mbyllur-cta{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:16px;background:linear-gradient(to bottom,rgba(255,255,255,0),var(--px-sfondi) 40%)}',
     '.px-mbyllur-cta p{margin:0;font-weight:600;max-width:42ch}',
     '.px-bosh{color:var(--px-zbehur);font-size:14px;padding:12px 0}',
+    '.px-numri-sinjaleve{margin:4px 0 10px;font-size:14px;font-weight:600}',
     '.px-piket-shpjegim{font-size:13px;line-height:1.5;color:var(--px-zbehur);background:var(--px-siperfaqja);border-radius:var(--px-rrezja-vogel);padding:10px 12px;margin:0 0 12px}',
     '.px-piket-shpjegim b{color:var(--px-teksti)}',
     '.px-piket-shpjegim ul{list-style:none;margin:6px 0;padding:0;display:grid;gap:4px}',
@@ -752,7 +757,7 @@
   PxSinjaleEmail.prototype._htmlSinjalet = function () {
     var t = this._t.bind(this), f = this._filtri, gj = this._gjuha();
     var lista = SINJALE.filter(function (s) {
-      return s.pike >= 40 && (!f.burimi || s.burimi === f.burimi) && s.pike >= f.min && (s.dite === null ? f.dite >= 150 : s.dite <= f.dite);
+      return s.pike >= 40 && (!f.burimi || s.burimi === f.burimi) && s.pike >= f.min; // pa filter periudhe: te gjitha jane nga 5 muajt e fundit
     }).sort(function (a, b) { return b.pike - a.pike; });
     var burimet = Array.from(new Set(SINJALE.map(function (s) { return s.burimi; })));
     var karta = function (s) {
@@ -768,8 +773,9 @@
     if (!SINJALE.length) return '<div class="px-bosh">' + esc(t('sAsnjeFort')) + '</div>';
     if (!lista.length) return '<div class="px-bosh">' + esc(t('sAsnje')) + '</div>';
     void burimet; void gj;
-    // Prova falas: shfaqen te gjitha rezultatet me 40+ (nga me te mirat te me te dobetat)
-    return '<div class="px-lista">' + lista.map(karta).join('') + '</div>';
+    // Prova falas: shfaqen te gjitha rezultatet me 40+ (nga me te mirat te me te dobetat); numri ndryshon sipas filtrave
+    return '<p class="px-numri-sinjaleve">' + esc(lista.length === 1 ? t('sShfaqen1') : t('sShfaqen').replace('{n}', lista.length)) + '</p>' +
+      '<div class="px-lista">' + lista.map(karta).join('') + '</div>';
   };
 
   // Zona e rezultateve te sinjaleve: gjendja e kerkimit, konfirmimi B2B/B2C, numrat, filtrat dhe lista.
@@ -803,8 +809,6 @@
       burimet.map(function (b) { return '<option' + (self._filtri.burimi === b ? ' selected' : '') + '>' + esc(b) + '</option>'; }).join('') + '</select></div>' +
       '<div><label class="px-etiketa">' + esc(t('sPikeMin')) + '</label><select class="px-select" data-filtri="min">' +
       [[40, t('sCdoPike')], [60, '60+'], [80, '80+']].map(function (o) { return '<option value="' + o[0] + '"' + (self._filtri.min === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></div>' +
-      '<div><label class="px-etiketa">' + esc(t('sPeriudha')) + '</label><select class="px-select" data-filtri="dite">' +
-      [[7, t('sJava')], [30, t('sMuaji')], [150, t('sPese')]].map(function (o) { return '<option value="' + o[0] + '"' + (self._filtri.dite === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></div>' +
       '</div>' : '') +
       '<div data-vendi="sinjalet">' + this._htmlSinjalet() + '</div>' +
       (!SINJALE.length ? hyrje : '');
