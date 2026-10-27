@@ -88,6 +88,12 @@ module.exports = function (app, pool, iLoguar) {
     )`);
     await pool.query('ALTER TABLE pxse_dergimet ADD COLUMN IF NOT EXISTS derguesi_id INT');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_pxse_derg_biz ON pxse_dergimet (biznes_id)');
+    // Domaini i llogarise kur profili i biznesit nuk ka website (profili nuk preket)
+    await pool.query(`CREATE TABLE IF NOT EXISTS pxse_llogaria_domaini (
+      biznes_id INT PRIMARY KEY,
+      domaini TEXT NOT NULL,
+      vendosur_at TIMESTAMPTZ DEFAULT now()
+    )`);
   })().catch(e => console.error('pxse-llogaria migrim:', e.message));
 
   const pxllNgjarje = (lloji, nga, biznesId, n) => pool.query('INSERT INTO pxse_ngjarjet (lloji, nga, seanca, biznes_id' + (n != null ? ', n' : '') + ') VALUES ($1,$2,$3,$4' + (n != null ? ',$5' : '') + ')',
@@ -97,10 +103,23 @@ module.exports = function (app, pool, iLoguar) {
   async function pxllLlogaria(id) {
     const r = await pool.query('SELECT id, emri, website FROM bizneset WHERE id=$1', [id]);
     const b = r.rows[0] || {};
-    const pa = pxsePastroDomain(b.website), domaini = pa ? pa.replace(/^www\./, '') : '';
+    const pa = pxsePastroDomain(b.website);
+    let domaini = pa ? pa.replace(/^www\./, '') : '', ngaProfili = !!domaini;
+    if (!domaini) { try { const x = await pool.query('SELECT domaini FROM pxse_llogaria_domaini WHERE biznes_id=$1', [id]); if (x.rows.length) domaini = x.rows[0].domaini; } catch (e) {} }
     let snippetAktiv = false;
     try { const s = await pool.query('SELECT 1 FROM snippetet WHERE biznes_id=$1 AND snippet_active=true LIMIT 1', [id]); snippetAktiv = s.rows.length > 0; } catch (e) {}
-    return { id, emri: b.emri || '', domaini, snippetAktiv };
+    return { id, emri: b.emri || '', domaini, ngaProfili, snippetAktiv };
+  }
+  // Domaini i dhene nga klienti (vetem kur profili nuk ka website dhe llogaria s'ka ende studim, sinjale ose email dergues)
+  async function pxllVendosDomainin(ll, dhene) {
+    if (ll.ngaProfili || !dhene) return ll;
+    const pa = pxsePastroDomain(dhene), d = pa ? pa.replace(/^www\./, '') : '';
+    if (!d) throw Object.assign(new Error('Enter a valid domain, e.g. yourcompany.com'), { kodi: 400 });
+    if (d === ll.domaini) return ll;
+    const ka = await pool.query(`SELECT (SELECT COUNT(*) FROM pxse_prova_rezultate WHERE biznes_id=$1) + (SELECT COUNT(*) FROM pxse_derguesit WHERE biznes_id=$1) n`, [ll.id]);
+    if (Number(ka.rows[0].n) > 0 && ll.domaini) throw Object.assign(new Error('Your account already uses ' + ll.domaini + '.'), { kodi: 409 });
+    await pool.query('INSERT INTO pxse_llogaria_domaini (biznes_id, domaini) VALUES ($1,$2) ON CONFLICT (biznes_id) DO UPDATE SET domaini=EXCLUDED.domaini, vendosur_at=now()', [ll.id, d]);
+    ll.domaini = d; return ll;
   }
   // Provat falas te ketij domaini qe nuk i takojne askujt (dhe nuk jane fshire ende) i kalojne llogarise
   async function pxllLidhProvat(ll) {
@@ -138,15 +157,17 @@ module.exports = function (app, pool, iLoguar) {
       if (puna && !['gati', 'gabim'].includes(puna.gjendja)) return res.json(Object.assign({}, puna, { rezultatet: undefined, llogariaDomaini: ll.domaini }));
       const rr = await pxllRreshtiSinjaleve(ll.id);
       if (rr) return res.json(pxllPamjaSinjaleve(rr, ll));
-      res.json({ ok: true, gjendja: puna && puna.gjendja === 'gabim' ? 'gabim' : 'asnje', error: puna && puna.error, domaini: ll.domaini, llogariaDomaini: ll.domaini });
+      res.json({ ok: true, gjendja: puna && puna.gjendja === 'gabim' ? 'gabim' : 'asnje', error: puna && puna.error, domaini: ll.domaini, llogariaDomaini: ll.domaini, ngaProfili: ll.ngaProfili });
     } catch (e) { pxllGabim(res, e); }
   });
   // 1 kerkim per llogari (kur nuk ka asnje), per domainin e faqes se llogarise
   app.post('/api/pxse/llogaria/sinjale/kerko', iLoguar, async (req, res) => {
     try {
-      const ll = await pxllLlogaria(req.biznesId); await pxllLidhProvat(ll);
+      const ll = await pxllLlogaria(req.biznesId);
       if (await pxllRreshtiSinjaleve(ll.id)) return res.status(409).json({ lidhur: true, error: 'Your signals are already connected to your account.' });
-      if (!ll.domaini) return res.status(400).json({ paDomain: true, error: 'Add your website in your business profile first.' });
+      await pxllVendosDomainin(ll, (req.body || {}).domaini); await pxllLidhProvat(ll);
+      if (await pxllRreshtiSinjaleve(ll.id)) return res.status(409).json({ lidhur: true, error: 'Your signals are already connected to your account.' });
+      if (!ll.domaini) return res.status(400).json({ paDomain: true, error: 'Enter your website domain first.' });
       const S = app.locals.pxseSinjalet;
       if (!S) return res.status(503).json({ error: 'Try again in a few minutes.' });
       const puna = S.nis(ll.id, pxllSeanca(ll.id), ll.domaini, pxseHashIP(req));
@@ -237,7 +258,7 @@ module.exports = function (app, pool, iLoguar) {
           b.emri, b.domaini FROM pxse_dergimet d JOIN pxse_bizneset b ON b.id = d.marres_id WHERE d.biznes_id=$1 ORDER BY d.ora DESC LIMIT 500`, [ll.id]);
       // Email-i i fundit i derguar (per ta rihapur te "Your email")
       const fundit = await pool.query('SELECT subjekti_burim, trupi_burim, marka, dizajn FROM pxse_dergimet WHERE biznes_id=$1 AND trupi_burim IS NOT NULL ORDER BY id DESC LIMIT 1', [ll.id]);
-      res.json({ ok: true, domaini: ll.domaini, emri: ll.emri, snippetAktiv: ll.snippetAktiv, derguesi: pxllDerguesiPublik(g), celesi: !!pxllCelesi(),
+      res.json({ ok: true, domaini: ll.domaini, ngaProfili: ll.ngaProfili, emri: ll.emri, snippetAktiv: ll.snippetAktiv, derguesi: pxllDerguesiPublik(g), celesi: !!pxllCelesi(),
         studimi: st.rows.length ? st.rows[0].te_dhenat : null,
         fundit: fundit.rows.length ? { subjekti: fundit.rows[0].subjekti_burim, trupi: fundit.rows[0].trupi_burim, marka: fundit.rows[0].marka, dizajn: fundit.rows[0].dizajn } : null,
         totalet: await pxllTotalet(ll.id), ditore: PXLL_DITORE, hapesiraMin: PXLL_HAPESIRA_MIN,
@@ -256,7 +277,11 @@ module.exports = function (app, pool, iLoguar) {
     try {
       if (!String(process.env.OPENAI_API_KEY || '').trim()) return res.status(503).json({ error: 'Try again in a few minutes.' });
       const ll = await pxllLlogaria(req.biznesId);
-      if (!ll.domaini) return res.status(400).json({ paDomain: true, error: 'Add your website in your business profile first.' });
+      await pxllVendosDomainin(ll, (req.body || {}).domaini); await pxllLidhProvat(ll);
+      if (!ll.domaini) return res.status(400).json({ paDomain: true, error: 'Enter your website domain first.' });
+      // Prova falas e ketij domaini (ende pa u fshire) u lidh sapo: jepet ajo, pa thirrje te re AI
+      const ekz = await pool.query("SELECT te_dhenat FROM pxse_prova_rezultate WHERE biznes_id=$1 AND sherbimi='email' AND domaini=$2 ORDER BY id DESC LIMIT 1", [ll.id, ll.domaini]);
+      if (ekz.rows.length && !(req.body || {}).perseri) return res.json(Object.assign({}, ekz.rows[0].te_dhenat, { ngaProva: true }));
       const n = (pxllStudimeSot.get(ll.id) || 0) + 1;
       if (n > PXLL_STUDIME_DITE) return res.status(429).json({ error: 'Daily limit reached. Please try again tomorrow.' });
       pxllStudimeSot.set(ll.id, n);
