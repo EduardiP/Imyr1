@@ -463,27 +463,30 @@
         '<span class="small">' + h(dr.host) + '</span><span style="flex:1"></span><button class="pxp-buton2" data-ndrysho-dergues>Change</button><button class="pxp-buton2" data-shkep>Disconnect</button></div></div>';
     }
     var f = g.formaD || {}, dom = d.domaini || 'yourcompany.com';
+    if (d.domainPlatforme) return '<div class="pxp-karte"><h3><span class="pxp-hapi">1</span> Connect your business email</h3>' +
+      '<div class="pxp-gabim" style="margin:0">The website in your business profile (' + h(d.domaini) + ') is a hosting address, not your business domain. Put your real website (for example your-website.com) in your business profile, then connect an email on it.</div>' +
+      '<div class="pxp-rresht" style="margin-top:10px"><button class="pxp-buton2" data-shko-biznesi>Open business profile</button></div></div>';
     if (!d.domaini) return '<div class="pxp-karte"><h3><span class="pxp-hapi">1</span> Connect your business email</h3>' +
       '<p class="pxp-nen">First enter your website domain in step 2 below. Then you can connect an email on that domain.</p></div>';
-    var shembull = (f.emri || 'Ana from ' + pxpEmriNgaDomain(dom)) + ' <' + (f.email || ('ana@' + dom)) + '>';
+    var shembull = (f.emri || 'Your Name from Your Company') + ' <' + (f.email || 'name@your-website.com') + '>';
     return '<div class="pxp-karte"><h3><span class="pxp-hapi">1</span> Connect your business email</h3>' +
       '<p class="pxp-nen">Emails are sent from your own business address, so replies come back to you. Only an email on <b>@' + h(dom) + '</b> is accepted (not Gmail, Outlook or similar).</p>' +
       (dr && dr.gabimi ? '<div class="pxp-gabim" style="margin:0 0 10px">' + h(dr.gabimi) + '</div>' : '') +
       (!d.celesi ? '<div class="pxp-info">Connecting a mailbox is not available yet. Please try again later.</div>' : '') +
       '<div class="pxp-rresht">' +
-        '<div class="pxp-fushe"><label>Business email</label><input data-f="email" type="email" autocomplete="off" placeholder="you@' + h(dom) + '" value="' + h(f.email || (dr && dr.email) || '') + '">' +
+        '<div class="pxp-fushe"><label>Business email</label><input data-f="email" type="email" autocomplete="off" placeholder="name@your-website.com" value="' + h(f.email || (dr && dr.email) || '') + '">' +
           '<span class="small">The address your emails are sent from.</span></div>' +
-        '<div class="pxp-fushe"><label>Name shown to recipients</label><input data-f="emri" placeholder="Ana from ' + h(pxpEmriNgaDomain(dom)) + '" value="' + h(f.emri || (dr && dr.emri) || '') + '">' +
+        '<div class="pxp-fushe"><label>Name shown to recipients</label><input data-f="emri" placeholder="Your Name from Your Company" value=""' + h(f.emri || (dr && dr.emri) || '') + '">' +
           '<span class="small">In the inbox they see: <b>' + h(shembull) + '</b></span></div>' +
         '<div class="pxp-fushe"><label>App password</label><input data-f="fjalekalimi" type="password" autocomplete="new-password" value="">' +
-          '<span class="small"><a href="#" data-ndihme-pw style="color:var(--acc2)">What is this?</a></span></div></div>' +
+          '<span class="small">' + (f.kontrolluar ? 'See below where to create it.' : 'Enter your email first: we show you where to create it.') + '</span></div></div>' +
       pxpEmNdihmaPw(f) +
       '<details style="margin-top:10px"' + (f.hapur ? ' open' : '') + '><summary class="small" style="cursor:pointer">Server settings' + (f.host ? ' (filled in automatically' + (f.ofruesi ? ' for ' + h(f.ofruesi) : '') + ')' : '') + '</summary>' +
         '<p class="small" style="margin:8px 0 0">' + (f.host ? 'You do not need to change these.' : 'We could not detect your email provider. Copy these from your provider\'s help page (search "SMTP settings").') + '</p>' +
         '<div class="pxp-rresht" style="margin-top:8px">' +
           '<div class="pxp-fushe"><label>SMTP server</label><input data-f="host" placeholder="smtp.yourprovider.com" value="' + h(f.host || '') + '"><span class="small">The address of your provider\'s sending server.</span></div>' +
           '<div class="pxp-fushe" style="flex:0 1 140px"><label>Port</label><input data-f="port" type="number" value="' + h(f.port || 587) + '"><span class="small">Usually 587 (or 465).</span></div>' +
-          '<div class="pxp-fushe"><label>Username</label><input data-f="perdoruesi" placeholder="' + h(f.email || ('ana@' + dom)) + '" value="' + h(f.perdoruesi || '') + '"><span class="small">Leave empty: your email is used.</span></div></div></details>' +
+          '<div class="pxp-fushe"><label>Username</label><input data-f="perdoruesi" placeholder="' + h(f.email || 'name@your-website.com') + '" value="' + h(f.perdoruesi || '') + '"><span class="small">Leave empty: your email is used.</span></div></div></details>' +
       '<div class="pxp-rresht" style="margin-top:12px"><button class="pxp-buton" data-lidh' + (g.dukeLidhur || !d.celesi ? ' disabled' : '') + '>' + (g.dukeLidhur ? '<span class="pxp-spin"></span> Checking…' : 'Connect email') + '</button>' +
         (g.ndryshoDerguesin ? '<button class="pxp-buton2" data-anulo-ndryshim>Cancel</button>' : '') + '</div>' +
       (g.gabimD ? '<div class="pxp-gabim">' + h(g.gabimD) + '</div>' : '') + '</div>';
@@ -515,8 +518,10 @@
     else if (o === 'Zoho Mail') hapat = '<ol><li>Open <a href="https://accounts.zoho.com" target="_blank" rel="noopener">accounts.zoho.com</a> → <b>Security</b> → <b>App passwords</b>.</li>' +
       '<li>Click <b>Generate new password</b>, name it "PhronexusAI" and copy it.</li><li>Paste it here.</li></ol>';
     else hapat = '<p>Open the security settings of your email account and create an app password (some providers call it "application password"). If your provider has no app passwords, use your normal email password.</p>';
-    return '<div class="pxp-ndihme"' + (EM.ndihmaPw || o ? '' : ' hidden') + '><b>What is an app password?</b>' +
-      '<p>It is a special password you create yourself in your email account' + (o ? ' (' + h(o) + ')' : '') + ', only for PhronexusAI. It is not your normal password and you do not get it from us. You can delete it anytime to stop sending.</p>' + hapat + '</div>';
+    // Shfaqet vetem pasi klienti ka dhene email-in dhe dime ofruesin
+    if (!f.kontrolluar) return '';
+    return '<div class="pxp-ndihme"><b>Where to get your app password' + (o ? ' (' + h(o) + ')' : '') + '</b>' +
+      '<p>Paste here the app password that your email provider creates for you. You get it from your email account, not from us. It is not your normal password, and you can delete it anytime to stop sending.</p>' + hapat + '</div>';
   }
   // ---------- Orari: dite -> numri -> ore te barazlarguara (me dore me pas) ----------
   var PXP_DITE_PERPARA = 90; // deri 3 muaj perpara (i njejti kufi si serveri)
@@ -639,13 +644,16 @@
     });
   }
   function pxpEmPasZgjedhjes() { var g = EM; if (!g.numriDore) g.numri = pxpEmRenditja().length; pxpEmGjeneroOret(); pxpEmVizato(); }
-  function pxpEmAlarm(msg) {
+  function pxpEmAlarm(msg, butoni, veprimi) {
     var v = document.getElementById('pxpModal'); if (v) v.remove();
     var m = document.createElement('div'); m.id = 'pxpModal'; m.className = 'pxp-modal';
-    m.innerHTML = '<div class="pxp-modal-kuti" role="alertdialog" aria-modal="true"><h3>This is not allowed</h3><p>' + h(msg) + '</p>' +
-      '<div class="pxp-rresht" style="margin-top:14px"><button class="pxp-buton" data-m="mbyll">OK</button></div></div>';
+    m.innerHTML = '<div class="pxp-modal-kuti" role="alertdialog" aria-modal="true"><h3>' + (butoni ? 'Connect your email' : 'This is not allowed') + '</h3><p>' + h(msg) + '</p>' +
+      '<div class="pxp-rresht" style="margin-top:14px">' + (butoni ? '<button class="pxp-buton" data-m="veprim">' + h(butoni) + '</button><button class="pxp-buton2" data-m="mbyll">Close</button>' : '<button class="pxp-buton" data-m="mbyll">OK</button>') + '</div></div>';
     document.body.appendChild(m);
-    m.addEventListener('click', function (e) { if (e.target === m || e.target.closest('[data-m]')) m.remove(); });
+    m.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-m]');
+      if (e.target === m || b) { m.remove(); if (b && b.getAttribute('data-m') === 'veprim' && veprimi) veprimi(); }
+    });
   }
   function pxpEmLidh() {
     var g = EM, t = g.trup, em = g.em;
@@ -709,6 +717,12 @@
     on('[data-kar]', 'click', function (el) { var l = t.querySelector('.pxp-kar-lista'); if (l) l.scrollBy({ top: +el.getAttribute('data-kar') * 72 * 3, behavior: 'smooth' }); });
     on('[data-dergo]', 'click', async function () {
       g.provoi = true; g.gabim = ''; g.njoftim = '';
+      var dr = g.d.derguesi;
+      if (!dr || dr.gabimi) {
+        pxpEmAlarm(dr ? 'Sign-in to your email ' + dr.email + ' failed. Reconnect it in step 1 to keep sending.' : 'Connect your sending email first. Emails are sent from your own business email, so we need it before anything can be sent or scheduled.',
+          dr ? 'Reconnect my email' : 'Connect my email', function () { var k = t.querySelector('[data-f="email"]'); if (k) { k.scrollIntoView({ behavior: 'smooth', block: 'center' }); k.focus(); } });
+        return;
+      }
       var gab = pxpEmKontrollo();
       if (gab) { pxpEmVizato(); pxpEmAlarm(gab); return; }
       // Ajo qe dergohet = ajo qe shihet tani: dizajni, oret dhe bizneset e zgjedhura ne kete moment
@@ -748,11 +762,12 @@
       try {
         var r = await pxpThirr('/derguesi/sugjerim?email=' + encodeURIComponent(f.email));
         if (r.host) { f.host = r.host; f.port = r.port; f.ofruesi = r.ofruesi; } else if (r.ofruesi === '') { f.hapur = true; f.ofruesi = ''; }
+        f.kontrolluar = true;
         if (!r.host) { f.host = ''; f.ofruesi = ''; f.hapur = true; }
         pxpEmVizato();
       } catch (e) {}
     });
-    on('[data-ndihme-pw]', 'click', function (el, e) { e.preventDefault(); g.ndihmaPw = !g.ndihmaPw; var b = t.querySelector('.pxp-ndihme'); if (b) b.hidden = !b.hidden; });
+    on('[data-shko-biznesi]', 'click', function () { pxpShko({ v: 'profile', nav: 'biznesi' }); });
     on('[data-lidh]', 'click', async function () {
       var f = lexoForma(), pw = t.querySelector('[data-f="fjalekalimi"]');
       g.dukeLidhur = true; g.gabimD = ''; pxpEmVizato();
