@@ -345,7 +345,8 @@ module.exports = function (app, pool) {
   // Kategorite e klientit: sinjalet e tyre nuk fshihen pas 3 javesh sa kohe klienti eshte aktiv (pxse-alertet.js)
   function pxsjShenoKategorite(p) {
     (p.analiza.alertetKategorite || []).forEach(k => {
-      pool.query('INSERT INTO pxse_alertet_klientet (klienti, kategoria) VALUES ($1,$2) ON CONFLICT (klienti, kategoria) DO UPDATE SET shtuar_at = now()', ['seanca:' + p.seanca, k]).catch(() => {});
+      // Llogarite (pas login) mbahen pa afat; provat pa hyrje fshihen pas 7 ditesh (pxse-alertet.js)
+      pool.query('INSERT INTO pxse_alertet_klientet (klienti, kategoria) VALUES ($1,$2) ON CONFLICT (klienti, kategoria) DO UPDATE SET shtuar_at = now()', [p.biznesId ? 'llogari:' + p.biznesId : 'seanca:' + p.seanca, k]).catch(() => {});
     });
   }
 
@@ -474,7 +475,8 @@ module.exports = function (app, pool) {
       await pool.query("INSERT INTO pxse_prova_domaine (domaini, sherbimi, seanca) VALUES ($1,'sinjale',$2) ON CONFLICT (domaini, sherbimi) DO NOTHING", [p.domaini, p.seanca]);
       // B2B/B2C mbetet prane domainit (edhe pas fshirjes se provës), qe rikthimet te dihen nese jane B2B apo B2C
       await pxsjKolonaLloji(); pool.query("UPDATE pxse_prova_domaine SET lloji=$2 WHERE domaini=$1 AND sherbimi='sinjale'", [p.domaini, p.analiza.lloji]).catch(() => {});
-      await pool.query("INSERT INTO pxse_prova_rezultate (seanca, ip_hash, domaini, sherbimi, te_dhenat) VALUES ($1,$2,$3,'sinjale',$4)", [p.seanca, p.ipHash, p.domaini, JSON.stringify(teDhenat)]);
+      // biznes_id: kerkimi i nisur nga dashboard-i (pxse-llogaria.js) i takon llogarise qe ne fillim dhe nuk fshihet
+      await pool.query("INSERT INTO pxse_prova_rezultate (seanca, ip_hash, domaini, sherbimi, te_dhenat, biznes_id) VALUES ($1,$2,$3,'sinjale',$4,$5)", [p.seanca, p.ipHash, p.domaini, JSON.stringify(teDhenat), p.biznesId || null]);
       Object.assign(p, { gjendja: 'gati', hapi: '', rezultatet, numri: lista.length, burimet });
       // analitika: kerkimi u krye dhe sa sinjale (40+) iu dhane vizitorit
       pool.query('INSERT INTO pxse_ngjarjet (lloji, nga, seanca, tipi) VALUES ($1,$2,$3,$4)', ['studim_sinjale', 'sinjale', p.seanca, p.analiza.lloji]).catch(() => {});
@@ -616,21 +618,54 @@ module.exports = function (app, pool) {
     } catch (e) { res.status(500).json({ error: 'Try again.' }); }
   });
 
-  app.post('/api/pxse/sinjale/konfirmo', async (req, res) => {
-    const b = req.body || {};
-    const pa = pxsePastroDomain(b.domaini), domaini = pa ? pa.replace(/^www\./, '') : '';
-    const p = punet.get(String(b.seanca || '') + '|' + domaini);
-    if (!p || p.gjendja !== 'konfirmo') return res.status(400).json({ error: 'Please start the search again.' });
-    if (domaineNePune.has(domaini)) return res.status(409).json({ error: 'A search for this domain is already running.' });
-    const lloji = b.lloji === 'b2c' ? 'b2c' : 'b2b';
-    domaineNePune.add(domaini); p.koha = Date.now(); p.gjendja = 'kerkim'; p.hapi = 'Searching…';
+  // Vazhdimi pas konfirmimit te llojit (i perbashket per faqen publike dhe per dashboard-in)
+  function pxsjKonfirmoPunen(p, llojiDhene) {
+    const lloji = llojiDhene === 'b2c' ? 'b2c' : 'b2b';
+    domaineNePune.add(p.domaini); p.koha = Date.now(); p.gjendja = 'kerkim'; p.hapi = 'Searching…';
     (async () => {
       try {
         // Nese vizitori e ndryshoi llojin, termat dhe seksionet rishkruhen per llojin e sakte.
         if (lloji !== p.analiza.lloji) await pxsjAnalizo(p, lloji); else p.analiza.siguria = 'high';
         await pxsjVazhdo(p);
-      } catch (e) { p.gjendja = 'gabim'; p.gabim = e.paNumerim ? e.message : 'Something went wrong. Try again.'; domaineNePune.delete(domaini); }
+      } catch (e) { p.gjendja = 'gabim'; p.gabim = e.paNumerim ? e.message : 'Something went wrong. Try again.'; domaineNePune.delete(p.domaini); }
     })();
+  }
+  app.post('/api/pxse/sinjale/konfirmo', async (req, res) => {
+    const b = req.body || {};
+    const pa = pxsePastroDomain(b.domaini), domaini = pa ? pa.replace(/^www\./, '') : '';
+    const p = punet.get(String(b.seanca || '') + '|' + domaini);
+    if (!p || p.gjendja !== 'konfirmo' || p.biznesId) return res.status(400).json({ error: 'Please start the search again.' });
+    if (domaineNePune.has(domaini)) return res.status(409).json({ error: 'A search for this domain is already running.' });
+    pxsjKonfirmoPunen(p, b.lloji);
     res.json(pamjaPune(p));
   });
+
+  // Per dashboard-in (pxse-llogaria.js): i njejti kerkim, e njejta AI, e njejta ruajtje; pa rregullat e proves falas.
+  app.locals.pxseSinjalet = {
+    // Nis kerkimin per llogarine (nje seance e qendrueshme per llogari). Kthen gjendjen e punes.
+    nis(biznesId, seanca, domaini, ipHash) {
+      const kyc = seanca + '|' + domaini, ne = punet.get(kyc);
+      if (ne && ne.gjendja !== 'gabim' && ne.gjendja !== 'gati') return pamjaPune(ne);
+      if (!pxsjOpenAIKey()) throw Object.assign(new Error('Try again in a few minutes.'), { kodi: 503 });
+      if (domaineNePune.has(domaini)) throw Object.assign(new Error('A search for this domain is already running. Try again in a minute.'), { kodi: 409 });
+      const p = { seanca, domaini, ipHash, biznesId, gjendja: 'analiza', hapi: 'Reading ' + domaini + '…', koha: Date.now() };
+      punet.set(kyc, p); domaineNePune.add(domaini);
+      pxsjNis(p);
+      return pamjaPune(p);
+    },
+    puna(seanca, domaini) { const p = punet.get(seanca + '|' + domaini); return p ? pamjaPune(p) : null; },
+    konfirmo(seanca, domaini, lloji) {
+      const p = punet.get(seanca + '|' + domaini);
+      if (!p || p.gjendja !== 'konfirmo') throw Object.assign(new Error('Please start the search again.'), { kodi: 400 });
+      if (domaineNePune.has(domaini)) throw Object.assign(new Error('A search for this domain is already running.'), { kodi: 409 });
+      pxsjKonfirmoPunen(p, lloji);
+      return pamjaPune(p);
+    },
+    // Pergjigje me AI per nje postim (i njejti prompt si ne proven falas)
+    async pergjigje(pershkrimi, domaini, postimi) {
+      const o = await pxsjPyetAI(pxsjPromptPergjigje(pershkrimi || '', domaini, postimi), PXSJ_MODELI_ANALIZA, 'low');
+      return String((o && o.pergjigja) || '').replace(/\r/g, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, 1500);
+    },
+    statuset: PXSJ_STATUSET
+  };
 };
