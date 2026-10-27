@@ -71,20 +71,21 @@ function pxseLlogarite() {
 }
 
 // Te njejtat vlera si parapamja (pxse-seksioni.js -> pxseVleratEmailit), me {company} = emri i marresit.
-function pxseVlerat(e, marres) {
+function pxseVlerat(e, marres, paSticker) {
   const d = e.dizajn || {};
   return {
     marka: e.marka, domaini: e.domaini, logo: pxseHttps(d.logo), ngjyra: d.ngjyra,
     paragrafet: String(e.trupi || '').replace(/\{company\}/g, marres.emri).split(/\n\s*\n/).map(x => x.trim()).filter(Boolean),
     butoni: d.meButon ? { tekst: String(d.butoniTekst || 'Visit our website').slice(0, 40), link: d.butoniLink } : null,
     fundiJo: 'Not relevant? Just reply "no" and you will not hear from us again.', cregj: 'Unsubscribe',
-    sticker: { rreshti1: 'Powered by PhronexusAI', rreshti2: 'Send emails, 100% free' }
+    sticker: paSticker ? false : { rreshti1: 'Powered by PhronexusAI', rreshti2: 'Send emails, 100% free' }
   };
 }
 // HTML-ja e dizajnit te zgjedhur + gjurmimi + Unsubscribe i vertete; dhe versioni tekst.
-function pxseNdertoPerMarres(e, marres, token) {
+// opsione.paSticker: vetem per llogarite me snippet aktiv (pxse-llogaria.js)
+function pxseNdertoPerMarres(e, marres, token, opsione) {
   const dz = pxseDizajnet.find(x => x.id === (e.dizajn && e.dizajn.id)) || pxseDizajnet[1] || pxseDizajnet[0];
-  const v = pxseVlerat(e, marres);
+  const v = pxseVlerat(e, marres, !!(opsione && opsione.paSticker));
   const baza = pxseBaza(), cregj = baza + '/pxse/c/' + token;
   let html = dz.nderto(v);
   // Unsubscribe: dizajnet e kane href="#"
@@ -98,7 +99,7 @@ function pxseNdertoPerMarres(e, marres, token) {
   }
   const tekst = v.paragrafet.join('\n\n') + '\n\n' + v.marka +
     (v.butoni ? '\n' + v.butoni.tekst + ': ' + v.butoni.link : '') +
-    '\n\n' + v.fundiJo + '\nUnsubscribe: ' + cregj + '\n\nPowered by PhronexusAI - https://phronexusai.com/';
+    '\n\n' + v.fundiJo + '\nUnsubscribe: ' + cregj + (v.sticker ? '\n\nPowered by PhronexusAI - https://phronexusai.com/' : '');
   return { html, tekst };
 }
 
@@ -151,6 +152,8 @@ module.exports = function (app, pool, iAdmin) {
     await pool.query('ALTER TABLE pxse_dergimet ADD COLUMN IF NOT EXISTS subjekti_burim TEXT');
     await pool.query('ALTER TABLE pxse_dergimet ADD COLUMN IF NOT EXISTS trupi_burim TEXT');
     await pool.query('ALTER TABLE pxse_dergimet ADD COLUMN IF NOT EXISTS vonuar BOOLEAN NOT NULL DEFAULT false');
+    // derguesi_id: email-et qe dalin nga email-i i vete klientit (dashboard, pxse-llogaria.js). Kjo radhe nuk i prek.
+    await pool.query('ALTER TABLE pxse_dergimet ADD COLUMN IF NOT EXISTS derguesi_id INT');
     await pool.query(`CREATE TABLE IF NOT EXISTS pxse_tokenet_cregj (
       token TEXT PRIMARY KEY,
       email TEXT NOT NULL,
@@ -172,7 +175,7 @@ module.exports = function (app, pool, iAdmin) {
   // Te zena ne nje dite = te derguara ate dite + ato qe presin ne radhe per ate dite.
   async function pxseTeZenaDitet() {
     const r = await pool.query(`SELECT to_char((CASE WHEN statusi='derguar' THEN derguar_at ELSE ora END) AT TIME ZONE '${PXSE_ZONA}', 'YYYY-MM-DD') dita, COUNT(*)::int n
-      FROM pxse_dergimet WHERE statusi IN ('ne_radhe','duke','derguar')
+      FROM pxse_dergimet WHERE statusi IN ('ne_radhe','duke','derguar') AND derguesi_id IS NULL
         AND (CASE WHEN statusi='derguar' THEN derguar_at ELSE ora END) > now() - interval '2 days' GROUP BY 1`);
     const m = {}; r.rows.forEach(x => { m[x.dita] = x.n; }); return m;
   }
@@ -345,24 +348,24 @@ module.exports = function (app, pool, iAdmin) {
     pxseDukePunuar = true;
     try {
       // Email-et qe mbeten "duke" (p.sh. rinisje gjate dergimit) kthehen ne radhe pas 15 minutash.
-      await pool.query("UPDATE pxse_dergimet SET statusi='ne_radhe' WHERE statusi='duke' AND krijuar_at < now() - interval '15 minutes' AND derguar_at IS NULL AND ora < now() - interval '15 minutes'");
+      await pool.query("UPDATE pxse_dergimet SET statusi='ne_radhe' WHERE statusi='duke' AND derguesi_id IS NULL AND krijuar_at < now() - interval '15 minutes' AND derguar_at IS NULL AND ora < now() - interval '15 minutes'");
       const kufi = pxseKufiDitor();
       for (let i = 0; i < 10; i++) {
         const r = await pool.query(`UPDATE pxse_dergimet SET statusi='duke' WHERE id = (
-            SELECT id FROM pxse_dergimet WHERE statusi='ne_radhe' AND ora <= now() ORDER BY ora LIMIT 1 FOR UPDATE SKIP LOCKED)
+            SELECT id FROM pxse_dergimet WHERE statusi='ne_radhe' AND derguesi_id IS NULL AND ora <= now() ORDER BY ora LIMIT 1 FOR UPDATE SKIP LOCKED)
           RETURNING id, token, seanca, marka, marres_email, subjekti, html, tekst`);
         if (!r.rows.length) break;
         const d = r.rows[0];
         if (await pxseNeMosKontakto(d.marres_email)) { await pool.query("UPDATE pxse_dergimet SET statusi='deshtoi', gabimi='do-not-contact' WHERE id=$1", [d.id]); continue; }
         // Llogaria qe ka derguar me pak sot (brenda kufirit): ngarkese e shperndare njetrajtesisht.
-        const sot = await pool.query(`SELECT llogaria, COUNT(*)::int n FROM pxse_dergimet WHERE statusi='derguar'
+        const sot = await pool.query(`SELECT llogaria, COUNT(*)::int n FROM pxse_dergimet WHERE statusi='derguar' AND derguesi_id IS NULL
           AND derguar_at >= (date_trunc('day', now() AT TIME ZONE '${PXSE_ZONA}') AT TIME ZONE '${PXSE_ZONA}') GROUP BY llogaria`);
         const numri = {}; sot.rows.forEach(x => { numri[x.llogaria] = x.n; });
         const zgjedhur = llogarite.filter(u => (numri[u] || 0) < kufi).sort((a, c) => (numri[a] || 0) - (numri[c] || 0))[0];
         if (!zgjedhur) {
           // Kufiri i dites u arrit per te gjitha llogarite: ky dhe te gjithe ata qe u ka ardhur ora kalojne ne diten tjeter (e njejta ore).
           await pool.query("UPDATE pxse_dergimet SET statusi='ne_radhe' WHERE id=$1", [d.id]);
-          await pool.query("UPDATE pxse_dergimet SET ora = ora + interval '1 day', vonuar = true WHERE statusi='ne_radhe' AND ora <= now()");
+          await pool.query("UPDATE pxse_dergimet SET ora = ora + interval '1 day', vonuar = true WHERE statusi='ne_radhe' AND derguesi_id IS NULL AND ora <= now()");
           break;
         }
         const cregj = pxseBaza() + '/pxse/c/' + d.token;
@@ -465,3 +468,6 @@ module.exports = function (app, pool, iAdmin) {
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 };
+// Per dashboard-in (pxse-llogaria.js): i njejti ndertim i email-it dhe i njejti gjurmim.
+module.exports.pxseNdertoPerMarres = pxseNdertoPerMarres;
+module.exports.pxseNeMosKontaktoSql = "SELECT 1 FROM pxse_mos_kontakto WHERE email=lower($1)";
