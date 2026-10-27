@@ -185,6 +185,51 @@ function pxsePromptEmail(domaini, faqja, kategorite, korrigjime) {
 
 
 
+// Studimi i nje domaini per email-in (pa rregullat e proves): kontrollet 1-3 + AI. Perdoret nga /api/pxse/email-ai
+// dhe nga dashboard-i (pxse-llogaria.js). Kthen { ok:true, pergjigja } ose { ok:false, kodi, trupi }.
+async function pxseStudimiEmailit(pool, domaini) {
+  // Kategorite e marresve: nga direktoria e vertete (pxse_bizneset, e mbushur nga admini me importin).
+  // AI zgjedh 1-2 prej tyre si marresit me te pershtatshem per kete biznes. Nese direktoria eshte bosh, AI nuk rekomandon kategori.
+  let kategorite = [];
+  try {
+    const kr = await pool.query(`SELECT kategoria FROM pxse_bizneset WHERE aktiv AND email_verifikuar AND kategoria IS NOT NULL AND kategoria <> ''
+      GROUP BY kategoria ORDER BY COUNT(*) DESC LIMIT 200`);
+    kategorite = kr.rows.map(x => ({ v: x.kategoria, emri: String(x.kategoria).replace(/[\r\n]/g, ' ').slice(0, 80) }));
+  } catch (e) { kategorite = []; }
+
+  // Kontrolli 1 (pa AI): domain i vertete, faqe qe hapet, jo platforme, jo "parked". Nuk numerohet si prove.
+  const kd = await pxseKontrolloDomainin(domaini);
+  if (!kd.ok) return { ok: false, kodi: 422, trupi: { jo_real: true, error: kd.error } };
+  const faqja = kd.faqja;
+
+  let o = await pxsePyetOpenAI(pxsePromptEmail(domaini, faqja, kategorite));
+  if (!o) return { ok: false, kodi: 502, trupi: { error: 'AI did not return a valid answer. Try again.' } };
+  let probleme = pxseKontrolloEmailin(o.subjekti, o.trupi);
+  if (probleme.length) {
+    const o2 = await pxsePyetOpenAI(pxsePromptEmail(domaini, faqja, kategorite, probleme)).catch(() => null);
+    if (o2) { const p2 = pxseKontrolloEmailin(o2.subjekti, o2.trupi); if (p2.length <= probleme.length) { o = o2; probleme = p2; } }
+  }
+  // Kontrolli 2 (ne te njejten thirrje AI): biznes i vertete. Kontrolli 3: vetem B2B (te dyja = B2B). Nuk numerohen si prove.
+  if (o.biznes_real === false || o.biznes_real === 'false') return { ok: false, kodi: 422, trupi: { jo_biznes: true, error: 'We only accept real business websites.' } };
+  if (o.lloji === 'b2c') return { ok: false, kodi: 422, trupi: { b2c: true, error: 'This service is built only for B2B businesses.' } };
+  const lejuara = kategorite.map(k => k.v);
+  const pergjigja = {
+    ok: true, domaini,
+    pershkrimi: String(o.pershkrimi || '').slice(0, 600),
+    lloji: ['b2b', 'b2c', 'te-dyja'].includes(o.lloji) ? o.lloji : 'b2b',
+    siguria: o.siguria === 'low' ? 'low' : 'high',
+    kategorite: (Array.isArray(o.kategorite) ? o.kategorite : []).filter(v => lejuara.includes(v)).slice(0, 2),
+    subjekti: String(o.subjekti || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 120),
+    trupi: String(o.trupi || '').replace(/\r/g, '').trim().slice(0, 2000),
+    paralajmerime: probleme,
+    emri: String(o.emri || '').replace(/[\r\n<>]/g, ' ').trim().slice(0, 60),
+    butoniTekst: (function (x) { x = String(x || '').replace(/[!\r\n<>]/g, '').trim().slice(0, 40); return x && !PXSE_FJALE_SPAM.some(f => x.toLowerCase().includes(f)) ? x : 'Visit our website'; })(o.butoni_tekst),
+    ngjyra: faqja.ngjyraTemes || '',
+    ikona: faqja.ikona || ''
+  };
+  return { ok: true, pergjigja };
+}
+
 const PXSE_KUFIRI_ORE = 10;      // studime ne ore per IP
 const PXSE_DOMAINE_DITE = 5;     // domaine te ndryshme ne dite per IP
 const pxseThirrjetIP = new Map(); // ip_hash -> kohet e thirrjeve ne oren e fundit
@@ -268,45 +313,10 @@ module.exports = function (app, pool, iLoguar) {
         [ipHash, domaini]);
       if (dite.rows[0].n >= PXSE_DOMAINE_DITE) return res.status(429).json({ error: 'Daily limit reached. Please try again tomorrow.' });
 
-      // Kategorite e marresve: nga direktoria e vertete (pxse_bizneset, e mbushur nga admini me importin).
-      // AI zgjedh 1-2 prej tyre si marresit me te pershtatshem per kete biznes. Nese direktoria eshte bosh, AI nuk rekomandon kategori.
-      let kategorite = [];
-      try {
-        const kr = await pool.query(`SELECT kategoria FROM pxse_bizneset WHERE aktiv AND email_verifikuar AND kategoria IS NOT NULL AND kategoria <> ''
-          GROUP BY kategoria ORDER BY COUNT(*) DESC LIMIT 200`);
-        kategorite = kr.rows.map(x => ({ v: x.kategoria, emri: String(x.kategoria).replace(/[\r\n]/g, ' ').slice(0, 80) }));
-      } catch (e) { kategorite = []; }
-
-      // Kontrolli 1 (pa AI): domain i vertete, faqe qe hapet, jo platforme, jo "parked". Nuk numerohet si prove.
-      const kd = await pxseKontrolloDomainin(domaini);
-      if (!kd.ok) return res.status(422).json({ jo_real: true, error: kd.error });
-      const faqja = kd.faqja;
-
-      let o = await pxsePyetOpenAI(pxsePromptEmail(domaini, faqja, kategorite));
-      if (!o) return res.status(502).json({ error: 'AI did not return a valid answer. Try again.' });
-      let probleme = pxseKontrolloEmailin(o.subjekti, o.trupi);
-      if (probleme.length) {
-        const o2 = await pxsePyetOpenAI(pxsePromptEmail(domaini, faqja, kategorite, probleme)).catch(() => null);
-        if (o2) { const p2 = pxseKontrolloEmailin(o2.subjekti, o2.trupi); if (p2.length <= probleme.length) { o = o2; probleme = p2; } }
-      }
-      // Kontrolli 2 (ne te njejten thirrje AI): biznes i vertete. Kontrolli 3: vetem B2B (te dyja = B2B). Nuk numerohen si prove.
-      if (o.biznes_real === false || o.biznes_real === 'false') return res.status(422).json({ jo_biznes: true, error: 'We only accept real business websites.' });
-      if (o.lloji === 'b2c') return res.status(422).json({ b2c: true, error: 'This service is built only for B2B businesses.' });
-      const lejuara = kategorite.map(k => k.v);
-      const pergjigja = {
-        ok: true, domaini,
-        pershkrimi: String(o.pershkrimi || '').slice(0, 600),
-        lloji: ['b2b', 'b2c', 'te-dyja'].includes(o.lloji) ? o.lloji : 'b2b',
-        siguria: o.siguria === 'low' ? 'low' : 'high',
-        kategorite: (Array.isArray(o.kategorite) ? o.kategorite : []).filter(v => lejuara.includes(v)).slice(0, 2),
-        subjekti: String(o.subjekti || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 120),
-        trupi: String(o.trupi || '').replace(/\r/g, '').trim().slice(0, 2000),
-        paralajmerime: probleme,
-        emri: String(o.emri || '').replace(/[\r\n<>]/g, ' ').trim().slice(0, 60),
-        butoniTekst: (function (x) { x = String(x || '').replace(/[!\r\n<>]/g, '').trim().slice(0, 40); return x && !PXSE_FJALE_SPAM.some(f => x.toLowerCase().includes(f)) ? x : 'Visit our website'; })(o.butoni_tekst),
-        ngjyra: faqja.ngjyraTemes || '',
-        ikona: faqja.ikona || ''
-      };
+      // Studimi (kontrollet + AI) eshte i perbashket me dashboard-in: pxseStudimiEmailit
+      const st = await pxseStudimiEmailit(pool, domaini);
+      if (!st.ok) return res.status(st.kodi).json(st.trupi);
+      const pergjigja = st.pergjigja;
       await pool.query("INSERT INTO pxse_prova_domaine (domaini, sherbimi, seanca) VALUES ($1,'email',$2) ON CONFLICT (domaini, sherbimi) DO NOTHING", [domaini, b.seanca]);
       // Analitika e admin-it (pxse-admin-analitika.js): prova falas e email-eve u perdor per kete domain
       pool.query('INSERT INTO pxse_ngjarjet (lloji, nga, seanca, biznes_id) VALUES ($1,$2,$3,$4)', ['studim_email', 'email', b.seanca, null]).catch(() => {});
@@ -357,3 +367,6 @@ module.exports.pxseHashIP = pxseHashIP;
 module.exports.pxseFetchKohe = pxseFetchKohe;
 module.exports.pxseTekstNgaHtml = pxseTekstNgaHtml;
 module.exports.pxseSeancaVlefshme = pxseSeancaVlefshme;
+module.exports.pxseStudimiEmailit = pxseStudimiEmailit;
+module.exports.pxseNePlatforme = pxseNePlatforme;
+module.exports.pxseHostPublik = pxseHostPublik;
