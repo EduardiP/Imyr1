@@ -76,6 +76,33 @@ async function pxseLexoFaqen(domaini) {
   throw new Error('Shume ridrejtime.');
 }
 
+// ---------- Kontrolli 1: domain i vertete (pa AI, pa kosto) ----------
+// Platforma te njohura, sherbime email-i, rrjete sociale dhe hostim falas: nuk jane domaini i nje biznesi.
+const PXSE_JO_BIZNES = ['google.com', 'gmail.com', 'googlemail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'live.com', 'msn.com', 'icloud.com', 'aol.com',
+  'proton.me', 'protonmail.com', 'gmx.com', 'gmx.de', 'web.de', 'yandex.com', 'mail.ru', 'facebook.com', 'fb.com', 'instagram.com', 'linkedin.com', 'twitter.com', 'x.com',
+  'tiktok.com', 'youtube.com', 'youtu.be', 'reddit.com', 'pinterest.com', 'snapchat.com', 'whatsapp.com', 'telegram.org', 't.me', 'discord.com', 'wikipedia.org',
+  'amazon.com', 'apple.com', 'microsoft.com', 'github.com', 'gitlab.com', 'medium.com', 'substack.com', 'quora.com', 'ycombinator.com', 'producthunt.com',
+  'wordpress.com', 'blogspot.com', 'blogger.com', 'wixsite.com', 'wix.com', 'squarespace.com', 'weebly.com', 'tumblr.com', 'godaddysites.com', 'carrd.co',
+  'notion.site', 'notion.so', 'vercel.app', 'netlify.app', 'herokuapp.com', 'github.io', 'pages.dev', 'web.app', 'firebaseapp.com', 'glitch.me', 'replit.app',
+  'linktr.ee', 'bit.ly', 'example.com', 'example.org', 'example.net', 'test.com', 'phronexusai.test'];
+const pxseNePlatforme = d => PXSE_JO_BIZNES.some(x => d === x || d.endsWith('.' + x));
+// Faqe "parked", e shitur, bosh ose e paperfunduar
+const PXSE_PARKED = /(this )?domain (name )?(is |may be )?for sale|buy this domain|domain (is )?parked|parked (free|domain|by)|domain parking|sedoparking|hugedomains|afternic|dan\.com|this domain has expired|coming soon|under construction|launching soon|site is under maintenance|default web page|welcome to nginx|apache2? (ubuntu )?default page|it works!|index of \/|future home of|this site can.t be reached|account suspended/i;
+const PXSE_JO_REAL_MESAZH = 'Please enter the domain of a real business website.';
+// Kthen { ok:true, faqja } ose { ok:false, error } (pa AI). Domainet qe nuk kalojne nuk numerohen si prove.
+async function pxseKontrolloDomainin(domaini) {
+  const jo = { ok: false, jo_real: true, error: PXSE_JO_REAL_MESAZH };
+  if (!domaini || !/^([a-z0-9-]+\.)+[a-z]{2,}$/.test(domaini) || /^\d+(\.\d+)+$/.test(domaini)) return jo;
+  if (pxseNePlatforme(domaini)) return jo;
+  if (!(await pxseHostPublik(domaini))) return jo; // domaini nuk ekziston (DNS) ose eshte adrese e brendshme
+  let faqja;
+  try { faqja = await pxseLexoFaqen(domaini); } catch (e) { return jo; }
+  const teksti = [faqja.titulli, faqja.meta, faqja.teksti].join(' ').replace(/\s+/g, ' ').trim();
+  if (teksti.length < 150) return jo; // faqe pothuajse bosh
+  if (PXSE_PARKED.test(faqja.titulli + ' ' + faqja.meta) || (teksti.length < 1200 && PXSE_PARKED.test(teksti))) return jo;
+  return { ok: true, faqja };
+}
+
 // ---------- Email-i me AI (rregullat kunder spam-it, ne prompt dhe ne kod) ----------
 // Fjale dhe shprehje qe filtrat e spam-it i lidhin me email-e masive/mashtruese.
 const PXSE_FJALE_SPAM = ['free', 'guarantee', 'guaranteed', 'risk-free', 'risk free', 'act now', 'urgent', 'limited time', 'click here', 'buy now',
@@ -137,6 +164,8 @@ function pxsePromptEmail(domaini, faqja, kategorite, korrigjime) {
     '"butoni_tekst": 2 to 4 calm words for a button that links to the sender website, like "Visit our website" or "See how it works" (no "free", no "now", no urgency, no exclamation marks).\n' +
     '"lloji": "b2b" if the main customers are businesses, teams, founders or professionals using it for work; "b2c" if they are consumers for personal use; "te-dyja" if clearly both.\n' +
     '"siguria": "high" or "low" (how sure you are about "lloji").\n' +
+    '"biznes_real": true if this website belongs to a real business, company, startup, shop or professional that sells a product or service; ' +
+    'false if it is a personal blog, news or media site, portfolio, hobby page, placeholder or test page, government page, or anything that does not sell a product or service.\n' +
     '"kategorite": array of 1 or 2 categories copied exactly from the allowed list: the recipient businesses most likely to need the sender\'s product.\n' +
     '"subjekti": the email subject.\n"trupi": the email body.\n\n' +
     'The email must look like a short, personal note from one professional to another, so that Gmail and Outlook treat it as a normal email, not marketing.\n' +
@@ -248,9 +277,10 @@ module.exports = function (app, pool, iLoguar) {
         kategorite = kr.rows.map(x => ({ v: x.kategoria, emri: String(x.kategoria).replace(/[\r\n]/g, ' ').slice(0, 80) }));
       } catch (e) { kategorite = []; }
 
-      // Domaini pa faqe te lexueshme nuk numerohet si prove.
-      let faqja;
-      try { faqja = await pxseLexoFaqen(domaini); } catch (e) { return res.status(422).json({ error: 'Could not read ' + domaini + '. Check the address and try again.' }); }
+      // Kontrolli 1 (pa AI): domain i vertete, faqe qe hapet, jo platforme, jo "parked". Nuk numerohet si prove.
+      const kd = await pxseKontrolloDomainin(domaini);
+      if (!kd.ok) return res.status(422).json({ jo_real: true, error: kd.error });
+      const faqja = kd.faqja;
 
       let o = await pxsePyetOpenAI(pxsePromptEmail(domaini, faqja, kategorite));
       if (!o) return res.status(502).json({ error: 'AI did not return a valid answer. Try again.' });
@@ -259,6 +289,9 @@ module.exports = function (app, pool, iLoguar) {
         const o2 = await pxsePyetOpenAI(pxsePromptEmail(domaini, faqja, kategorite, probleme)).catch(() => null);
         if (o2) { const p2 = pxseKontrolloEmailin(o2.subjekti, o2.trupi); if (p2.length <= probleme.length) { o = o2; probleme = p2; } }
       }
+      // Kontrolli 2 (ne te njejten thirrje AI): biznes i vertete. Kontrolli 3: vetem B2B (te dyja = B2B). Nuk numerohen si prove.
+      if (o.biznes_real === false || o.biznes_real === 'false') return res.status(422).json({ jo_biznes: true, error: 'We only accept real business websites.' });
+      if (o.lloji === 'b2c') return res.status(422).json({ b2c: true, error: 'This service is built only for B2B businesses.' });
       const lejuara = kategorite.map(k => k.v);
       const pergjigja = {
         ok: true, domaini,
@@ -318,6 +351,7 @@ module.exports = function (app, pool, iLoguar) {
 module.exports.pxseKontrolloEmailin = pxseKontrolloEmailin;
 // Leximi i sigurt i faqes dhe ndihmesat e perbashketa perdoren edhe nga pxse-sinjalet.js (pa i kopjuar).
 module.exports.pxseLexoFaqen = pxseLexoFaqen;
+module.exports.pxseKontrolloDomainin = pxseKontrolloDomainin;
 module.exports.pxsePastroDomain = pxsePastroDomain;
 module.exports.pxseHashIP = pxseHashIP;
 module.exports.pxseFetchKohe = pxseFetchKohe;
