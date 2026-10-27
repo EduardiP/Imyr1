@@ -29,6 +29,11 @@ const PXLL_STUDIME_DITE = 10;        // studime me AI ne dite per llogari (kosto
 const PXLL_PERGJIGJE_DITE = 100;     // pergjigje me AI ne dite per llogari (kufi sigurie, jo kufi i planit)
 const PXLL_PER_MINUTE = 10;          // email-e ne minute nga nje email dergues (mbron reputacionin e domainit te klientit)
 const PXLL_PORTET = [25, 465, 587, 2525];
+const PXLL_DITORE = 15;              // email-e ne dite nga nje llogari (sipas zones kohore te klientit)
+const PXLL_HAPESIRA_MIN = 5;         // minuta te pakten midis dy email-eve
+// Data (YYYY-MM-DD) e nje kohe ne zonen e klientit
+function pxllDita(t, zona) { return new Intl.DateTimeFormat('en-CA', { timeZone: zona, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(t)); }
+function pxllZona(z) { try { new Intl.DateTimeFormat('en-CA', { timeZone: String(z || '') }); return String(z); } catch (e) { return 'Europe/Berlin'; } }
 
 const pxllHttps = u => { u = String(u || '').trim(); return /^https:\/\/[^\s"'<>]+$/i.test(u) ? u : ''; };
 const pxllEmriNgaDomain = d => { const e = String(d || '').split('.')[0] || ''; return e ? e.charAt(0).toUpperCase() + e.slice(1) : 'Your company'; };
@@ -216,6 +221,7 @@ module.exports = function (app, pool, iLoguar) {
         COALESCE(SUM(hapje) FILTER (WHERE statusi='derguar'),0)::int pare,
         COUNT(*) FILTER (WHERE hapur_at IS NOT NULL)::int hapur,
         COUNT(*) FILTER (WHERE klikuar_at IS NOT NULL)::int klikuar,
+        COALESCE(SUM(klikime),0)::int klikime,
         COUNT(*) FILTER (WHERE cregj_at IS NOT NULL)::int cregj,
         COUNT(*) FILTER (WHERE statusi='deshtoi')::int deshtoi
       FROM pxse_dergimet WHERE biznes_id=$1`, [id]);
@@ -234,7 +240,9 @@ module.exports = function (app, pool, iLoguar) {
       res.json({ ok: true, domaini: ll.domaini, emri: ll.emri, snippetAktiv: ll.snippetAktiv, derguesi: pxllDerguesiPublik(g), celesi: !!pxllCelesi(),
         studimi: st.rows.length ? st.rows[0].te_dhenat : null,
         fundit: fundit.rows.length ? { subjekti: fundit.rows[0].subjekti_burim, trupi: fundit.rows[0].trupi_burim, marka: fundit.rows[0].marka, dizajn: fundit.rows[0].dizajn } : null,
-        totalet: await pxllTotalet(ll.id),
+        totalet: await pxllTotalet(ll.id), ditore: PXLL_DITORE, hapesiraMin: PXLL_HAPESIRA_MIN,
+        oretZena: (await pool.query(`SELECT COALESCE(derguar_at, ora) t FROM pxse_dergimet WHERE derguesi_id=$1
+            AND (statusi IN ('ne_radhe','duke') OR derguar_at > now() - interval '2 days')`, [ll.id])).rows.map(x => x.t),
         dergimet: d.rows.map(x => ({ id: x.id, marresi: x.emri || pxllEmriNgaDomain(x.domaini), domaini: x.domaini, subjekti: x.subjekti, ora: x.ora,
           statusi: x.statusi === 'duke' ? 'ne_radhe' : x.statusi, derguar_at: x.derguar_at, vonuar: !!x.vonuar, ngaProva: !x.derguesi_id,
           hapur: !!x.hapur_at, hapje: x.hapje || 0, klikuar: !!x.klikuar_at, klikime: x.klikime || 0, cregj: !!x.cregj_at })) });
@@ -331,8 +339,10 @@ module.exports = function (app, pool, iLoguar) {
       const marresit = Array.from(new Set((Array.isArray(b.marresit) ? b.marresit : []).map(x => parseInt(x, 10)).filter(x => x > 0)));
       if (!marresit.length) return res.status(400).json({ error: 'Choose at least one business.' });
       if (marresit.length > PXLL_MAKS_MARRES) return res.status(400).json({ error: 'Choose up to ' + PXLL_MAKS_MARRES + ' businesses at a time.' });
-      const fillimi = Date.parse(b.fillimi), intervali = Math.min(1440, Math.max(1, parseInt(b.intervali, 10) || 5)), tani = Date.now();
-      if (isNaN(fillimi) || fillimi < tani - 120000 || fillimi > tani + PXLL_DITE_MAKS * 86400000) return res.status(400).json({ error: 'Choose a start time in the next ' + PXLL_DITE_MAKS + ' days.' });
+      // Nje ore per cdo biznes (te njejtat qe klienti pa ne "Schedule")
+      const oret = (Array.isArray(b.oret) ? b.oret : []).map(x => Date.parse(x)), tani = Date.now(), zona = pxllZona(b.zona);
+      if (oret.length !== marresit.length) return res.status(400).json({ error: 'Every selected business needs a sending time.' });
+      if (oret.some(t => isNaN(t) || t < tani - 120000 || t > tani + PXLL_DITE_MAKS * 86400000)) return res.status(400).json({ error: 'Choose times in the next ' + PXLL_DITE_MAKS + ' days, not in the past.' });
       // Rregullat kunder spam-it (te njejtat si ne prove): mbrojne reputacionin e domainit te klientit
       const subjekti = String(b.subjekti || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 120);
       const trupi = String(b.trupi || '').replace(/\r/g, '').trim().slice(0, 2000);
@@ -358,26 +368,45 @@ module.exports = function (app, pool, iLoguar) {
       const biz = await pool.query(`SELECT b.id, b.emri, b.domaini, b.email FROM pxse_bizneset b WHERE b.id = ANY($1::int[]) AND b.aktiv AND b.email_verifikuar AND b.email IS NOT NULL
           AND NOT EXISTS (SELECT 1 FROM pxse_mos_kontakto m WHERE m.email = lower(b.email))`, [marresit]);
       const seanca = pxllSeanca(ll.id);
-      let planifikuar = 0, kaluar = marresit.length - biz.rows.length;
+      if (biz.rows.length !== marresit.length) return res.status(400).json({ error: 'One of the selected businesses can no longer be emailed. Refresh the list and try again.' });
+      let planifikuar = 0;
       const kl = await pool.connect();
       try {
         await kl.query('BEGIN');
-        let i = 0;
-        for (const id of marresit) {
-          const x = biz.rows.find(r => r.id === id); if (!x) continue;
+        await kl.query('SELECT pg_advisory_xact_lock(hashtext($1))', ['pxll:' + ll.id]); // dy "Send" njekohesisht nuk i kalojne kufijte
+        // Kufijte: te pakten 5 minuta midis email-eve dhe deri 15 ne dite (bashke me ato qe jane tashme ne radhe ose u derguan)
+        const ek = await kl.query(`SELECT COALESCE(derguar_at, ora) t FROM pxse_dergimet WHERE derguesi_id=$1
+            AND (statusi IN ('ne_radhe','duke') OR derguar_at > now() - interval '2 days')`, [ll.id]);
+        const teGjitha = oret.map(t => ({ t, iri: true })).concat(ek.rows.map(x => ({ t: new Date(x.t).getTime() }))).sort((a, c) => a.t - c.t);
+        for (let k = 1; k < teGjitha.length; k++) {
+          if ((teGjitha[k].iri || teGjitha[k - 1].iri) && teGjitha[k].t - teGjitha[k - 1].t < PXLL_HAPESIRA_MIN * 60000) {
+            await kl.query('ROLLBACK');
+            return res.status(400).json({ afer: true, error: 'Two emails are less than ' + PXLL_HAPESIRA_MIN + ' minutes apart. Space them out: emails sent close together are more likely to land in spam.' });
+          }
+        }
+        const neDite = {};
+        teGjitha.forEach(x => { const d = pxllDita(x.t, zona); neDite[d] = (neDite[d] || 0) + 1; });
+        const plot = Object.keys(neDite).filter(d => neDite[d] > PXLL_DITORE && oret.some(t => pxllDita(t, zona) === d));
+        if (plot.length) {
+          await kl.query('ROLLBACK');
+          return res.status(400).json({ ditore: true, ditet: plot, error: 'You can send up to ' + PXLL_DITORE + ' emails a day. ' + plot.join(', ') + ' would have more. Choose more days or fewer emails.' });
+        }
+        for (let i = 0; i < marresit.length; i++) {
+          const x = biz.rows.find(r => r.id === marresit[i]);
           const token = crypto.randomBytes(18).toString('hex');
           const marresi = { emri: x.emri || pxllEmriNgaDomain(x.domaini) };
           const nd = pxseNdertoPerMarres(email, marresi, token, { paSticker });
           const r = await kl.query(`INSERT INTO pxse_dergimet (token, seanca, biznes_id, derguesi_id, domaini_derguesit, marka, marres_id, marres_email, subjekti, html, tekst, dizajn, butoni_link, ora, subjekti_burim, trupi_burim)
             VALUES ($1,$2,$3,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) ON CONFLICT (domaini_derguesit, marres_id) DO NOTHING RETURNING id`,
             [token, seanca, ll.id, ll.domaini, marka, x.id, x.email, subjekti.replace(/\{company\}/g, marresi.emri), nd.html, nd.tekst, JSON.stringify(Object.assign({}, dizajn, { paSticker })),
-             dizajn.meButon ? dizajn.butoniLink : null, new Date(fillimi + i * intervali * 60000), subjekti, trupi]);
-          if (r.rows.length) { planifikuar++; i++; } else kaluar++;
+             dizajn.meButon ? dizajn.butoniLink : null, new Date(oret[i]), subjekti, trupi]);
+          if (!r.rows.length) { await kl.query('ROLLBACK'); return res.status(409).json({ error: (x.emri || x.domaini) + ' was already emailed. Refresh the list and try again.' }); }
+          planifikuar++;
         }
         await kl.query('COMMIT');
       } catch (e) { await kl.query('ROLLBACK').catch(() => {}); throw e; } finally { kl.release(); }
       if (planifikuar) pxllNgjarje('email_planifikuar', 'email', ll.id, planifikuar);
-      res.json({ ok: true, planifikuar, kaluar, totalet: await pxllTotalet(ll.id) });
+      res.json({ ok: true, planifikuar, totalet: await pxllTotalet(ll.id) });
     } catch (e) { pxllGabim(res, e); }
   });
   // Anulimi i nje email-i qe ende pret ne radhe
