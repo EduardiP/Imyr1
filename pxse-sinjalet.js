@@ -37,7 +37,7 @@ const PXSJ_MAKS_KATEGORI = 3;      // Google Alerts: AI zgjedh deri ne 3 kategor
 const PXSJ_KUFI_ORE = 10, PXSJ_DOMAINE_DITE = 5;
 const PXSJ_PERGJIGJE_FALAS = 3;   // pergjigje me AI ne proven falas (per domain)
 const PXSJ_PERGJIGJE_IP_DITE = 20;
-const PXSJ_STATUSET = ['new', 'saved', 'replied', 'rejected'];
+const PXSJ_STATUSET = ['new', 'history', 'saved', 'replied', 'rejected']; // 'new'/'history' = pa status (shfaqet sipas dates se ardhjes)
 
 const pxsjSerperKey = () => String(process.env.SERPER_API_KEY || '').trim();
 const pxsjSeKey = () => String(process.env.STACKEXCHANGE_KEY || '').trim();
