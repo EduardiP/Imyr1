@@ -24,7 +24,7 @@
 //
 // Variabla ne Railway: SERPER_API_KEY (per Reddit dhe Indie Hackers), OPENAI_API_KEY (ekziston),
 //   STACKEXCHANGE_KEY (opsionale: pa te Stack Exchange lejon 300 kerkesa ne dite per IP, me te 10,000).
-const { pxseLexoFaqen, pxsePastroDomain, pxseHashIP, pxseFetchKohe, pxseTekstNgaHtml, pxseSeancaVlefshme } = require('./pxse-prova');
+const { pxseKontrolloDomainin, pxsePastroDomain, pxseHashIP, pxseFetchKohe, pxseTekstNgaHtml, pxseSeancaVlefshme } = require('./pxse-prova');
 
 const PXSJ_MUAJ = 5;
 const PXSJ_PRAGU = 40;
@@ -116,6 +116,8 @@ function pxsjPromptAnaliza(domaini, faqja, seksionet, llojiKonfirmuar, alertet) 
     '"pershkrimi": 2 to 3 English sentences: what the product does, for whom, and which problem it solves.\n' +
     '"lloji": "b2b" if the main customers are businesses, teams, founders or professionals using it for work; "b2c" if they are individual consumers for personal use; "te-dyja" if clearly both.\n' +
     '"siguria": "high" or "low": how sure you are about "lloji".\n' +
+    '"biznes_real": true if this website belongs to a real business, company, startup, shop or professional that sells a product or service; ' +
+    'false if it is a personal blog, news or media site, portfolio, hobby page, placeholder or test page, government page, or anything that does not sell a product or service.\n' +
     '"termat": exactly 7 short English search phrases (2 to 5 words), ordered from best to weakest. Write them the way the customers literally write in a forum post ' +
     'when they have the problem this product solves or look for this kind of product: for businesses about their own business or work (for example "clients paying late", "alternative to FreshBooks"), ' +
     'for consumers about their own situation (for example "track my spending", "budgeting app"). The first two must be the phrases most likely to find people who would use this product right now. ' +
@@ -375,6 +377,8 @@ module.exports = function (app, pool) {
     let termat = pxsjPastroTermat(o && o.termat);
     if (termat.length < 2) { o = await pxsjPyetAI(pxsjPromptAnaliza(p.domaini, p.faqja, seksionet, llojiKonfirmuar, alertet), PXSJ_MODELI_ANALIZA, 'low').catch(() => null); termat = pxsjPastroTermat(o && o.termat); }
     if (!o || termat.length < 2) throw Object.assign(new Error('AI could not study your business. Try again.'), { paNumerim: true });
+    // Kontrolli 2 (ne te njejten thirrje AI): vetem biznese te verteta
+    if (o.biznes_real === false || o.biznes_real === 'false') throw Object.assign(new Error('We only accept real business websites.'), { paNumerim: true });
     const kodet = new Set(seksionet.map(s => s.kodi));
     let lloji = ['b2b', 'b2c', 'te-dyja'].includes(o.lloji) ? o.lloji : 'b2b';
     if (llojiKonfirmuar) lloji = llojiKonfirmuar;
@@ -484,8 +488,10 @@ module.exports = function (app, pool) {
   async function pxsjNis(p) {
     try {
       p.hapi = 'Reading ' + p.domaini + '…';
-      try { p.faqja = await pxseLexoFaqen(p.domaini); }
-      catch (e) { throw Object.assign(new Error('Could not read your website. Check the address and try again.'), { paNumerim: true }); }
+      // Kontrolli 1 (pa AI): domain i vertete, faqe qe hapet, jo platforme, jo "parked". Nuk numerohet si prove.
+      const kd = await pxseKontrolloDomainin(p.domaini);
+      if (!kd.ok) throw Object.assign(new Error(kd.error), { paNumerim: true });
+      p.faqja = kd.faqja;
       await pxsjAnalizo(p, null);
       if (p.analiza.siguria === 'low') { p.gjendja = 'konfirmo'; p.hapi = ''; domaineNePune.delete(p.domaini); return; }
       await pxsjVazhdo(p);
