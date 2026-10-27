@@ -14,7 +14,8 @@
 //            (kur AI s'zgjedh asnje: softwarerecs, webapps, webmasters per B2B; money, fitness, travel per B2C)  = falas
 //       B2C: Reddit termi 1, termi 2, termat 3-7 me OR (sa nxene ne ~30 fjale)  = 3 kredite Serper
 //            Stack Exchange: si me lart (te 7 termat), ne seksione per individe. Pa Indie Hackers dhe pa Hacker News.
-//       B2B dhe B2C: Google Alerts: AI zgjedh deri 10 alerte (nga ato te lidhura) dhe merren sinjalet e tyre te ruajtura (deri 3 jave)  = falas
+//       B2B dhe B2C: Google Alerts: AI zgjedh deri 3 kategori (nga alertet e lidhura) dhe merren TE GJITHA sinjalet e ruajtura
+//            (deri 3 jave) te te gjitha alerteve te atyre kategorive  = falas
 //     (Bluesky nuk eshte ketu: shtohet me vone.)
 //  4. Ne fund, AI vlereson te gjitha rezultatet bashke (0-100, pikete i llogarit kodi nga pergjigjet po/jo).
 //     Shfaqen vetem ato me 40+, nga me te mirat te me te dobetat.
@@ -31,7 +32,8 @@ const PXSJ_MODELI_ANALIZA = 'gpt-5-mini';
 const PXSJ_MODELI_VLERESIMI = 'gpt-5-nano';
 const PXSJ_SE_PER_KERKESE = 5;    // pyetje Stack Exchange per nje kerkese (term x seksion); kerkohen te 7 termat
 const PXSJ_HN_PER_TERM = 20;       // postime Hacker News per term; kerkohen te 7 termat
-const PXSJ_MAKS_VLERESIM = 250;   // kufi i rezultateve qe i dergohen AI-se per vleresim (kosto)
+const PXSJ_MAKS_VLERESIM = 500;   // kufi sigurie i rezultateve qe i dergohen AI-se per vleresim (kosto)
+const PXSJ_MAKS_KATEGORI = 3;      // Google Alerts: AI zgjedh deri ne 3 kategori; merren te gjitha sinjalet e te gjitha alerteve te tyre
 const PXSJ_KUFI_ORE = 10, PXSJ_DOMAINE_DITE = 5;
 const PXSJ_PERGJIGJE_FALAS = 3;   // pergjigje me AI ne proven falas (per domain)
 const PXSJ_PERGJIGJE_IP_DITE = 20;
@@ -108,8 +110,8 @@ function pxsjPromptAnaliza(domaini, faqja, seksionet, llojiKonfirmuar, alertet) 
     'WEBSITE ' + domaini + '\nTITLE: ' + faqja.titulli + '\nMETA: ' + faqja.meta + '\nTEXT: ' + faqja.teksti + '\n\n' +
     (llojiKonfirmuar ? 'The owner confirmed that the customers are ' + (llojiKonfirmuar === 'b2b' ? 'BUSINESSES (B2B)' : 'INDIVIDUAL CONSUMERS (B2C)') + '. Use this type.\n\n' : '') +
     'STACK EXCHANGE SITES (code: name):\n' + (seksionet.length ? seksionet.map(s => s.kodi + ': ' + s.emri).join('\n') : '(none available)') + '\n\n' +
-    (alertet.length ? 'GOOGLE ALERTS (number: [business category, B2B/B2C] search phrases that people write):\n' +
-      alertet.map(a => a.nr + ': [' + a.kategoria + ', ' + String(a.lloji).toUpperCase() + '] ' + a.alerti).join('\n') + '\n\n' : '') +
+    (alertet.length ? 'GOOGLE ALERTS CATEGORIES (category [B2B/B2C]: example phrases that people write in posts of this category):\n' +
+      pxsjKategoriteEAlerteve(alertet).map(k => k.kategoria + ' [' + String(k.lloji).toUpperCase() + ']: ' + k.shembuj.join(' | ')).join('\n') + '\n\n' : '') +
     'Return ONLY a JSON object with these keys:\n' +
     '"pershkrimi": 2 to 3 English sentences: what the product does, for whom, and which problem it solves.\n' +
     '"lloji": "b2b" if the main customers are businesses, teams, founders or professionals using it for work; "b2c" if they are individual consumers for personal use; "te-dyja" if clearly both.\n' +
@@ -121,8 +123,8 @@ function pxsjPromptAnaliza(domaini, faqja, seksionet, llojiKonfirmuar, alertet) 
     '"se_faqet": 2 or 3 site codes copied exactly from the STACK EXCHANGE SITES list, where these customers ask questions that this product could answer. ' +
     'For consumer products choose sites for individuals (for example personal finance, fitness, parenting, travel, apple, android, superuser); for business products choose sites about work, software or the professional field. ' +
     'Empty array if none fits.\n' +
-    (alertet.length ? '"alertet": up to 10 numbers from the GOOGLE ALERTS list, ordered from most to least relevant: the alerts whose phrases are written by people ' +
-      'who could need THIS product (its real customers). First decide which business categories fit this product, then pick the best alerts inside them. Only alerts that clearly fit; empty array if none fits.\n' : '') +
+    (alertet.length ? '"kategorite_alerts": up to ' + PXSJ_MAKS_KATEGORI + ' category names copied exactly from the GOOGLE ALERTS CATEGORIES list, ordered from most to least relevant: ' +
+      'the categories whose posts are written by people who could need THIS product (its real customers). Only categories that clearly fit; empty array if none fits.\n' : '') +
     'No other text outside the JSON.';
 }
 // Prompti i pergjigjes: e dobishme, njerezore, pa reklame; produkti permendet vetem nese ndihmon vertet.
@@ -138,6 +140,16 @@ function pxsjPromptPergjigje(profili, domaini, x) {
     '- No links, no prices, no discount offers, no "DM me", no call to action. Do not pretend to be a customer or a neutral stranger.\n' +
     '- 60 to 140 words, in the language of the post (default English). Plain text, short paragraphs.\n\n' +
     'Return ONLY a JSON object: {"pergjigja": "the reply text"}.';
+}
+// Kategorite e alerteve te lidhura, me deri 4 fraza shembull per secilen (qe AI te kuptoje cfare postimesh sjell kategoria)
+function pxsjKategoriteEAlerteve(alertet) {
+  const m = new Map();
+  alertet.forEach(a => {
+    const k = m.get(a.kategoria) || { kategoria: a.kategoria, lloji: a.lloji, shembuj: [] };
+    if (k.shembuj.length < 4) k.shembuj.push(String(a.alerti).split(/\s+OR\s+/i)[0].replace(/"/g, '').trim());
+    m.set(a.kategoria, k);
+  });
+  return Array.from(m.values());
 }
 function pxsjPastroTermat(lista) {
   const d = [];
@@ -321,7 +333,7 @@ module.exports = function (app, pool) {
   // Sinjalet e ruajtura te alerteve te zgjedhura, ne formatin e perbashket te postimeve
   async function pxsjSinjaletEAlerteve(nrat) {
     const r = await pool.query(`SELECT id, url, titulli, teksti, publikuar, marre_at, kategoria FROM pxse_alertet_rezultate
-      WHERE nr = ANY($1::int[]) AND marre_at > now() - interval '21 days' ORDER BY marre_at DESC LIMIT 80`, [nrat]);
+      WHERE nr = ANY($1::int[]) AND marre_at > now() - interval '21 days' ORDER BY marre_at DESC LIMIT 2000`, [nrat]); // te gjitha (kufi sigurie)
     return r.rows.map(x => {
       let host = ''; try { host = new URL(x.url).hostname.replace(/^www\./, ''); } catch (e) {}
       return { burimi: 'alerts', id: String(x.url).toLowerCase(), url: x.url, autori: null, titulli: String(x.titulli || '').slice(0, 300),
@@ -372,14 +384,15 @@ module.exports = function (app, pool) {
       siguria: llojiKonfirmuar ? 'high' : (o.siguria === 'low' ? 'low' : 'high'),
       termat,
       se_faqet: (Array.isArray(o.se_faqet) ? o.se_faqet : []).map(x => String(x || '').trim().toLowerCase()).filter(x => kodet.has(x)).slice(0, 3),
-      // Google Alerts: deri ne 10 alerte nga lista e lidhur, sipas renditjes se AI-se (vetem numra qe ekzistojne)
-      alertet: (function () {
-        const lejuar = new Map(alertet.map(a => [a.nr, a])), d = [];
-        (Array.isArray(o.alertet) ? o.alertet : []).forEach(x => { const n = parseInt(x, 10); if (lejuar.has(n) && !d.includes(n)) d.push(n); });
-        return d.slice(0, 10);
+      // Google Alerts: deri ne 3 kategori (vetem emra qe ekzistojne te alertet e lidhura), sipas renditjes se AI-se
+      alertetKategorite: (function () {
+        const lejuar = new Set(alertet.map(a => a.kategoria)), d = [];
+        (Array.isArray(o.kategorite_alerts) ? o.kategorite_alerts : []).forEach(x => { const k = String(x || '').trim(); if (lejuar.has(k) && !d.includes(k)) d.push(k); });
+        return d.slice(0, PXSJ_MAKS_KATEGORI);
       })()
     };
-    p.analiza.alertetKategorite = Array.from(new Set(p.analiza.alertet.map(n => alertet.find(a => a.nr === n).kategoria)));
+    // te gjitha alertet e lidhura ne ato kategori
+    p.analiza.alertet = alertet.filter(a => p.analiza.alertetKategorite.includes(a.kategoria)).map(a => a.nr);
   }
 
   async function pxsjKerko(p) {
@@ -393,7 +406,7 @@ module.exports = function (app, pool) {
       else { const q3 = pxsjPyetjaR3(t.slice(2)); if (q3) kerkesat.push({ burimi: 'reddit', fn: async () => pxsjNgaReddit(await pxsjSerper(q3, kr.reddit)) }); }
     }
     // Google Alerts: sinjalet e ruajtura (deri 3 jave) te alerteve qe zgjodhi AI; pa kosto
-    if (a.alertet && a.alertet.length) kerkesat.push({ burimi: 'alerts', fn: () => pxsjSinjaletEAlerteve(a.alertet) });
+    if (a.alertet && a.alertet.length) kerkesat.push({ burimi: 'alerts', fn: () => pxsjSinjaletEAlerteve(a.alertet) }); // te gjitha sinjalet e te gjitha alerteve te kategorive
     // Hacker News: te 7 termat, secili me vete (falas); dublikatat hiqen me pas
     if (b2b) t.forEach(termi => kerkesat.push({ burimi: 'hn', fn: () => pxsjKerkoHN(termi) }));
     // Stack Exchange: seksionet e AI-se; kur AI s'zgjodhi asnje, nje liste baze sipas llojit (vetem ato qe ekzistojne)
@@ -437,7 +450,7 @@ module.exports = function (app, pool) {
     // Kur ka shume, AI vlereson me te rejat (kufi kostoje)
     const perAI = lista.slice().sort((x, y) => (Date.parse(y.publikuar) || 0) - (Date.parse(x.publikuar) || 0)).slice(0, PXSJ_MAKS_VLERESIM);
     const grupe = []; for (let i = 0; i < perAI.length; i += 10) grupe.push(perAI.slice(i, i + 10));
-    const rez = await pxsjParalel(grupe.map(g => () => pxsjVleresoGrup(g, p.analiza.pershkrimi, b2b)), 4);
+    const rez = await pxsjParalel(grupe.map(g => () => pxsjVleresoGrup(g, p.analiza.pershkrimi, b2b)), 8); // 8 grupe njekohesisht: me shume sinjale, e njejta kohe pritjeje
     const te = []; rez.forEach(x => { if (x && x.ok) te.push(...x.v); });
     if (perAI.length && !te.length) throw Object.assign(new Error('AI could not score the posts. Try again.'), { paNumerim: true });
     return te.filter(x => x.biznes === false && Number(x.p) >= PXSJ_PRAGU)
@@ -581,6 +594,20 @@ module.exports = function (app, pool) {
       pool.query('INSERT INTO pxse_ngjarjet (lloji, nga, seanca, burimi) VALUES ($1,$2,$3,$4)', ['pergjigje_ai', 'sinjale', b.seanca, postimi.burimi || null]).catch(() => {}); // analitika
       res.json({ ok: true, url, pergjigja, mbetur: Math.max(0, PXSJ_PERGJIGJE_FALAS - numri) });
     } catch (e) { console.error('pxse pergjigje:', e.message); res.status(500).json({ error: 'Try again in a few minutes.' }); }
+  });
+
+  // Ndryshimet e klientit ne tekstin e pergjigjes (nuk numerohen si pergjigje e re)
+  app.post('/api/pxse/sinjale/pergjigje-ndrysho', async (req, res) => {
+    try {
+      const b = req.body || {};
+      const pr = await pxsjProva(b.seanca, b.domaini);
+      if (!pr) return res.status(404).json({ error: 'Search not found.' });
+      const url = String(b.url || '');
+      if (!(pr.t.pergjigjet && Object.prototype.hasOwnProperty.call(pr.t.pergjigjet, url))) return res.status(404).json({ error: 'Reply not found.' });
+      const tekst = String(b.tekst == null ? '' : b.tekst).replace(/\r/g, '').slice(0, 3000);
+      await pool.query(`UPDATE pxse_prova_rezultate SET te_dhenat = jsonb_set(te_dhenat, '{pergjigjet}', COALESCE(te_dhenat->'pergjigjet','{}'::jsonb) || jsonb_build_object($2::text, $3::text)), aktiv_at = now() WHERE id=$1`, [pr.id, url, tekst]);
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: 'Try again.' }); }
   });
 
   app.post('/api/pxse/sinjale/konfirmo', async (req, res) => {
