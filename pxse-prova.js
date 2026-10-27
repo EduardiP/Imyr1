@@ -87,7 +87,15 @@ const PXSE_JO_BIZNES = ['google.com', 'gmail.com', 'googlemail.com', 'yahoo.com'
   'railway.app', 'up.railway.app', 'onrender.com', 'render.com', 'fly.dev', 'azurewebsites.net', 'cloudfront.net', 'amplifyapp.com', 'surge.sh',
   'webflow.io', 'framer.website', 'framer.app', 'myshopify.com', 'bubbleapps.io', 'softr.app', 'glide.page', 'repl.co', 'deno.dev', 'workers.dev', 'appspot.com',
   'linktr.ee', 'bit.ly', 'example.com', 'example.org', 'example.net', 'test.com', 'phronexusai.test'];
-const pxseNePlatforme = d => PXSE_JO_BIZNES.some(x => d === x || d.endsWith('.' + x));
+// Adresat falas te hostingut (nen-domaine qe platforma i jep vete). Gjate testimit lejohen me PXSE_LEJO_HOSTING=1 te Railway;
+// pas testimit fshi variablen (ose vendos 0) dhe bllokimi kthehet vete. Email-et dhe rrjetet sociale bllokohen gjithmone.
+const PXSE_HOSTING = ['railway.app', 'up.railway.app', 'onrender.com', 'render.com', 'fly.dev', 'azurewebsites.net', 'cloudfront.net', 'amplifyapp.com', 'surge.sh',
+  'webflow.io', 'framer.website', 'framer.app', 'myshopify.com', 'bubbleapps.io', 'softr.app', 'glide.page', 'repl.co', 'deno.dev', 'workers.dev', 'appspot.com',
+  'vercel.app', 'netlify.app', 'herokuapp.com', 'github.io', 'pages.dev', 'web.app', 'firebaseapp.com', 'glitch.me', 'replit.app',
+  'wordpress.com', 'blogspot.com', 'wixsite.com', 'weebly.com', 'godaddysites.com', 'carrd.co', 'notion.site'];
+const pxseLejoHosting = () => String(process.env.PXSE_LEJO_HOSTING || '').trim() === '1';
+const pxsePerputhet = (d, x) => d === x || d.endsWith('.' + x);
+const pxseNePlatforme = d => PXSE_JO_BIZNES.some(x => pxsePerputhet(d, x) && !(pxseLejoHosting() && PXSE_HOSTING.some(y => pxsePerputhet(d, y))));
 // Faqe "parked", e shitur, bosh ose e paperfunduar
 const PXSE_PARKED = /(this )?domain (name )?(is |may be )?for sale|buy this domain|domain (is )?parked|parked (free|domain|by)|domain parking|sedoparking|hugedomains|afternic|dan\.com|this domain has expired|coming soon|under construction|launching soon|site is under maintenance|default web page|welcome to nginx|apache2? (ubuntu )?default page|it works!|index of \/|future home of|this site can.t be reached|account suspended/i;
 const PXSE_JO_REAL_MESAZH = 'Please enter the domain of a real business website.';
