@@ -449,10 +449,12 @@ module.exports = function (app, pool, iLoguar) {
     try {
       const ll = await pxllLlogaria(req.biznesId); await pxllLidhProvat(ll);
       const rr = await pxllRreshtiSinjaleve(ll.id), t = (rr && rr.te_dhenat) || {}, st = t.statuset || {}, lista = t.rezultatet || [];
-      const nr = k => lista.filter(x => (st[x.url] || 'new') === k).length;
+      // New = sinjalet qe erdhen pas studimit te pare (ardhur_at), deri 2 muaj; History = te tjerat pa status
+      const efektiv = x => ['saved', 'replied', 'rejected'].includes(st[x.url]) ? st[x.url] : (x.ardhur_at && Date.now() - Date.parse(x.ardhur_at) < 60 * 86400000 ? 'new' : 'history');
+      const nr = k => lista.filter(x => efektiv(x) === k).length;
       const g = await pxllDerguesi(ll.id);
       res.json({ ok: true, domaini: ll.domaini, snippetAktiv: ll.snippetAktiv,
-        sinjale: { ka: !!rr, total: lista.length, te_reja: nr('new'), ruajtur: nr('saved'), pergjigjur: nr('replied') },
+        sinjale: { ka: !!rr, total: lista.length, te_reja: nr('new'), historike: nr('history'), ruajtur: nr('saved'), pergjigjur: nr('replied') },
         email: Object.assign({ derguesi: g ? g.email : null, gabimi: g ? g.gabimi : null }, await pxllTotalet(ll.id)) });
     } catch (e) { pxllGabim(res, e); }
   });
