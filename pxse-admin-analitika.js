@@ -260,4 +260,71 @@ module.exports = function (app, pool, iAdmin) {
         ngjarjet: n, ditore, aktivitetet, snippet, dergimet });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
+
+  // ---------- Provat falas: aktive (te dhenat ende ruhen) dhe te skaduara (ka mbetur vetem domaini) ----------
+  // ?sherbimi=email|sinjale. Prova pa login fshihet 7 dite pas krijimit; te email-et, 7 dite pas email-it te fundit.
+  app.get('/api/admin/pxse/analitika/provat', iAdmin, async (req, res) => {
+    try {
+      const sherbimi = req.query.sherbimi === 'sinjale' ? 'sinjale' : 'email';
+      const r = (await pool.query(`SELECT DISTINCT ON (r.domaini, r.seanca) r.id, r.seanca, r.domaini, r.te_dhenat, r.krijuar_at, r.biznes_id,
+          l.biznes_id AS lidhur_biznes, l.lidhur_at, b.emri AS b_emri, b.email AS b_email
+        FROM pxse_prova_rezultate r
+        LEFT JOIN pxse_seanca_llogaria l ON l.seanca = r.seanca
+        LEFT JOIN bizneset b ON b.id = COALESCE(r.biznes_id, l.biznes_id)
+        WHERE r.sherbimi = $1 ORDER BY r.domaini, r.seanca, r.id DESC`, [sherbimi])).rows;
+      const seancat = Array.from(new Set(r.map(x => x.seanca)));
+      // Ngjarjet e ketyre vizitoreve (hyrjet, klikimet)
+      const ngj = {};
+      if (seancat.length) {
+        (await pool.query(`SELECT seanca, lloji, nga, burimi, SUM(n)::int n FROM pxse_ngjarjet WHERE seanca = ANY($1::text[]) GROUP BY 1,2,3,4`, [seancat])).rows.forEach(x => {
+          const o = ngj[x.seanca] = ngj[x.seanca] || { hyrje: 0, klik_hyr: 0, klik_postim: 0, klikime_burimi: {}, rikthime: 0 };
+          if (['hyrje_e_re', 'vizite_perseri', 'rikthim'].includes(x.lloji)) o.hyrje += x.n;
+          if (x.lloji === 'klik_hyr' && x.nga === sherbimi) o.klik_hyr += x.n;
+          if (x.lloji === 'rikthim_domain' && x.nga === sherbimi) o.rikthime += x.n;
+          if (x.lloji === 'klik_postim') { o.klik_postim += x.n; const k = x.burimi || '?'; o.klikime_burimi[k] = (o.klikime_burimi[k] || 0) + x.n; }
+        });
+      }
+      // Email-et e provave (vetem per menune Email-et)
+      const derg = {};
+      if (sherbimi === 'email' && seancat.length) {
+        try {
+          (await pool.query(`SELECT domaini_derguesit d, seanca, COUNT(*)::int gjithsej,
+              COUNT(*) FILTER (WHERE statusi IN ('ne_radhe','duke'))::int ne_radhe, COUNT(*) FILTER (WHERE statusi='derguar')::int derguar,
+              COUNT(*) FILTER (WHERE statusi='deshtoi')::int deshtoi, COUNT(*) FILTER (WHERE hapur_at IS NOT NULL)::int hapur,
+              COUNT(*) FILTER (WHERE klikuar_at IS NOT NULL)::int klikuar, COUNT(*) FILTER (WHERE cregj_at IS NOT NULL)::int cregj,
+              MAX(COALESCE(derguar_at, ora)) fundit
+            FROM pxse_dergimet WHERE seanca = ANY($1::text[]) GROUP BY 1,2`, [seancat])).rows.forEach(x => { derg[x.d + '|' + x.seanca] = x; });
+        } catch (e) {}
+      }
+      const DITE = 7 * 86400000;
+      const aktive = r.map(x => {
+        const t = x.te_dhenat || {}, n = ngj[x.seanca] || { hyrje: 0, klik_hyr: 0, klik_postim: 0, klikime_burimi: {}, rikthime: 0 };
+        const loguar = !!(x.biznes_id || x.lidhur_biznes);
+        let fshihet = null;
+        if (!loguar) {
+          let f = new Date(x.krijuar_at).getTime() + DITE;
+          const d = derg[x.domaini + '|' + x.seanca];
+          if (d && d.fundit) f = Math.max(f, new Date(d.fundit).getTime() + DITE);
+          fshihet = new Date(f).toISOString();
+        }
+        const o = { domaini: x.domaini, krijuar_at: x.krijuar_at, loguar, biznesi: loguar ? { emri: x.b_emri, email: x.b_email, lidhur_at: x.lidhur_at } : null,
+          fshihet, hyrje: n.hyrje, klik_hyr: n.klik_hyr, rikthime: n.rikthime };
+        if (sherbimi === 'email') {
+          o.email = derg[x.domaini + '|' + x.seanca] || { gjithsej: 0, ne_radhe: 0, derguar: 0, deshtoi: 0, hapur: 0, klikuar: 0, cregj: 0 };
+          o.subjekti = t.subjekti || '';
+        } else {
+          const st = { saved: 0, replied: 0, rejected: 0 }; Object.values(t.statuset || {}).forEach(v => { if (st[v] !== undefined) st[v]++; });
+          o.lloji = t.lloji || null; o.burimet = t.burimet || {}; o.gjetur = t.numri || 0; o.dhene = (t.rezultatet || []).length;
+          o.alertet_kategorite = t.alertet_kategorite || []; o.statuset = st; o.pergjigje_ai = t.pergjigje_numri || 0;
+          o.klik_postim = n.klik_postim; o.klikime_burimi = n.klikime_burimi;
+        }
+        return o;
+      }).sort((a, b) => new Date(b.krijuar_at) - new Date(a.krijuar_at)).slice(0, 400);
+      // Te skaduarat: domaini mbetet "i perdorur", por te dhenat e proves jane fshire
+      const skaduara = (await pool.query(`SELECT d.domaini, d.perdorur_at FROM pxse_prova_domaine d
+        WHERE d.sherbimi = $1 AND NOT EXISTS (SELECT 1 FROM pxse_prova_rezultate r WHERE r.domaini = d.domaini AND r.sherbimi = d.sherbimi)
+        ORDER BY d.perdorur_at DESC LIMIT 400`, [sherbimi])).rows;
+      res.json({ ok: true, sherbimi, aktive, skaduara });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
 };
