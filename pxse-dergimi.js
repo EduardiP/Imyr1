@@ -78,7 +78,7 @@ function pxseVlerat(e, marres, paSticker) {
     paragrafet: String(e.trupi || '').replace(/\{company\}/g, marres.emri).split(/\n\s*\n/).map(x => x.trim()).filter(Boolean),
     butoni: d.meButon ? { tekst: String(d.butoniTekst || 'Visit our website').slice(0, 40), link: d.butoniLink } : null,
     fundiJo: 'Not relevant? Just reply "no" and you will not hear from us again.', cregj: 'Unsubscribe',
-    sticker: paSticker ? false : { rreshti1: 'Powered by PhronexusAI', rreshti2: 'Send emails, 100% free' }
+    sticker: paSticker ? false : { rreshti1: 'Powered by PhronexusAI', rreshti2: 'Find customers, 100% free' }
   };
 }
 // HTML-ja e dizajnit te zgjedhur + gjurmimi + Unsubscribe i vertete; dhe versioni tekst.
