@@ -114,6 +114,27 @@
       '.pxp-sticker button.x{margin-left:auto;width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:var(--card2);color:var(--txt);cursor:pointer}',
       '.pxp-njoftim{margin-top:10px;padding:12px 14px;border-radius:10px;border:1px solid rgba(59,110,240,.4);background:rgba(59,110,240,.1);font-size:13px}',
       '.pxp-dash{margin-top:16px}',
+      '.pxp-kal{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap}',
+      '.pxp-kal-m{flex:0 0 auto;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px}',
+      '.pxp-kal-t{font:600 13px var(--f-body);text-align:center;margin-bottom:6px}',
+      '.pxp-kal-g{display:grid;grid-template-columns:repeat(7,34px);gap:3px}',
+      '.pxp-kal-g i{font-style:normal;font-size:11px;color:var(--mut2);text-align:center;padding:2px 0}',
+      '.pxp-kal-d{height:32px;border-radius:8px;border:1px solid transparent;background:none;color:var(--txt);font:13px var(--f-body);cursor:pointer}',
+      '.pxp-kal-d:hover:not(:disabled){border-color:var(--mut2)}',
+      '.pxp-kal-d:disabled{color:var(--mut2);opacity:.35;cursor:default}',
+      '.pxp-kal-d.sot{border-color:var(--line);font-weight:700}',
+      '.pxp-kal-d.on{background:var(--acc);color:#fff}',
+      '.pxp-kal-d.ank{box-shadow:0 0 0 2px var(--acc2)}',
+      '.pxp-kal-sh{align-self:center;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:none;color:var(--txt);cursor:pointer}',
+      '.pxp-kal-sh:disabled{opacity:.3;cursor:default}',
+      '.pxp-domain{margin:0 0 14px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card2)}',
+      '.pxp-domain label{margin:0 0 6px}',
+      '.pxp-domain input[readonly]{opacity:.8}',
+      '.pxp-ndihme{margin-top:10px;padding:12px 14px;border-radius:10px;border:1px solid rgba(34,211,238,.3);background:rgba(34,211,238,.06);font-size:13px;color:var(--txt)}',
+      '.pxp-ndihme p,.pxp-ndihme ol{margin:6px 0 0;color:var(--mut);line-height:1.5}',
+      '.pxp-ndihme ol{padding-left:18px}',
+      '.pxp-ndihme a{color:var(--acc2)}',
+      '.pxp-fushe .small{font-size:12px}',
       '.pxp-oret{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto}',
       '.pxp-ora-rresht{display:flex;align-items:center;gap:10px;padding:6px 8px;border:1px solid var(--line);border-radius:10px;background:var(--card2)}',
       '.pxp-ora-rresht input{width:150px;flex:0 0 auto}',
@@ -196,22 +217,18 @@
       });
       return;
     }
-    // asnje / gabim: 1 kerkim per domainin e llogarise
-    var dom = d.llogariaDomaini || d.domaini;
+    // asnje / gabim: 1 kerkim per domainin e llogarise (fusha e domainit; nga profili kur ekziston)
+    var dd = { domaini: d.llogariaDomaini || d.domaini || '', ngaProfili: d.ngaProfili };
     t.innerHTML = '<div class="pxp-karte"><h3>Find people who are asking for what you sell</h3>' +
-      (dom
-        ? '<p class="pxp-nen">We search Reddit, Hacker News, Stack Exchange, Indie Hackers and news sites for <b>' + h(dom) + '</b> (last 5 months). AI keeps only the posts that show real interest.</p>' +
-          '<button class="pxp-buton" id="pxpSjKerko">✦ Find my signals</button>'
-        : '<p class="pxp-nen">Add your website to your business profile first: we use it to know what you sell.</p><button class="pxp-buton" id="pxpSjBiznesi">Add your website</button>') +
-      (d.gjendja === 'gabim' && d.error ? '<div class="pxp-gabim">' + h(d.error) + '</div>' : '') + '</div>';
+      '<p class="pxp-nen">We search Reddit, Hacker News, Stack Exchange, Indie Hackers and news sites for your business (last 5 months). AI keeps only the posts that show real interest.</p>' +
+      pxpFushaDomainit('pxpSjDom', dd, false, '✦ Find my signals', '', d.gjendja === 'gabim' ? d.error : g.gabim, 'id="pxpSjKerko"') + '</div>';
     var k = t.querySelector('#pxpSjKerko');
     if (k) k.addEventListener('click', async function () {
-      k.disabled = true;
-      try { g.d = await pxpThirr('/sinjale/kerko', 'POST', {}); pxpSjVizato(); clearTimeout(g.timer); g.timer = setTimeout(pxpSjNgarko, 2500); }
-      catch (e) { k.disabled = false; if (e.te && e.te.lidhur) return pxpSjNgarko(); t.querySelector('.pxp-karte').insertAdjacentHTML('beforeend', '<div class="pxp-gabim">' + h(e.message) + '</div>'); }
+      var f = t.querySelector('[data-domaini]'), dom = f ? f.value.trim() : '';
+      k.disabled = true; g.gabim = '';
+      try { g.d = await pxpThirr('/sinjale/kerko', 'POST', { domaini: dom }); pxpSjVizato(); clearTimeout(g.timer); g.timer = setTimeout(pxpSjNgarko, 2500); }
+      catch (e) { if (e.te && e.te.lidhur) return pxpSjNgarko(); g.gabim = e.message; g.d.gjendja = 'asnje'; pxpSjVizato(); }
     });
-    var bz = t.querySelector('#pxpSjBiznesi');
-    if (bz) bz.addEventListener('click', function () { pxpShko({ v: 'profile', nav: 'biznesi' }); });
   }
   function pxpSjStatusi(url) { return (SJ.d.statuset && SJ.d.statuset[url]) || 'new'; }
   function pxpSjLista() {
@@ -231,8 +248,8 @@
         '<div class="pxp-kub"><b>' + pxpNr(nr.replied) + '</b><span>Replied</span></div>' +
         '<div class="pxp-kub"><b>' + pxpNr(d.numri) + '</b><span>Posts checked by AI</span></div>' +
       '</div>' +
-      '<div class="pxp-info">Signals for <b>' + h(d.domaini) + '</b>' + (ngaProva ? ' (from your free try)' : '') +
-        ' · found ' + h(pxpKoha(d.krijuar_at)) + '. Your signals are connected to your account. New signals every day are coming soon.</div>' +
+      '<div class="pxp-ok" style="margin:0 0 14px">✓ Signals for <b>' + h(d.domaini) + '</b> were found and saved' + (ngaProva ? ' (from your free try)' : '') +
+        ' · ' + h(pxpKoha(d.krijuar_at)) + '. They are connected to your account. New signals every day are coming soon.</div>' +
       '<div class="pxp-cipat" data-grup="statusi">' + PXP_STATUSET.map(function (x) {
         return '<button class="pxp-cip' + (g.filtri === x[0] ? ' on' : '') + '" data-f="' + x[0] + '">' + x[1] + '<i>' + nr[x[0]] + '</i></button>';
       }).join('') + '</div>' +
@@ -367,11 +384,12 @@
       pxpEmDerguesiHtml() +
       '<div class="pxp-grid2">' +
         '<div class="pxp-karte"><h3><span class="pxp-hapi">2</span> Your email</h3>' +
-          '<p class="pxp-nen">{company} is replaced with each business name. AI can write it from ' + h(d.domaini || 'your website') + '.</p>' +
+          pxpEmStudimiHtml() +
+          '<p class="pxp-nen">{company} is replaced with each business name.</p>' +
           '<div class="pxp-fushe"><label>Subject</label><input data-e="subjekti" value="' + h(em.subjekti) + '"></div>' +
           '<div class="pxp-fushe" style="margin-top:10px"><label>Message</label><textarea data-e="trupi">' + h(em.trupi) + '</textarea></div>' +
           '<div class="pxp-rresht" style="margin-top:10px"><button class="pxp-buton2" data-fut>Insert {company}</button>' +
-            '<button class="pxp-buton" data-studio' + (g.dukeStudio ? ' disabled' : '') + '>' + (g.dukeStudio ? '<span class="pxp-spin"></span> AI is writing…' : '✦ Write my email with AI') + '</button></div>' +
+            (d.studimi ? '<button class="pxp-buton" data-studio' + (g.dukeStudio ? ' disabled' : '') + '>' + (g.dukeStudio ? '<span class="pxp-spin"></span> AI is writing…' : '✦ Write a new version with AI') + '</button>' : '') + '</div>' +
           '<div class="pxp-rresht" style="margin-top:14px">' +
             '<div class="pxp-fushe"><label>Sender name</label><input data-e="marka" value="' + h(em.marka) + '" placeholder="Your company"></div>' +
             '<div class="pxp-fushe" style="flex:0 0 110px"><label>Color</label><input type="color" data-d="ngjyra" value="' + h(dz.ngjyra) + '" style="height:40px;padding:3px"></div></div>' +
@@ -444,26 +462,64 @@
         '<div class="pxp-rresht" style="align-items:center"><span style="color:#56d364">✓ Connected:</span> <b>' + h(dr.emri ? dr.emri + ' <' + dr.email + '>' : dr.email) + '</b>' +
         '<span class="small">' + h(dr.host) + '</span><span style="flex:1"></span><button class="pxp-buton2" data-ndrysho-dergues>Change</button><button class="pxp-buton2" data-shkep>Disconnect</button></div></div>';
     }
-    var f = g.formaD || {};
+    var f = g.formaD || {}, dom = d.domaini || 'yourcompany.com';
+    if (!d.domaini) return '<div class="pxp-karte"><h3><span class="pxp-hapi">1</span> Connect your business email</h3>' +
+      '<p class="pxp-nen">First enter your website domain in step 2 below. Then you can connect an email on that domain.</p></div>';
+    var shembull = (f.emri || 'Ana from ' + pxpEmriNgaDomain(dom)) + ' <' + (f.email || ('ana@' + dom)) + '>';
     return '<div class="pxp-karte"><h3><span class="pxp-hapi">1</span> Connect your business email</h3>' +
-      '<p class="pxp-nen">Emails are sent from your own business address, so replies come back to you. Only an email on <b>@' + h(d.domaini || 'your website domain') + '</b> is accepted (not Gmail, Outlook or similar). ' +
-      'Google Workspace or Microsoft 365 with 2-step verification: use an <b>app password</b>.</p>' +
+      '<p class="pxp-nen">Emails are sent from your own business address, so replies come back to you. Only an email on <b>@' + h(dom) + '</b> is accepted (not Gmail, Outlook or similar).</p>' +
       (dr && dr.gabimi ? '<div class="pxp-gabim" style="margin:0 0 10px">' + h(dr.gabimi) + '</div>' : '') +
       (!d.celesi ? '<div class="pxp-info">Connecting a mailbox is not available yet. Please try again later.</div>' : '') +
       '<div class="pxp-rresht">' +
-        '<div class="pxp-fushe"><label>Business email</label><input data-f="email" type="email" autocomplete="off" placeholder="you@' + h(d.domaini || 'yourcompany.com') + '" value="' + h(f.email || (dr && dr.email) || '') + '"></div>' +
-        '<div class="pxp-fushe"><label>Sender name</label><input data-f="emri" placeholder="Your name or company" value="' + h(f.emri || (dr && dr.emri) || '') + '"></div>' +
-        '<div class="pxp-fushe"><label>Password or app password</label><input data-f="fjalekalimi" type="password" autocomplete="new-password" value=""></div></div>' +
-      '<details style="margin-top:10px"' + (f.hapur ? ' open' : '') + '><summary class="small" style="cursor:pointer">Advanced: SMTP server' + (f.ofruesi ? ' (' + h(f.ofruesi) + ' detected)' : '') + '</summary>' +
-        '<div class="pxp-rresht" style="margin-top:8px"><div class="pxp-fushe"><label>SMTP server</label><input data-f="host" placeholder="smtp.yourprovider.com" value="' + h(f.host || '') + '"></div>' +
-        '<div class="pxp-fushe" style="flex:0 1 120px"><label>Port</label><input data-f="port" type="number" value="' + h(f.port || 587) + '"></div>' +
-        '<div class="pxp-fushe"><label>Username (if different)</label><input data-f="perdoruesi" value="' + h(f.perdoruesi || '') + '"></div></div></details>' +
+        '<div class="pxp-fushe"><label>Business email</label><input data-f="email" type="email" autocomplete="off" placeholder="you@' + h(dom) + '" value="' + h(f.email || (dr && dr.email) || '') + '">' +
+          '<span class="small">The address your emails are sent from.</span></div>' +
+        '<div class="pxp-fushe"><label>Name shown to recipients</label><input data-f="emri" placeholder="Ana from ' + h(pxpEmriNgaDomain(dom)) + '" value="' + h(f.emri || (dr && dr.emri) || '') + '">' +
+          '<span class="small">In the inbox they see: <b>' + h(shembull) + '</b></span></div>' +
+        '<div class="pxp-fushe"><label>App password</label><input data-f="fjalekalimi" type="password" autocomplete="new-password" value="">' +
+          '<span class="small"><a href="#" data-ndihme-pw style="color:var(--acc2)">What is this?</a></span></div></div>' +
+      pxpEmNdihmaPw(f) +
+      '<details style="margin-top:10px"' + (f.hapur ? ' open' : '') + '><summary class="small" style="cursor:pointer">Server settings' + (f.host ? ' (filled in automatically' + (f.ofruesi ? ' for ' + h(f.ofruesi) : '') + ')' : '') + '</summary>' +
+        '<p class="small" style="margin:8px 0 0">' + (f.host ? 'You do not need to change these.' : 'We could not detect your email provider. Copy these from your provider\'s help page (search "SMTP settings").') + '</p>' +
+        '<div class="pxp-rresht" style="margin-top:8px">' +
+          '<div class="pxp-fushe"><label>SMTP server</label><input data-f="host" placeholder="smtp.yourprovider.com" value="' + h(f.host || '') + '"><span class="small">The address of your provider\'s sending server.</span></div>' +
+          '<div class="pxp-fushe" style="flex:0 1 140px"><label>Port</label><input data-f="port" type="number" value="' + h(f.port || 587) + '"><span class="small">Usually 587 (or 465).</span></div>' +
+          '<div class="pxp-fushe"><label>Username</label><input data-f="perdoruesi" placeholder="' + h(f.email || ('ana@' + dom)) + '" value="' + h(f.perdoruesi || '') + '"><span class="small">Leave empty: your email is used.</span></div></div></details>' +
       '<div class="pxp-rresht" style="margin-top:12px"><button class="pxp-buton" data-lidh' + (g.dukeLidhur || !d.celesi ? ' disabled' : '') + '>' + (g.dukeLidhur ? '<span class="pxp-spin"></span> Checking…' : 'Connect email') + '</button>' +
         (g.ndryshoDerguesin ? '<button class="pxp-buton2" data-anulo-ndryshim>Cancel</button>' : '') + '</div>' +
       (g.gabimD ? '<div class="pxp-gabim">' + h(g.gabimD) + '</div>' : '') + '</div>';
   }
+  // Studimi i biznesit: fusha e domainit kur s'ka studim; mesazhi jeshil kur ekziston
+  function pxpEmStudimiHtml() {
+    var g = EM, d = g.d;
+    if (d.studimi && !g.dukeStudio) return '<div class="pxp-ok" style="margin:0 0 12px">✓ Your business <b>' + h(d.studimi.domaini || d.domaini) + '</b> was studied and saved. AI wrote your email from it.</div>';
+    return pxpFushaDomainit('pxpEmDom', d, g.dukeStudio, '✦ Study my business with AI', 'AI is reading ' + (g.domDhene || d.domaini || 'your website') + ' and writing your email…', g.gabimStudim, 'data-studio-dom');
+  }
+  // Fusha e domainit (e perbashket per email-et dhe sinjalet): nga profili (e kycur) ose e shkruar nga klienti
+  function pxpFushaDomainit(id, d, duke, tekstButoni, tekstDuke, gabim, atr) {
+    return '<div class="pxp-domain"><label for="' + id + '">Your website</label>' +
+      '<div class="pxp-rresht"><div class="pxp-fushe" style="flex:1 1 260px"><input id="' + id + '" data-domaini placeholder="yourcompany.com" value="' + h(d.domaini || '') + '"' + (d.ngaProfili ? ' readonly' : '') + '></div>' +
+      '<button class="pxp-buton" ' + atr + (duke ? ' disabled' : '') + '>' + (duke ? '<span class="pxp-spin"></span> ' + h(tekstDuke) : h(tekstButoni)) + '</button></div>' +
+      (d.ngaProfili ? '<span class="small">From your business profile.</span>' : '<span class="small">The domain of your business website. Your sending email must be on this domain.</span>') +
+      (gabim ? '<div class="pxp-gabim">' + h(gabim) + '</div>' : '') + '</div>';
+  }
+  function pxpEmriNgaDomain(d) { var e = String(d || '').split('.')[0] || ''; return e ? e.charAt(0).toUpperCase() + e.slice(1) : 'Your company'; }
+  // Shpjegimi i "app password" sipas ofruesit te email-it
+  function pxpEmNdihmaPw(f) {
+    var o = f.ofruesi || '', hapat;
+    if (o === 'Google Workspace') hapat = '<ol><li>Open <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">myaccount.google.com/apppasswords</a> with this email account.</li>' +
+      '<li>Type a name, for example "PhronexusAI", and click <b>Create</b>.</li><li>Copy the 16-letter password Google shows you and paste it here.</li></ol>' +
+      '<p>Google asks you to turn on 2-Step Verification first if it is off. If your company admin turned app passwords off, ask them to allow them. <a href="https://support.google.com/accounts/answer/185833" target="_blank" rel="noopener">Google help</a></p>';
+    else if (o === 'Microsoft 365') hapat = '<ol><li>Open <a href="https://mysignins.microsoft.com/security-info" target="_blank" rel="noopener">mysignins.microsoft.com/security-info</a> with this email account.</li>' +
+      '<li>Click <b>Add sign-in method</b> → <b>App password</b>, give it a name and copy it.</li><li>Paste it here.</li></ol>' +
+      '<p>Your Microsoft 365 admin must allow sending with SMTP (SMTP AUTH) for this mailbox. If connecting fails, ask them to turn it on.</p>';
+    else if (o === 'Zoho Mail') hapat = '<ol><li>Open <a href="https://accounts.zoho.com" target="_blank" rel="noopener">accounts.zoho.com</a> → <b>Security</b> → <b>App passwords</b>.</li>' +
+      '<li>Click <b>Generate new password</b>, name it "PhronexusAI" and copy it.</li><li>Paste it here.</li></ol>';
+    else hapat = '<p>Open the security settings of your email account and create an app password (some providers call it "application password"). If your provider has no app passwords, use your normal email password.</p>';
+    return '<div class="pxp-ndihme"' + (EM.ndihmaPw || o ? '' : ' hidden') + '><b>What is an app password?</b>' +
+      '<p>It is a special password you create yourself in your email account' + (o ? ' (' + h(o) + ')' : '') + ', only for PhronexusAI. It is not your normal password and you do not get it from us. You can delete it anytime to stop sending.</p>' + hapat + '</div>';
+  }
   // ---------- Orari: dite -> numri -> ore te barazlarguara (me dore me pas) ----------
-  var PXP_DITE_PERPARA = 21;
+  var PXP_DITE_PERPARA = 90; // deri 3 muaj perpara (i njejti kufi si serveri)
   function pxpDitaKey(t) { var d = new Date(t), p = function (n) { return (n < 10 ? '0' : '') + n; }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
   function pxpDitaNgaKey(k) { var x = k.split('-'); return new Date(+x[0], +x[1] - 1, +x[2]).getTime(); }
   function pxpDitaEmer(k) { return new Date(pxpDitaNgaKey(k)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }); }
@@ -476,7 +532,7 @@
     var baze = Math.floor(n / ditet.length), mbetje = n % ditet.length;
     ditet.forEach(function (k, i) {
       var sa = baze + (i < mbetje ? 1 : 0); if (!sa) return;
-      var fillimi = pxpDitaNgaKey(k), fundi = fillimi + 86400000;
+      var fillimi = pxpDitaNgaKey(k), dk = new Date(fillimi), fundi = new Date(dk.getFullYear(), dk.getMonth(), dk.getDate() + 1).getTime();
       var tani = Date.now() + 10 * 60000; if (tani > fillimi) fillimi = Math.ceil(tani / 300000) * 300000;
       if (fillimi >= fundi) return;
       var hapi = (fundi - fillimi) / sa;
@@ -508,11 +564,6 @@
   function pxpEmOrariHtml() {
     var g = EM, rend = pxpEmRenditja(), nZ = rend.length, d = g.d;
     if (!g.numriDore) g.numri = nZ;
-    var chips = '';
-    for (var i = 0; i < PXP_DITE_PERPARA; i++) {
-      var k = pxpDitaKey(Date.now() + i * 86400000);
-      chips += '<button type="button" class="pxp-cip' + (g.ditet[k] ? ' on' : '') + '" data-dita="' + k + '">' + (i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : h(pxpDitaEmer(k))) + '</button>';
-    }
     var gab = pxpEmKontrollo();
     var lista = g.oret.map(function (t, i) {
       var b = g.zgjedhur[rend[i]] || {};
@@ -521,7 +572,7 @@
     }).join('');
     return '<div class="pxp-karte"><h3><span class="pxp-hapi">4</span> Schedule</h3>' +
       '<p class="pxp-nen">Choose one or more days, then how many emails to send. Up to ' + (d.ditore || 15) + ' emails a day, at least ' + (d.hapesiraMin || 5) + ' minutes apart.</p>' +
-      '<label style="margin:0 0 6px">Days</label><div class="pxp-cipat">' + chips + '</div>' +
+      '<label style="margin:0 0 6px">Days</label>' + pxpKalendari() +
       '<div class="pxp-rresht"><div class="pxp-fushe" style="flex:0 1 220px"><label>Number of emails</label><input type="number" min="1" data-numri value="' + (g.numri || '') + '"></div>' +
         '<span class="small">' + nZ + ' business' + (nZ === 1 ? '' : 'es') + ' selected' + (g.numri && g.numri < nZ ? ' · the first ' + g.numri + ' get these times' : '') + '</span></div>' +
       (g.oret.length ? '<div class="pxp-info" style="margin:12px 0 8px">The times are spread evenly through each day. This helps your emails stay out of spam: many emails sent close together look like bulk mail. ' +
@@ -531,6 +582,29 @@
       '<div class="pxp-rresht" style="margin-top:12px"><button class="pxp-buton" data-dergo' + (g.dukeDergim ? ' disabled' : '') + '>' + (g.dukeDergim ? '<span class="pxp-spin"></span> Sending…' : 'Send ' + (g.numri || 0) + ' email' + (g.numri === 1 ? '' : 's')) + '</button>' +
         '<span class="small">The design, times and businesses shown here are exactly what is sent.</span></div>' +
       '<p class="small" style="margin:10px 0 0">One-click unsubscribe and a shared do-not-contact list are included in every email.</p></div>';
+  }
+  // ---------- Kalendari (si te Google Analytics): 2 muaj, deri 3 muaj perpara ----------
+  function pxpKalendari() {
+    var g = EM, sot = pxpDitaKey(Date.now()), maks = pxpDitaKey(Date.now() + PXP_DITE_PERPARA * 86400000);
+    var tani = new Date(), m0 = new Date(tani.getFullYear(), tani.getMonth() + (g.muaji || 0), 1);
+    var mMaks = new Date(pxpDitaNgaKey(maks)); mMaks = mMaks.getFullYear() * 12 + mMaks.getMonth();
+    var muaj = function (dt) {
+      var v = dt.getFullYear(), mu = dt.getMonth(), dite = new Date(v, mu + 1, 0).getDate(), fillo = (new Date(v, mu, 1).getDay() + 6) % 7, c = '';
+      for (var i = 0; i < fillo; i++) c += '<span></span>';
+      for (var dd = 1; dd <= dite; dd++) {
+        var k = pxpDitaKey(new Date(v, mu, dd).getTime()), off = k < sot || k > maks;
+        c += '<button type="button" class="pxp-kal-d' + (g.ditet[k] ? ' on' : '') + (g.ankora === k ? ' ank' : '') + (k === sot ? ' sot' : '') + '"' + (off ? ' disabled' : ' data-dita="' + k + '"') + '>' + dd + '</button>';
+      }
+      return '<div class="pxp-kal-m"><div class="pxp-kal-t">' + h(dt.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })) + '</div>' +
+        '<div class="pxp-kal-g">' + ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(function (x) { return '<i>' + x + '</i>'; }).join('') + c + '</div></div>';
+    };
+    var m1 = new Date(m0.getFullYear(), m0.getMonth() + 1, 1);
+    var zgj = Object.keys(g.ditet).filter(function (k) { return g.ditet[k]; }).sort();
+    return '<div class="pxp-kal"><button type="button" class="pxp-kal-sh" data-muaji="-1"' + ((g.muaji || 0) <= 0 ? ' disabled' : '') + '>‹</button>' +
+      muaj(m0) + (m1.getFullYear() * 12 + m1.getMonth() <= mMaks ? muaj(m1) : '') +
+      '<button type="button" class="pxp-kal-sh" data-muaji="1"' + (m1.getFullYear() * 12 + m1.getMonth() >= mMaks ? ' disabled' : '') + '>›</button></div>' +
+      '<p class="small" style="margin:6px 0 10px">Click a day to select it. Click another day to select all the days in between. Click a selected day to remove it.' +
+      (zgj.length ? ' <b>' + zgj.length + ' day' + (zgj.length === 1 ? '' : 's') + ' selected</b> (' + h(pxpDitaEmer(zgj[0])) + (zgj.length > 1 ? ' – ' + h(pxpDitaEmer(zgj[zgj.length - 1])) : '') + ') · <a href="#" data-pastro-ditet style="color:var(--acc2)">Clear</a>' : '') + '</p>';
   }
   // ---------- Lista vertikale e email-eve (pas dergimit te pare) ----------
   function pxpEmKarusel() {
@@ -588,18 +662,23 @@
       ta.value = ta.value.slice(0, a) + '{company}' + ta.value.slice(ta.selectionEnd || a); em.trupi = ta.value; lart(); pxpEmPamja(); ta.focus();
     });
     on('[data-sticker-kthe]', 'click', function (el, e) { e.preventDefault(); g.sticker = false; pxpEmVizato(); });
-    on('[data-studio]', 'click', async function () {
-      g.dukeStudio = true; g.gabim = ''; pxpEmVizato();
+    var studio = async function (perseri) {
+      var f = t.querySelector('[data-domaini]'); g.domDhene = f ? f.value.trim() : '';
+      g.dukeStudio = true; g.gabim = ''; g.gabimStudim = ''; pxpEmVizato();
       try {
-        var r = await pxpThirr('/email/studio', 'POST', {});
+        var r = await pxpThirr('/email/studio', 'POST', { domaini: g.domDhene, perseri: !!perseri });
         em.subjekti = r.subjekti || em.subjekti; em.trupi = r.trupi || em.trupi; if (r.emri && !em.marka) em.marka = r.emri;
         if (r.ngjyra) em.dizajn.ngjyra = r.ngjyra; if (r.ikona && !em.dizajn.logo) em.dizajn.logo = r.ikona; if (r.butoniTekst) em.dizajn.butoniTekst = r.butoniTekst;
         g.d.studimi = r;
         if (r.kategorite && r.kategorite[0] && !Object.keys(g.zgjedhur).length) { g.kat = r.kategorite[0]; await pxpEmBizneset(true); }
-        g.njoftim = 'AI wrote your subject and message. You can edit everything.';
-      } catch (e) { g.gabim = e.message; }
-      g.dukeStudio = false; pxpEmVizato();
-    });
+        if (r.domaini) g.d.domaini = r.domaini;
+        g.njoftim = '';
+      } catch (e) { g.gabimStudim = e.message; if (perseri) alertPxp(e.message); }
+      g.dukeStudio = false;
+      await pxpEmNgarko(false);
+    };
+    on('[data-studio]', 'click', function () { studio(true); });
+    on('[data-studio-dom]', 'click', function () { studio(false); });
     on('[data-kat]', 'change', async function (el) { g.kat = el.value; await pxpEmBizneset(true); pxpEmVizato(); });
     on('[data-me-shume]', 'click', async function () { g.faqe++; await pxpEmBizneset(false); pxpEmVizato(); });
     on('[data-biz]', 'change', function (el) {
@@ -609,7 +688,19 @@
     });
     on('[data-te-gjitha]', 'click', function () { g.bizneset.forEach(function (b) { if (!g.zgjedhur[b.id]) { g.zgjedhur[b.id] = b; g.renditja = (g.renditja || []).concat([b.id]); } }); pxpEmPasZgjedhjes(); });
     on('[data-asnje]', 'click', function () { g.zgjedhur = {}; g.renditja = []; pxpEmPasZgjedhjes(); });
-    on('[data-dita]', 'click', function (el) { var k = el.getAttribute('data-dita'); g.ditet[k] = !g.ditet[k]; g.provoi = false; pxpEmGjeneroOret(); pxpEmVizato(); });
+    on('[data-dita]', 'click', function (el) {
+      var k = el.getAttribute('data-dita');
+      if (g.ankora && g.ankora !== k) {
+        // Grupi i diteve nga dita e pare te kjo
+        var a = Math.min(pxpDitaNgaKey(g.ankora), pxpDitaNgaKey(k)), b = Math.max(pxpDitaNgaKey(g.ankora), pxpDitaNgaKey(k));
+        for (var dt2 = new Date(a); dt2.getTime() <= b; dt2 = new Date(dt2.getFullYear(), dt2.getMonth(), dt2.getDate() + 1)) g.ditet[pxpDitaKey(dt2.getTime())] = true;
+        g.ankora = null;
+      } else if (g.ditet[k]) { delete g.ditet[k]; g.ankora = null; }
+      else { g.ditet[k] = true; g.ankora = k; }
+      g.provoi = false; pxpEmGjeneroOret(); pxpEmVizato();
+    });
+    on('[data-muaji]', 'click', function (el) { g.muaji = Math.max(0, (g.muaji || 0) + (+el.getAttribute('data-muaji'))); pxpEmVizato(); });
+    on('[data-pastro-ditet]', 'click', function (el, e) { e.preventDefault(); g.ditet = {}; g.ankora = null; pxpEmGjeneroOret(); pxpEmVizato(); });
     on('[data-numri]', 'change', function (el) { g.numri = Math.max(0, parseInt(el.value, 10) || 0); g.numriDore = true; g.provoi = true; pxpEmGjeneroOret(); pxpEmVizato(); });
     on('[data-ora]', 'change', function (el) {
       var i = +el.getAttribute('data-ora'), p = String(el.value || '').split(':'); if (p.length < 2) return;
@@ -657,12 +748,11 @@
       try {
         var r = await pxpThirr('/derguesi/sugjerim?email=' + encodeURIComponent(f.email));
         if (r.host) { f.host = r.host; f.port = r.port; f.ofruesi = r.ofruesi; } else if (r.ofruesi === '') { f.hapur = true; f.ofruesi = ''; }
-        var hf = t.querySelector('[data-f="host"]'), pf = t.querySelector('[data-f="port"]');
-        if (hf && r.host) hf.value = r.host; if (pf && r.port) pf.value = r.port;
-        var sm = t.querySelector('details summary'); if (sm) sm.textContent = 'Advanced: SMTP server' + (f.ofruesi ? ' (' + f.ofruesi + ' detected)' : '');
-        if (r.ofruesi === '' && !r.host) { var dd = t.querySelector('details'); if (dd) dd.open = true; }
+        if (!r.host) { f.host = ''; f.ofruesi = ''; f.hapur = true; }
+        pxpEmVizato();
       } catch (e) {}
     });
+    on('[data-ndihme-pw]', 'click', function (el, e) { e.preventDefault(); g.ndihmaPw = !g.ndihmaPw; var b = t.querySelector('.pxp-ndihme'); if (b) b.hidden = !b.hidden; });
     on('[data-lidh]', 'click', async function () {
       var f = lexoForma(), pw = t.querySelector('[data-f="fjalekalimi"]');
       g.dukeLidhur = true; g.gabimD = ''; pxpEmVizato();
