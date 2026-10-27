@@ -114,6 +114,22 @@
       '.pxp-sticker button.x{margin-left:auto;width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:var(--card2);color:var(--txt);cursor:pointer}',
       '.pxp-njoftim{margin-top:10px;padding:12px 14px;border-radius:10px;border:1px solid rgba(59,110,240,.4);background:rgba(59,110,240,.1);font-size:13px}',
       '.pxp-dash{margin-top:16px}',
+      '.pxp-oret{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto}',
+      '.pxp-ora-rresht{display:flex;align-items:center;gap:10px;padding:6px 8px;border:1px solid var(--line);border-radius:10px;background:var(--card2)}',
+      '.pxp-ora-rresht input{width:150px;flex:0 0 auto}',
+      '.pxp-ora-nr{width:22px;color:var(--mut);font-size:12px}',
+      '.pxp-ora-biz{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}',
+      '.pxp-kar-lista{max-height:360px;overflow-y:auto;scroll-snap-type:y mandatory;display:flex;flex-direction:column;gap:6px}',
+      '.pxp-kar-rresht{scroll-snap-align:start;display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card2);min-height:62px}',
+      '.pxp-kar-info{flex:1;min-width:0;font-size:13px}',
+      '.pxp-kar-info .small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.pxp-k-nr{width:64px;text-align:center}',
+      '.pxp-k-nr b{display:block;font:700 18px var(--f-head);color:var(--txt)}',
+      '.pxp-k-nr span{font-size:11px;color:var(--mut)}',
+      '.pxp-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px}',
+      '.pxp-modal-kuti{max-width:440px;width:100%;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;color:var(--txt);box-shadow:0 20px 50px rgba(0,0,0,.5)}',
+      '.pxp-modal-kuti h3{margin:0 0 8px;font:700 18px var(--f-head)}',
+      '.pxp-modal-kuti p{margin:0 0 8px;font-size:14px;color:var(--mut);line-height:1.55}',
       '.pxp-dash-kartat{display:grid;grid-template-columns:1fr;gap:16px}',
       '@media(min-width:900px){.pxp-dash-kartat{grid-template-columns:1fr 1fr}}',
       '.pxp-dash .card{cursor:pointer}',
@@ -137,8 +153,8 @@
       '<p class="small">' + (s
         ? 'Email businesses from our directory from your own business email. No contact list needed, no limit, on your schedule. You see who opened and who clicked.'
         : 'People who post questions, requests and complaints online that show real interest in what you sell. AI scores each one and writes a reply you can post yourself.') + '</p></div>' +
-      '<div class="pxp-tabs"><button type="button" data-pxp-tab="pxseSinjalet"' + (s ? '' : ' class="on"') + '>Interest Signals</button>' +
-      '<button type="button" data-pxp-tab="pxseEmailet"' + (s ? ' class="on"' : '') + '>Email Outreach</button></div></div>' +
+      '<div class="pxp-tabs"><button type="button" data-pxp-tab="pxseEmailet"' + (s ? ' class="on"' : '') + '>Email Outreach</button>' +
+      '<button type="button" data-pxp-tab="pxseSinjalet"' + (s ? '' : ' class="on"') + '>Interest Signals</button></div></div>' +
       '<div id="pxpTrup"><p class="small"><span class="pxp-spin"></span> Loading…</p></div></div>';
     Array.prototype.forEach.call(m.querySelectorAll('[data-pxp-tab]'), function (b) {
       b.addEventListener('click', function () { pxpShko({ v: 'profile', nav: b.getAttribute('data-pxp-tab') }); });
@@ -301,10 +317,9 @@
   var EM = null;
   function pxpEmailet(trup) {
     EM = { trup: trup, d: null, kat: '', bizneset: [], total: 0, faqe: 0, zgjedhur: {}, njoftim: '', gabim: '', dukeStudio: false, dukeDergim: false,
-      fillimi: pxpLokale(Date.now() + 10 * 60000), intervali: 5, kategorite: [], sticker: false };
+      ditet: {}, numri: 0, numriDore: false, oret: [], kategorite: [], sticker: false };
     pxpEmNgarko(true);
   }
-  function pxpLokale(t) { var d = new Date(t), p = function (n) { return (n < 10 ? '0' : '') + n; }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()); }
   async function pxpEmNgarko(heraPare) {
     var g = EM;
     try { g.d = await pxpThirr('/email'); } catch (e) { g.trup.innerHTML = '<div class="pxp-gabim">' + h(e.message) + '</div>'; return; }
@@ -340,15 +355,15 @@
     var g = EM, d = g.d, t = g.trup, tt = d.totalet || {}, em = g.em, dz = em.dizajn;
     var rek = (d.studimi && d.studimi.kategorite) || [];
     var n = pxpEmNrZgjedhur();
-    var sk = Date.parse(g.fillimi), fundi = sk + Math.max(0, n - 1) * (g.intervali || 5) * 60000;
     t.innerHTML =
       '<div class="pxp-kubet">' +
         '<div class="pxp-kub"><b>' + pxpNr(tt.aktive) + '</b><span>Active (scheduled)</span></div>' +
         '<div class="pxp-kub"><b>' + pxpNr(tt.derguar) + '</b><span>Sent</span></div>' +
         '<div class="pxp-kub"><b>' + pxpNr(tt.pare) + '</b><span>Seen (total views)</span></div>' +
         '<div class="pxp-kub"><b>' + pxpNr(tt.hapur) + '</b><span>Opened</span></div>' +
-        '<div class="pxp-kub"><b>' + pxpNr(tt.klikuar) + '</b><span>Clicked the button</span></div>' +
+        '<div class="pxp-kub"><b>' + pxpNr(tt.klikime) + '</b><span>Clicks on the button</span></div>' +
       '</div>' +
+      pxpEmKarusel() +
       pxpEmDerguesiHtml() +
       '<div class="pxp-grid2">' +
         '<div class="pxp-karte"><h3><span class="pxp-hapi">2</span> Your email</h3>' +
@@ -366,14 +381,12 @@
           '<label class="chk"><input type="checkbox" data-d="meButon"' + (dz.meButon ? ' checked' : '') + '> Add a button to your website</label>' +
           (dz.meButon ? '<div class="pxp-rresht" style="margin-top:6px"><div class="pxp-fushe"><label>Button text</label><input data-d="butoniTekst" value="' + h(dz.butoniTekst) + '"></div>' +
             '<div class="pxp-fushe"><label>Button link</label><input data-d="butoniLink" value="' + h(dz.butoniLink) + '"></div></div>' : '') +
-          '<div class="pxp-sticker">' + (g.sticker ? '✓ The PhronexusAI footer is removed from your emails.' : '<span>Footer: <b>Powered by PhronexusAI</b></span>') +
-            '<button type="button" class="x" data-sticker title="' + (g.sticker ? 'Show the footer again' : 'Remove the PhronexusAI footer') + '">' + (g.sticker ? '↺' : '✕') + '</button></div>' +
-          (g.njoftimSticker ? '<div class="pxp-njoftim">To send without the PhronexusAI footer, add the PhronexusAI snippet to your website. It shows partner ads and brings you real views.' +
-            '<div class="pxp-rresht" style="margin-top:8px"><button class="pxp-buton" data-snippet>Go to Ad Space → My spaces</button></div></div>' : '') +
         '</div>' +
         '<div class="pxp-karte"><h3>How it will look</h3><p class="pxp-nen">Example with the first selected business.</p>' +
           '<div class="pxp-pamja"><div class="pxp-pamja-koka"><b>' + h(pxpZevendeso(em.subjekti)) + '</b><br>From: ' + h(em.marka || d.emri) + ' &lt;' + h((d.derguesi && d.derguesi.email) || ('you@' + (d.domaini || 'yourcompany.com'))) + '&gt;</div>' +
-          '<iframe title="Email preview" sandbox=""></iframe></div></div>' +
+          '<iframe title="Email preview" sandbox="allow-same-origin"></iframe></div>' +
+          (g.sticker ? '<p class="small" style="margin:8px 0 0">✓ The PhronexusAI footer is removed from your emails. <a href="#" data-sticker-kthe style="color:var(--acc2)">Show it again</a></p>'
+            : '<p class="small" style="margin:8px 0 0">Click ✕ on the PhronexusAI footer to remove it.</p>') + '</div>' +
       '</div>' +
       '<div class="pxp-karte"><h3><span class="pxp-hapi">3</span> Recipients</h3><p class="pxp-nen">Businesses from our directory with a verified email. Businesses you already emailed are not shown.</p>' +
         '<div class="pxp-rresht"><div class="pxp-fushe" style="flex:0 1 320px"><label>Category</label><select data-kat><option value="">All categories</option>' +
@@ -385,14 +398,7 @@
         }).join('') : '<p class="small" style="padding:10px 4px">No businesses to email in this category. Choose another category.</p>') + '</div>' +
         (g.bizneset.length < g.total ? '<button class="pxp-buton2" data-me-shume>Load more</button>' : '') +
       '</div>' +
-      '<div class="pxp-karte"><h3><span class="pxp-hapi">4</span> Schedule</h3><p class="pxp-nen">No limit. Emails go out one after another from your own email, so replies come straight to you.</p>' +
-        '<div class="pxp-rresht"><div class="pxp-fushe" style="flex:0 1 240px"><label>First email at</label><input type="datetime-local" data-fillimi value="' + h(g.fillimi) + '"></div>' +
-          '<div class="pxp-fushe" style="flex:0 1 200px"><label>Minutes between emails</label><input type="number" min="1" max="1440" data-intervali value="' + h(g.intervali) + '"></div>' +
-          '<button class="pxp-buton" data-dergo' + (g.dukeDergim || !n ? ' disabled' : '') + '>' + (g.dukeDergim ? '<span class="pxp-spin"></span> Scheduling…' : 'Schedule ' + n + ' email' + (n === 1 ? '' : 's')) + '</button></div>' +
-        (n && sk ? '<p class="small" style="margin:8px 0 0">First at ' + h(pxpData(new Date(sk).toISOString())) + (n > 1 ? ' · last at ' + h(pxpData(new Date(fundi).toISOString())) : '') + '</p>' : '') +
-        (g.gabim ? '<div class="pxp-gabim">' + h(g.gabim) + '</div>' : '') + (g.njoftim ? '<div class="pxp-ok">' + h(g.njoftim) + '</div>' : '') +
-        '<p class="small" style="margin:10px 0 0">One-click unsubscribe and a shared do-not-contact list are included in every email.</p></div>' +
-      pxpEmTabelaHtml();
+      pxpEmOrariHtml();
     pxpEmPamja();
     pxpEmLidh();
   }
@@ -401,7 +407,7 @@
     return String(s || '').replace(/\{company\}/g, b.emri);
   }
   function pxpEmShembull() {
-    var g = EM, id = Object.keys(g.zgjedhur)[0], b = null;
+    var g = EM, id = pxpEmRenditja()[0], b = null;
     if (id) b = g.bizneset.filter(function (x) { return x.id === id; })[0] || g.zgjedhur[id];
     return b && b.emri ? b : (g.bizneset[0] || { emri: 'Example Company', domaini: 'example.com' });
   }
@@ -415,9 +421,21 @@
       paragrafet: String(em.trupi || '').replace(/\{company\}/g, b.emri).split(/\n\s*\n/).map(function (x) { return x.trim(); }).filter(Boolean),
       butoni: dz.meButon ? { tekst: dz.butoniTekst || 'Visit our website', link: dz.butoniLink || ('https://' + dom) } : null,
       fundiJo: 'Not relevant? Just reply "no" and you will not hear from us again.', cregj: 'Unsubscribe',
-      sticker: g.sticker ? false : { rreshti1: 'Powered by PhronexusAI', rreshti2: 'Send emails, 100% free' }
+      sticker: g.sticker ? false : { rreshti1: 'Powered by PhronexusAI', rreshti2: 'Find customers, 100% free' }
     };
-    f.srcdoc = '<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;padding:16px;background:#f4f5f7}</style></head><body>' + (dzn ? dzn.nderto(v) : h(v.paragrafet.join('\n\n'))) + '</body></html>';
+    f.onload = function () {
+      var doc; try { doc = f.contentDocument; } catch (e) { return; } if (!doc) return;
+      // Parapamja: asnje lidhje nuk hapet
+      doc.addEventListener('click', function (e) { var a = e.target.closest && e.target.closest('a'); if (a) e.preventDefault(); });
+      var st = doc.querySelector('a[href="https://phronexusai.com/"]');
+      if (!st) return;
+      st.style.position = 'relative'; st.style.cursor = 'default';
+      var x = doc.createElement('span'); x.textContent = '✕'; x.title = 'Remove the PhronexusAI footer';
+      x.setAttribute('style', 'position:absolute;top:-10px;right:-10px;width:22px;height:22px;border-radius:50%;background:#1c2128;color:#fff;font:bold 12px/22px Arial,sans-serif;text-align:center;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.3);');
+      x.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); pxpEmSticker(); });
+      st.appendChild(x);
+    };
+    f.srcdoc = '<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;padding:16px;background:#f4f5f7}a{cursor:default}</style></head><body>' + (dzn ? dzn.nderto(v) : h(v.paragrafet.join('\n\n'))) + '</body></html>';
   }
   function pxpEmDerguesiHtml() {
     var g = EM, d = g.d, dr = d.derguesi;
@@ -444,18 +462,116 @@
         (g.ndryshoDerguesin ? '<button class="pxp-buton2" data-anulo-ndryshim>Cancel</button>' : '') + '</div>' +
       (g.gabimD ? '<div class="pxp-gabim">' + h(g.gabimD) + '</div>' : '') + '</div>';
   }
-  function pxpEmTabelaHtml() {
+  // ---------- Orari: dite -> numri -> ore te barazlarguara (me dore me pas) ----------
+  var PXP_DITE_PERPARA = 21;
+  function pxpDitaKey(t) { var d = new Date(t), p = function (n) { return (n < 10 ? '0' : '') + n; }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
+  function pxpDitaNgaKey(k) { var x = k.split('-'); return new Date(+x[0], +x[1] - 1, +x[2]).getTime(); }
+  function pxpDitaEmer(k) { return new Date(pxpDitaNgaKey(k)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }); }
+  function pxpOraTekst(t) { var d = new Date(t), p = function (n) { return (n < 10 ? '0' : '') + n; }; return p(d.getHours()) + ':' + p(d.getMinutes()); }
+  function pxpEmRenditja() { var g = EM; g.renditja = (g.renditja || []).filter(function (id) { return g.zgjedhur[id]; }); return g.renditja; }
+  // Numri ne dite i ndare njetrajtesisht; brenda dites, oret ne mes te pjeseve te barabarta te 24 oreve (sot: nga tani).
+  function pxpEmGjeneroOret() {
+    var g = EM, ditet = Object.keys(g.ditet).filter(function (k) { return g.ditet[k]; }).sort(), n = g.numri, out = [];
+    if (!ditet.length || !n) { g.oret = []; return; }
+    var baze = Math.floor(n / ditet.length), mbetje = n % ditet.length;
+    ditet.forEach(function (k, i) {
+      var sa = baze + (i < mbetje ? 1 : 0); if (!sa) return;
+      var fillimi = pxpDitaNgaKey(k), fundi = fillimi + 86400000;
+      var tani = Date.now() + 10 * 60000; if (tani > fillimi) fillimi = Math.ceil(tani / 300000) * 300000;
+      if (fillimi >= fundi) return;
+      var hapi = (fundi - fillimi) / sa;
+      for (var j = 0; j < sa; j++) out.push(Math.round((fillimi + hapi * (j + 0.5)) / 60000) * 60000);
+    });
+    g.oret = out;
+  }
+  // Kontrollet para dergimit (te njejtat i ben edhe serveri)
+  function pxpEmKontrollo() {
+    var g = EM, d = g.d, nZ = pxpEmRenditja().length, ditet = Object.keys(g.ditet).filter(function (k) { return g.ditet[k]; });
+    var max = d.ditore || 15, hap = (d.hapesiraMin || 5) * 60000;
+    if (!nZ) return 'Select the businesses you want to email first.';
+    if (!ditet.length) return 'Choose one or more days.';
+    if (!g.numri) return 'Enter how many emails to send.';
+    if (g.numri > nZ) return 'You selected ' + nZ + ' business' + (nZ === 1 ? '' : 'es') + '. To send ' + g.numri + ' emails, select ' + (g.numri - nZ) + ' more above.';
+    if (g.numri > ditet.length * max) return 'You can send up to ' + max + ' emails a day. ' + g.numri + ' emails need at least ' + Math.ceil(g.numri / max) + ' days: choose more days.';
+    if (g.oret.length !== g.numri) return 'There is not enough time left today for these emails. Choose another day.';
+    if (g.oret.some(function (t) { return t < Date.now(); })) return 'One of the times is in the past. Change it.';
+    var zena = (d.oretZena || []).map(function (x) { return Date.parse(x); });
+    var ngaDita = {};
+    g.oret.concat(zena).forEach(function (t) { var k = pxpDitaKey(t); ngaDita[k] = (ngaDita[k] || 0) + 1; });
+    var plot = g.oret.map(pxpDitaKey).filter(function (k, i, a) { return a.indexOf(k) === i && ngaDita[k] > max; });
+    if (plot.length) return 'You can send up to ' + max + ' emails a day (including the ones already scheduled). ' + plot.map(pxpDitaEmer).join(', ') + ' would have more.';
+    var te = g.oret.map(function (t) { return { t: t, iri: 1 }; }).concat(zena.map(function (t) { return { t: t }; })).sort(function (a, b) { return a.t - b.t; });
+    for (var i = 1; i < te.length; i++) if ((te[i].iri || te[i - 1].iri) && te[i].t - te[i - 1].t < hap)
+      return 'Two emails are less than ' + (d.hapesiraMin || 5) + ' minutes apart (' + pxpOraTekst(te[i - 1].t) + ' and ' + pxpOraTekst(te[i].t) + ' on ' + pxpDitaEmer(pxpDitaKey(te[i].t)) + '). Emails sent close together are more likely to land in spam, so this is not allowed.';
+    return '';
+  }
+  function pxpEmOrariHtml() {
+    var g = EM, rend = pxpEmRenditja(), nZ = rend.length, d = g.d;
+    if (!g.numriDore) g.numri = nZ;
+    var chips = '';
+    for (var i = 0; i < PXP_DITE_PERPARA; i++) {
+      var k = pxpDitaKey(Date.now() + i * 86400000);
+      chips += '<button type="button" class="pxp-cip' + (g.ditet[k] ? ' on' : '') + '" data-dita="' + k + '">' + (i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : h(pxpDitaEmer(k))) + '</button>';
+    }
+    var gab = pxpEmKontrollo();
+    var lista = g.oret.map(function (t, i) {
+      var b = g.zgjedhur[rend[i]] || {};
+      return '<div class="pxp-ora-rresht"><span class="pxp-ora-nr">' + (i + 1) + '</span><span class="pxp-ora-biz">' + h(b.emri || '') + ' <small>' + h(b.domaini || '') + '</small></span>' +
+        '<span class="small">' + h(pxpDitaEmer(pxpDitaKey(t))) + '</span><input type="time" data-ora="' + i + '" value="' + pxpOraTekst(t) + '"></div>';
+    }).join('');
+    return '<div class="pxp-karte"><h3><span class="pxp-hapi">4</span> Schedule</h3>' +
+      '<p class="pxp-nen">Choose one or more days, then how many emails to send. Up to ' + (d.ditore || 15) + ' emails a day, at least ' + (d.hapesiraMin || 5) + ' minutes apart.</p>' +
+      '<label style="margin:0 0 6px">Days</label><div class="pxp-cipat">' + chips + '</div>' +
+      '<div class="pxp-rresht"><div class="pxp-fushe" style="flex:0 1 220px"><label>Number of emails</label><input type="number" min="1" data-numri value="' + (g.numri || '') + '"></div>' +
+        '<span class="small">' + nZ + ' business' + (nZ === 1 ? '' : 'es') + ' selected' + (g.numri && g.numri < nZ ? ' · the first ' + g.numri + ' get these times' : '') + '</span></div>' +
+      (g.oret.length ? '<div class="pxp-info" style="margin:12px 0 8px">The times are spread evenly through each day. This helps your emails stay out of spam: many emails sent close together look like bulk mail. ' +
+        'You can change any time, but we recommend not putting them close to each other.</div><div class="pxp-oret">' + lista + '</div>' : '') +
+      (gab && g.provoi ? '<div class="pxp-gabim">' + h(gab) + '</div>' : '') +
+      (g.gabim ? '<div class="pxp-gabim">' + h(g.gabim) + '</div>' : '') + (g.njoftim ? '<div class="pxp-ok">' + h(g.njoftim) + '</div>' : '') +
+      '<div class="pxp-rresht" style="margin-top:12px"><button class="pxp-buton" data-dergo' + (g.dukeDergim ? ' disabled' : '') + '>' + (g.dukeDergim ? '<span class="pxp-spin"></span> Sending…' : 'Send ' + (g.numri || 0) + ' email' + (g.numri === 1 ? '' : 's')) + '</button>' +
+        '<span class="small">The design, times and businesses shown here are exactly what is sent.</span></div>' +
+      '<p class="small" style="margin:10px 0 0">One-click unsubscribe and a shared do-not-contact list are included in every email.</p></div>';
+  }
+  // ---------- Lista vertikale e email-eve (pas dergimit te pare) ----------
+  function pxpEmKarusel() {
     var l = EM.d.dergimet || [];
-    if (!l.length) return '<div class="pxp-karte"><h3>Your emails</h3><p class="pxp-nen">Your scheduled and sent emails show here, with who opened and who clicked.</p></div>';
-    var st = function (x) { return x.statusi === 'derguar' ? 'Sent' : x.statusi === 'deshtoi' ? 'Not sent' : (x.vonuar ? 'Delayed' : 'Scheduled'); };
-    var po = function (b, n) { return b ? '✓' + (n > 1 ? ' ' + n + '×' : '') : '–'; };
-    return '<div class="pxp-karte"><h3>Your emails</h3><div class="pxp-tabwrap"><table class="pxp-tab"><thead><tr><th>Recipient</th><th>Subject</th><th>Scheduled</th><th>Status</th><th>Seen</th><th>Opened</th><th>Clicked</th><th>Unsubscribed</th><th></th></tr></thead><tbody>' +
-      l.map(function (x) {
-        return '<tr><td>' + h(x.marresi) + ' <span class="small">' + h(x.domaini) + '</span>' + (x.ngaProva ? '<span class="pxp-mini">Free try</span>' : '') + '</td>' +
-          '<td>' + h(x.subjekti) + '</td><td>' + h(pxpData(x.ora)) + '</td><td>' + st(x) + '</td>' +
-          '<td>' + (x.hapje || 0) + '</td><td>' + po(x.hapur) + '</td><td>' + po(x.klikuar, x.klikime) + '</td><td>' + (x.cregj ? '✓' : '–') + '</td>' +
-          '<td>' + (x.statusi === 'ne_radhe' && !x.ngaProva ? '<button class="pxp-buton2" data-anulo="' + x.id + '" style="padding:4px 9px;font-size:12px">Cancel</button>' : '') + '</td></tr>';
-      }).join('') + '</tbody></table></div></div>';
+    if (!l.some(function (x) { return x.statusi === 'derguar'; })) return '';
+    var st = function (x) { return x.statusi === 'derguar' ? 'Sent ' + pxpData(x.derguar_at || x.ora) : x.statusi === 'deshtoi' ? 'Not sent' : (x.vonuar ? 'Delayed' : 'Scheduled ' + pxpData(x.ora)); };
+    var nr = function (v, l2) { return '<div class="pxp-k-nr"><b>' + pxpNr(v) + '</b><span>' + l2 + '</span></div>'; };
+    return '<div class="pxp-karte pxp-karusel"><div class="pxp-rresht" style="justify-content:space-between;align-items:center;margin-bottom:8px"><h3 style="margin:0">Your emails <span class="pxp-mini">' + l.length + '</span></h3>' +
+      '<div class="pxp-rresht"><button class="pxp-buton2" data-kar="-1" aria-label="Up">▲</button><button class="pxp-buton2" data-kar="1" aria-label="Down">▼</button></div></div>' +
+      '<div class="pxp-kar-lista">' + l.map(function (x) {
+        return '<div class="pxp-kar-rresht"><div class="pxp-kar-info"><b>' + h(x.marresi) + '</b> <span class="small">' + h(x.domaini) + '</span>' + (x.ngaProva ? '<span class="pxp-mini">Free try</span>' : '') +
+          '<div class="small">' + h(x.subjekti) + ' · ' + h(st(x)) + (x.cregj ? ' · Unsubscribed' : '') + '</div></div>' +
+          nr(x.statusi === 'derguar' ? 1 : 0, 'Sent') + nr(x.hapje || 0, 'Opened') + nr(x.klikime || 0, 'Clicks') +
+          '<div style="width:74px;text-align:right">' + (x.statusi === 'ne_radhe' && !x.ngaProva ? '<button class="pxp-buton2" data-anulo="' + x.id + '" style="padding:4px 9px;font-size:12px">Cancel</button>' : '') + '</div></div>';
+      }).join('') + '</div></div>';
+  }
+  // ---------- Sticker-i: dritarja kur nuk ka snippet aktiv ----------
+  function pxpEmSticker() {
+    var g = EM;
+    if (g.d.snippetAktiv) { g.sticker = true; pxpEmVizato(); return; }
+    var v = document.getElementById('pxpModal'); if (v) v.remove();
+    var m = document.createElement('div'); m.id = 'pxpModal'; m.className = 'pxp-modal';
+    m.innerHTML = '<div class="pxp-modal-kuti" role="dialog" aria-modal="true"><h3>Remove the PhronexusAI footer</h3>' +
+      '<p>The footer can be removed only when the PhronexusAI ad snippet is connected to your website and is active.</p>' +
+      '<p>The snippet shows partner ads on your website and brings you real views. As soon as it is active, you can send your emails without the footer.</p>' +
+      '<div class="pxp-rresht" style="margin-top:14px"><button class="pxp-buton" data-m="lidh">Connect the ad snippet</button><button class="pxp-buton2" data-m="mbyll">Not now</button></div></div>';
+    document.body.appendChild(m);
+    m.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-m]');
+      if (e.target === m || (b && b.getAttribute('data-m') === 'mbyll')) { m.remove(); return; }
+      if (b && b.getAttribute('data-m') === 'lidh') { m.remove(); pxpShko({ v: 'profile', nav: 'snippetet' }); }
+    });
+  }
+  function pxpEmPasZgjedhjes() { var g = EM; if (!g.numriDore) g.numri = pxpEmRenditja().length; pxpEmGjeneroOret(); pxpEmVizato(); }
+  function pxpEmAlarm(msg) {
+    var v = document.getElementById('pxpModal'); if (v) v.remove();
+    var m = document.createElement('div'); m.id = 'pxpModal'; m.className = 'pxp-modal';
+    m.innerHTML = '<div class="pxp-modal-kuti" role="alertdialog" aria-modal="true"><h3>This is not allowed</h3><p>' + h(msg) + '</p>' +
+      '<div class="pxp-rresht" style="margin-top:14px"><button class="pxp-buton" data-m="mbyll">OK</button></div></div>';
+    document.body.appendChild(m);
+    m.addEventListener('click', function (e) { if (e.target === m || e.target.closest('[data-m]')) m.remove(); });
   }
   function pxpEmLidh() {
     var g = EM, t = g.trup, em = g.em;
@@ -471,13 +587,7 @@
       if (!ta) return; var a = ta.selectionStart || ta.value.length;
       ta.value = ta.value.slice(0, a) + '{company}' + ta.value.slice(ta.selectionEnd || a); em.trupi = ta.value; lart(); pxpEmPamja(); ta.focus();
     });
-    on('[data-sticker]', 'click', function () {
-      if (g.sticker) { g.sticker = false; g.njoftimSticker = false; }
-      else if (g.d.snippetAktiv) { g.sticker = true; g.njoftimSticker = false; }
-      else g.njoftimSticker = !g.njoftimSticker;
-      pxpEmVizato();
-    });
-    on('[data-snippet]', 'click', function () { pxpShko({ v: 'profile', nav: 'snippetet' }); });
+    on('[data-sticker-kthe]', 'click', function (el, e) { e.preventDefault(); g.sticker = false; pxpEmVizato(); });
     on('[data-studio]', 'click', async function () {
       g.dukeStudio = true; g.gabim = ''; pxpEmVizato();
       try {
@@ -494,27 +604,38 @@
     on('[data-me-shume]', 'click', async function () { g.faqe++; await pxpEmBizneset(false); pxpEmVizato(); });
     on('[data-biz]', 'change', function (el) {
       var id = el.getAttribute('data-biz');
-      if (el.checked) g.zgjedhur[id] = g.bizneset.filter(function (x) { return x.id === id; })[0] || { id: id }; else delete g.zgjedhur[id];
-      pxpEmVizato();
+      if (el.checked) { g.zgjedhur[id] = g.bizneset.filter(function (x) { return x.id === id; })[0] || { id: id }; g.renditja = (g.renditja || []).concat([id]); } else delete g.zgjedhur[id];
+      pxpEmPasZgjedhjes();
     });
-    on('[data-te-gjitha]', 'click', function () { g.bizneset.forEach(function (b) { g.zgjedhur[b.id] = b; }); pxpEmVizato(); });
-    on('[data-asnje]', 'click', function () { g.zgjedhur = {}; pxpEmVizato(); });
-    on('[data-fillimi]', 'change', function (el) { g.fillimi = el.value; pxpEmVizato(); });
-    on('[data-intervali]', 'change', function (el) { g.intervali = Math.min(1440, Math.max(1, parseInt(el.value, 10) || 5)); pxpEmVizato(); });
+    on('[data-te-gjitha]', 'click', function () { g.bizneset.forEach(function (b) { if (!g.zgjedhur[b.id]) { g.zgjedhur[b.id] = b; g.renditja = (g.renditja || []).concat([b.id]); } }); pxpEmPasZgjedhjes(); });
+    on('[data-asnje]', 'click', function () { g.zgjedhur = {}; g.renditja = []; pxpEmPasZgjedhjes(); });
+    on('[data-dita]', 'click', function (el) { var k = el.getAttribute('data-dita'); g.ditet[k] = !g.ditet[k]; g.provoi = false; pxpEmGjeneroOret(); pxpEmVizato(); });
+    on('[data-numri]', 'change', function (el) { g.numri = Math.max(0, parseInt(el.value, 10) || 0); g.numriDore = true; g.provoi = true; pxpEmGjeneroOret(); pxpEmVizato(); });
+    on('[data-ora]', 'change', function (el) {
+      var i = +el.getAttribute('data-ora'), p = String(el.value || '').split(':'); if (p.length < 2) return;
+      var dt = new Date(g.oret[i]); dt.setHours(+p[0], +p[1], 0, 0); g.oret[i] = dt.getTime(); g.provoi = true; pxpEmVizato();
+    });
+    on('[data-kar]', 'click', function (el) { var l = t.querySelector('.pxp-kar-lista'); if (l) l.scrollBy({ top: +el.getAttribute('data-kar') * 72 * 3, behavior: 'smooth' }); });
     on('[data-dergo]', 'click', async function () {
-      g.dukeDergim = true; g.gabim = ''; g.njoftim = ''; pxpEmVizato();
+      g.provoi = true; g.gabim = ''; g.njoftim = '';
+      var gab = pxpEmKontrollo();
+      if (gab) { pxpEmVizato(); pxpEmAlarm(gab); return; }
+      // Ajo qe dergohet = ajo qe shihet tani: dizajni, oret dhe bizneset e zgjedhura ne kete moment
+      var rend = pxpEmRenditja().slice(0, g.numri);
+      g.dukeDergim = true; pxpEmVizato();
       try {
+        var zona = ''; try { zona = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (x) {}
         var r = await pxpThirr('/email/dergo', 'POST', { subjekti: em.subjekti, trupi: em.trupi, marka: em.marka, dizajn: em.dizajn, paSticker: g.sticker,
-          marresit: Object.keys(g.zgjedhur), fillimi: new Date(g.fillimi).toISOString(), intervali: g.intervali });
-        g.njoftim = 'Scheduled ' + r.planifikuar + ' email' + (r.planifikuar === 1 ? '' : 's') + '. Each one goes out at its time from your email.' + (r.kaluar ? ' ' + r.kaluar + ' skipped (already emailed or not available).' : '');
-        g.zgjedhur = {};
+          marresit: rend, oret: g.oret.map(function (x) { return new Date(x).toISOString(); }), zona: zona });
+        g.njoftim = 'Done: ' + r.planifikuar + ' email' + (r.planifikuar === 1 ? '' : 's') + ' scheduled. Each one goes out at its time from your email.';
+        rend.forEach(function (id) { delete g.zgjedhur[id]; }); g.renditja = pxpEmRenditja(); g.ditet = {}; g.oret = []; g.numriDore = false; g.provoi = false;
         await pxpEmBizneset(true);
         g.dukeDergim = false;
         await pxpEmNgarko(false);
         return;
       } catch (e) {
         g.gabim = e.message;
-        if (e.te && e.te.snippet) { g.sticker = false; g.njoftimSticker = true; }
+        if (e.te && e.te.snippet) { g.sticker = false; pxpEmSticker(); }
       }
       g.dukeDergim = false; pxpEmVizato();
     });
@@ -567,9 +688,9 @@
     pxpStilet();
     if (!m || m.querySelector('#pxpDash')) return;
     var s = document.createElement('div'); s.id = 'pxpDash'; s.className = 'pxp-dash';
-    s.innerHTML = '<h2 class="h" style="font-size:18px;margin:0 0 4px">Find Customers</h2><p class="small" style="margin:0 0 12px">Interest signals and email outreach.</p>' +
-      '<div class="pxp-dash-kartat"><div class="card" data-pxp-shko="pxseSinjalet"><p class="small"><span class="pxp-spin"></span> Loading…</p></div>' +
-      '<div class="card" data-pxp-shko="pxseEmailet"><p class="small"><span class="pxp-spin"></span> Loading…</p></div></div>';
+    s.innerHTML = '<h2 class="h" style="font-size:18px;margin:0 0 4px">Find Customers</h2><p class="small" style="margin:0 0 12px">Email outreach and interest signals.</p>' +
+      '<div class="pxp-dash-kartat"><div class="card" data-pxp-shko="pxseEmailet"><p class="small"><span class="pxp-spin"></span> Loading…</p></div>' +
+      '<div class="card" data-pxp-shko="pxseSinjalet"><p class="small"><span class="pxp-spin"></span> Loading…</p></div></div>';
     var vs = m.querySelector('#vstep'), rreshti = vs && vs.parentElement && vs.parentElement.parentElement;
     if (rreshti && rreshti.parentElement === m) rreshti.insertAdjacentElement('afterend', s);
     else if (m.firstElementChild) m.firstElementChild.insertAdjacentElement('afterend', s);
@@ -583,7 +704,7 @@
         : '<p class="small" style="margin:8px 0 12px">Find people who are already asking for what you sell' + (d.domaini ? ' (' + h(d.domaini) + ')' : '') + '.</p>') +
       '<button class="btn cta">' + (sj.ka ? 'Open signals →' : '✦ Find my signals →') + '</button>';
     s.querySelector('[data-pxp-shko="pxseEmailet"]').innerHTML = '<h3 class="h" style="font-size:15px;margin:0">Email Outreach</h3>' +
-      '<div class="pxp-dash-nr">' + kutia('Active', em.aktive) + kutia('Sent', em.derguar) + kutia('Seen', em.pare) + kutia('Opened', em.hapur) + kutia('Clicked', em.klikuar) + '</div>' +
+      '<div class="pxp-dash-nr">' + kutia('Active', em.aktive) + kutia('Sent', em.derguar) + kutia('Seen', em.pare) + kutia('Opened', em.hapur) + kutia('Clicks', em.klikime) + '</div>' +
       (em.gabimi ? '<p class="small" style="color:var(--err);margin:0 0 10px">' + h(em.gabimi) + '</p>'
         : (!em.derguesi ? '<p class="small" style="margin:0 0 10px">Connect your business email to send with no limit.</p>' : '<p class="small" style="margin:0 0 10px">Sending from ' + h(em.derguesi) + '</p>')) +
       '<button class="btn cta">Open emails →</button>';
@@ -597,7 +718,7 @@
       if (typeof NAV_ICONS !== 'undefined') NAV_ICONS.pxseGjej = '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><path d="M8 11h6M11 8v6"/>';
       if (typeof NAV2 !== 'undefined' && !NAV2.some(function (n) { return n.k === 'pxseGjej'; })) {
         var i = NAV2.findIndex(function (n) { return n.k === 'dashboard'; });
-        NAV2.splice(i + 1, 0, { k: 'pxseGjej', l: 'Find Customers', subs: [{ l: 'Interest Signals', nav: 'pxseSinjalet' }, { l: 'Email Outreach', nav: 'pxseEmailet' }] });
+        NAV2.splice(i + 1, 0, { k: 'pxseGjej', l: 'Find Customers', subs: [{ l: 'Email Outreach', nav: 'pxseEmailet' }, { l: 'Interest Signals', nav: 'pxseSinjalet' }] });
       }
     } catch (e) {}
   }
@@ -616,7 +737,7 @@
           e.stopPropagation();
           try { _nav2OpenKey = 'pxseGjej'; } catch (x) {}
           if (typeof curNav !== 'undefined' && PXP_FAQET[curNav]) { window.renderNav2(); return; }
-          pxpShko({ v: 'profile', nav: 'pxseSinjalet' });
+          pxpShko({ v: 'profile', nav: 'pxseEmailet' });
         };
       });
       return r;
@@ -626,7 +747,7 @@
     var pxpMainOrigjinal = window.renderMain;
     window.renderMain = function (s) {
       var k = (s && s.nav) || (typeof curNav !== 'undefined' ? curNav : '');
-      if (k === 'pxseGjej') k = 'pxseSinjalet';
+      if (k === 'pxseGjej') k = 'pxseEmailet';
       if (PXP_FAQET[k]) {
         var m = document.getElementById('mainPanel'); if (!m) return;
         if (SJ) clearTimeout(SJ.timer);
