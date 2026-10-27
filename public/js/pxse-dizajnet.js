@@ -62,7 +62,7 @@
       '<td style="vertical-align:middle;"><img src="https://phronexusai.com/favicon-192.png" width="32" height="32" alt="PhronexusAI" style="display:block;border:0;border-radius:7px;"></td>' +
       '<td style="vertical-align:middle;padding-left:10px;' + F + 'line-height:1.35;">' +
       '<span style="display:block;font-size:13px;font-weight:700;color:#1c2128;">' + e(s.rreshti1 || 'Powered by PhronexusAI') + '</span>' +
-      '<span style="display:block;font-size:12px;color:#5b6472;">' + e(s.rreshti2 || 'Send emails, 100% free') + '</span></td>' +
+      '<span style="display:block;font-size:12px;color:#5b6472;">' + e(s.rreshti2 || 'Find customers, 100% free') + '</span></td>' +
       '</tr></table></a></td></tr></table>';
   }
   // Mbeshtjellesi i perbashket: sfondi jashte dhe karta 580px
