@@ -50,7 +50,23 @@
     '.pxad-lista th{text-align:left;color:#8b949e;font-size:11px;text-transform:uppercase;padding:6px 8px;border-bottom:1px solid var(--line)}',
     '.pxad-lista td{padding:7px 8px;border-bottom:1px solid #1c2230}',
     '.pxad-lista td.n{text-align:right;font-variant-numeric:tabular-nums}',
-    '.pxad-shenim{font-size:12px;color:var(--mut);margin:6px 0 0}'
+    '.pxad-shenim{font-size:12px;color:var(--mut);margin:6px 0 0}',
+    '.pxad-provat{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,3fr);gap:12px;margin-bottom:8px}',
+    '@media (max-width:900px){.pxad-provat{grid-template-columns:1fr}}',
+    '.pxad-panel{border:1px solid var(--line);border-radius:12px;background:#0e1116;display:flex;flex-direction:column;min-width:0}',
+    '.pxad-panel-koka{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}',
+    '.pxad-panel-koka b{color:var(--txt);font-size:14px}',
+    '.pxad-rrotull{max-height:380px;overflow-y:auto;padding:6px}',
+    '.pxad-pr{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:9px;padding:9px 10px;color:var(--txt);cursor:pointer;font-family:inherit}',
+    '.pxad-pr:hover{background:#131820;border-color:var(--line)}',
+    '.pxad-pr-dom{font-weight:600;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}',
+    '.pxad-pr-info{font-size:11px;color:var(--mut);white-space:nowrap}',
+    '.pxad-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}',
+    '.pxad-badge.po{background:#0f2e1c;color:#3fb950;border:1px solid #1f5130}',
+    '.pxad-badge.jo{background:#1c2128;color:#8b949e;border:1px solid #30363d}',
+    '.pxad-badge.klik{background:#2d2310;color:#d29922;border:1px solid #4a3a16}',
+    '.pxad-sk{display:flex;justify-content:space-between;gap:8px;padding:7px 10px;font-size:12px;color:#6e7681;border-bottom:1px solid #161b22}',
+    '.pxad-sk span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
   ].join('\n');
 
   // ---------- Email-et ----------
@@ -167,10 +183,11 @@
       toolbar(false) +
       '<div id="pxadTabela"><p class="small">Po ngarkoj…</p></div>' +
       '<div class="pxad-kubat" id="pxadKubat"></div>' +
+      '<h3 class="pxad-titull">Domainet që përdorën provën falas</h3><div id="pxadProvat"><p class="small">Po ngarkoj…</p></div>' +
       '<h3 class="pxad-titull">Bizneset e regjistruara nga provat e email-eve</h3>' +
       '<div id="pxadBizneset"><p class="small">Po ngarkoj…</p></div></div>';
     lidhToolbar(m, ngarkoEmail);
-    ngarkoEmail(); ngarkoBizneset('email');
+    ngarkoEmail(); ngarkoProvat('email'); ngarkoBizneset('email');
   }
 
   function ngarkoEmail() {
@@ -218,10 +235,11 @@
       '<div id="pxadTabela"><p class="small">Po ngarkoj…</p></div>' +
       '<h3 class="pxad-titull">Shërbimet e jashtme që gjetën sinjale</h3>' +
       '<div class="pxad-kubat" id="pxadKubat"></div>' +
+      '<h3 class="pxad-titull">Domainet që përdorën provën falas</h3><div id="pxadProvat"><p class="small">Po ngarkoj…</p></div>' +
       '<h3 class="pxad-titull">Bizneset e regjistruara nga Sinjalet</h3>' +
       '<div id="pxadBizneset"><p class="small">Po ngarkoj…</p></div></div>';
     lidhToolbar(m, ngarkoSinjale);
-    ngarkoSinjale(); ngarkoBizneset('sinjale');
+    ngarkoSinjale(); ngarkoProvat('sinjale'); ngarkoBizneset('sinjale');
   }
   function ngarkoSinjale() {
     el('pxadTabela').innerHTML = '<p class="small">Po ngarkoj…</p>';
@@ -313,6 +331,60 @@
       tip.style.transform = i > seri.length * 0.75 ? 'translate(-100%,-115%)' : (i < seri.length * 0.15 ? 'translate(0,-115%)' : 'translate(-50%,-115%)');
     });
     s.addEventListener('mouseleave', function () { tip.style.display = 'none'; });
+  }
+
+  // ---------- Provat falas: aktive (majtas) dhe te skaduara (djathtas) ----------
+  var EMRAT_BURIMEVE = { reddit: 'Reddit', ih: 'Indie Hackers', hn: 'Hacker News', se: 'Stack Exchange', alerts: 'Google Alerts', '?': 'Të tjera' };
+  function koheMbetur(iso) {
+    var ms = new Date(iso).getTime() - Date.now();
+    if (!(ms > 0)) return 'po fshihet';
+    var d = Math.floor(ms / 86400000), o = Math.floor((ms % 86400000) / 3600000);
+    return d ? d + ' ditë ' + o + ' orë' : (o ? o + ' orë' : 'më pak se 1 orë');
+  }
+  function ngarkoProvat(sherbimi) {
+    fetch('/api/admin/pxse/analitika/provat?sherbimi=' + sherbimi).then(function (r) { return r.json(); }).then(function (d) {
+      var w = el('pxadProvat'); if (!w) return;
+      if (!d || !d.ok) { w.innerHTML = '<p class="small" style="color:#e5484d;">' + e((d && d.error) || 'Gabim.') + '</p>'; return; }
+      var aktive = d.aktive.map(function (x, i) {
+        var badge = x.loguar ? '<span class="pxad-badge po">Logged in</span>' : (x.klik_hyr ? '<span class="pxad-badge klik">Not logged in · klikoi Sign in</span>' : '<span class="pxad-badge jo">Not logged in</span>');
+        var info = sherbimi === 'email' ? (x.email.derguar + '/' + x.email.gjithsej + ' email-e të dërguara') : (x.dhene + ' sinjale · ' + x.klik_postim + ' të hapura');
+        return '<button class="pxad-pr" data-i="' + i + '"><span class="pxad-pr-dom">' + e(x.domaini) + '</span>' + badge +
+          '<span class="pxad-pr-info">' + e(info) + ' · ' + x.hyrje + ' hyrje · ' + (x.loguar ? 'ruhet (llogari)' : 'fshihet pas ' + koheMbetur(x.fshihet)) + '</span></button>';
+      }).join('');
+      var skaduara = d.skaduara.map(function (x) { return '<div class="pxad-sk"><span>' + e(x.domaini) + '</span><span>' + e(koheBukur(x.perdorur_at)) + '</span></div>'; }).join('');
+      w.innerHTML = '<div class="pxad-provat">' +
+        '<div class="pxad-panel"><div class="pxad-panel-koka"><span>Provat aktive (të dhënat ruhen)</span><b>' + d.aktive.length + '</b></div>' +
+        '<div class="pxad-rrotull">' + (aktive || '<p class="small mut" style="padding:8px">Asnjë provë aktive.</p>') + '</div></div>' +
+        '<div class="pxad-panel"><div class="pxad-panel-koka"><span>Të skaduara (vetëm domaini)</span><b>' + d.skaduara.length + '</b></div>' +
+        '<div class="pxad-rrotull">' + (skaduara || '<p class="small mut" style="padding:8px">Asnjë.</p>') + '</div></div>' +
+        '</div>';
+      w.querySelectorAll('[data-i]').forEach(function (b) { b.onclick = function () { detajetProves(d.aktive[Number(b.getAttribute('data-i'))], sherbimi); }; });
+    }).catch(function () { var w = el('pxadProvat'); if (w) w.innerHTML = '<p class="small" style="color:#e5484d;">Gabim gjatë ngarkimit.</p>'; });
+  }
+  function detajetProves(x, sherbimi) {
+    var rr = function (k, v) { return '<div class="pxad-rr"><span>' + e(k) + '</span><span>' + v + '</span></div>'; };
+    var html = rr('Domaini', e(x.domaini)) +
+      rr('Prova u bë', e(koheBukur(x.krijuar_at))) +
+      rr('Login', x.loguar ? 'Po · ' + e((x.biznesi && x.biznesi.emri) || '') + ' · ' + e((x.biznesi && x.biznesi.email) || '') + (x.biznesi && x.biznesi.lidhur_at ? ' · ' + e(koheBukur(x.biznesi.lidhur_at)) : '') : (x.klik_hyr ? 'Jo (klikoi "Sign in" ' + x.klik_hyr + ' herë, por s\'e përfundoi)' : 'Jo')) +
+      rr('Fshirja e të dhënave', x.loguar ? 'Nuk fshihen (i lidhur me llogari)' : e(koheBukur(x.fshihet)) + ' · pas ' + e(koheMbetur(x.fshihet)) + ' (mbetet vetëm domaini)') +
+      rr('Hyrje në faqe gjithsej', String(x.hyrje)) +
+      rr('Rikthime me të njëjtin domain', String(x.rikthime));
+    if (sherbimi === 'email') {
+      var m = x.email;
+      html += '<h4>Email-et</h4><div class="pxad-mini"><div><b>' + m.gjithsej + '</b><span>të planifikuara</span></div><div><b>' + m.derguar + '</b><span>të dërguara</span></div><div><b>' + m.ne_radhe + '</b><span>në radhë</span></div>' +
+        '<div><b>' + m.hapur + '</b><span>të hapura</span></div><div><b>' + m.klikuar + '</b><span>të klikuara</span></div><div><b>' + m.cregj + '</b><span>çregjistrime</span></div>' + (m.deshtoi ? '<div><b>' + m.deshtoi + '</b><span>të dështuara</span></div>' : '') + '</div>' +
+        (x.subjekti ? rr('Subjekti i shkruar nga AI', e(x.subjekti)) : '');
+    } else {
+      var b = x.burimet || {}, kl = x.klikime_burimi || {};
+      html += rr('Lloji (sipas AI)', e(String(x.lloji || '—').toUpperCase())) +
+        '<h4>Sipas burimit</h4><table class="pxad-lista"><thead><tr><th>Burimi</th><th style="text-align:right">Postime të gjetura</th><th style="text-align:right">Sinjale të hapura</th></tr></thead><tbody>' +
+        ['reddit', 'ih', 'hn', 'se', 'alerts'].map(function (k) { return '<tr><td>' + EMRAT_BURIMEVE[k] + '</td><td class="n">' + (b[k] || 0) + '</td><td class="n">' + (kl[k] || 0) + '</td></tr>'; }).join('') +
+        '</tbody></table>' +
+        '<div class="pxad-mini" style="margin-top:12px"><div><b>' + x.gjetur + '</b><span>postime të kontrolluara nga AI</span></div><div><b>' + x.dhene + '</b><span>sinjale të treguara (40+)</span></div><div><b>' + x.klik_postim + '</b><span>sinjale të hapura</span></div>' +
+        '<div><b>' + x.statuset.saved + '</b><span>Saved</span></div><div><b>' + x.statuset.replied + '</b><span>Replied</span></div><div><b>' + x.statuset.rejected + '</b><span>Rejected</span></div><div><b>' + x.pergjigje_ai + '/3</b><span>përgjigje me AI</span></div></div>' +
+        rr('Kategoritë e Google Alerts', x.alertet_kategorite && x.alertet_kategorite.length ? e(x.alertet_kategorite.join(', ')) : '— (asnjë alert i përshtatshëm)');
+    }
+    modal(x.domaini, html);
   }
 
   // ---------- Bizneset ----------
