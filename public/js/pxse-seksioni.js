@@ -157,7 +157,7 @@
       eFooterJo: 'Not relevant? Just reply "no" and you will not hear from us again.',
       eCregjistrohu: 'Unsubscribe',
       eGabimStudim: 'Could not study this domain: {e}',
-      eB2C: 'AI thinks {d} sells mainly to consumers (B2C). Email sending is only for B2B businesses. You can still use the signals on the right.',
+      eB2C: 'This service is built only for B2B businesses. AI thinks {d} sells mainly to consumers (B2C). You can still use the signals on the right.',
       eShembullMarres: 'Example recipient',
       eNjeProve: 'Free: one try per domain. Your email is written by AI from your domain.',
       ePritDomainin: 'Enter your domain and study your business first: AI writes the email from it.',
@@ -348,7 +348,7 @@
       eFooterJo: 'Not relevant? Just reply "no" and you will not hear from us again.',
       eCregjistrohu: 'Unsubscribe',
       eGabimStudim: 'Domaini nuk u studiua dot: {e}',
-      eB2C: 'AI mendon se {d} u shet kryesisht individëve (B2C). Dërgimi i email-eve është vetëm për biznese B2B. Sinjalet djathtas mund t\'i përdorësh.',
+      eB2C: 'Ky shërbim është ndërtuar vetëm për biznese B2B. AI mendon se {d} u shet kryesisht individëve (B2C). Sinjalet djathtas mund t\'i përdorësh.',
       eShembullMarres: 'Marrës shembull',
       eNjeProve: 'Falas: një provë për domain. Email-in e shkruan AI nga domaini yt.',
       ePritDomainin: 'Jep domainin dhe studio biznesin fillimisht: AI e shkruan email-in prej tij.',
@@ -452,15 +452,15 @@
     '  --px-theks:#4f46e5; --px-theks-teksti:#ffffff; --px-theks-lehte:#eef0ff; --px-sukses:#0f9d6b; --px-paralajmerim:#c27803;',
     '  --px-rrezja:14px; --px-rrezja-vogel:9px; --px-hija:0 1px 2px rgba(20,22,37,.06),0 8px 24px rgba(20,22,37,.06);',
     '  --px-font:inherit; --px-lartesia:620px;',
-    '  display:block; color:var(--px-teksti); font-family:var(--px-font); font-size:15px; line-height:1.5;',
+    '  display:block; color:var(--px-teksti); font-family:var(--px-font); font-size:14px; line-height:1.5;',
     '}',
     '*,*::before,*::after{box-sizing:border-box}',
     'button,input,select,textarea{font:inherit;color:inherit}',
     // e gjere sa ekrani, pa kornize "tabele"; ngjyra e sfondit ndan dy seksionet
     '.px{position:relative;background:var(--px-sfondi);overflow:clip;display:flex;flex-direction:column;height:var(--px-lartesia)}',
     // Koka e perbashket "100% free": e dukshme, vlen per te dy sherbimet
-    '.px-koka{padding:16px 24px;text-align:center;background:var(--px-sfondi);border-bottom:1px solid var(--px-kufiri)}',
-    '.px-koka span{display:inline-flex;align-items:center;gap:8px;padding:8px 22px;border-radius:999px;background:var(--px-theks);color:var(--px-theks-teksti);font-size:20px;font-weight:800;letter-spacing:.03em;box-shadow:0 4px 14px rgba(79,70,229,.25)}',
+    '.px-koka{padding:10px 20px;text-align:center;background:var(--px-sfondi);border-bottom:1px solid var(--px-kufiri)}',
+    '.px-koka span{display:inline-flex;align-items:center;gap:8px;padding:6px 18px;border-radius:999px;background:var(--px-theks);color:var(--px-theks-teksti);font-size:17px;font-weight:800;letter-spacing:.03em;box-shadow:0 4px 14px rgba(79,70,229,.25)}',
     '.px-pjesa-email{background:var(--px-sfondi-email)}',
     '.px-pjesa-sinjale{background:var(--px-sfondi-sinjale)}',
     '.px-korniza{display:flex;flex:1 1 auto;min-height:0}',
@@ -472,7 +472,7 @@
     '.px:not([data-gjendja="ndare"]) .px-brenda{height:auto;overflow:visible}',
     '.px:not([data-gjendja="ndare"]) .px-ndaresi{justify-content:flex-start}',
     '.px:not([data-gjendja="ndare"]) .px-shigjetat{position:sticky;top:calc(50vh - 15px);margin-top:min(35vh, 300px)}',
-    '.px-brenda{padding:28px;min-width:300px;height:100%;overflow-y:auto}',
+    '.px-brenda{padding:20px;min-width:300px;height:100%;overflow-y:auto}',
     // ndaresi me shigjeta
     // pamja:  ‹ | ›   (vija ndarese ne mes, nje shigjete ne secilen ane, ne mes te lartesise)
     '.px-ndaresi{position:relative;flex:0 0 72px;background:linear-gradient(to right,var(--px-sfondi-email) 50%,var(--px-sfondi-sinjale) 50%);display:flex;flex-direction:column;justify-content:center;align-items:center}',
@@ -485,17 +485,17 @@
     '.px-shigjeta:focus-visible{outline:2px solid var(--px-theks);outline-offset:2px}',
     '.px-shigjeta[hidden]{display:grid;visibility:hidden}',
     // tipografia
-    '.px-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--px-theks);background:var(--px-theks-lehte);padding:4px 10px;border-radius:999px}',
-    'h2{font-size:24px;line-height:1.25;margin:12px 0 6px;letter-spacing:-.01em}',
-    '.px-nen{color:var(--px-zbehur);margin:0 0 18px;max-width:60ch}',
+    '.px-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--px-theks);background:var(--px-theks-lehte);padding:3px 9px;border-radius:999px}',
+    'h2{font-size:20px;line-height:1.25;margin:8px 0 4px;letter-spacing:-.01em}',
+    '.px-nen{color:var(--px-zbehur);margin:0 0 12px;max-width:60ch}',
     '.px-shembull{font-size:11px;color:var(--px-zbehur);border:1px dashed var(--px-kufiri);border-radius:999px;padding:2px 8px;margin-left:6px;text-transform:none;letter-spacing:0;font-weight:500;background:transparent}',
     // forma
     '.px-rresht{display:flex;gap:8px;flex-wrap:wrap}',
-    '.px-input,.px-select,.px-textarea{background:var(--px-sfondi);border:1px solid var(--px-kufiri);border-radius:var(--px-rrezja-vogel);padding:10px 12px;min-width:0}',
+    '.px-input,.px-select,.px-textarea{background:var(--px-sfondi);border:1px solid var(--px-kufiri);border-radius:var(--px-rrezja-vogel);padding:8px 10px;min-width:0}',
     '.px-input:focus,.px-select:focus,.px-textarea:focus{outline:none;border-color:var(--px-theks);box-shadow:0 0 0 3px var(--px-theks-lehte)}',
     '.px-input{flex:1 1 200px}',
     '.px-textarea{width:100%;min-height:260px;resize:vertical;line-height:1.55;overflow:hidden}',
-    '.px-buton{background:var(--px-theks);color:var(--px-theks-teksti);border:0;border-radius:var(--px-rrezja-vogel);padding:10px 16px;font-weight:600;cursor:pointer;transition:filter .15s}',
+    '.px-buton{background:var(--px-theks);color:var(--px-theks-teksti);border:0;border-radius:var(--px-rrezja-vogel);padding:8px 14px;font-weight:600;cursor:pointer;transition:filter .15s}',
     '.px-buton:hover{filter:brightness(1.08)}',
     '.px-buton:focus-visible{outline:2px solid var(--px-theks);outline-offset:2px}',
     '.px-buton-dyte{background:var(--px-sfondi);color:var(--px-teksti);border:1px solid var(--px-kufiri)}',
@@ -536,7 +536,8 @@
     '.px-ai-kuti{cursor:auto;margin:8px 0 10px;padding:10px 12px;border-radius:10px;background:linear-gradient(180deg,#f5f3ff,#eef2ff);border:1px solid #dcd6ff;font-size:13px;color:var(--px-teksti)}',
     '.px-ai-koka{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}',
     '.px-ai-koka b{font-size:12px;color:#5b3fd6;text-transform:uppercase;letter-spacing:.04em}',
-    '.px-ai-tekst{white-space:pre-wrap;line-height:1.55;user-select:text}',
+    '.px-ai-tekst{display:block;width:100%;box-sizing:border-box;min-height:120px;resize:vertical;white-space:pre-wrap;line-height:1.55;font:inherit;font-size:13px;color:var(--px-teksti);background:#fff;border:1px solid #dcd6ff;border-radius:8px;padding:8px 10px;cursor:text}',
+    '.px-ai-tekst:focus{outline:none;border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.15)}',
     '.px-ai-kuti small{display:block;margin-top:6px;color:var(--px-zbehur);font-size:11px}',
     '.px-ai-kopjo{height:26px;padding:0 12px;border-radius:999px;border:1px solid #c9c0ff;background:#fff;color:#5b3fd6;font:600 12px/1 inherit;font-family:inherit;cursor:pointer}',
     '.px-ai-kopjo:hover{background:#5b3fd6;color:#fff}',
@@ -546,7 +547,7 @@
     '.px-pike-larte{background:#e7f7f0;color:var(--px-sukses)}',
     '.px-pike-mesme{background:#fff4e0;color:var(--px-paralajmerim)}',
     '.px-pike-ulet{background:var(--px-siperfaqja);color:var(--px-zbehur)}',
-    '.px-karta h3{font-size:15px;line-height:1.35;margin:0 0 6px}',
+    '.px-karta h3{font-size:14px;line-height:1.35;margin:0 0 6px}',
     '.px-karta p{margin:0 0 8px;color:var(--px-zbehur);font-size:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
     '.px-arsye{font-size:13px;background:var(--px-theks-lehte);border-radius:8px;padding:6px 10px;margin-bottom:8px}',
     '.px-termat{display:none;gap:6px;flex-wrap:wrap;margin-bottom:8px}',
@@ -568,10 +569,10 @@
     '.px-ngarkim{color:var(--px-zbehur);font-size:14px;padding:16px 0}',
     // email-et
     '.px-hapat{display:grid;gap:12px}',
-    '.px-hapi{border:1px solid var(--px-kufiri);border-radius:var(--px-rrezja-vogel);padding:16px;background:var(--px-sfondi)}',
+    '.px-hapi{border:1px solid var(--px-kufiri);border-radius:var(--px-rrezja-vogel);padding:13px;background:var(--px-sfondi)}',
     '.px-hapi-koka{display:flex;align-items:center;gap:10px;margin-bottom:10px}',
     '.px-nr{width:24px;height:24px;border-radius:50%;background:var(--px-theks);color:var(--px-theks-teksti);display:grid;place-items:center;font-size:12px;font-weight:700;flex:0 0 auto}',
-    '.px-hapi-koka h3{margin:0;font-size:15px}',
+    '.px-hapi-koka h3{margin:0;font-size:14px}',
     '.px-hapi-nen{font-size:13px;color:var(--px-zbehur);margin:-4px 0 10px 34px}',
     '.px-lidhur{font-size:13px;color:var(--px-sukses);margin-top:8px}',
     '.px-numri{font-size:13px;margin-top:10px}',
@@ -603,12 +604,12 @@
     '.px-statistika b{display:block;font-size:20px}',
     '.px-statistika span{font-size:12px;color:var(--px-zbehur)}',
     // email-et (versioni i ri)
-    '.px-b2b{display:inline-flex;align-items:center;gap:8px;margin:2px 0 16px;padding:7px 14px;border-radius:999px;background:var(--px-theks);color:var(--px-theks-teksti);font-weight:700;font-size:14px}',
+    '.px-b2b{display:inline-flex;align-items:center;gap:8px;margin:0 0 12px;padding:5px 12px;border-radius:999px;background:var(--px-theks);color:var(--px-theks-teksti);font-weight:700;font-size:13px}',
     '.px-b2b small{font-weight:500;opacity:.85;font-size:12px}',
     '.px-veprimet-siper{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap;margin-bottom:12px}',
     '.px-provo{flex:1 1 240px;padding:12px 16px}',
     '.px-veprimet-siper .px-studio{flex:1 1 380px;margin:0}',
-    '.px-hyrje{flex:0 1 auto;max-width:100%;white-space:normal;text-align:left;display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:11px 16px;border-radius:var(--px-rrezja-vogel);border:1px solid var(--px-teksti);background:var(--px-teksti);color:var(--px-sfondi);font-weight:600;cursor:pointer;box-shadow:0 1px 2px rgba(20,22,37,.12),0 4px 12px rgba(20,22,37,.10);transition:transform .15s,box-shadow .15s}',
+    '.px-hyrje{flex:0 1 auto;max-width:100%;white-space:normal;text-align:left;display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:8px 14px;border-radius:var(--px-rrezja-vogel);border:1px solid var(--px-teksti);background:var(--px-teksti);color:var(--px-sfondi);font-weight:600;cursor:pointer;box-shadow:0 1px 2px rgba(20,22,37,.12),0 4px 12px rgba(20,22,37,.10);transition:transform .15s,box-shadow .15s}',
     '.px-hyrje svg{width:17px;height:17px;flex:0 0 auto}',
     '.px-hyrje svg:last-child{width:15px;height:15px;opacity:.7;transition:transform .15s}',
     '.px-hyrje:hover{box-shadow:0 2px 4px rgba(20,22,37,.14),0 8px 20px rgba(20,22,37,.16)}',
@@ -617,6 +618,7 @@
     '.px-paralajmero .px-hyrje{padding:9px 14px}',
     '.px-studio-stat.px-keq{color:#b42318}',
     '.px-keq{color:#b42318;font-size:12px}',
+    '.px-gabim-i-forte{background:#fdecec;border:1px solid #f5c2c0;border-radius:8px;padding:8px 12px;font-weight:600}',
     '.px-ditet{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}',
     '.px-dita{display:inline-flex;flex-direction:column;font-size:12px;line-height:1.3;padding:5px 9px;border-radius:8px;background:#e6f6ec;color:#17733a}',
     '.px-dita b{font-weight:600}',
@@ -716,7 +718,7 @@
     '  .px-karta p{-webkit-line-clamp:4}',
     '  .px-zgjeruar{display:block}',
     '  .px-statistika{display:grid}',
-    '  .px-brenda{padding:32px 40px}',
+    '  .px-brenda{padding:22px 32px}',
     '}',
     '@container (min-width: 980px){',
     '  .px-lista{grid-template-columns:1fr 1fr}',
@@ -810,7 +812,7 @@
         (!s.pergjigja && sj.aiMbetur > 0 ? ' <span class="px-sj-mbetur">' + esc(t('bAIMbetur').replace('{n}', sj.aiMbetur)) + '</span>' : '') + '</button>';
       var kuti = duke ? '<div class="px-ai-kuti"><span class="px-rrotull" aria-hidden="true"></span> ' + esc(t('aiDuke')) + '</div>' :
         (s.pergjigja ? '<div class="px-ai-kuti"><div class="px-ai-koka"><b>✦ ' + esc(t('aiTitulli')) + '</b><button type="button" class="px-ai-kopjo" data-kopjo>' + esc(t('aiKopjo')) + '</button></div>' +
-          '<div class="px-ai-tekst">' + esc(s.pergjigja) + '</div><small>' + esc(t('aiShenim')) + '</small></div>' : '') +
+          '<textarea class="px-ai-tekst" data-ai-tekst rows="6" spellcheck="true" aria-label="' + esc(t('aiTitulli')) + '">' + esc(s.pergjigja) + '</textarea><small>' + esc(t('aiShenim')) + '</small></div>' : '') +
         (sj.aiGabim && sj.aiGabim.url === s.url ? '<p class="px-studio-stat px-keq" style="margin:6px 0 0">' + esc(sj.aiGabim.teksti) + '</p>' : '');
       return '<article class="px-karta px-karta-' + esc(s.statusi) + '" data-url="' + esc(s.url) + '" data-b="' + esc(s.b || '') + '" tabindex="0">' +
         '<div class="px-karta-koka"><span>' + esc(s.burimi) + (s.vendi && s.vendi !== s.burimi ? ' · ' + esc(s.vendi) : '') + (s.dite !== null ? ' · ' + s.dite + 'd' : '') + '</span><span class="px-pike ' + klasa + '">' + s.pike + '/100</span></div>' +
@@ -846,7 +848,7 @@
         '<button class="px-buton px-buton-dyte" data-konfirmo="' + (b2b ? 'b2c' : 'b2b') + '">' + esc(t(b2b ? 'sJoIndivide' : 'sJoBiznese')) + '</button></div>';
     }
     if (sj.gjendja === 'perdorur') return '<div class="px-paralajmero" role="alert"><p>' + esc(t('sPerdorur')) + '</p>' + hyrje + '</div>';
-    if (sj.gjendja === 'gabim') return '<p class="px-studio-stat px-keq" role="alert">' + esc(sj.gabim || 'Error') + '</p>';
+    if (sj.gjendja === 'gabim') return '<p class="px-studio-stat px-keq px-gabim-i-forte" role="alert">' + esc(sj.gabim || 'Error') + '</p>';
     if (sj.gjendja !== 'gati') return '<div class="px-bosh">' + esc(t('sSeShpejti')) + '</div>';
     var burimet = Array.from(new Set(SINJALE.map(function (s) { return s.burimi; })));
     var teMira = SINJALE.filter(function (s) { return s.pike >= 80; }).length;
@@ -899,22 +901,25 @@
       .catch(function (e) { sj.aiDuke = ''; sj.aiGabim = { url: url, teksti: String(e && e.message || e) }; self._rivizatoSinjalet(); });
   };
   PxSinjaleEmail.prototype._kopjoPergjigjen = function (btn, karta) {
-    var t = this._t.bind(this), tekst = (karta.querySelector('.px-ai-tekst') || {}).textContent || '';
+    // kopjohet teksti ashtu sic eshte tani ne fushe (i ndryshuar nga klienti ose jo)
+    var t = this._t.bind(this), f = karta.querySelector('.px-ai-tekst'), tekst = f ? f.value : '';
     var u = function () { btn.textContent = t('aiKopjuar'); btn.classList.add('px-kopjuar'); setTimeout(function () { btn.textContent = t('aiKopjo'); btn.classList.remove('px-kopjuar'); }, 1800); };
     var rezerve = function () { var a = document.createElement('textarea'); a.value = tekst; a.style.position = 'fixed'; a.style.opacity = '0'; document.body.appendChild(a); a.select(); try { document.execCommand('copy'); } catch (e) {} a.remove(); u(); };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(tekst).then(u, rezerve); else rezerve();
   };
   PxSinjaleEmail.prototype._rivizatoSinjalet = function () {
     var z = this._rrenja.querySelector('[data-vendi="sinjale-zona"]'); if (!z) return;
-    z.innerHTML = this._htmlSinjaleZona(); this._lidhSinjalet();
+    z.innerHTML = this._htmlSinjaleZona(); this._lidhSinjalet(); pxseLartesiaPergjigjeve(z);
   };
+  // Fushat e pergjigjeve marrin lartesine e tekstit (pa shirit levizjeje brenda)
+  function pxseLartesiaPergjigjeve(z) { z.querySelectorAll('[data-ai-tekst]').forEach(function (f) { f.style.height = 'auto'; f.style.height = (f.scrollHeight + 2) + 'px'; }); }
   PxSinjaleEmail.prototype._lidhSinjalet = function () {
     var self = this, r = this._rrenja;
     r.querySelectorAll('[data-vendi="sinjale-zona"] [data-filtri]').forEach(function (s) {
       s.addEventListener('change', function () {
         var k = s.getAttribute('data-filtri');
         self._filtri[k] = k === 'burimi' || k === 'statusi' ? s.value : Number(s.value);
-        var l = r.querySelector('[data-vendi="sinjalet"]'); if (l) l.innerHTML = self._htmlSinjalet();
+        var l = r.querySelector('[data-vendi="sinjalet"]'); if (l) { l.innerHTML = self._htmlSinjalet(); pxseLartesiaPergjigjeve(l); }
       });
     });
     // analitika: klikimi i "Open post" (vetem numri dhe burimi)
@@ -939,6 +944,17 @@
           pxseNgjarje(self._api(), 'klik_postim', 'sinjale', karta.getAttribute('data-b'));
           window.open(url, '_blank', 'noopener,noreferrer');
         }
+      });
+      // Ndryshimet ne tekstin e pergjigjes: ruhen ne kujtese menjehere dhe ne server pas pak (qe te mbeten kur kthehet)
+      z.addEventListener('input', function (ev) {
+        var f = ev.target; if (!f.matches || !f.matches('[data-ai-tekst]')) return;
+        var k = f.closest('article.px-karta'), url = k && k.getAttribute('data-url');
+        var x = SINJALE.filter(function (s) { return s.url === url; })[0]; if (!x) return;
+        x.pergjigja = f.value; f.style.height = 'auto'; f.style.height = (f.scrollHeight + 2) + 'px';
+        clearTimeout(f._ora);
+        f._ora = setTimeout(function () {
+          fetch(self._api() + '/sinjale/pergjigje-ndrysho', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seanca: pxseSeanca(), domaini: self._sj.domaini, url: url, tekst: x.pergjigja }) }).catch(function () {});
+        }, 700);
       });
       z.addEventListener('keydown', function (ev) {
         if (ev.key !== 'Enter') return;
@@ -1221,8 +1237,8 @@
 
     var stat = em.studim === 'duke' ? '<p class="px-studio-stat">' + esc(t('eDukeStudiuar').replace('{d}', d)) + '</p>' :
       (em.studim === 'gati' ? '<p class="px-studio-stat px-ok">✓ ' + esc(t('eStudiuar').replace('{d}', d)) + '</p>' :
-      (em.studim === 'gabim' ? '<p class="px-studio-stat px-keq">' + esc(t('eGabimStudim').replace('{e}', em.gabim || '')) + '</p>' :
-      (em.studim === 'b2c' ? '<p class="px-studio-stat px-keq">' + esc(t('eB2C').replace('{d}', d)) + '</p>' :
+      (em.studim === 'gabim' ? '<p class="px-studio-stat px-keq px-gabim-i-forte" role="alert">' + esc(em.gabimPlain ? em.gabim : t('eGabimStudim').replace('{e}', em.gabim || '')) + '</p>' :
+      (em.studim === 'b2c' ? '<p class="px-studio-stat px-keq px-gabim-i-forte" role="alert">' + esc(t('eB2C').replace('{d}', d)) + '</p>' :
       (em.studim === 'perdorur' ? paralajmero(t('ePerdorur').replace('{d}', d)) : ''))));
     if (mbyllur) stat = paralajmero(t('eOfertaMbaroi').replace('{d}', d)) + (em.rikthim ? '<p class="px-studio-stat">' + esc(t('eRikthim').replace('{d}', d)) + '</p>' : '');
     else if (em.studim === 'gati' && em.rikthim && em.dergimet.length) stat = '<p class="px-studio-stat px-ok">✓ ' + esc(t('eRikthim').replace('{d}', d)) + '</p>';
@@ -1501,7 +1517,10 @@
         .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; }); })
         .then(function (x) {
           if (x.j && x.j.perdorur) { em.studim = 'perdorur'; self._rivizatoEmail(); return; }
-          if (!x.ok || !x.j.ok) { em.studim = 'gabim'; em.gabim = (x.j && x.j.error) || 'error'; self._rivizatoEmail(); return; }
+          if (x.j && x.j.b2c) { em.studim = 'b2c'; self._rivizatoEmail(); return; } // vetem B2B
+          // domain jo i vertete / jo biznes: mesazhi i serverit, me te kuqe, pa parashtese
+          if (x.j && (x.j.jo_real || x.j.jo_biznes)) { em.studim = 'gabim'; em.gabim = x.j.error; em.gabimPlain = true; self._rivizatoEmail(); return; }
+          if (!x.ok || !x.j.ok) { em.studim = 'gabim'; em.gabim = (x.j && x.j.error) || 'error'; em.gabimPlain = false; self._rivizatoEmail(); return; }
           var j = x.j;
           em.domaini = j.domaini || d; em.pershkrimi = j.pershkrimi; em.lloji = j.lloji; em.siguria = j.siguria;
           // B2C me siguri te larte: dergimi i email-eve nuk lejohet (vetem B2B)
