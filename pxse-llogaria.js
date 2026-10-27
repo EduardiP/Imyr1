@@ -258,7 +258,7 @@ module.exports = function (app, pool, iLoguar) {
           b.emri, b.domaini FROM pxse_dergimet d JOIN pxse_bizneset b ON b.id = d.marres_id WHERE d.biznes_id=$1 ORDER BY d.ora DESC LIMIT 500`, [ll.id]);
       // Email-i i fundit i derguar (per ta rihapur te "Your email")
       const fundit = await pool.query('SELECT subjekti_burim, trupi_burim, marka, dizajn FROM pxse_dergimet WHERE biznes_id=$1 AND trupi_burim IS NOT NULL ORDER BY id DESC LIMIT 1', [ll.id]);
-      res.json({ ok: true, domaini: ll.domaini, ngaProfili: ll.ngaProfili, emri: ll.emri, snippetAktiv: ll.snippetAktiv, derguesi: pxllDerguesiPublik(g), celesi: !!pxllCelesi(),
+      res.json({ ok: true, domaini: ll.domaini, ngaProfili: ll.ngaProfili, domainPlatforme: !!(ll.domaini && pxseNePlatforme(ll.domaini)), emri: ll.emri, snippetAktiv: ll.snippetAktiv, derguesi: pxllDerguesiPublik(g), celesi: !!pxllCelesi(),
         studimi: st.rows.length ? st.rows[0].te_dhenat : null,
         fundit: fundit.rows.length ? { subjekti: fundit.rows[0].subjekti_burim, trupi: fundit.rows[0].trupi_burim, marka: fundit.rows[0].marka, dizajn: fundit.rows[0].dizajn } : null,
         totalet: await pxllTotalet(ll.id), ditore: PXLL_DITORE, hapesiraMin: PXLL_HAPESIRA_MIN,
