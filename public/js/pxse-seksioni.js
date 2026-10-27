@@ -58,7 +58,7 @@
       sShfaqen: 'Showing {n} signals',
       sShfaqen1: 'Showing 1 signal',
       sStatusi: 'Status',
-      stAll: 'All', stNew: 'New', stSaved: 'Saved', stReplied: 'Replied', stRejected: 'Rejected',
+      stAll: 'All', stNew: 'History', stSaved: 'Saved', stReplied: 'Replied', stRejected: 'Rejected',
       bSave: 'Save', bReplied: 'Replied', bReject: 'Reject',
       bAI: 'AI reply', bAIMbetur: '{n} free',
       aiTitulli: 'AI reply draft', aiKopjo: 'Copy', aiKopjuar: 'Copied', aiShenim: 'Review it, change what you want, then post it yourself.',
@@ -249,7 +249,7 @@
       sShfaqen: 'Po shfaqen {n} sinjale',
       sShfaqen1: 'Po shfaqet 1 sinjal',
       sStatusi: 'Statusi',
-      stAll: 'Të gjitha', stNew: 'Të reja', stSaved: 'Të ruajtura', stReplied: 'U përgjigja', stRejected: 'Të refuzuara',
+      stAll: 'Të gjitha', stNew: 'Historike', stSaved: 'Të ruajtura', stReplied: 'U përgjigja', stRejected: 'Të refuzuara',
       bSave: 'Ruaj', bReplied: 'U përgjigja', bReject: 'Refuzo',
       bAI: 'Përgjigje me AI', bAIMbetur: '{n} falas',
       aiTitulli: 'Drafti i përgjigjes me AI', aiKopjo: 'Kopjo', aiKopjuar: 'U kopjua', aiShenim: 'Lexoje, ndrysho çfarë do, pastaj postoje vetë.',
@@ -419,7 +419,7 @@
       var t0 = Date.parse(x.publikuar || '');
       SINJALE.push({ b: x.burimi, burimi: PXSE_BURIMET[x.burimi] || x.burimi, vendi: x.vendi || '', dite: isNaN(t0) ? null : Math.max(0, Math.floor((Date.now() - t0) / 86400000)),
         pike: Number(x.pike) || 0, titulli: x.titulli || '', teksti: x.teksti || '', arsye: x.arsye || '', url: /^https:\/\//.test(x.url || '') ? x.url : '',
-        statusi: statuset[x.url] || 'new', pergjigja: pergjigjet[x.url] || '' });
+        statusi: ({ saved: 1, replied: 1, rejected: 1 }[statuset[x.url]] ? statuset[x.url] : 'history'), pergjigja: pergjigjet[x.url] || '' });
     });
   }
   // Kategorite dhe bizneset vijne nga direktoria e vertete ne databaze (GET /api/pxse/kategorite dhe /api/pxse/bizneset).
@@ -760,7 +760,7 @@
       this._rrenja = this.attachShadow({ mode: 'open' });
       this._gjendja = 'ndare';          // 'ndare' | 'majte' | 'djathte'
       this._domaini = '';
-      this._filtri = { burimi: '', min: 40, dite: 150, statusi: 'new' }; // shfaqen vetem rezultatet me 40+ pike nga AI; paracaktim 5 muaj
+      this._filtri = { burimi: '', min: 40, dite: 150, statusi: 'history' }; // shfaqen vetem rezultatet me 40+ pike nga AI; paracaktim 5 muaj
       this._sj = { gjendja: '', hapi: '', gabim: '', lloji: '', numri: 0, domaini: '' }; // gjendja e kerkimit te sinjaleve
       this._lidhur = '';
       this._kategoria = ''; // '' = te gjitha kategorite (me te rejat ne fillim)
@@ -867,7 +867,7 @@
       '<div><label class="px-etiketa">' + esc(t('sPikeMin')) + '</label><select class="px-select" data-filtri="min">' +
       [[40, t('sCdoPike')], [60, '60+'], [80, '80+']].map(function (o) { return '<option value="' + o[0] + '"' + (self._filtri.min === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></div>' +
       '<div><label class="px-etiketa">' + esc(t('sStatusi')) + '</label><select class="px-select" data-filtri="statusi">' +
-      [['all', t('stAll')], ['new', t('stNew')], ['saved', t('stSaved')], ['replied', t('stReplied')], ['rejected', t('stRejected')]].map(function (o) {
+      [['all', t('stAll')], ['history', t('stNew')], ['saved', t('stSaved')], ['replied', t('stReplied')], ['rejected', t('stRejected')]].map(function (o) {
         var n = o[0] === 'all' ? SINJALE.length : SINJALE.filter(function (x) { return x.statusi === o[0]; }).length;
         return '<option value="' + o[0] + '"' + (self._filtri.statusi === o[0] ? ' selected' : '') + '>' + esc(o[1]) + ' (' + n + ')</option>';
       }).join('') + '</select></div>' +
@@ -875,10 +875,10 @@
       '<div data-vendi="sinjalet">' + this._htmlSinjalet() + '</div>' +
       (!SINJALE.length ? hyrje : '');
   };
-  // Statusi: klikimi i statusit aktiv e kthen sinjalin te "New"
+  // Statusi: klikimi i statusit aktiv e kthen sinjalin te "History" (faqja publike nuk ka "New")
   PxSinjaleEmail.prototype._statusiSinjalit = function (url, statusi) {
     var self = this, x = SINJALE.filter(function (s) { return s.url === url; })[0]; if (!x) return;
-    var iri = x.statusi === statusi ? 'new' : statusi, vjeter = x.statusi;
+    var iri = x.statusi === statusi ? 'history' : statusi, vjeter = x.statusi;
     x.statusi = iri; this._rivizatoSinjalet();
     fetch(this._api() + '/sinjale/statusi', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seanca: pxseSeanca(), domaini: this._sj.domaini, url: url, statusi: iri }) })
       .then(function (r) { if (!r.ok) throw new Error('x'); })
