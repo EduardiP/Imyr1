@@ -54,6 +54,7 @@
   }
   // Sticker-i i PhronexusAI: logo majtas (sa dy rreshtat), dy rreshta djathtas; i gjithi nje lidhje e vetme.
   function sticker(v) {
+    if (v.sticker === false) return ''; // llogari me snippet aktiv: pa sticker
     var s = v.sticker || {};
     return '<table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:16px auto 0;"><tr><td>' +
       '<a href="https://phronexusai.com/" style="display:block;text-decoration:none;border:1px solid #e3e6ea;border-radius:10px;background:#ffffff;padding:8px 14px 8px 10px;">' +
