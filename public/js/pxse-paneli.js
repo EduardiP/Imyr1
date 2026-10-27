@@ -12,7 +12,8 @@
   var PXP_API = '/api/pxse/llogaria';
   var PXP_FAQET = { pxseSinjalet: 'sinjale', pxseEmailet: 'email' };
   var PXP_BURIMET = { reddit: 'Reddit', hn: 'Hacker News', se: 'Stack Exchange', ih: 'Indie Hackers', alerts: 'Google Alerts' };
-  var PXP_STATUSET = [['all', 'All'], ['new', 'New'], ['saved', 'Saved'], ['replied', 'Replied'], ['rejected', 'Rejected']];
+  var PXP_STATUSET = [['all', 'All'], ['new', 'New'], ['history', 'History'], ['saved', 'Saved'], ['replied', 'Replied'], ['rejected', 'Rejected']];
+  var PXP_NEW_DITE = 60; // sinjalet qe vijne pas studimit te pare qendrojne te "New" 2 muaj, pastaj kalojne vete te "History"
 
   function h(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function pxpNr(n) { return Number(n || 0).toLocaleString('en-US'); }
@@ -230,7 +231,14 @@
       catch (e) { if (e.te && e.te.lidhur) return pxpSjNgarko(); g.gabim = e.message; g.d.gjendja = 'asnje'; pxpSjVizato(); }
     });
   }
-  function pxpSjStatusi(url) { return (SJ.d.statuset && SJ.d.statuset[url]) || 'new'; }
+  // Statusi qe shihet: Saved/Replied/Rejected kur klienti e ka vendosur; perndryshe New (vetem sinjalet qe vijne pas studimit
+  // te pare, deri 2 muaj nga dita e ardhjes) ose History (te gjitha te studimit te pare dhe ato me te vjetra se 2 muaj).
+  function pxpSjStatusi(url) {
+    var v = SJ.d.statuset && SJ.d.statuset[url];
+    if (v === 'saved' || v === 'replied' || v === 'rejected') return v;
+    var x = (SJ.d.rezultatet || []).filter(function (r) { return r.url === url; })[0], a = x && Date.parse(x.ardhur_at);
+    return a && Date.now() - a < PXP_NEW_DITE * 86400000 ? 'new' : 'history';
+  }
   function pxpSjLista() {
     var g = SJ, d = g.d, t = g.trup, lista = d.rezultatet || [];
     var nr = {}; PXP_STATUSET.forEach(function (x) { nr[x[0]] = 0; });
@@ -244,6 +252,7 @@
       '<div class="pxp-kubet">' +
         '<div class="pxp-kub"><b>' + pxpNr(nr.all) + '</b><span>Signals</span></div>' +
         '<div class="pxp-kub"><b>' + pxpNr(nr['new']) + '</b><span>New</span></div>' +
+        '<div class="pxp-kub"><b>' + pxpNr(nr.history) + '</b><span>History</span></div>' +
         '<div class="pxp-kub"><b>' + pxpNr(nr.saved) + '</b><span>Saved</span></div>' +
         '<div class="pxp-kub"><b>' + pxpNr(nr.replied) + '</b><span>Replied</span></div>' +
         '<div class="pxp-kub"><b>' + pxpNr(d.numri) + '</b><span>Posts checked by AI</span></div>' +
@@ -256,7 +265,7 @@
       (Object.keys(burimet).length > 1 ? '<div class="pxp-cipat" data-grup="burimi"><button class="pxp-cip' + (g.burimi === 'all' ? ' on' : '') + '" data-b="all">All sources</button>' +
         Object.keys(burimet).map(function (b) { return '<button class="pxp-cip' + (g.burimi === b ? ' on' : '') + '" data-b="' + h(b) + '">' + h(PXP_BURIMET[b] || b) + '<i>' + burimet[b] + '</i></button>'; }).join('') + '</div>' : '') +
       '<p class="small" style="margin:4px 0 10px">Showing ' + shfaq.length + ' signal' + (shfaq.length === 1 ? '' : 's') + '</p>' +
-      (shfaq.length ? '<div class="pxp-lista">' + shfaq.map(pxpSjKarta).join('') + '</div>' : '<div class="pxp-info">No signals match these filters.</div>');
+      (shfaq.length ? '<div class="pxp-lista">' + shfaq.map(pxpSjKarta).join('') + '</div>' : '<div class="pxp-info">' + (g.filtri === 'new' ? 'New signals appear here as they arrive, and stay here for 2 months. Signals from your first search are in History. New signals every day are coming soon.' : 'No signals match these filters.') + '</div>');
     pxpSjLidh();
   }
   function pxpSjKarta(x) {
@@ -269,7 +278,7 @@
       '<h4>' + h(x.titulli) + '</h4>' +
       (x.teksti ? '<p>' + h(x.teksti) + '</p>' : '') +
       (x.arsye ? '<div class="pxp-arsye">Why it fits: ' + h(x.arsye) + '</div>' : '') +
-      '<div class="small">' + (x.autori ? h(x.autori) + ' · ' : '') + h(pxpKoha(x.publikuar)) + (st !== 'new' ? ' <span class="pxp-st">' + h(st.charAt(0).toUpperCase() + st.slice(1)) + '</span>' : '') + '</div>' +
+      '<div class="small">' + (x.autori ? h(x.autori) + ' · ' : '') + h(pxpKoha(x.publikuar)) + (st !== 'new' && st !== 'history' ? ' <span class="pxp-st">' + h(st.charAt(0).toUpperCase() + st.slice(1)) + '</span>' : '') + '</div>' +
       (hapur ? '<div class="pxp-pergjigje"><textarea data-ai-tekst>' + h(pg[x.url]) + '</textarea>' +
         '<div class="pxp-rresht"><button type="button" class="pxp-buton2" data-kopjo>Copy</button><span class="small">Edit it if you like, then post it yourself. We never post for you.</span></div></div>' : '') +
       '<div class="pxp-veprime">' + btn('saved', 'Save') + btn('replied', 'Replied') + btn('rejected', 'Reject') +
@@ -294,7 +303,7 @@
         }
         var stb = el.closest('[data-st]');
         if (stb) {
-          var s = stb.getAttribute('data-st'); if (pxpSjStatusi(url) === s) s = 'new';
+          var s = stb.getAttribute('data-st'); if (pxpSjStatusi(url) === s) s = 'history'; // heq statusin: kthehet te New (nese <2 muaj) ose History
           try { await pxpThirr('/sinjale/statusi', 'POST', { url: url, statusi: s }); g.d.statuset = g.d.statuset || {}; g.d.statuset[url] = s; pxpSjLista(); }
           catch (e) { alertPxp(e.message); }
           return;
@@ -805,7 +814,7 @@
     var sj = d.sinjale || {}, em = d.email || {};
     var kutia = function (k, v) { return '<div><b>' + pxpNr(v) + '</b><span>' + k + '</span></div>'; };
     s.querySelector('[data-pxp-shko="pxseSinjalet"]').innerHTML = '<h3 class="h" style="font-size:15px;margin:0">Interest Signals</h3>' +
-      (sj.ka ? '<div class="pxp-dash-nr">' + kutia('Signals', sj.total) + kutia('New', sj.te_reja) + kutia('Saved', sj.ruajtur) + kutia('Replied', sj.pergjigjur) + '</div>'
+      (sj.ka ? '<div class="pxp-dash-nr">' + kutia('Signals', sj.total) + kutia('New', sj.te_reja) + kutia('History', sj.historike) + kutia('Saved', sj.ruajtur) + kutia('Replied', sj.pergjigjur) + '</div>'
         : '<p class="small" style="margin:8px 0 12px">Find people who are already asking for what you sell' + (d.domaini ? ' (' + h(d.domaini) + ')' : '') + '.</p>') +
       '<button class="btn cta">' + (sj.ka ? 'Open signals →' : '✦ Find my signals →') + '</button>';
     s.querySelector('[data-pxp-shko="pxseEmailet"]').innerHTML = '<h3 class="h" style="font-size:15px;margin:0">Email Outreach</h3>' +
