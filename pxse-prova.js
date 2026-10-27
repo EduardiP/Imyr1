@@ -84,6 +84,8 @@ const PXSE_JO_BIZNES = ['google.com', 'gmail.com', 'googlemail.com', 'yahoo.com'
   'amazon.com', 'apple.com', 'microsoft.com', 'github.com', 'gitlab.com', 'medium.com', 'substack.com', 'quora.com', 'ycombinator.com', 'producthunt.com',
   'wordpress.com', 'blogspot.com', 'blogger.com', 'wixsite.com', 'wix.com', 'squarespace.com', 'weebly.com', 'tumblr.com', 'godaddysites.com', 'carrd.co',
   'notion.site', 'notion.so', 'vercel.app', 'netlify.app', 'herokuapp.com', 'github.io', 'pages.dev', 'web.app', 'firebaseapp.com', 'glitch.me', 'replit.app',
+  'railway.app', 'up.railway.app', 'onrender.com', 'render.com', 'fly.dev', 'azurewebsites.net', 'cloudfront.net', 'amplifyapp.com', 'surge.sh',
+  'webflow.io', 'framer.website', 'framer.app', 'myshopify.com', 'bubbleapps.io', 'softr.app', 'glide.page', 'repl.co', 'deno.dev', 'workers.dev', 'appspot.com',
   'linktr.ee', 'bit.ly', 'example.com', 'example.org', 'example.net', 'test.com', 'phronexusai.test'];
 const pxseNePlatforme = d => PXSE_JO_BIZNES.some(x => d === x || d.endsWith('.' + x));
 // Faqe "parked", e shitur, bosh ose e paperfunduar
