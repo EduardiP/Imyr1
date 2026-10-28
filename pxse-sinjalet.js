@@ -217,33 +217,37 @@ async function pxsjKerkoHN(termi) {
   if (!r.ok) throw new Error('Hacker News: HTTP ' + r.status);
   const d = await r.json().catch(() => null);
   if (!d || !Array.isArray(d.hits)) throw new Error('Hacker News: unexpected response');
-  return d.hits.map(h => {
-    const id = String((h && h.objectID) || '');
-    if (!/^\d+$/.test(id)) return null;
-    const et = Array.isArray(h._tags) ? h._tags : [], koment = et.includes('comment');
-    const titulli = koment ? 'Comment on: ' + pxseTekstNgaHtml(h.story_title || '(post)') : pxseTekstNgaHtml(h.title || '');
-    const teksti = pxseTekstNgaHtml(koment ? h.comment_text : h.story_text) || titulli;
-    if (!teksti) return null;
-    const k = Number(h.created_at_i);
-    return { burimi: 'hn', id, url: 'https://news.ycombinator.com/item?id=' + id, autori: h.author ? String(h.author).slice(0, 80) : null,
-      titulli: titulli.slice(0, 300), teksti: teksti.slice(0, 1500), vendi: koment ? 'Comment' : 'Ask HN',
-      publikuar: Number.isFinite(k) && k > 0 ? new Date(k * 1000).toISOString() : null };
-  }).filter(Boolean);
+  return d.hits.map(pxsjNgaHitHN).filter(Boolean);
+}
+// Nje rezultat i Hacker News (Algolia) ne formatin e perbashket te postimeve
+function pxsjNgaHitHN(h) {
+  const id = String((h && h.objectID) || '');
+  if (!/^\d+$/.test(id)) return null;
+  const et = Array.isArray(h._tags) ? h._tags : [], koment = et.includes('comment');
+  const titulli = koment ? 'Comment on: ' + pxseTekstNgaHtml(h.story_title || '(post)') : pxseTekstNgaHtml(h.title || '');
+  const teksti = pxseTekstNgaHtml(koment ? h.comment_text : h.story_text) || titulli;
+  if (!teksti) return null;
+  const k = Number(h.created_at_i);
+  return { burimi: 'hn', id, url: 'https://news.ycombinator.com/item?id=' + id, autori: h.author ? String(h.author).slice(0, 80) : null,
+    titulli: titulli.slice(0, 300), teksti: teksti.slice(0, 1500), vendi: koment ? 'Comment' : 'Ask HN',
+    publikuar: Number.isFinite(k) && k > 0 ? new Date(k * 1000).toISOString() : null };
 }
 async function pxsjKerkoSE(termi, seksioni) {
   // "/similar": pyetjet qe i ngjajne nje titulli (sipas kuptimit), jo vetem ato qe kane te gjitha fjalet e termit
   const d = await pxsjSeThirr('/similar', { order: 'desc', sort: 'relevance', title: termi, site: seksioni,
     fromdate: String(Math.floor(pxsjNgaKoha().getTime() / 1000)), pagesize: String(PXSJ_SE_PER_KERKESE), filter: 'withbody' });
-  return (Array.isArray(d.items) ? d.items : []).map(q => {
-    const id = Number(q && q.question_id);
-    if (!Number.isSafeInteger(id) || id <= 0) return null;
-    const link = typeof q.link === 'string' && q.link.indexOf('https://') === 0 ? q.link : null;
-    if (!link) return null;
-    const titulli = pxseTekstNgaHtml(q.title);
-    return { burimi: 'se', id: seksioni + ':' + id, url: link, autori: q.owner && q.owner.display_name ? pxseTekstNgaHtml(q.owner.display_name).slice(0, 80) : null,
-      titulli: titulli.slice(0, 300), teksti: (pxseTekstNgaHtml(q.body) || titulli).slice(0, 1500), vendi: seksioni,
-      publikuar: q.creation_date ? new Date(Number(q.creation_date) * 1000).toISOString() : null };
-  }).filter(Boolean);
+  return (Array.isArray(d.items) ? d.items : []).map(q => pxsjNgaPyetjaSE(q, seksioni)).filter(Boolean);
+}
+// Nje pyetje e Stack Exchange ne formatin e perbashket te postimeve
+function pxsjNgaPyetjaSE(q, seksioni) {
+  const id = Number(q && q.question_id);
+  if (!Number.isSafeInteger(id) || id <= 0) return null;
+  const link = typeof q.link === 'string' && q.link.indexOf('https://') === 0 ? q.link : null;
+  if (!link) return null;
+  const titulli = pxseTekstNgaHtml(q.title);
+  return { burimi: 'se', id: seksioni + ':' + id, url: link, autori: q.owner && q.owner.display_name ? pxseTekstNgaHtml(q.owner.display_name).slice(0, 80) : null,
+    titulli: titulli.slice(0, 300), teksti: (pxseTekstNgaHtml(q.body) || titulli).slice(0, 1500), vendi: seksioni,
+    publikuar: q.creation_date ? new Date(Number(q.creation_date) * 1000).toISOString() : null };
 }
 
 // ---------- Vleresimi (si te komunitete.js; arsyeja ne anglisht, sepse e sheh klienti) ----------
@@ -706,6 +710,45 @@ module.exports = function (app, pool) {
       return String((o && o.pergjigja) || '').replace(/\r/g, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, 1500);
     },
     statuset: PXSJ_STATUSET,
+    // Burimet e reja pas login (pxse-burimet-reja.js): te njejtat lexime si studimi i pare, por vetem postimet e reja
+    burimet: {
+      // Hacker News: TE GJITHA postimet e reja (Ask HN + komente) nga "ngaSek" deri tani; sipas dates, me faqe sipas kohes
+      async hn(ngaSek, maks) {
+        const lista = [], pare = new Set(); let deri = Math.floor(Date.now() / 1000);
+        for (let i = 0; i < 8 && lista.length < (maks || 6000); i++) {
+          const p = new URLSearchParams({ tags: '(ask_hn,comment)', numericFilters: 'created_at_i>' + ngaSek + ',created_at_i<=' + deri, hitsPerPage: '1000' });
+          const r = await pxseFetchKohe('https://hn.algolia.com/api/v1/search_by_date?' + p.toString(), { headers: { accept: 'application/json', 'user-agent': 'PhronexusAI (signals)' } }, 30000);
+          if (!r.ok) throw new Error('Hacker News: HTTP ' + r.status);
+          const d = await r.json().catch(() => null);
+          if (!d || !Array.isArray(d.hits)) throw new Error('Hacker News: unexpected response');
+          let me = deri;
+          d.hits.forEach(h => { const x = pxsjNgaHitHN(h); const k = Number(h && h.created_at_i); if (k > 0 && k < me) me = k; if (x && !pare.has(x.id)) { pare.add(x.id); lista.push(x); } });
+          if (d.hits.length < 1000 || me >= deri) break;
+          deri = me; // faqja tjeter: me te vjetrat se me e vjetra e kesaj faqeje
+        }
+        return lista;
+      },
+      // Stack Exchange: pyetjet e reja (sipas dates se krijimit) qe i ngjajne termit, nga "ngaSek"
+      async se(termi, seksioni, ngaSek) {
+        const d = await pxsjSeThirr('/similar', { order: 'desc', sort: 'creation', title: termi, site: seksioni,
+          fromdate: String(ngaSek), pagesize: '100', filter: 'withbody' });
+        return (Array.isArray(d.items) ? d.items : []).map(q => pxsjNgaPyetjaSE(q, seksioni)).filter(Boolean);
+      },
+      // Lista baze e seksioneve kur AI s'ka zgjedhur (vetem ato qe ekzistojne)
+      async seksionetBaze(b2b) {
+        const reale = new Set((await pxsjSeksionetSE()).map(x => x.kodi));
+        return (b2b ? ['softwarerecs', 'webapps', 'webmasters'] : ['money', 'fitness', 'travel']).filter(x => !reale.size || reale.has(x));
+      },
+      // Indie Hackers (Serper): 1 kerkim, (termi 1) OR (termi 2), vetem nga data "ngaMs" deri sot
+      async ih(termat, ngaMs) {
+        const t = (termat || []).filter(Boolean); if (!t.length || !pxsjSerperKey()) return { lista: [], kredite: 0 };
+        const f = d => (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + '/' + d.getUTCFullYear();
+        const kr = { n: 0 }, q = (t.length >= 2 ? pxsjGrup(t[0]) + ' OR ' + pxsjGrup(t[1]) : pxsjGrup(t[0])) + ' site:indiehackers.com';
+        const lista = pxsjNgaIH(await pxsjSerper(q, kr, 'cdr:1,cd_min:' + f(new Date(ngaMs)) + ',cd_max:' + f(new Date())));
+        await pxsjShtoKredite(kr.n);
+        return { lista, kredite: kr.n };
+      }
+    },
     // Reddit per sinjalet e reja pas login (pxse-reddit-ditore.js): e njejta Serper, i njejti lexim dhe e njejta AI si kerkimi i pare
     reddit: {
       aktiv: () => !!pxsjSerperKey() && !!pxsjOpenAIKey(),
