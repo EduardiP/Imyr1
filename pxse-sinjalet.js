@@ -316,6 +316,42 @@ module.exports = function (app, pool) {
       perditesuar TIMESTAMPTZ DEFAULT now()
     )`);
   })().catch(e => console.error('pxse-sinjalet migrim:', e.message));
+
+  // ---------- Fshehja e perkohshme e sinjaleve ----------
+  // PXSE_SINJALET_VETEM (Railway): email-et (te ndara me presje) qe i shohin dhe i perdorin sinjalet kur jane te loguar.
+  // Pa variabel (ose bosh) = sinjalet jane per te gjithe, si me pare. Kodi i sinjaleve nuk fshihet: vetem fshihet.
+  const pxsjLejuarit = () => String(process.env.PXSE_SINJALET_VETEM || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
+  const pxsjQasjaRuajtur = new Map(); // token -> { v, kur } (60 sekonda)
+  async function pxsjLejuarBiznes(biznesId) {
+    const l = pxsjLejuarit(); if (!l.length) return true;
+    if (!biznesId) return false;
+    try { const r = await pool.query('SELECT lower(email) e FROM bizneset WHERE id=$1', [biznesId]); return !!(r.rows[0] && l.includes(r.rows[0].e)); }
+    catch (e) { return false; }
+  }
+  async function pxsjLejuar(req) {
+    const l = pxsjLejuarit(); if (!l.length) return true;
+    const token = req.cookies && req.cookies.imyr_session; if (!token) return false;
+    const c = pxsjQasjaRuajtur.get(token); if (c && Date.now() - c.kur < 60000) return c.v;
+    let v = false;
+    try {
+      const r = await pool.query('SELECT lower(b.email) e FROM seancat s JOIN bizneset b ON b.id = s.biznes_id WHERE s.token=$1', [token]);
+      v = !!(r.rows[0] && l.includes(r.rows[0].e));
+    } catch (e) {}
+    if (pxsjQasjaRuajtur.size > 5000) pxsjQasjaRuajtur.clear();
+    pxsjQasjaRuajtur.set(token, { v, kur: Date.now() });
+    return v;
+  }
+  const pxsjPortaSinjaleve = async (req, res, next) => {
+    if (await pxsjLejuar(req)) return next();
+    res.status(404).json({ fshehur: true, error: 'Not found.' });
+  };
+  app.use('/api/pxse/sinjale', pxsjPortaSinjaleve);           // prova falas (faqja publike)
+  app.use('/api/pxse/llogaria/sinjale', pxsjPortaSinjaleve);  // pas login (pxse-llogaria.js)
+  app.get('/api/pxse/qasja-sinjale', async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.json({ ok: true, sinjale: await pxsjLejuar(req) });
+  });
+
   // Kolona "lloji" te pxse_prova_domaine (tabela krijohet nga pxse-prova.js): shtohet nje here, kur duhet.
   let pxsjKolonaGati = null;
   const pxsjKolonaLloji = () => (pxsjKolonaGati = pxsjKolonaGati || pool.query('ALTER TABLE pxse_prova_domaine ADD COLUMN IF NOT EXISTS lloji TEXT').catch(e => { pxsjKolonaGati = null; }));
@@ -643,6 +679,8 @@ module.exports = function (app, pool) {
 
   // Per dashboard-in (pxse-llogaria.js): i njejti kerkim, e njejta AI, e njejta ruajtje; pa rregullat e proves falas.
   app.locals.pxseSinjalet = {
+    // Fshehja e perkohshme (PXSE_SINJALET_VETEM): a i sheh kjo llogari sinjalet
+    lejuarBiznes: pxsjLejuarBiznes,
     // Nis kerkimin per llogarine (nje seance e qendrueshme per llogari). Kthen gjendjen e punes.
     nis(biznesId, seanca, domaini, ipHash) {
       const kyc = seanca + '|' + domaini, ne = punet.get(kyc);
