@@ -15,6 +15,32 @@
   var PXP_STATUSET = [['all', 'All'], ['new', 'New'], ['history', 'History'], ['saved', 'Saved'], ['replied', 'Replied'], ['rejected', 'Rejected']];
   var PXP_NEW_DITE = 60; // sinjalet qe vijne pas studimit te pare qendrojne te "New" 2 muaj, pastaj kalojne vete te "History"
 
+  // ---------- Fshehja e perkohshme e sinjaleve (PXSE_SINJALET_VETEM te Railway) ----------
+  // Interest Signals shfaqet vetem kur serveri thote qe kjo llogari i sheh. Kodi i sinjaleve mbetet i plote.
+  var PXP_SJ = { lejuar: false, kur: 0, duke: null };
+  function pxpRiQasja(menjehere) {
+    if (PXP_SJ.lejuar) return Promise.resolve(true);
+    if (PXP_SJ.duke) return PXP_SJ.duke;
+    if (!menjehere && Date.now() - PXP_SJ.kur < 5000) return Promise.resolve(false);
+    PXP_SJ.duke = fetch('/api/pxse/qasja-sinjale', { credentials: 'same-origin', cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (j) { PXP_SJ.lejuar = !!(j && j.sinjale === true); }, function () {})
+      .then(function () { PXP_SJ.kur = Date.now(); PXP_SJ.duke = null; pxpSjMenuja(); return PXP_SJ.lejuar; });
+    return PXP_SJ.duke;
+  }
+  // Nenmenuja "Interest Signals" shtohet vetem kur lejohet
+  function pxpSjMenuja() {
+    try {
+      if (typeof NAV2 === 'undefined') return;
+      var n = NAV2.find(function (x) { return x.k === 'pxseGjej'; }); if (!n) return;
+      var ka = n.subs.some(function (x) { return x.nav === 'pxseSinjalet'; });
+      if (PXP_SJ.lejuar && !ka) n.subs.push({ l: 'Interest Signals', nav: 'pxseSinjalet' });
+      else if (!PXP_SJ.lejuar && ka) n.subs = n.subs.filter(function (x) { return x.nav !== 'pxseSinjalet'; });
+      else return;
+      if (document.getElementById('snav') && typeof window.renderNav2 === 'function') window.renderNav2();
+    } catch (e) {}
+  }
+
   function h(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function pxpNr(n) { return Number(n || 0).toLocaleString('en-US'); }
   function pxpKoha(d) {
@@ -175,8 +201,8 @@
       '<p class="small">' + (s
         ? 'Email businesses from our directory from your own business email. No contact list needed, no limit, on your schedule. You see who opened and who clicked.'
         : 'People who post questions, requests and complaints online that show real interest in what you sell. AI scores each one and writes a reply you can post yourself.') + '</p></div>' +
-      '<div class="pxp-tabs"><button type="button" data-pxp-tab="pxseEmailet"' + (s ? ' class="on"' : '') + '>Email Outreach</button>' +
-      '<button type="button" data-pxp-tab="pxseSinjalet"' + (s ? '' : ' class="on"') + '>Interest Signals</button></div></div>' +
+      (PXP_SJ.lejuar ? '<div class="pxp-tabs"><button type="button" data-pxp-tab="pxseEmailet"' + (s ? ' class="on"' : '') + '>Email Outreach</button>' +
+      '<button type="button" data-pxp-tab="pxseSinjalet"' + (s ? '' : ' class="on"') + '>Interest Signals</button></div>' : '') + '</div>' +
       '<div id="pxpTrup"><p class="small"><span class="pxp-spin"></span> Loading…</p></div></div>';
     Array.prototype.forEach.call(m.querySelectorAll('[data-pxp-tab]'), function (b) {
       b.addEventListener('click', function () { pxpShko({ v: 'profile', nav: b.getAttribute('data-pxp-tab') }); });
@@ -802,14 +828,19 @@
     pxpStilet();
     if (!m || m.querySelector('#pxpDash')) return;
     var s = document.createElement('div'); s.id = 'pxpDash'; s.className = 'pxp-dash';
-    s.innerHTML = '<h2 class="h" style="font-size:18px;margin:0 0 4px">Find Customers</h2><p class="small" style="margin:0 0 12px">Email outreach and interest signals.</p>' +
-      '<div class="pxp-dash-kartat"><div class="card" data-pxp-shko="pxseEmailet"><p class="small"><span class="pxp-spin"></span> Loading…</p></div>' +
-      '<div class="card" data-pxp-shko="pxseSinjalet"><p class="small"><span class="pxp-spin"></span> Loading…</p></div></div>';
+    s.innerHTML = '<h2 class="h" style="font-size:18px;margin:0 0 4px">Find Customers</h2><p class="small" data-pxp-nen style="margin:0 0 12px">' + (PXP_SJ.lejuar ? 'Email outreach and interest signals.' : 'Email outreach.') + '</p>' +
+      '<div class="pxp-dash-kartat"' + (PXP_SJ.lejuar ? '' : ' style="grid-template-columns:1fr"') + '><div class="card" data-pxp-shko="pxseEmailet"><p class="small"><span class="pxp-spin"></span> Loading…</p></div>' +
+      '<div class="card" data-pxp-shko="pxseSinjalet"' + (PXP_SJ.lejuar ? '' : ' style="display:none"') + '><p class="small"><span class="pxp-spin"></span> Loading…</p></div></div>';
     var vs = m.querySelector('#vstep'), rreshti = vs && vs.parentElement && vs.parentElement.parentElement;
     if (rreshti && rreshti.parentElement === m) rreshti.insertAdjacentElement('afterend', s);
     else if (m.firstElementChild) m.firstElementChild.insertAdjacentElement('afterend', s);
     else m.appendChild(s);
     Array.prototype.forEach.call(s.querySelectorAll('[data-pxp-shko]'), function (c) { c.addEventListener('click', function () { pxpShko({ v: 'profile', nav: c.getAttribute('data-pxp-shko') }); }); });
+    // Sinjalet e fshehura: karta e tyre shfaqet vetem kur lejohen
+    var lejuar = await pxpRiQasja(true);
+    var kartaSj = s.querySelector('[data-pxp-shko="pxseSinjalet"]'), kartat = s.querySelector('.pxp-dash-kartat');
+    kartaSj.style.display = lejuar ? '' : 'none'; kartat.style.gridTemplateColumns = lejuar ? '' : '1fr';
+    s.querySelector('[data-pxp-nen]').textContent = lejuar ? 'Email outreach and interest signals.' : 'Email outreach.';
     var d; try { d = await pxpThirr('/permbledhje'); } catch (e) { s.querySelectorAll('.card').forEach(function (c) { c.innerHTML = '<p class="small">' + h(e.message) + '</p>'; }); return; }
     var sj = d.sinjale || {}, em = d.email || {};
     var kutia = function (k, v) { return '<div><b>' + pxpNr(v) + '</b><span>' + k + '</span></div>'; };
@@ -832,17 +863,19 @@
       if (typeof NAV_ICONS !== 'undefined') NAV_ICONS.pxseGjej = '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><path d="M8 11h6M11 8v6"/>';
       if (typeof NAV2 !== 'undefined' && !NAV2.some(function (n) { return n.k === 'pxseGjej'; })) {
         var i = NAV2.findIndex(function (n) { return n.k === 'dashboard'; });
-        NAV2.splice(i + 1, 0, { k: 'pxseGjej', l: 'Find Customers', subs: [{ l: 'Email Outreach', nav: 'pxseEmailet' }, { l: 'Interest Signals', nav: 'pxseSinjalet' }] });
+        NAV2.splice(i + 1, 0, { k: 'pxseGjej', l: 'Find Customers', subs: [{ l: 'Email Outreach', nav: 'pxseEmailet' }] }); // "Interest Signals" shtohet nga pxpSjMenuja kur lejohet
       }
     } catch (e) {}
   }
   pxpShtoMenune();
+  pxpRiQasja(true);
 
   if (typeof window.renderNav2 === 'function') {
     var pxpNav2Origjinal = window.renderNav2;
     window.renderNav2 = function () {
       try { if (typeof curNav !== 'undefined' && PXP_FAQET[curNav] && typeof _nav2OpenKey !== 'undefined' && !_nav2OpenKey) _nav2OpenKey = 'pxseGjej'; } catch (e) {}
       var r = pxpNav2Origjinal.apply(this, arguments);
+      if (!PXP_SJ.lejuar) pxpRiQasja(false); // p.sh. pas login pa rifreskim te faqes
       // Klikimi te "Find Customers" hap direkt Interest Signals (dhe nenmenute)
       var w = document.getElementById('snav');
       if (w) Array.prototype.forEach.call(w.querySelectorAll('.snItem'), function (b) {
@@ -865,6 +898,15 @@
       if (PXP_FAQET[k]) {
         var m = document.getElementById('mainPanel'); if (!m) return;
         if (SJ) clearTimeout(SJ.timer);
+        // Sinjalet e fshehura: faqja e sinjaleve hapet vetem kur lejohet, perndryshe hapen Email-et
+        if (PXP_FAQET[k] === 'sinjale' && !PXP_SJ.lejuar) {
+          m.innerHTML = '<p class="small"><span class="pxp-spin"></span> Loading…</p>';
+          pxpRiQasja(true).then(function (ok) {
+            if (ok) window.renderMain({ v: 'profile', nav: 'pxseSinjalet' });
+            else pxpShko({ v: 'profile', nav: 'pxseEmailet' });
+          });
+          return;
+        }
         var trup = pxpKorniza(m, PXP_FAQET[k]);
         if (PXP_FAQET[k] === 'email') pxpEmailet(trup); else pxpSinjalet(trup);
         return;
@@ -894,7 +936,8 @@
     var pxpGjendjaOrigjinale = window.urlToState;
     window.urlToState = function (p) {
       var x = String(p || '').replace(/\/+$/, '');
-      if (x === '/app/find-customers' || x === '/app/find-customers/signals') return { v: 'profile', nav: 'pxseSinjalet' };
+      if (x === '/app/find-customers') return { v: 'profile', nav: 'pxseEmailet' };
+      if (x === '/app/find-customers/signals') return { v: 'profile', nav: 'pxseSinjalet' };
       if (x === '/app/find-customers/emails') return { v: 'profile', nav: 'pxseEmailet' };
       return pxpGjendjaOrigjinale.apply(this, arguments);
     };
