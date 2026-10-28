@@ -164,9 +164,10 @@ function pxsjPastroTermat(lista) {
 }
 
 // ---------- Burimet ----------
-async function pxsjSerper(q, kredite) {
+// tbs (opsionale): periudha e Google; paracaktim 5 muajt e fundit. Sinjalet ditore (pxse-reddit-ditore.js) japin "qe nga kerkimi i fundit".
+async function pxsjSerper(q, kredite, tbs) {
   const r = await pxseFetchKohe('https://google.serper.dev/search', {
-    method: 'POST', headers: { 'X-API-KEY': pxsjSerperKey(), 'Content-Type': 'application/json' }, body: JSON.stringify({ q, num: 10, tbs: pxsjTbs() })
+    method: 'POST', headers: { 'X-API-KEY': pxsjSerperKey(), 'Content-Type': 'application/json' }, body: JSON.stringify({ q, num: 10, tbs: tbs || pxsjTbs() })
   }, 30000);
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error('Serper: ' + (d.message || ('HTTP ' + r.status)));
@@ -666,6 +667,34 @@ module.exports = function (app, pool) {
       const o = await pxsjPyetAI(pxsjPromptPergjigje(pershkrimi || '', domaini, postimi), PXSJ_MODELI_ANALIZA, 'low');
       return String((o && o.pergjigja) || '').replace(/\r/g, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, 1500);
     },
-    statuset: PXSJ_STATUSET
+    statuset: PXSJ_STATUSET,
+    // Reddit per sinjalet e reja pas login (pxse-reddit-ditore.js): e njejta Serper, i njejti lexim dhe e njejta AI si kerkimi i pare
+    reddit: {
+      aktiv: () => !!pxsjSerperKey() && !!pxsjOpenAIKey(),
+      // 2 kerkime: (termi 1) OR (termi 2), pastaj termat 3-7 me OR; vetem postimet nga data "nga" deri sot
+      async kerko(termat, nga) {
+        const t = (termat || []).filter(Boolean), kr = { n: 0 };
+        const f = d => (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + '/' + d.getUTCFullYear();
+        const tbs = 'cdr:1,cd_min:' + f(new Date(nga)) + ',cd_max:' + f(new Date());
+        const pyetjet = [];
+        if (t.length >= 2) pyetjet.push(pxsjGrup(t[0]) + ' OR ' + pxsjGrup(t[1]) + ' site:reddit.com'); else if (t.length) pyetjet.push(pxsjGrup(t[0]) + ' site:reddit.com');
+        const q2 = pxsjPyetjaR3(t.slice(2)); if (q2) pyetjet.push(q2);
+        const rez = await pxsjParalel(pyetjet.map(q => async () => pxsjNgaReddit(await pxsjSerper(q, kr, tbs))), 2);
+        const pare = new Set(), lista = []; let ok = 0;
+        rez.forEach(x => { if (!x || !x.ok) return; ok++; x.v.forEach(r => { if (!pare.has(r.id)) { pare.add(r.id); lista.push(r); } }); });
+        if (!ok && pyetjet.length) throw new Error('Serper: ' + String((rez[0] && rez[0].e && rez[0].e.message) || 'error').slice(0, 150));
+        await pxsjShtoKredite(kr.n);
+        return { lista, kredite: kr.n, kerkime: ok };
+      },
+      // Vleresimi me AI (i njejti prompt dhe i njejti prag 40+); kthen vetem sinjalet qe kalojne
+      async vlereso(lista, pershkrimi, b2b) {
+        const grupe = []; for (let i = 0; i < lista.length; i += 10) grupe.push(lista.slice(i, i + 10));
+        const rez = await pxsjParalel(grupe.map(g => () => pxsjVleresoGrup(g, pershkrimi || '', b2b)), 4);
+        const te = []; rez.forEach(x => { if (x && x.ok) te.push(...x.v); });
+        if (lista.length && !te.length) throw new Error('AI could not score the posts.');
+        return te.filter(x => x.biznes === false && Number(x.p) >= PXSJ_PRAGU)
+          .map(x => ({ burimi: x.burimi, url: x.url, autori: x.autori, titulli: x.titulli, teksti: String(x.teksti || '').slice(0, 600), vendi: x.vendi, publikuar: x.publikuar, pike: x.p, arsye: x.arsye }));
+      }
+    }
   };
 };
