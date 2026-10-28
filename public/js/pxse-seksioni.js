@@ -158,6 +158,7 @@
       eCregjistrohu: 'Unsubscribe',
       eGabimStudim: 'Could not study this domain: {e}',
       eB2C: 'This service is built only for B2B businesses. AI thinks {d} sells mainly to consumers (B2C). You can still use the signals on the right.',
+      eB2CPa: 'This service is built only for B2B businesses. AI thinks {d} sells mainly to consumers (B2C).',
       eShembullMarres: 'Example recipient',
       eNjeProve: 'Free: one try per domain. Your email is written by AI from your domain.',
       ePritDomainin: 'Enter your domain and study your business first: AI writes the email from it.',
@@ -349,6 +350,7 @@
       eCregjistrohu: 'Unsubscribe',
       eGabimStudim: 'Domaini nuk u studiua dot: {e}',
       eB2C: 'Ky shërbim është ndërtuar vetëm për biznese B2B. AI mendon se {d} u shet kryesisht individëve (B2C). Sinjalet djathtas mund t\'i përdorësh.',
+      eB2CPa: 'Ky shërbim është ndërtuar vetëm për biznese B2B. AI mendon se {d} u shet kryesisht individëve (B2C).',
       eShembullMarres: 'Marrës shembull',
       eNjeProve: 'Falas: një provë për domain. Email-in e shkruan AI nga domaini yt.',
       ePritDomainin: 'Jep domainin dhe studio biznesin fillimisht: AI e shkruan email-in prej tij.',
@@ -737,7 +739,10 @@
     '  .px-brenda{min-width:0;padding:20px 14px}',
     '  .px-shigjetat{gap:6px}',
     '}',
-    '@media (prefers-reduced-motion: reduce){.px-pjesa,.px-shigjeta,.px-toast{transition:none}}'
+    '@media (prefers-reduced-motion: reduce){.px-pjesa,.px-shigjeta,.px-toast{transition:none}}',
+    // Sinjalet e fshehura perkohesisht (PXSE_SINJALET_VETEM): vetem email-et, ne gjithe gjeresine, pa ndares
+    '.px[data-pa-sinjale] .px-ndaresi,.px[data-pa-sinjale] .px-pjesa-djathte{display:none}',
+    '.px[data-pa-sinjale] .px-pjesa-majte{flex-basis:100%}'
   ].join('\n');
 
   function esc(s) {
@@ -758,7 +763,17 @@
   PxSinjaleEmail.prototype.connectedCallback = function () {
     if (!this._rrenja) {
       this._rrenja = this.attachShadow({ mode: 'open' });
-      this._gjendja = 'ndare';          // 'ndare' | 'majte' | 'djathte'
+      this._gjendja = 'majte';          // 'ndare' | 'majte' | 'djathte' (fillon me email-et; 'ndare' kur sinjalet lejohen)
+      // Sinjalet jane te fshehura derisa serveri te thote qe lejohen (PXSE_SINJALET_VETEM)
+      this._paSinjale = true;
+      var selfQ = this;
+      fetch(this._api() + '/qasja-sinjale', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (j) {
+        if (!j || j.sinjale !== true) return;
+        selfQ._paSinjale = false;
+        var w = selfQ.getBoundingClientRect().width;
+        if (selfQ._gjendja === 'majte' && !selfQ._ePara && !(w > 0 && w < 640)) selfQ._gjendja = 'ndare';
+        if (selfQ._rrenja.querySelector('.px')) { selfQ._apliko(); if (selfQ._em && selfQ._em.studim === 'b2c') selfQ._rivizatoEmail(); selfQ._lartesia(); }
+      }).catch(function () {});
       this._domaini = '';
       this._filtri = { burimi: '', min: 40, dite: 150, statusi: 'history' }; // shfaqen vetem rezultatet me 40+ pike nga AI; paracaktim 5 muaj
       this._sj = { gjendja: '', hapi: '', gabim: '', lloji: '', numri: 0, domaini: '' }; // gjendja e kerkimit te sinjaleve
@@ -1238,7 +1253,7 @@
     var stat = em.studim === 'duke' ? '<p class="px-studio-stat">' + esc(t('eDukeStudiuar').replace('{d}', d)) + '</p>' :
       (em.studim === 'gati' ? '<p class="px-studio-stat px-ok">✓ ' + esc(t('eStudiuar').replace('{d}', d)) + '</p>' :
       (em.studim === 'gabim' ? '<p class="px-studio-stat px-keq px-gabim-i-forte" role="alert">' + esc(em.gabimPlain ? em.gabim : t('eGabimStudim').replace('{e}', em.gabim || '')) + '</p>' :
-      (em.studim === 'b2c' ? '<p class="px-studio-stat px-keq px-gabim-i-forte" role="alert">' + esc(t('eB2C').replace('{d}', d)) + '</p>' :
+      (em.studim === 'b2c' ? '<p class="px-studio-stat px-keq px-gabim-i-forte" role="alert">' + esc(t(this._paSinjale ? 'eB2CPa' : 'eB2C').replace('{d}', d)) + '</p>' :
       (em.studim === 'perdorur' ? paralajmero(t('ePerdorur').replace('{d}', d)) : ''))));
     if (mbyllur) stat = paralajmero(t('eOfertaMbaroi').replace('{d}', d)) + (em.rikthim ? '<p class="px-studio-stat">' + esc(t('eRikthim').replace('{d}', d)) + '</p>' : '');
     else if (em.studim === 'gati' && em.rikthim && em.dergimet.length) stat = '<p class="px-studio-stat px-ok">✓ ' + esc(t('eRikthim').replace('{d}', d)) + '</p>';
@@ -1648,6 +1663,7 @@
     var r = this._rrenja, g = this._gjendja;
     var px = r.querySelector('.px'); if (!px) return;
     px.setAttribute('data-gjendja', g);
+    if (this._paSinjale) px.setAttribute('data-pa-sinjale', ''); else px.removeAttribute('data-pa-sinjale');
     var majte = r.getElementById('pjesaMajte'), djathte = r.getElementById('pjesaDjathte');
     var btnD = r.querySelector('[data-shigjeta="djathtas"]'), btnM = r.querySelector('[data-shigjeta="majtas"]');
     btnD.hidden = g === 'majte';   // kur e majta eshte e plote, mbetet vetem "‹"
@@ -1662,7 +1678,7 @@
       if (inp && !inp.value) inp.value = this._em.domaini;
     }
     fshih(majte, g === 'djathte');
-    fshih(djathte, g === 'majte');
+    fshih(djathte, g === 'majte' || !!this._paSinjale);
   };
 
   PxSinjaleEmail.prototype._toast = function (tekst) {
