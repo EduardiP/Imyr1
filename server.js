@@ -3116,7 +3116,7 @@ require('./pxse-sinjalet')(app, pool);
 require('./pxse-alertet')(app, pool, iAdmin);
 require('./pxse-admin-analitika')(app, pool, iAdmin);
 require('./pxse-llogaria')(app, pool, iLoguar); // Find Customers pas login (pas pxse-sinjalet)
-
+require('./pxse-reddit-ditore')(app, pool, iAdmin);
 // Resend (dergim email-esh) — nese RESEND_API_KEY s'eshte vendosur, resendKlient
 // mbetet null dhe ekipi.js e trajton pa u thyer (thjesht s'dergon email, fail-open).
 let resendKlient = null;
