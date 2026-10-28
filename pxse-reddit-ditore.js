@@ -120,6 +120,9 @@ module.exports = function (app, pool, iAdmin) {
       let n = 0;
       for (const rr of lista) {
         const t = rr.te_dhenat || {}; if (!Array.isArray(t.termat) || !t.termat.length) continue;
+        // Sinjalet e fshehura (PXSE_SINJALET_VETEM): kerkohet vetem per llogarite e lejuara (pa kredite per te tjerat)
+        const SL = app.locals.pxseSinjalet;
+        if (SL && SL.lejuarBiznes && !(await SL.lejuarBiznes(rr.biznes_id))) continue;
         const lloji = t.lloji === 'b2c' ? 'b2c' : 'b2b';
         let gj = gjendjet[rr.biznes_id];
         if (!gj) {
