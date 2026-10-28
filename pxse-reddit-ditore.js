@@ -80,6 +80,10 @@ module.exports = function (app, pool, iAdmin) {
       const ardhur = new Date().toISOString();
       const shto = kaluan.map(x => Object.assign(x, { ardhur_at: ardhur }));
       const refuzuar = reja.filter(x => !shto.some(y => y.url === x.url)).map(x => x.url);
+      // Matja me filtrin e lire (pxse-vektoret.js), per krahasim me AI-ne nano; nuk ndryshon asgje te sinjalet
+      const V = app.locals.pxseVektoret;
+      if (V && V.aktiv() && reja.length && await V.matet(rr.biznes_id))
+        V.regjistro([{ biznes_id: rr.biznes_id, te_dhenat: t }], 'reddit', reja, new Set(shto.map(x => x.url))).catch(e => console.error('pxse vektoret (reddit):', e.message));
       // Shtimi ne te njejten transaksion me leximin, qe te mos humbase asnje status/pergjigje e ndryshuar nga klienti ndermjet
       const kl = await pool.connect();
       try {
