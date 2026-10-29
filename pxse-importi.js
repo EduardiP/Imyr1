@@ -6,7 +6,8 @@
 //     Rreshtat ruhen te pxse_import_rreshtat (tabele pritjeje). Asgje nuk shkon te direktoria pa klikimin "Kalo ne direktori".
 //  2. Ne sfond, per cdo domain (pa AI, falas):
 //     - faqja e arkivuar merret nga Common Crawl (data.commoncrawl.org, vetem bajtet e rekordit WARC);
-//     - kur ajo faqe s'ka email te domainit, kerkohen edhe faqet contact/about/impressum te te njejtit domain ne indeksin e Common Crawl;
+//     - faza 2 (pasi te jene bere te gjitha): per bizneset pa email kerkohen faqet contact/about/impressum ne indeksin e Common Crawl;
+//     - cdo kerkese ka kufi kohe te plote (edhe leximi i trupit), qe asgje te mos ngece;
 //     - kodi nxjerr: emrin, titullin, pershkrimin (meta description), email-et e domainit (personal / i pergjithshem),
 //       shtetin (JSON-LD, telefoni, adresa, gjuha), emrin ligjor, vitin e copyright-it, sinjalet e biznesit;
 //     - data e regjistrimit te domainit (RDAP) dhe MX (a pranon email domaini).
@@ -17,7 +18,7 @@
 const zlib = require('zlib');
 const dns = require('dns').promises;
 const express = require('express');
-const { pxseFetchKohe, pxseTekstNgaHtml, pxseNePlatforme } = require('./pxse-prova');
+const { pxseTekstNgaHtml, pxseNePlatforme } = require('./pxse-prova');
 
 const PXIM_KATEGORITE = [
   ['Marketing', 'Marketing software: SEO, social media, email marketing, ads, landing pages, content marketing'],
@@ -55,7 +56,7 @@ const PXIM_ANKORAT = {
     'A consumer product sold to people for themselves, download the app']
 };
 const PXIM_PARALEL = 4;          // faqe Common Crawl njekohesisht
-const PXIM_GRUP = 40;            // rreshta ne nje hap (embeddings ne nje thirrje)
+const PXIM_GRUP = 10;            // rreshta ne nje hap (progresi rritet pas cdo hapi)
 const PXIM_AI_GRUP = 10;         // domaine ne nje thirrje te AI-se nano
 const PXIM_MODELI = 'gpt-5-nano';
 const PXIM_EMB = 'text-embedding-3-small';
@@ -126,34 +127,45 @@ function pximNgaWarc(buf) {
   let html; try { html = new TextDecoder(cs.toLowerCase()).decode(body); } catch (e) { html = body.toString('utf8'); }
   return { status, html };
 }
+// Kerkese me kufi kohe per GJITHE kerkesen (edhe leximin e trupit): asgje nuk ngec pa fund
+async function pximMerr(url, opsione, ms, lloji) {
+  const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const r = await fetch(url, Object.assign({}, opsione, { signal: ctrl.signal }));
+    let trupi = null;
+    if (lloji === 'buf') trupi = Buffer.from(await r.arrayBuffer());
+    else if (lloji === 'json') { const tx = await r.text(); try { trupi = JSON.parse(tx); } catch (e) { trupi = null; } }
+    else trupi = await r.text();
+    return { status: r.status, ok: r.ok, trupi };
+  } finally { clearTimeout(t); }
+}
 async function pximMerrWarc(fileName, offset, gjatesia) {
   if (!/^crawl-data\/[A-Za-z0-9._\/-]+\.warc\.gz$/.test(fileName) || !(offset >= 0) || !(gjatesia > 0 && gjatesia < 20000000)) throw new Error('Te dhena WARC te pavlefshme');
   for (let prove = 0; prove < 3; prove++) {
-    const r = await pxseFetchKohe('https://data.commoncrawl.org/' + fileName, { headers: { Range: 'bytes=' + offset + '-' + (offset + gjatesia - 1), 'User-Agent': 'PhronexusAI-directory/1.0' } }, 45000);
-    if (r.status === 206 || r.status === 200) return pximNgaWarc(Buffer.from(await r.arrayBuffer()));
+    let r = null;
+    try { r = await pximMerr('https://data.commoncrawl.org/' + fileName, { headers: { Range: 'bytes=' + offset + '-' + (offset + gjatesia - 1), 'User-Agent': 'PhronexusAI-directory/1.0' } }, 30000, 'buf'); }
+    catch (e) { if (prove < 2) { await new Promise(f => setTimeout(f, 2000)); continue; } throw new Error('Common Crawl: nuk u pergjigj ne kohe'); }
+    if (r.status === 206 || r.status === 200) return pximNgaWarc(r.trupi);
     if (r.status === 503 || r.status === 429) { await new Promise(f => setTimeout(f, 3000 * (prove + 1))); continue; }
     throw new Error('Common Crawl: HTTP ' + r.status);
   }
   throw new Error('Common Crawl: shume kerkesa, provo me vone');
 }
-// Indeksi i Common Crawl: faqet contact/about/impressum te te njejtit domain (nje kerkese, me radhe per te gjithe)
+// Indeksi i Common Crawl: faqet contact/about/impressum te te njejtit domain. Nje kerkese, nje prove, 2 sekonda pauze midis kerkesave.
+// Kthen { ok, lista }: ok=false kur indeksi nuk u pergjigj (provohet perseri me vone).
 let pximIndeksiPrit = Promise.resolve();
 function pximIndeksi(crawl, domaini) {
   const puna = pximIndeksiPrit.then(async () => {
     const p = new URLSearchParams({ url: domaini + '/*', output: 'json', limit: '40', fl: 'url,filename,offset,length,status,mime', filter: 'status:200' });
     p.append('filter', '~url:.*(contact|about|impressum|imprint|team|company|support).*');
-    for (let prove = 0; prove < 3; prove++) {
-      const r = await pxseFetchKohe('https://index.commoncrawl.org/' + crawl + '-index?' + p.toString(), { headers: { 'User-Agent': 'PhronexusAI-directory/1.0' } }, 45000).catch(() => null);
-      if (r && r.status === 404) return [];
-      if (r && r.ok) {
-        const t = await r.text();
-        return t.split('\n').map(l => { try { return JSON.parse(l); } catch (e) { return null; } }).filter(x => x && x.filename && /html/i.test(x.mime || 'text/html'));
-      }
-      await new Promise(f => setTimeout(f, 4000 * (prove + 1)));
-    }
-    return [];
+    let r = null;
+    try { r = await pximMerr('https://index.commoncrawl.org/' + crawl + '-index?' + p.toString(), { headers: { 'User-Agent': 'PhronexusAI-directory/1.0' } }, 30000, 'text'); }
+    catch (e) { return { ok: false, lista: [] }; }
+    if (r.status === 404) return { ok: true, lista: [] };
+    if (!r.ok) return { ok: false, lista: [] };
+    return { ok: true, lista: String(r.trupi || '').split('\n').map(l => { try { return JSON.parse(l); } catch (e) { return null; } }).filter(x => x && x.filename && /html/i.test(x.mime || 'text/html')) };
   });
-  pximIndeksiPrit = puna.then(() => new Promise(f => setTimeout(f, 1200)), () => new Promise(f => setTimeout(f, 1200))); // nje kerkese ne 1.2 sekonda
+  pximIndeksiPrit = puna.then(() => new Promise(f => setTimeout(f, 2000)), () => new Promise(f => setTimeout(f, 2000)));
   return puna;
 }
 
@@ -235,9 +247,9 @@ function pximDataDomainit(domaini) {
   const puna = pximRdapPrit.then(async () => {
     const tld = domaini.split('.').pop();
     const url = tld === 'com' || tld === 'net' ? 'https://rdap.verisign.com/' + tld + '/v1/domain/' + encodeURIComponent(domaini) : 'https://rdap.org/domain/' + encodeURIComponent(domaini);
-    const r = await pxseFetchKohe(url, { headers: { accept: 'application/rdap+json' } }, 20000).catch(() => null);
+    const r = await pximMerr(url, { headers: { accept: 'application/rdap+json' } }, 15000, 'json').catch(() => null);
     if (!r || !r.ok) return null;
-    const d = await r.json().catch(() => null);
+    const d = r.trupi;
     const ev = d && Array.isArray(d.events) ? d.events.find(x => x && x.eventAction === 'registration') : null;
     const t = ev && Date.parse(ev.eventDate);
     return t ? new Date(t).toISOString().slice(0, 10) : null;
@@ -255,9 +267,9 @@ async function pximVektoret(tekste) {
     const pjesa = tekste.slice(i, i + 200).map(t => String(t || ' ').replace(/\s+/g, ' ').trim().slice(0, 1000) || ' ');
     let d = null;
     for (let prove = 0; prove < 3 && !d; prove++) {
-      const r = await pxseFetchKohe('https://api.openai.com/v1/embeddings', { method: 'POST', headers: { Authorization: 'Bearer ' + pximCelesi(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: PXIM_EMB, input: pjesa }) }, 60000).catch(() => null);
-      const j = r ? await r.json().catch(() => null) : null;
+      const r = await pximMerr('https://api.openai.com/v1/embeddings', { method: 'POST', headers: { Authorization: 'Bearer ' + pximCelesi(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: PXIM_EMB, input: pjesa }) }, 60000, 'json').catch(() => null);
+      const j = r ? r.trupi : null;
       if (r && r.ok && j && Array.isArray(j.data)) d = j;
       else if (prove < 2) await new Promise(f => setTimeout(f, 4000 * (prove + 1)));
       else throw new Error('OpenAI embeddings: ' + ((j && j.error && j.error.message) || (r ? 'HTTP ' + r.status : 'pa lidhje')));
@@ -281,8 +293,8 @@ async function pximPyetAI(prompt) {
   const thirr = async meNivel => {
     const trupi = { model: PXIM_MODELI, messages: [{ role: 'user', content: prompt }], response_format: { type: 'json_object' } };
     if (meNivel) trupi.reasoning_effort = 'low';
-    const r = await pxseFetchKohe('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + pximCelesi() }, body: JSON.stringify(trupi) }, 90000);
-    return { r, data: await r.json().catch(() => ({})) };
+    const r = await pximMerr('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + pximCelesi() }, body: JSON.stringify(trupi) }, 90000, 'json');
+    return { r, data: r.trupi || {} };
   };
   let { r, data } = await thirr(true);
   if (r.status === 400 && /reasoning/i.test(JSON.stringify(data))) ({ r, data } = await thirr(false));
@@ -339,6 +351,8 @@ module.exports = function (app, pool, iAdmin) {
       UNIQUE (import_id, domaini)
     )`);
     await pool.query('CREATE INDEX IF NOT EXISTS idx_pxim_r_imp ON pxse_import_rreshtat (import_id, gjendja)');
+    // Faza 2: a u kerkua faqja contact/about ne indeksin e Common Crawl (vetem per bizneset pa email)
+    await pool.query('ALTER TABLE pxse_import_rreshtat ADD COLUMN IF NOT EXISTS kontakt_kerkuar BOOLEAN NOT NULL DEFAULT false');
     // Fushat e reja te direktorise (te dhenat ekzistuese nuk preken)
     for (const k of ['lloji TEXT', 'data_domainit DATE', 'email_lloji TEXT', 'burimi TEXT', 'import_id INT'])
       await pool.query('ALTER TABLE pxse_bizneset ADD COLUMN IF NOT EXISTS ' + k);
@@ -356,6 +370,9 @@ module.exports = function (app, pool, iAdmin) {
         if (!im) break;
         const grupi = (await pool.query("SELECT * FROM pxse_import_rreshtat WHERE import_id=$1 AND gjendja='pritje' ORDER BY id LIMIT $2", [im.id, PXIM_GRUP])).rows;
         if (!grupi.length) {
+          // Faza 2: faqet contact/about per bizneset (dhe te paqartat) pa email
+          const f2 = await pximFaza2(im);
+          if (f2 === 'ndalur') continue;
           await pool.query("UPDATE pxse_importet SET gjendja='gati', perfunduar_at=now() WHERE id=$1 AND gjendja='duke'", [im.id]);
           continue;
         }
@@ -370,6 +387,47 @@ module.exports = function (app, pool, iAdmin) {
     pximDuke = false;
   }
 
+  // Faza 2: nje domain ne here, per bizneset (pastaj te paqartat) pa email: faqet contact/about/impressum nga indeksi.
+  // Kur indeksi deshton 5 here rresht, importi ndalet ("Vazhdo" e rinis nga aty ku mbeti).
+  async function pximFaza2(im) {
+    let deshtime = 0;
+    for (;;) {
+      const gj = (await pool.query('SELECT gjendja FROM pxse_importet WHERE id=$1', [im.id])).rows[0];
+      if (!gj || gj.gjendja !== 'duke') return 'ndalur';
+      const rr = (await pool.query(`SELECT * FROM pxse_import_rreshtat WHERE import_id=$1 AND gjendja='bere' AND email IS NULL AND NOT kontakt_kerkuar
+          AND statusi IN ('biznes','i_paqarte') ORDER BY (statusi='biznes') DESC, id LIMIT 1`, [im.id])).rows[0];
+      if (!rr) return 'gati';
+      const crawl = (String(rr.warc_file).match(/CC-MAIN-\d{4}-\d{2}/) || [])[0];
+      const ix = crawl ? await pximIndeksi(crawl, rr.domaini) : { ok: true, lista: [] };
+      if (!ix.ok) {
+        if (++deshtime >= 5) {
+          await pool.query("UPDATE pxse_importet SET gjendja='ndalur', gabimi=$2 WHERE id=$1", [im.id, 'Indeksi i Common Crawl nuk po përgjigjet (faqet contact). Kliko "Vazhdo" më vonë.']);
+          return 'ndalur';
+        }
+        await new Promise(f => setTimeout(f, 5000 * deshtime));
+        continue;
+      }
+      deshtime = 0;
+      let emailet = [], shteti = null;
+      const zgjedhur = ix.lista.filter(p => p.url !== rr.url)
+        .sort((a, b) => (/contact|impressum|imprint/i.test(b.url) ? 1 : 0) - (/contact|impressum|imprint/i.test(a.url) ? 1 : 0)).slice(0, 2);
+      for (const p of zgjedhur) {
+        try {
+          const g = await pximMerrWarc(p.filename, Number(p.offset), Number(p.length));
+          emailet = emailet.concat(pximEmailet(g.html, rr.domaini));
+          if (!rr.shteti && !shteti) shteti = pximShteti(g.html, rr.domaini);
+          if (emailet.length) break;
+        } catch (e) {}
+      }
+      emailet = Array.from(new Set(emailet));
+      const email = pximZgjidhEmail(emailet), mx = email ? await pximKaMx(rr.domaini) : null;
+      await pool.query(`UPDATE pxse_import_rreshtat SET kontakt_kerkuar=true, email=COALESCE($2, email), email_lloji=COALESCE($3, email_lloji),
+          emailet=CASE WHEN $2::text IS NULL THEN emailet ELSE $4::jsonb END, ka_mx=COALESCE($5::boolean, ka_mx),
+          shteti_burimi=CASE WHEN shteti IS NULL AND $6::text IS NOT NULL THEN $7 ELSE shteti_burimi END, shteti=COALESCE(shteti, $6::text) WHERE id=$1`,
+        [rr.id, email, email ? pximLloji(email) : null, JSON.stringify(emailet), mx, shteti ? shteti.k : null, shteti ? shteti.b : null]);
+    }
+  }
+
   async function pximNjeRresht(rr) {
     const x = { id: rr.id, domaini: rr.domaini, pike_saas: rr.pike_saas, gabimi: null };
     if (pxseNePlatforme(rr.domaini)) return Object.assign(x, { statusi: 'jo_biznes', vendimi: 'rregull', titulli: '', pershkrimi: '', teksti: '', emailet: [], sinjale: {}, joBiznes: true });
@@ -377,25 +435,8 @@ module.exports = function (app, pool, iAdmin) {
     try { f = await pximMerrWarc(rr.warc_file, Number(rr.warc_offset), Number(rr.warc_gjatesia)); }
     catch (e) { return Object.assign(x, { gabimi: String(e.message).slice(0, 200) }); }
     const n = pximNxirr(f.html, rr.domaini);
-    let emailet = pximEmailet(f.html, rr.domaini), shteti = pximShteti(f.html, rr.domaini);
-    // Pa email: faqet contact/about/impressum te te njejtit domain nga indeksi i Common Crawl (deri 2 faqe)
-    if (!emailet.length) {
-      const crawl = (String(rr.warc_file).match(/CC-MAIN-\d{4}-\d{2}/) || [])[0];
-      const faqet = crawl ? await pximIndeksi(crawl, rr.domaini) : [];
-      const zgjedhur = faqet.filter(p => p.url !== rr.url).sort((a, b) => (/contact|impressum|imprint/i.test(b.url) ? 1 : 0) - (/contact|impressum|imprint/i.test(a.url) ? 1 : 0)).slice(0, 2);
-      for (const p of zgjedhur) {
-        try {
-          const g = await pximMerrWarc(p.filename, Number(p.offset), Number(p.length));
-          emailet = emailet.concat(pximEmailet(g.html, rr.domaini));
-          if (!shteti) shteti = pximShteti(g.html, rr.domaini);
-          const n2 = pximNxirr(g.html, rr.domaini);
-          Object.keys(n2.sinjale).forEach(k => { n.sinjale[k] = n.sinjale[k] || n2.sinjale[k]; });
-          if (!n.vitiKopi) n.vitiKopi = n2.vitiKopi;
-          if (emailet.length) break;
-        } catch (e) {}
-      }
-      emailet = Array.from(new Set(emailet));
-    }
+    // Faqet contact/about kerkohen ne fazen 2 (pas te gjitha domaineve), qe kjo faze te jete e shpejte
+    const emailet = pximEmailet(f.html, rr.domaini), shteti = pximShteti(f.html, rr.domaini);
     const email = pximZgjidhEmail(emailet);
     const [dataD, mx] = await Promise.all([pximDataDomainit(rr.domaini).catch(() => null), email ? pximKaMx(rr.domaini) : Promise.resolve(null)]);
     return Object.assign(x, n, { status: f.status, emailet, email, email_lloji: email ? pximLloji(email) : null, ka_mx: mx, shteti: shteti ? shteti.k : null,
@@ -519,7 +560,8 @@ module.exports = function (app, pool, iAdmin) {
   app.get('/api/admin/pxse/importi', iAdmin, async (req, res) => {
     try {
       const r = await pool.query(`SELECT i.*, (SELECT COUNT(*) FROM pxse_import_rreshtat r WHERE r.import_id=i.id AND r.gjendja<>'pritje')::int bere,
-          (SELECT COUNT(*) FROM pxse_import_rreshtat r WHERE r.import_id=i.id AND r.gjendja='gabim')::int gabime FROM pxse_importet i ORDER BY i.id DESC LIMIT 50`);
+          (SELECT COUNT(*) FROM pxse_import_rreshtat r WHERE r.import_id=i.id AND r.gjendja='gabim')::int gabime,
+          (SELECT COUNT(*) FROM pxse_import_rreshtat r WHERE r.import_id=i.id AND r.gjendja='bere' AND r.email IS NULL AND NOT r.kontakt_kerkuar AND r.statusi IN ('biznes','i_paqarte'))::int kontakt_mbetur FROM pxse_importet i ORDER BY i.id DESC LIMIT 50`);
       res.json({ ok: true, importet: r.rows, kategorite: PXIM_EMRAT_KAT });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
@@ -599,3 +641,4 @@ module.exports.pximNxirr = pximNxirr;
 module.exports.pximEmailet = pximEmailet;
 module.exports.pximShteti = pximShteti;
 module.exports.pximLexoCsv = pximLexoCsv;
+module.exports.pximMerr = pximMerr;
