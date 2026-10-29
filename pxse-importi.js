@@ -304,7 +304,7 @@ const pximCelesi = () => String(process.env.OPENAI_API_KEY || '').trim();
 async function pximVektoret(tekste) {
   const dalja = [];
   for (let i = 0; i < tekste.length; i += 200) {
-    const pjesa = tekste.slice(i, i + 200).map(t => String(t || ' ').replace(/\s+/g, ' ').trim().slice(0, 1000) || ' ');
+    const pjesa = tekste.slice(i, i + 200).map(t => pximPastroTekst(String(t || ' ').replace(/\s+/g, ' ').trim().slice(0, 1000)) || ' ');
     let d = null;
     for (let prove = 0; prove < 3 && !d; prove++) {
       const r = await pximMerr('https://api.openai.com/v1/embeddings', { method: 'POST', headers: { Authorization: 'Bearer ' + pximCelesi(), 'Content-Type': 'application/json' },
@@ -329,7 +329,13 @@ async function pximAnkorat() {
   pximAnkoratV = { biznes: merr(PXIM_ANKORAT.biznes.length), jo: merr(PXIM_ANKORAT.jo.length), b2b: merr(PXIM_ANKORAT.b2b.length), b2c: merr(PXIM_ANKORAT.b2c.length), kat: merr(PXIM_KATEGORITE.length) };
   return pximAnkoratV;
 }
+// Heq gjysmat e emoji-ve (surrogate te vetmuara, kur teksti pritet ne mes te nje emoji) dhe karakteret e kontrollit:
+// OpenAI i refuzon si "Invalid body: failed to parse JSON value"
+function pximPastroTekst(t) {
+  return String(t == null ? '' : t).replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ' ');
+}
 async function pximPyetAI(prompt) {
+  prompt = pximPastroTekst(prompt);
   const thirr = async meNivel => {
     const trupi = { model: PXIM_MODELI, messages: [{ role: 'user', content: prompt }], response_format: { type: 'json_object' } };
     if (meNivel) trupi.reasoning_effort = 'low';
@@ -397,7 +403,7 @@ module.exports = function (app, pool, iAdmin) {
     await pool.query('CREATE INDEX IF NOT EXISTS idx_pxim_r_imp ON pxse_import_rreshtat (import_id, gjendja)');
     await pool.query('ALTER TABLE pxse_import_rreshtat ADD COLUMN IF NOT EXISTS kontakt_kerkuar BOOLEAN NOT NULL DEFAULT false'); // (versioni i meparshem; nuk perdoret me)
     // Studimi i faqeve (faza 2): faqja e gjalle + AI nano per te gjitha
-    for (const k of ['aktiv BOOLEAN', 'studim2 TEXT', 'studim2_at TIMESTAMPTZ', "ndryshuar_dore TEXT[] NOT NULL DEFAULT '{}'", 'import_para INT'])
+    for (const k of ['aktiv BOOLEAN', 'studim2 TEXT', 'studim2_at TIMESTAMPTZ', "ndryshuar_dore TEXT[] NOT NULL DEFAULT '{}'", 'import_para INT', 'meta_arkiv TEXT', 'kopjuar BOOLEAN NOT NULL DEFAULT false'])
       await pool.query('ALTER TABLE pxse_import_rreshtat ADD COLUMN IF NOT EXISTS ' + k);
     // Ndryshimet e meparshme me dore (statusi, shteti) mbrohen nga studimi i ri
     await pool.query("UPDATE pxse_import_rreshtat SET ndryshuar_dore = ndryshuar_dore || ARRAY['statusi'] WHERE vendimi='admin' AND NOT ('statusi' = ANY(ndryshuar_dore))");
@@ -421,6 +427,7 @@ module.exports = function (app, pool, iAdmin) {
       for (;;) {
         const im = (await pool.query("SELECT * FROM pxse_importet WHERE gjendja='duke' ORDER BY id LIMIT 1")).rows[0];
         if (!im) break;
+        await pximRiperdor(im);
         const grupi = (await pool.query("SELECT * FROM pxse_import_rreshtat WHERE import_id=$1 AND gjendja='pritje' ORDER BY id LIMIT $2", [im.id, PXIM_GRUP])).rows;
         if (!grupi.length) {
           // Faza 2: studimi i faqeve te gjalla + AI nano
@@ -440,11 +447,22 @@ module.exports = function (app, pool, iAdmin) {
     pximDuke = false;
   }
 
+  // Domainet e studiuara (faza 2) ne nje skedar tjeter brenda 90 diteve: te dhenat merren prej andej, pa u studiuar perseri
+  async function pximRiperdor(im) {
+    await pool.query(`UPDATE pxse_import_rreshtat r SET gjendja='bere', gabimi=NULL, kopjuar=true, emri=o.emri, titulli=o.titulli, pershkrimi=o.pershkrimi,
+        pershkrimi_ai=o.pershkrimi_ai, email=o.email, email_lloji=o.email_lloji, emailet=o.emailet, ka_mx=o.ka_mx, shteti=o.shteti, shteti_burimi=o.shteti_burimi,
+        data_domainit=o.data_domainit, viti_kopi=o.viti_kopi, kategoria=o.kategoria, lloji=o.lloji, statusi=o.statusi, vendimi=o.vendimi, piket_biznes=o.piket_biznes,
+        meta_arkiv=o.meta_arkiv, aktiv=o.aktiv, studim2=o.studim2, studim2_at=o.studim2_at, ndryshuar_dore=o.ndryshuar_dore, import_para=o.import_id, perpunuar_at=now()
+      FROM (SELECT DISTINCT ON (domaini) * FROM pxse_import_rreshtat WHERE import_id <> $1 AND studim2='bere' AND studim2_at > now() - interval '90 days'
+            ORDER BY domaini, studim2_at DESC) o
+      WHERE r.import_id = $1 AND r.gjendja = 'pritje' AND r.domaini = o.domaini`, [im.id]).catch(e => console.error('pxse importi riperdorimi:', e.message));
+  }
+
   // ---------- Faza 2: studimi i faqeve ----------
   // Per te gjitha (pervec atyre qe rregulli i hodhi, p.sh. faqe te parkuara): faqja kryesore e gjalle, pastaj contact/about/impressum
   // kur mungon email-i; robots.txt respektohet; asnjehere dy kerkesa njekohesisht ne te njejtin domain.
   async function pximLexoFaqet(rr) {
-    const d = rr.domaini, dalja = { aktiv: false, teksti: '', titulli: rr.titulli || '', meta: rr.pershkrimi || '', emailet: [], shteti: null, faqja: null };
+    const d = rr.domaini, dalja = { aktiv: false, teksti: '', titulli: rr.titulli || '', meta: rr.meta_arkiv || rr.pershkrimi || '', emailet: [], shteti: null, faqja: null };
     let home = null, baza = null;
     for (const b of ['https://' + d, 'https://www.' + d]) {
       const lejo = await pximRobots(b);
@@ -489,11 +507,11 @@ module.exports = function (app, pool, iAdmin) {
       // 1. Faqet (deri 6 domaine njekohesisht)
       const te = new Array(grupi.length); let i = 0;
       await Promise.all(Array.from({ length: Math.min(PXIM_STUDIM_PARALEL, grupi.length) }, async () => {
-        while (i < grupi.length) { const k = i++; try { te[k] = await pximLexoFaqet(grupi[k]); } catch (e) { te[k] = { aktiv: false, teksti: '', titulli: grupi[k].titulli, meta: grupi[k].pershkrimi, emailet: [] }; } }
+        while (i < grupi.length) { const k = i++; try { te[k] = await pximLexoFaqet(grupi[k]); } catch (e) { te[k] = { aktiv: false, teksti: '', titulli: grupi[k].titulli, meta: grupi[k].meta_arkiv || grupi[k].pershkrimi, emailet: [] }; } }
       }));
       // 2. AI nano (nje thirrje per grupin). Kur grupi deshton: nje nga nje; ai qe deshton shenohet "pa AI" dhe puna vazhdon.
       const perAI = grupi.map((rr, k) => ({ domaini: rr.domaini, aktiv: te[k].aktiv, titulli: te[k].titulli, meta: te[k].meta, teksti: te[k].teksti || '' }));
-      const pagesa = m => /quota|billing|insufficient|exceeded your current|invalid_api_key|incorrect api key|401/i.test(String(m || ''));
+      const pagesa = m => /\bquota\b|insufficient_quota|\bbilling\b|exceeded your current quota|invalid_api_key|incorrect api key/i.test(String(m || ''));
       let o = null, gabimAI = null;
       try { o = await pximPyetAI(pximPromptStudimi(perAI)); } catch (e) { gabimAI = e.message; }
       await pool.query('UPDATE pxse_importet SET ai_thirrje=ai_thirrje+1 WHERE id=$1', [im.id]);
@@ -578,45 +596,27 @@ module.exports = function (app, pool, iAdmin) {
     await Promise.all(Array.from({ length: Math.min(PXIM_PARALEL, grupi.length) }, async () => {
       while (i < grupi.length) { const k = i++; try { te[k] = await pximNjeRresht(grupi[k]); } catch (e) { te[k] = { id: grupi[k].id, domaini: grupi[k].domaini, gabimi: String(e.message).slice(0, 200) }; } }
     }));
-    const oke = te.filter(x => x && !x.gabimi && !(x.statusi === 'jo_biznes' && x.vendimi === 'rregull' && !x.titulli));
-    // 2. Embeddings (nje thirrje per grupin)
-    const A = await pximAnkorat();
-    const vek = oke.length ? await pximVektoret(oke.map(x => [x.emri, x.titulli, x.pershkrimi, String(x.teksti || '').slice(0, 500)].filter(Boolean).join('. '))) : [];
-    oke.forEach((x, k) => {
-      const v = vek[k], s = x.sinjale || {};
-      const pb = ['cmime', 'regjistrim', 'pagesa', 'kushtet', 'ligjor', 'karriera', 'kontakt'].filter(z => s[z]).length + (x.email ? 1 : 0) + ((x.pike_saas || 0) >= 4 ? 1 : 0);
-      x.piket_biznes = pb;
-      const dB = pximMaks(v, A.biznes) - pximMaks(v, A.jo), dT = pximMaks(v, A.b2b) - pximMaks(v, A.b2c);
-      const kat = A.kat.map((p, j) => [j, pximNgjashmeria(v, p)]).sort((a, b) => b[1] - a[1]);
-      x.paqarte = [];
-      // Biznes apo jo
-      if (x.joBiznes) { x.statusi = 'jo_biznes'; x.vendimi = 'rregull'; }
-      else if ((pb >= 4 && dB > -0.03) || (pb >= 2 && dB > 0.05)) { x.statusi = 'biznes'; x.vendimi = 'vektor'; }
-      else if (pb <= 1 && dB < -0.02) { x.statusi = 'jo_biznes'; x.vendimi = 'vektor'; }
-      else { x.statusi = 'i_paqarte'; x.paqarte.push('b'); }
-      // B2B / B2C
-      const kb = (x.b2bFjale || 0) - (x.b2cFjale || 0);
-      if ((kb >= 2 && dT > -0.02) || (dT > 0.06 && kb >= 0)) x.lloji = 'b2b';
-      else if ((kb <= -2 && dT < 0.02) || (dT < -0.06 && kb <= 0)) x.lloji = 'b2c';
-      else x.paqarte.push('t');
-      // Kategoria
-      if (kat[0][1] - kat[1][1] >= 0.02 && PXIM_EMRAT_KAT[kat[0][0]] !== 'Other') x.kategoria = PXIM_EMRAT_KAT[kat[0][0]];
-      else { x.kategoria = PXIM_EMRAT_KAT[kat[0][0]]; x.paqarte.push('k'); }
-      if (!x.shteti) x.paqarte.push('c');
-      if (!x.pershkrimi) x.paqarte.push('d');
-      // AI vetem kur ka dicka te paqarte qe ka rendesi (jo per jo-bizneset e sigurta, jo vetem per shtetin)
-      // AI nano perdoret te faza 2 (studimi i faqeve) per te gjitha, ndaj ketu nuk thirret
+    // 2. Faza 1 mban vetem ate qe del e sakte nga faqja e arkivuar (email, shteti, data, MX, sinjalet) dhe hedh me rregull
+    //    domainet e parkuara/platformat. Biznes apo jo, kategoria, B2B/B2C, emri dhe pershkrimi vendosen nga AI-ja te faza 2.
+    te.forEach(x => {
+      if (!x || x.gabimi) return;
+      const s = x.sinjale || {};
+      x.piket_biznes = ['cmime', 'regjistrim', 'pagesa', 'kushtet', 'ligjor', 'karriera', 'kontakt'].filter(z => s[z]).length + (x.email ? 1 : 0) + ((x.pike_saas || 0) >= 4 ? 1 : 0);
+      x.meta_arkiv = x.pershkrimi || null;   // vetem si tekst per AI-ne kur faqja e gjalle nuk hapet
+      x.emri = null; x.pershkrimi = null; x.pershkrimi_ai = false; x.kategoria = null; x.lloji = null;
+      if (x.joBiznes || x.statusi === 'jo_biznes') { x.statusi = 'jo_biznes'; x.vendimi = 'rregull'; }
+      else { x.statusi = 'i_paqarte'; x.vendimi = null; }
     });
-    let thirrje = 0; // AI nano thirret te studimi i faqeve (faza 2)
+    let thirrje = 0;
     // 4. Ruajtja
     for (const x of te) {
       if (!x) continue;
       if (x.gabimi) { await pool.query("UPDATE pxse_import_rreshtat SET gjendja='gabim', gabimi=$2, perpunuar_at=now() WHERE id=$1", [x.id, x.gabimi]); continue; }
       await pool.query(`UPDATE pxse_import_rreshtat SET gjendja='bere', gabimi=NULL, emri=$2, titulli=$3, pershkrimi=$4, pershkrimi_ai=$5, email=$6, email_lloji=$7, emailet=$8,
-          ka_mx=$9, shteti=$10, shteti_burimi=$11, data_domainit=$12, viti_kopi=$13, kategoria=$14, lloji=$15, statusi=$16, vendimi=$17, piket_biznes=$18, perpunuar_at=now()
+          ka_mx=$9, shteti=$10, shteti_burimi=$11, data_domainit=$12, viti_kopi=$13, kategoria=$14, lloji=$15, statusi=$16, vendimi=$17, piket_biznes=$18, meta_arkiv=$19, perpunuar_at=now()
         WHERE id=$1`, [x.id, x.emri || null, x.titulli || null, x.pershkrimi || null, !!x.pershkrimi_ai, x.email || null, x.email_lloji || null, JSON.stringify(x.emailet || []),
         x.ka_mx, x.shteti || null, x.shteti_burimi || null, x.data_domainit || null, x.vitiKopi || null, x.kategoria || null, x.lloji || null, x.statusi || 'i_paqarte',
-        x.vendimi || null, x.piket_biznes == null ? null : x.piket_biznes]);
+        x.vendimi || null, x.piket_biznes == null ? null : x.piket_biznes, x.meta_arkiv || null]);
     }
     if (thirrje) await pool.query('UPDATE pxse_importet SET ai_thirrje=ai_thirrje+$2 WHERE id=$1', [im.id, thirrje]);
   }
@@ -693,7 +693,7 @@ module.exports = function (app, pool, iAdmin) {
       const n = await pool.query('SELECT COUNT(*)::int n FROM pxse_import_rreshtat r WHERE ' + sql, p);
       const r = await pool.query(`SELECT r.id, r.domaini, r.pike_saas, r.url, r.gjendja, r.gabimi, r.emri, r.titulli, r.pershkrimi, r.pershkrimi_ai, r.email, r.email_lloji, r.emailet,
           r.ka_mx, r.shteti, r.shteti_burimi, to_char(r.data_domainit, 'YYYY-MM-DD') data_domainit, r.viti_kopi, r.kategoria, r.lloji, r.statusi, r.vendimi, r.piket_biznes, r.ne_direktori, r.ishte_ne_direktori,
-          r.aktiv, r.studim2, r.import_para, r.ndryshuar_dore
+          r.aktiv, r.studim2, r.import_para, r.ndryshuar_dore, r.kopjuar
         FROM pxse_import_rreshtat r WHERE ${sql} ORDER BY ${rend}, r.id LIMIT 100 OFFSET ${faqe * 100}`, p);
       const tot = await pool.query(`SELECT COUNT(*) FILTER (WHERE statusi='biznes')::int biznes, COUNT(*) FILTER (WHERE statusi='jo_biznes')::int jo_biznes,
           COUNT(*) FILTER (WHERE statusi='i_paqarte')::int i_paqarte, COUNT(*) FILTER (WHERE gjendja='pritje')::int pritje, COUNT(*) FILTER (WHERE gjendja='gabim')::int gabim,
