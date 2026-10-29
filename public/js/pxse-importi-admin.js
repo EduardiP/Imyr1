@@ -51,6 +51,10 @@
       '.pxim-kub:hover,.pxim-kub.on{border-color:#3b82f6}',
       '.pxim-kub b{display:block;font-size:20px;color:var(--acc)}.pxim-kub span{font-size:11.5px;color:var(--mut)}',
       '.pxim-mesazh{font-size:13px;margin:8px 0 0}',
+      '.pxim-skedat{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}',
+      '.pxim-skede{background:#0e1116;border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;text-align:left;color:var(--txt);font:inherit}',
+      '.pxim-skede b{display:block;font-size:13px}.pxim-skede span{font-size:11px;color:var(--mut)}',
+      '.pxim-skede.on{border-color:#3b82f6;background:#131a26}',
       '.pxim-tbl a{color:#7aa2ff;text-decoration:none}.pxim-tbl a:hover{text-decoration:underline}'
     ].join('\n');
     document.head.appendChild(s);
@@ -94,15 +98,16 @@
     var m = el('pxadMain'); if (!m) return;
     clearTimeout(IM.timer);
     m.innerHTML = '<div class="pxad-wrap"><h2 class="h">Shërbimet falas · Importi i domaineve</h2>' +
-      '<p class="small mut" style="margin:0 0 14px">Ngarko CSV-në e domaineve nga Common Crawl. Serveri merr faqet e arkivuara, nxjerr email-in, përshkrimin, shtetin dhe datën e domainit, ' +
-      'dhe i klasifikon me rregulla falas dhe filtrin e lirë. AI nano përdoret vetëm për rastet e paqarta. Asgjë nuk shkon te direktoria e email-eve pa butonin “Kalo në direktori”.</p>' +
+      '<p class="small mut" style="margin:0 0 14px">Ngarko CSV-në e domaineve nga Common Crawl. Faza 1: serveri lexon faqet e arkivuara (email, shteti, data e domainit). ' +
+      'Faza 2: hap vetë faqen e gjallë të çdo biznesi (dhe faqen contact kur mungon email-i), dhe AI nano vendos emrin, përshkrimin, kategorinë dhe B2B/B2C. ' +
+      'Fushat që ndryshon ti me dorë nuk preken. Asgjë nuk shkon te direktoria e email-eve pa butonin “Kalo në direktori”.</p>' +
       '<div class="pxim-karte"><h3>Ngarko skedarin</h3><div class="pxim-rr"><input type="file" id="piSkedari" accept=".csv,text/csv">' +
       '<button class="pxad-btn on" id="piNgarko">Ngarko dhe nis</button><span class="small mut">Kolonat: domaini, url, warc_filename, warc_record_offset, warc_record_length (pike_saas opsionale)</span></div>' +
       '<p class="pxim-mesazh" id="piMesazh"></p></div>' +
-      '<div class="pxim-karte"><h3>Importet</h3><div id="piLista"><p class="small mut">Po ngarkoj…</p></div></div>' +
+      '<div id="piSkedat" class="pxim-skedat"></div><div class="pxim-karte" id="piLista"><p class="small mut">Po ngarkoj…</p></div>' +
       '<div id="piDetaje"></div></div>';
     el('piNgarko').onclick = ngarko;
-    lista();
+    lista(true);
   }
 
   async function ngarko() {
@@ -115,42 +120,55 @@
       ms.innerHTML = '<span class="pxim-ok">U ngarkua: ' + nr(j.total) + ' domaine. Përpunimi nisi në sfond.</span>';
       IM.id = j.id; IM.filtri = {}; IM.faqe = 0; IM.zgjedhur = {};
       el('piSkedari').value = '';
-      lista();
+      lista(true);
     } catch (x) { ms.innerHTML = '<span class="pxim-jo">' + e(x.message) + '</span>'; }
     el('piNgarko').disabled = false;
   }
 
-  async function lista() {
-    var w = el('piLista'); if (!w) return;
+  // Skedat (nje per cdo skedar te ngarkuar) + gjendja e skedarit te zgjedhur. meDetaje: rindërto edhe tabelën.
+  async function lista(meDetaje) {
+    var w = el('piLista'), sk = el('piSkedat'); if (!w) return;
     var d; try { d = await thirr(''); } catch (x) { w.innerHTML = '<p class="pxim-jo small">' + e(x.message) + '</p>'; return; }
     IM.kategorite = d.kategorite || [];
-    if (!d.importet.length) { w.innerHTML = '<p class="small mut">Ende asnjë import.</p>'; el('piDetaje').innerHTML = ''; return; }
-    if (!IM.id || !d.importet.some(function (x) { return x.id === IM.id; })) IM.id = d.importet[0].id;
+    if (!d.importet.length) { sk.innerHTML = ''; w.innerHTML = '<p class="small mut">Ende asnjë skedar i ngarkuar.</p>'; el('piDetaje').innerHTML = ''; return; }
+    if (!IM.id || !d.importet.some(function (x) { return x.id === IM.id; })) { IM.id = d.importet[0].id; meDetaje = true; }
+    sk.innerHTML = d.importet.slice().reverse().map(function (x) {
+      return '<button class="pxim-skede' + (x.id === IM.id ? ' on' : '') + '" data-hap="' + x.id + '"><b>' + e(dek(x.emri || 'import.csv')) + '</b><span>' + e(data(x.krijuar_at)) + ' · ' + nr(x.total) + ' domaine</span></button>';
+    }).join('');
+    var x = d.importet.find(function (y) { return y.id === IM.id; });
     var gjendja = { duke: '<span class="pxim-gri">Duke punuar</span>', ndalur: '<span class="pxim-jo">Ndalur</span>', gati: '<span class="pxim-ok">Gati</span>' };
-    w.innerHTML = '<div class="pxim-tbl" style="max-height:260px"><table style="min-width:900px"><thead><tr><th>Skedari</th><th>Ngarkuar</th><th>Progresi</th><th>Gjendja</th><th>Thirrje AI</th><th></th></tr></thead><tbody>' +
-      d.importet.map(function (x) {
-        var p = x.total ? Math.round(100 * x.bere / x.total) : 0;
-        return '<tr' + (x.id === IM.id ? ' style="background:#131a26"' : '') + '><td>' + e(dek(x.emri || '')) + '</td><td>' + e(data(x.krijuar_at)) + '</td>' +
-          '<td><div class="pxim-shirit"><i style="width:' + p + '%"></i></div><div class="pxim-nen">' + nr(x.bere) + ' / ' + nr(x.total) + ' (' + p + '%)' + (x.gabime ? ' · ' + nr(x.gabime) + ' gabime' : '') + (x.bere >= x.total && x.kontakt_mbetur ? '<br>Faza 2 (faqet contact): ' + nr(x.kontakt_mbetur) + ' mbetur' : '') + '</div></td>' +
-          '<td>' + (gjendja[x.gjendja] || e(x.gjendja)) + (x.gabimi ? '<div class="pxim-nen pxim-jo">' + e(x.gabimi) + '</div>' : '') + '</td><td>' + nr(x.ai_thirrje) + '</td>' +
-          '<td style="white-space:nowrap"><button class="pxad-btn" data-hap="' + x.id + '">Hap</button> ' +
-          (x.gjendja === 'duke' ? '<button class="pxad-btn" data-ndalo="' + x.id + '">Ndalo</button> ' : '<button class="pxad-btn" data-vazhdo="' + x.id + '">' + (x.gjendja === 'gati' ? 'Riprovo gabimet' : 'Vazhdo') + '</button> ') +
-          '<button class="pxad-btn" data-fshi="' + x.id + '">' + (IM.fshi === x.id ? 'Kliko sërish për ta fshirë' : 'Fshi') + '</button></td></tr>';
-      }).join('') + '</tbody></table></div>';
-    w.querySelectorAll('[data-hap]').forEach(function (b) { b.onclick = function () { IM.id = Number(b.getAttribute('data-hap')); IM.filtri = {}; IM.faqe = 0; IM.zgjedhur = {}; lista(); }; });
+    var p1 = x.total ? Math.round(100 * x.bere / x.total) : 0, p2 = x.studim_total ? Math.round(100 * x.studim_bere / x.studim_total) : 0;
+    var shirit = function (titulli, bere, total, p, shtese) {
+      return '<div style="min-width:260px;flex:1"><div class="small" style="margin-bottom:4px">' + titulli + '</div><div class="pxim-shirit"><i style="width:' + p + '%"></i></div>' +
+        '<div class="pxim-nen">' + nr(bere) + ' / ' + nr(total) + ' (' + p + '%)' + (shtese || '') + '</div></div>';
+    };
+    w.innerHTML = '<div class="pxim-rr" style="gap:18px;align-items:flex-start">' +
+      shirit('Faza 1 · faqet e arkivuara', x.bere, x.total, p1, x.gabime ? ' · ' + nr(x.gabime) + ' gabime' : '') +
+      shirit('Faza 2 · studimi i faqeve me AI', x.studim_bere, x.studim_total, p2, '') +
+      '<div><div class="small" style="margin-bottom:4px">Gjendja</div>' + (gjendja[x.gjendja] || e(x.gjendja)) + (x.gabimi ? '<div class="pxim-nen pxim-jo">' + e(x.gabimi) + '</div>' : '') +
+      '<div class="pxim-nen">Thirrje AI: ' + nr(x.ai_thirrje) + '</div></div>' +
+      '<div style="margin-left:auto;white-space:nowrap">' +
+      (x.gjendja === 'duke' ? '<button class="pxad-btn" data-ndalo="' + x.id + '">Ndalo</button> ' : '<button class="pxad-btn" data-vazhdo="' + x.id + '">' + (x.gjendja === 'gati' ? 'Riprovo gabimet' : 'Vazhdo') + '</button> ') +
+      '<button class="pxad-btn" id="piRifresko">Rifresko tabelën</button> <button class="pxad-btn" data-fshi="' + x.id + '">' + (IM.fshi === x.id ? 'Kliko sërish për ta fshirë' : 'Fshi skedarin') + '</button></div></div>';
+    sk.querySelectorAll('[data-hap]').forEach(function (b) { b.onclick = function () { IM.id = Number(b.getAttribute('data-hap')); IM.filtri = {}; IM.faqe = 0; IM.zgjedhur = {}; IM.kaloMs = ''; lista(true); }; });
+    el('piRifresko').onclick = function () { detajet(); };
     w.querySelectorAll('[data-ndalo]').forEach(function (b) { b.onclick = async function () { await thirr('/' + b.getAttribute('data-ndalo') + '/ndalo', 'POST', {}); lista(); }; });
     w.querySelectorAll('[data-vazhdo]').forEach(function (b) { b.onclick = async function () { await thirr('/' + b.getAttribute('data-vazhdo') + '/vazhdo', 'POST', { gabimet: true }); lista(); }; });
     w.querySelectorAll('[data-fshi]').forEach(function (b) {
       b.onclick = async function () {
         var id = Number(b.getAttribute('data-fshi'));
         if (IM.fshi !== id) { IM.fshi = id; lista(); setTimeout(function () { if (IM.fshi === id) { IM.fshi = null; lista(); } }, 4000); return; }
-        IM.fshi = null; await thirr('/' + id, 'DELETE'); if (IM.id === id) IM.id = null; lista();
+        IM.fshi = null; await thirr('/' + id, 'DELETE'); if (IM.id === id) IM.id = null; lista(true);
       };
     });
-    detajet();
-    // Rifreskim kur ka import ne pune
+    // Tabela rindërtohet vetë vetëm kur ndryshon faza ose mbaron puna (jo çdo 6 sekonda)
+    var faza = x.gjendja + ':' + (x.bere >= x.total ? 2 : 1);
+    if (IM.fazaPara && IM.fazaPara.id === x.id && IM.fazaPara.v !== faza) meDetaje = true;
+    IM.fazaPara = { id: x.id, v: faza };
+    if (meDetaje) detajet();
+    // Rifreskim i progresit kur skedari punon (tabela nuk rindërtohet vetë, që të mos humbasë ajo që po shikon)
     clearTimeout(IM.timer);
-    if (d.importet.some(function (x) { return x.gjendja === 'duke'; })) IM.timer = setTimeout(function () { if (IM.aktiv && el('piLista')) lista(); }, 6000);
+    if (d.importet.some(function (y) { return y.gjendja === 'duke'; })) IM.timer = setTimeout(function () { if (IM.aktiv && el('piLista')) lista(); }, 6000);
   }
 
   function opsione(lista, vlera, bosh) {
@@ -172,7 +190,8 @@
     var faqet = Math.max(1, Math.ceil(d.total / 100));
     w.innerHTML = '<div class="pxim-kubat">' +
       kub('Biznese', t.biznes, { statusi: 'biznes' }) + kub('Jo biznese', t.jo_biznes, { statusi: 'jo_biznes' }) + kub('Të paqarta', t.i_paqarte, { statusi: 'i_paqarte' }) +
-      kub('Me email', t.me_email, { email: 'po' }) + kub('Gati për direktori', t.gati, { statusi: 'biznes', email: 'po' }) + kub('Në direktori', t.ne_direktori, { direktori: 'po' }) +
+      kub('Me email', t.me_email, { email: 'po' }) + kub('Gati për direktori', t.gati, { gati: 'po' }) + kub('Në direktori', t.ne_direktori, { direktori: 'po' }) +
+      kub('Të studiuara (faza 2)', t.studiuar, { studimi: 'po' }) + kub('Faqe jo aktive', t.jo_aktive, { aktiv: 'jo' }) + kub('Edhe në skedar tjetër', t.perseritur, { perseritur: 'po' }) +
       kub('Vendosur nga AI', t.nga_ai, { vendimi: 'ai' }) + kub('Në pritje', t.pritje, { statusi: 'pritje' }) + kub('Gabime', t.gabim, { statusi: 'gabim' }) + kub('Të gjitha', (t.biznes || 0) + (t.jo_biznes || 0) + (t.i_paqarte || 0) + (t.pritje || 0) + (t.gabim || 0), {}) + '</div>' +
       '<div class="pxim-karte"><div class="pxim-rr">' +
       '<select data-f="statusi">' + opsione(STATUSET.concat([['pritje', 'Në pritje'], ['gabim', 'Gabim']]), f.statusi, 'Statusi: të gjitha') + '</select>' +
@@ -184,6 +203,9 @@
       '<select data-f="saas">' + opsione([['5', 'SaaS 5'], ['4', 'SaaS 4'], ['3', 'SaaS 3']], f.saas, 'Pikët SaaS') + '</select>' +
       '<select data-f="vendimi">' + opsione([['rregull', 'Rregull'], ['vektor', 'Filtri i lirë'], ['ai', 'AI nano'], ['admin', 'Admin']], f.vendimi, 'Vendosur nga') + '</select>' +
       '<select data-f="direktori">' + opsione([['po', 'Në direktori'], ['jo', 'Jo në direktori']], f.direktori, 'Direktoria') + '</select>' +
+      '<select data-f="aktiv">' + opsione([['po', 'Faqja aktive'], ['jo', 'Faqja jo aktive'], ['-', 'E pakontrolluar']], f.aktiv, 'Faqja') + '</select>' +
+      '<select data-f="studimi">' + opsione([['po', 'Të studiuara'], ['jo', 'Pa u studiuar']], f.studimi, 'Faza 2') + '</select>' +
+      '<select data-f="perseritur">' + opsione([['jo', 'Vetëm të reja'], ['po', 'Edhe në skedar tjetër']], f.perseritur, 'Skedarët') + '</select>' +
       '<input type="number" data-f="vitiNga" placeholder="Domaini nga viti" value="' + e(f.vitiNga || '') + '">' +
       '<input type="number" data-f="vitiDeri" placeholder="deri në vitin" value="' + e(f.vitiDeri || '') + '">' +
       '<input type="text" data-f="kerko" placeholder="Kërko domain, emër, përshkrim" value="' + e(f.kerko || '') + '">' +
@@ -191,11 +213,11 @@
       '</div><div class="pxim-rr" style="margin-top:10px">' +
       '<button class="pxad-btn on" id="piKaloZgj">Kalo në direktori të zgjedhurat (' + Object.keys(IM.zgjedhur).length + ')</button>' +
       '<button class="pxad-btn" id="piKaloFil">Kalo në direktori të gjitha sipas filtrit</button>' +
-      '<span class="small mut">Kalojnë vetëm bizneset me email të domainit dhe MX.</span></div><p class="pxim-mesazh" id="piKaloMs">' + (IM.kaloMs || '') + '</p></div>' +
+      '<span class="small mut">Kalojnë vetëm bizneset me email të domainit, MX dhe faqe jo të vdekur.</span></div><p class="pxim-mesazh" id="piKaloMs">' + (IM.kaloMs || '') + '</p></div>' +
       '<p class="small mut" style="margin:0 0 6px">' + nr(d.total) + ' rreshta · faqja ' + (IM.faqe + 1) + ' nga ' + faqet + ' ' +
       '<button class="pxad-btn" id="piMbrapa"' + (IM.faqe ? '' : ' disabled') + '>‹</button> <button class="pxad-btn" id="piPara"' + (IM.faqe + 1 < faqet ? '' : ' disabled') + '>›</button></p>' +
-      '<div class="pxim-tbl"><table><thead><tr><th><input type="checkbox" id="piTeGjitha"></th><th>Domaini</th><th>Emri · përshkrimi</th><th>Statusi</th><th>Kategoria</th><th>B2B/B2C</th><th>Shteti</th><th>Email</th><th>Domaini nga · ©</th><th>SaaS</th><th>Pikë biznesi</th><th>Vendosur nga</th><th>Direktoria</th></tr></thead><tbody>' +
-      (d.rreshtat.length ? d.rreshtat.map(rreshti).join('') : '<tr><td colspan="13" class="small mut">Asnjë rresht me këta filtra.</td></tr>') + '</tbody></table></div>';
+      '<div class="pxim-tbl"><table><thead><tr><th><input type="checkbox" id="piTeGjitha"></th><th>Domaini</th><th>Emri · përshkrimi</th><th>Statusi</th><th>Kategoria</th><th>B2B/B2C</th><th>Shteti</th><th>Email</th><th>Domaini nga · ©</th><th>SaaS</th><th>Pikë biznesi</th><th>Vendosur nga</th><th>Faqja</th><th>Direktoria</th></tr></thead><tbody>' +
+      (d.rreshtat.length ? d.rreshtat.map(rreshti).join('') : '<tr><td colspan="14" class="small mut">Asnjë rresht me këta filtra.</td></tr>') + '</tbody></table></div>';
 
     // ngjarjet
     w.querySelectorAll('[data-kub]').forEach(function (b) { b.onclick = function () { IM.filtri = JSON.parse(b.getAttribute('data-kub')); IM.faqe = 0; detajet(); }; });
@@ -238,13 +260,15 @@
       '<td><a href="' + e(link) + '" target="_blank" rel="noopener noreferrer">' + e(x.domaini) + '</a>' + (x.ishte_ne_direktori ? '<div class="pxim-nen">ishte në direktori</div>' : '') + '</td>' +
       '<td><b>' + e(x.emri || '') + '</b>' + (x.pershkrimi ? '<div class="pxim-nen">' + e(x.pershkrimi) + (x.pershkrimi_ai ? '<span class="pxim-etik">AI</span>' : '') + '</div>' : (x.titulli ? '<div class="pxim-nen">' + e(x.titulli) + '</div>' : '')) + '</td>' +
       '<td>' + st + '</td>' +
-      '<td>' + (gati ? '<select data-ndr="kategoria" data-id="' + x.id + '">' + opsione(IM.kategorite, x.kategoria) + '</select>' : '') + '</td>' +
+      '<td>' + (gati ? '<select data-ndr="kategoria" data-id="' + x.id + '">' + opsione(IM.kategorite, x.kategoria, '—') + '</select>' : '') + '</td>' +
       '<td>' + (gati ? '<select data-ndr="lloji" data-id="' + x.id + '">' + opsione(LLOJET, x.lloji, '—') + '</select>' : '') + '</td>' +
       '<td>' + (gati ? '<input class="pxim-sh" maxlength="2" data-ndr="shteti" data-id="' + x.id + '" value="' + e(x.shteti || '') + '"><div class="pxim-nen">' + e(x.shteti_burimi || '') + '</div>' : '') + '</td>' +
       '<td>' + (x.email ? e(x.email) + '<div class="pxim-nen">' + (x.email_lloji === 'personal' ? 'personal' : 'i përgjithshëm') + ' · ' + (x.ka_mx ? '<span class="pxim-ok">MX ✓</span>' : '<span class="pxim-jo">pa MX</span>') +
         ((x.emailet || []).length > 1 ? ' · +' + ((x.emailet || []).length - 1) + ' të tjerë' : '') + '</div>' : (gati ? '<span class="pxim-nen">—</span>' : '')) + '</td>' +
       '<td>' + e(x.data_domainit ? String(x.data_domainit).slice(0, 10) : '—') + (x.viti_kopi ? '<div class="pxim-nen">© ' + e(x.viti_kopi) + '</div>' : '') + '</td>' +
       '<td>' + e(x.pike_saas == null ? '' : x.pike_saas) + '</td><td>' + e(x.piket_biznes == null ? '' : x.piket_biznes) + '</td>' +
-      '<td>' + e(VENDIMET[x.vendimi] || '') + '</td><td>' + (x.ne_direktori ? '<span class="pxim-ok">✓</span>' : '') + '</td></tr>';
+      '<td>' + e(VENDIMET[x.vendimi] || '') + (x.studim2 === 'bere' ? '<div class="pxim-nen">studiuar me AI</div>' : '') + ((x.ndryshuar_dore || []).length ? '<div class="pxim-nen">me dorë: ' + e(x.ndryshuar_dore.join(', ')) + '</div>' : '') + '</td>' +
+      '<td>' + (x.aktiv === true ? '<span class="pxim-ok">aktive</span>' : x.aktiv === false ? '<span class="pxim-jo">jo aktive</span>' : '<span class="pxim-nen">—</span>') + '</td>' +
+      '<td>' + (x.ne_direktori ? '<span class="pxim-ok">✓</span>' : '') + (x.import_para ? '<div class="pxim-nen">edhe në skedar tjetër</div>' : '') + '</td></tr>';
   }
 })();
