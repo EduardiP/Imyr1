@@ -131,7 +131,7 @@
       d.importet.map(function (x) {
         var p = x.total ? Math.round(100 * x.bere / x.total) : 0;
         return '<tr' + (x.id === IM.id ? ' style="background:#131a26"' : '') + '><td>' + e(dek(x.emri || '')) + '</td><td>' + e(data(x.krijuar_at)) + '</td>' +
-          '<td><div class="pxim-shirit"><i style="width:' + p + '%"></i></div><div class="pxim-nen">' + nr(x.bere) + ' / ' + nr(x.total) + ' (' + p + '%)' + (x.gabime ? ' · ' + nr(x.gabime) + ' gabime' : '') + '</div></td>' +
+          '<td><div class="pxim-shirit"><i style="width:' + p + '%"></i></div><div class="pxim-nen">' + nr(x.bere) + ' / ' + nr(x.total) + ' (' + p + '%)' + (x.gabime ? ' · ' + nr(x.gabime) + ' gabime' : '') + (x.bere >= x.total && x.kontakt_mbetur ? '<br>Faza 2 (faqet contact): ' + nr(x.kontakt_mbetur) + ' mbetur' : '') + '</div></td>' +
           '<td>' + (gjendja[x.gjendja] || e(x.gjendja)) + (x.gabimi ? '<div class="pxim-nen pxim-jo">' + e(x.gabimi) + '</div>' : '') + '</td><td>' + nr(x.ai_thirrje) + '</td>' +
           '<td style="white-space:nowrap"><button class="pxad-btn" data-hap="' + x.id + '">Hap</button> ' +
           (x.gjendja === 'duke' ? '<button class="pxad-btn" data-ndalo="' + x.id + '">Ndalo</button> ' : '<button class="pxad-btn" data-vazhdo="' + x.id + '">' + (x.gjendja === 'gati' ? 'Riprovo gabimet' : 'Vazhdo') + '</button> ') +
