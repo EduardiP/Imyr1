@@ -491,16 +491,42 @@ module.exports = function (app, pool, iAdmin) {
       await Promise.all(Array.from({ length: Math.min(PXIM_STUDIM_PARALEL, grupi.length) }, async () => {
         while (i < grupi.length) { const k = i++; try { te[k] = await pximLexoFaqet(grupi[k]); } catch (e) { te[k] = { aktiv: false, teksti: '', titulli: grupi[k].titulli, meta: grupi[k].pershkrimi, emailet: [] }; } }
       }));
-      // 2. AI nano (nje thirrje per grupin)
-      const o = await pximPyetAI(pximPromptStudimi(grupi.map((rr, k) => ({ domaini: rr.domaini, aktiv: te[k].aktiv, titulli: te[k].titulli, meta: te[k].meta, teksti: te[k].teksti || '' })))).catch(e => { console.error('pxse importi AI:', e.message); return null; });
+      // 2. AI nano (nje thirrje per grupin). Kur grupi deshton: nje nga nje; ai qe deshton shenohet "pa AI" dhe puna vazhdon.
+      const perAI = grupi.map((rr, k) => ({ domaini: rr.domaini, aktiv: te[k].aktiv, titulli: te[k].titulli, meta: te[k].meta, teksti: te[k].teksti || '' }));
+      const pagesa = m => /quota|billing|insufficient|exceeded your current|invalid_api_key|incorrect api key|401/i.test(String(m || ''));
+      let o = null, gabimAI = null;
+      try { o = await pximPyetAI(pximPromptStudimi(perAI)); } catch (e) { gabimAI = e.message; }
       await pool.query('UPDATE pxse_importet SET ai_thirrje=ai_thirrje+1 WHERE id=$1', [im.id]);
       if (!o || typeof o !== 'object') {
-        if (++deshtimeAI >= 3) {
-          await pool.query("UPDATE pxse_importet SET gjendja='ndalur', gabimi=$2 WHERE id=$1", [im.id, 'AI nano nuk po përgjigjet. Kliko "Vazhdo" më vonë.']);
+        if (pagesa(gabimAI)) {
+          await pool.query("UPDATE pxse_importet SET gjendja='ndalur', gabimi=$2 WHERE id=$1", [im.id, String(gabimAI).slice(0, 280) + ' (kontrollo OpenAI Billing / Limits, pastaj "Vazhdo")']);
           return 'ndalur';
         }
-        await new Promise(f => setTimeout(f, 10000 * deshtimeAI));
-        continue;
+        console.error('pxse importi AI (grupi):', gabimAI || 'pergjigje pa JSON');
+        o = {}; let okNje = 0;
+        for (let k = 0; k < perAI.length; k++) {
+          try {
+            const r1 = await pximPyetAI(pximPromptStudimi([perAI[k]]));
+            if (r1 && typeof r1 === 'object' && r1['1'] && typeof r1['1'] === 'object') { o[String(k + 1)] = r1['1']; okNje++; }
+            else console.error('pxse importi AI (' + perAI[k].domaini + '): pergjigje pa JSON');
+          } catch (e) {
+            gabimAI = e.message; console.error('pxse importi AI (' + perAI[k].domaini + '):', e.message);
+            if (pagesa(e.message)) {
+              await pool.query("UPDATE pxse_importet SET gjendja='ndalur', gabimi=$2 WHERE id=$1", [im.id, String(e.message).slice(0, 280) + ' (kontrollo OpenAI Billing / Limits, pastaj "Vazhdo")']);
+              return 'ndalur';
+            }
+          }
+        }
+        await pool.query('UPDATE pxse_importet SET ai_thirrje=ai_thirrje+$2 WHERE id=$1', [im.id, perAI.length]);
+        if (!okNje) {
+          // asnje nuk kaloi: me gjase OpenAI nuk po pergjigjet fare; provohet perseri, pas 3 herësh ndalet me gabimin e vertete
+          if (++deshtimeAI >= 3) {
+            await pool.query("UPDATE pxse_importet SET gjendja='ndalur', gabimi=$2 WHERE id=$1", [im.id, 'AI nano nuk po përgjigjet: ' + String(gabimAI || 'përgjigje e pavlefshme').slice(0, 220) + '. Kliko "Vazhdo" më vonë.']);
+            return 'ndalur';
+          }
+          await new Promise(f => setTimeout(f, 10000 * deshtimeAI));
+          continue;
+        }
       }
       deshtimeAI = 0;
       // 3. Ruajtja: vendimet e AI-se zevendesojne ato te meparshmet, pervec fushave te ndryshuara me dore
