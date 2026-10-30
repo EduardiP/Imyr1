@@ -403,7 +403,7 @@ module.exports = function (app, pool, iAdmin) {
     await pool.query('CREATE INDEX IF NOT EXISTS idx_pxim_r_imp ON pxse_import_rreshtat (import_id, gjendja)');
     await pool.query('ALTER TABLE pxse_import_rreshtat ADD COLUMN IF NOT EXISTS kontakt_kerkuar BOOLEAN NOT NULL DEFAULT false'); // (versioni i meparshem; nuk perdoret me)
     // Studimi i faqeve (faza 2): faqja e gjalle + AI nano per te gjitha
-    for (const k of ['aktiv BOOLEAN', 'studim2 TEXT', 'studim2_at TIMESTAMPTZ', "ndryshuar_dore TEXT[] NOT NULL DEFAULT '{}'", 'import_para INT', 'meta_arkiv TEXT', 'kopjuar BOOLEAN NOT NULL DEFAULT false'])
+    for (const k of ['aktiv BOOLEAN', 'studim2 TEXT', 'studim2_at TIMESTAMPTZ', "ndryshuar_dore TEXT[] NOT NULL DEFAULT '{}'", 'import_para INT', 'meta_arkiv TEXT', 'kopjuar BOOLEAN NOT NULL DEFAULT false', 'marketing TEXT'])
       await pool.query('ALTER TABLE pxse_import_rreshtat ADD COLUMN IF NOT EXISTS ' + k);
     // Ndryshimet e meparshme me dore (statusi, shteti) mbrohen nga studimi i ri
     await pool.query("UPDATE pxse_import_rreshtat SET ndryshuar_dore = ndryshuar_dore || ARRAY['statusi'] WHERE vendimi='admin' AND NOT ('statusi' = ANY(ndryshuar_dore))");
@@ -417,7 +417,48 @@ module.exports = function (app, pool, iAdmin) {
       await pool.query('ALTER TABLE pxse_bizneset ADD COLUMN IF NOT EXISTS ' + k);
     // Pas rinisjes se serverit: importet qe ishin ne pune vazhdojne
     setTimeout(() => pximNis(), 20000).unref();
+    // Kalimi automatik i emaileve B2B te Marketingu (pasi te jete krijuar tabela e marketingut)
+    setTimeout(() => pximNeMarketing(), 60000).unref();
+    setInterval(() => pximNeMarketing(), 10 * 60 * 1000).unref();
   })().catch(e => console.error('pxse-importi migrim:', e.message));
+
+  // ---------- Kalimi automatik te Marketingu → Dergimet ----------
+  // Rreshtat B2B gati (biznes, email, MX, faqe aktive) shtohen te marketing_kontaktet me kategori = emri i skedarit.
+  // marketing-email.js nuk preket. Emailet qe ekzistojne aty nuk ndryshohen; te cregjistruarit nuk kalojne.
+  // r.marketing: 'shtuar' (u shtua nga ky import) | 'ekzistonte' (ishte aty me pare) | 'mos' (i cregjistruar)
+  let pximMarketingDuke = false;
+  async function pximNeMarketing() {
+    if (pximMarketingDuke) return; pximMarketingDuke = true;
+    try {
+      const t = (await pool.query("SELECT to_regclass('marketing_kontaktet') AS mk, to_regclass('pxse_mos_kontakto') AS mos")).rows[0];
+      if (!t.mk) return;
+      const mosSql = t.mos ? 'EXISTS (SELECT 1 FROM pxse_mos_kontakto m WHERE m.email = lower(r.email))' : 'false';
+      for (;;) {
+        const gr = (await pool.query(`SELECT r.id, r.import_id, lower(r.email) email, (${mosSql}) AS mos,
+            COALESCE(NULLIF(regexp_replace(COALESCE(i.emri, ''), '\\.csv$', '', 'i'), ''), 'Import ' || i.id) AS kategoria
+          FROM pxse_import_rreshtat r JOIN pxse_importet i ON i.id = r.import_id
+          WHERE r.marketing IS NULL AND r.gjendja = 'bere' AND r.statusi = 'biznes' AND r.lloji IN ('b2b', 'both')
+            AND r.email IS NOT NULL AND r.ka_mx AND r.aktiv IS NOT FALSE
+          ORDER BY r.id LIMIT 500`)).rows;
+        if (!gr.length) break;
+        const mos = gr.filter(x => x.mos).map(x => x.id);
+        if (mos.length) await pool.query("UPDATE pxse_import_rreshtat SET marketing='mos' WHERE id = ANY($1::bigint[])", [mos]);
+        const sipasKat = new Map();
+        for (const x of gr) if (!x.mos) { if (!sipasKat.has(x.kategoria)) sipasKat.set(x.kategoria, []); sipasKat.get(x.kategoria).push(x.id); }
+        for (const [kat, ids] of sipasKat) {
+          const sh = await pool.query(`INSERT INTO marketing_kontaktet (email, domain, emri, kategoria)
+              SELECT lower(r.email), r.domaini, r.emri, $2 FROM pxse_import_rreshtat r
+              WHERE r.id = ANY($1::bigint[]) AND NOT EXISTS (SELECT 1 FROM marketing_kontaktet k WHERE lower(k.email) = lower(r.email))
+              ON CONFLICT (email) DO NOTHING RETURNING email`, [ids, kat]);
+          const shtuar = sh.rows.map(x => x.email);
+          await pool.query(`UPDATE pxse_import_rreshtat SET marketing = CASE WHEN lower(email) = ANY($2::text[]) THEN 'shtuar' ELSE 'ekzistonte' END
+              WHERE id = ANY($1::bigint[])`, [ids, shtuar]);
+        }
+      }
+    } catch (e) { console.error('pxse importi → marketing:', e.message); }
+    finally { pximMarketingDuke = false; }
+  }
+  app.locals.pxseImportiMarketing = pximNeMarketing;
 
   // ---------- Puna ne sfond ----------
   let pximDuke = false;
@@ -434,6 +475,7 @@ module.exports = function (app, pool, iAdmin) {
           const f2 = await pximStudimi(im);
           if (f2 === 'ndalur') continue;
           await pool.query("UPDATE pxse_importet SET gjendja='gati', perfunduar_at=now() WHERE id=$1 AND gjendja='duke'", [im.id]);
+          pximNeMarketing();
           continue;
         }
         try { await pximGrupi(im, grupi); }
@@ -756,8 +798,18 @@ module.exports = function (app, pool, iAdmin) {
     pximNis(); res.json({ ok: true });
   });
   app.delete('/api/admin/pxse/importi/:id', iAdmin, async (req, res) => {
-    // Fshihet vetem importi (tabela e pritjes); bizneset qe jane kaluar ne direktori mbeten
-    await pool.query('DELETE FROM pxse_importet WHERE id=$1', [parseInt(req.params.id, 10) || 0]).catch(() => {});
+    // Fshihet vetem importi (tabela e pritjes); bizneset qe jane kaluar ne direktori mbeten.
+    // Te Marketingu hiqen vetem kontaktet qe i shtoi ky import dhe qe s'jane derguar ende (as s'jane ne ndonje fushate).
+    const id = parseInt(req.params.id, 10) || 0;
+    try {
+      if ((await pool.query("SELECT to_regclass('marketing_kontaktet') AS mk")).rows[0].mk) {
+        const fk = (await pool.query("SELECT to_regclass('marketing_fushata_kontakte') AS f")).rows[0].f;
+        await pool.query(`DELETE FROM marketing_kontaktet k USING pxse_import_rreshtat r
+            WHERE r.import_id = $1 AND r.marketing = 'shtuar' AND k.email = lower(r.email) AND NOT k.derguar AND COALESCE(k.derguar_sasi, 0) = 0
+            ${fk ? 'AND NOT EXISTS (SELECT 1 FROM marketing_fushata_kontakte f WHERE f.kontakt_id = k.id)' : ''}`, [id]);
+      }
+    } catch (e) { console.error('pxse importi fshi → marketing:', e.message); }
+    await pool.query('DELETE FROM pxse_importet WHERE id=$1', [id]).catch(() => {});
     res.json({ ok: true });
   });
 };
