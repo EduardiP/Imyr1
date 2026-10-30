@@ -70,10 +70,8 @@
       Array.prototype.forEach.call(n.querySelectorAll('.subnav'), function (x) { x.classList.toggle('active', x === b); });
       faqja();
     };
-    // butonat e tjere (Email-et, Sinjalet) e mbyllin kete faqe
-    Array.prototype.forEach.call(n.querySelectorAll('.subnav:not([data-pxim])'), function (x) {
-      x.addEventListener('click', function () { IM.aktiv = false; clearTimeout(IM.timer); }, true);
-    });
+    // cdo buton tjeter i menuse (Email-et, Sinjalet, Klientet e Outreach…) e mbyll kete faqe
+    if (!n.__pximDeg) { n.__pximDeg = true; n.addEventListener('click', function (ev) { var t = ev.target.closest('.subnav'); if (t && !t.hasAttribute('data-pxim')) { IM.aktiv = false; clearTimeout(IM.timer); } }, true); }
     n.appendChild(b);
     if (IM.aktiv) { Array.prototype.forEach.call(n.querySelectorAll('.subnav:not([data-pxim])'), function (x) { x.classList.remove('active'); }); }
   }
@@ -269,6 +267,6 @@
       '<td>' + e(x.pike_saas == null ? '' : x.pike_saas) + '</td><td>' + e(x.piket_biznes == null ? '' : x.piket_biznes) + '</td>' +
       '<td>' + e(VENDIMET[x.vendimi] || '') + (x.studim2 === 'bere' ? '<div class="pxim-nen">studiuar me AI</div>' : '') + ((x.ndryshuar_dore || []).length ? '<div class="pxim-nen">me dorë: ' + e(x.ndryshuar_dore.join(', ')) + '</div>' : '') + '</td>' +
       '<td>' + (x.aktiv === true ? '<span class="pxim-ok">aktive</span>' : x.aktiv === false ? '<span class="pxim-jo">jo aktive</span>' : '<span class="pxim-nen">—</span>') + '</td>' +
-      '<td>' + (x.ne_direktori ? '<span class="pxim-ok">✓</span>' : '') + (x.import_para ? '<div class="pxim-nen">edhe në skedar tjetër</div>' : '') + '</td></tr>';
+      '<td>' + (x.ne_direktori ? '<span class="pxim-ok">✓</span>' : '') + (x.import_para ? '<div class="pxim-nen">' + (x.kopjuar ? 'marrë nga skedari i mëparshëm' : 'edhe në skedar tjetër') + '</div>' : '') + '</td></tr>';
   }
 })();
