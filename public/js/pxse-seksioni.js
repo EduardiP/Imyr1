@@ -97,6 +97,16 @@
       eHapi2: 'Choose recipients',
       eKategoria: 'Category',
       eVendi: 'Country',
+      eFTeGjithaVendet: 'All countries',
+      eFViti: 'Domain created',
+      eFCdoVit: 'Any year',
+      eFV24: '2024 or newer',
+      eFV20: '2020 – 2023',
+      eFV15: '2015 – 2019',
+      eFV00: 'Before 2015',
+      eFMeIMire: 'Best match',
+      eFTeGjitha: 'All',
+      eFQeNga: 'since {y}',
       eTipi: 'Business type',
       eVetemVerifikuar: 'Only businesses with a verified email',
       eGjetur: 'businesses match',
@@ -289,6 +299,16 @@
       eHapi2: 'Zgjidh marrësit',
       eKategoria: 'Kategoria',
       eVendi: 'Vendi',
+      eFTeGjithaVendet: 'Të gjitha vendet',
+      eFViti: 'Domaini i krijuar',
+      eFCdoVit: 'Çdo vit',
+      eFV24: '2024 ose më i ri',
+      eFV20: '2020 – 2023',
+      eFV15: '2015 – 2019',
+      eFV00: 'Para 2015',
+      eFMeIMire: 'Më i përshtatshmi',
+      eFTeGjitha: 'Të gjitha',
+      eFQeNga: 'që nga {y}',
       eTipi: 'Lloji i biznesit',
       eVetemVerifikuar: 'Vetëm biznese me email të verifikuar',
       eGjetur: 'biznese përputhen',
@@ -428,6 +448,9 @@
   // Faqja merr vetem emrin dhe domainin e biznesit, kurre adresen e email-it.
   var KATEGORITE = [];
   var BIZNESET = [];
+  var VENDET = []; // shtetet e direktorise me numrin (sipas kategorise dhe vitit te zgjedhur)
+  // Filtri i vitit te domain-it: kodi -> [nga, deri]
+  var PXSE_VITET = { v24: [2024, 0], v20: [2020, 2023], v15: [2015, 2019], v00: [0, 2014] };
 
   // Kodi i seances se proves (i rastesishem, ruhet ne shfletues; mbijeton edhe kalimin te Google gjate hyrjes).
   function pxseSeanca() {
@@ -662,6 +685,19 @@
     '.px-biznes span{flex:1;min-width:0}',
     '.px-biznes small{display:block;color:var(--px-zbehur);font-size:12px}',
     '.px-biznes em{font-style:normal;font-size:12px;color:var(--px-zbehur);white-space:nowrap}',
+    '.px-cip-titull{font-size:12px;font-weight:600;color:var(--px-theks);margin:6px 0 6px}',
+    '.px-cipat{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px;max-height:132px;overflow-y:auto}',
+    '.px-cip{font:inherit;font-size:12.5px;line-height:1.2;border:1px solid var(--px-kufiri);background:var(--px-sfondi);color:inherit;border-radius:999px;padding:6px 11px;cursor:pointer;white-space:nowrap}',
+    '.px-cip b{font-weight:600;color:var(--px-zbehur);margin-left:2px}',
+    '.px-cip:hover{border-color:var(--px-theks)}',
+    '.px-cip-on{border-color:var(--px-theks);background:var(--px-theks-lehte);color:var(--px-theks)}',
+    '.px-cip-rek{border-color:var(--px-theks)}',
+    '.px-cip-yll{color:#d4a017;margin-right:4px}',
+    '.px-filtrat2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}',
+    '.px-filtrat2 .px-select{width:100%}',
+    '.px-biz-meta{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}',
+    '.px-biz-meta i{font-style:normal;font-size:11px;border:1px solid var(--px-kufiri);border-radius:4px;padding:1px 6px;color:var(--px-zbehur)}',
+    '@media (max-width:420px){.px-filtrat2{grid-template-columns:1fr}}',
     '.px-numerues{font-size:13px;font-weight:600;margin-top:8px}',
     '.px-orari{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;border-top:1px dashed var(--px-kufiri);font-size:14px}',
     '.px-orari:first-of-type{border-top:0}',
@@ -779,6 +815,7 @@
       this._sj = { gjendja: '', hapi: '', gabim: '', lloji: '', numri: 0, domaini: '' }; // gjendja e kerkimit te sinjaleve
       this._lidhur = '';
       this._kategoria = ''; // '' = te gjitha kategorite (me te rejat ne fillim)
+      this._vendi = ''; this._viti = ''; // filtrat e marresve: shteti dhe viti i krijimit te domain-it
       // gjendja e seksionit te email-eve
       this._em = { domaini: '', studim: '', subjekti: null, trupi: null, rekomanduar: [], zgjedhur: [], oret: {}, njoftim: '',
         marka: '', hapurDizajni: false, dergimet: [], mbetur: null, dergimi: '', gabimDergimi: '', bizCache: {}, ditet: [], rikthim: false,
@@ -1104,17 +1141,26 @@
 
   // ---------- DIREKTORIA DHE DERGIMET (nga serveri) ----------
   PxSinjaleEmail.prototype._api = function () { return (this.getAttribute('api') || '/api/pxse').replace(/\/$/, ''); };
+  // Filtrat shteti / viti si parametra URL (te njejtat per kategorite dhe bizneset)
+  PxSinjaleEmail.prototype._qsFiltrat = function () {
+    var v = PXSE_VITET[this._viti] || [0, 0];
+    return '&vendi=' + encodeURIComponent(this._vendi || '') + (v[0] ? '&vitiNga=' + v[0] : '') + (v[1] ? '&vitiDeri=' + v[1] : '');
+  };
   PxSinjaleEmail.prototype._ngarkoKategorite = function () {
-    var self = this;
-    fetch(this._api() + '/kategorite').then(function (r) { return r.json(); }).then(function (j) {
+    var self = this, nr = (this._katNr = (this._katNr || 0) + 1);
+    // kategorite numerohen sipas shtetit/vitit; shtetet sipas kategorise/vitit (gjithmone nga direktoria publike)
+    fetch('/api/pxse/kategorite?kategoria=' + encodeURIComponent(this._kategoria || '') + this._qsFiltrat()).then(function (r) { return r.json(); }).then(function (j) {
+      if (nr !== self._katNr) return;
       KATEGORITE.length = 0;
       (j.kategorite || []).forEach(function (k) { KATEGORITE.push({ v: k.v, en: k.emri, sq: k.emri, n: k.n }); });
+      VENDET.length = 0;
+      (j.vendet || []).forEach(function (x) { VENDET.push(x); });
       self._ngarkoBizneset();
-    }).catch(function () {});
+    }).catch(function () { self._ngarkoBizneset(); });
   };
   PxSinjaleEmail.prototype._ngarkoBizneset = function () {
     var self = this, em = this._em, nr = (this._bizNr = (this._bizNr || 0) + 1);
-    var url = this._api() + '/bizneset?kategoria=' + encodeURIComponent(this._kategoria || '') + '&domaini=' + encodeURIComponent(em.studim === 'gati' ? em.domaini : '');
+    var url = this._api() + '/bizneset?kategoria=' + encodeURIComponent(this._kategoria || '') + '&domaini=' + encodeURIComponent(em.studim === 'gati' ? em.domaini : '') + this._qsFiltrat();
     fetch(url).then(function (r) { return r.json(); }).then(function (j) {
       if (nr !== self._bizNr) return; // nje kerkese me e re ka ardhur ndermjet
       BIZNESET.length = 0;
@@ -1204,21 +1250,38 @@
     var gati = em.studim === 'gati' && !mbyllur;
     var emriKat = function (v) { var k = KATEGORITE.find(function (x) { return x.v === v; }); return k ? k[gj] : v; };
 
-    // kategorite: te rekomanduarat (pas studimit me AI) dalin te parat
-    var opsion = function (v, tekst) { return '<option value="' + esc(v) + '"' + (self._kategoria === v ? ' selected' : '') + '>' + esc(tekst) + '</option>'; };
-    var kat = '<select class="px-select" style="width:100%" data-e="kategoria">';
+    // kategorite si butona: te rekomanduarat (pas studimit me AI) dalin te parat me ★
+    var nKat = function (v) { var k = KATEGORITE.find(function (x) { return x.v === v; }); return k ? k.n : 0; };
+    var cip = function (v, tekst, n, rek) {
+      return '<button type="button" class="px-cip' + (rek ? ' px-cip-rek' : '') + (self._kategoria === v ? ' px-cip-on' : '') + '" data-e="kat" data-v="' + esc(v) + '">' +
+        (rek ? '<span class="px-cip-yll">★</span>' : '') + esc(tekst) + (n != null ? ' <b>' + n + '</b>' : '') + '</button>';
+    };
+    var kat = '';
     if (em.rekomanduar.length) {
-      kat += '<optgroup label="' + esc(t('eRekomanduar').replace('{d}', d)) + '">' + em.rekomanduar.map(function (v) { return opsion(v, '★ ' + emriKat(v)); }).join('') + '</optgroup>';
+      kat += '<div class="px-cip-titull">★ ' + esc(t('eFMeIMire')) + ' · ' + esc(t('eRekomanduar').replace('{d}', d)) + '</div><div class="px-cipat">' +
+        em.rekomanduar.map(function (v) { return cip(v, emriKat(v), nKat(v), true); }).join('') + '</div>';
     }
-    kat += '<optgroup label="' + esc(t('eTeGjithaKat')) + '">' + opsion('', t('eTeGjithaKat')) +
-      KATEGORITE.filter(function (k) { return em.rekomanduar.indexOf(k.v) < 0; }).map(function (k) { return opsion(k.v, k[gj]); }).join('') + '</optgroup></select>';
+    kat += '<div class="px-cipat">' + cip('', t('eFTeGjitha'), null, false) +
+      KATEGORITE.filter(function (k) { return em.rekomanduar.indexOf(k.v) < 0 && (k.n > 0 || self._kategoria === k.v); })
+        .map(function (k) { return cip(k.v, k[gj], k.n, false); }).join('') + '</div>';
+    // shteti dhe viti i domain-it
+    var opsV = '<option value="">' + esc(t('eFTeGjithaVendet')) + '</option>' + VENDET.map(function (x) {
+      return '<option value="' + esc(x.v) + '"' + (self._vendi === x.v ? ' selected' : '') + '>' + esc(x.v) + ' (' + x.n + ')</option>';
+    }).join('') + (self._vendi && !VENDET.some(function (x) { return x.v === self._vendi; }) ? '<option value="' + esc(self._vendi) + '" selected>' + esc(self._vendi) + ' (0)</option>' : '');
+    var opsY = [['', t('eFCdoVit')], ['v24', t('eFV24')], ['v20', t('eFV20')], ['v15', t('eFV15')], ['v00', t('eFV00')]].map(function (x) {
+      return '<option value="' + x[0] + '"' + (self._viti === x[0] ? ' selected' : '') + '>' + esc(x[1]) + '</option>';
+    }).join('');
+    kat += '<div class="px-filtrat2"><div><label class="px-etiketa">' + esc(t('eVendi')) + '</label><select class="px-select" data-e="fvendi">' + opsV + '</select></div>' +
+      '<div><label class="px-etiketa">' + esc(t('eFViti')) + '</label><select class="px-select" data-e="fviti">' + opsY + '</select></div></div>';
 
     var lista = BIZNESET.filter(function (b) { return !self._kategoria || b.kat === self._kategoria; })
       .sort(function (a, b) { return a.dite - b.dite; });
-    var bizneset = !BIZNESET.length ? '<div class="px-shenim">' + esc(KATEGORITE.length ? t('eAsnjeNeKat') : t('eDirektoriaSeShpejti')) + '</div>' : '<div class="px-bizneset">' + lista.map(function (b) {
+    var bizneset = !lista.length ? '<div class="px-shenim">' + esc(KATEGORITE.length ? t('eAsnjeNeKat') : t('eDirektoriaSeShpejti')) + '</div>' : '<div class="px-bizneset">' + lista.map(function (b) {
       var po = em.zgjedhur.indexOf(b.id) >= 0;
+      var meta = [b.kat ? emriKat(b.kat) : '', b.vendi || '', b.viti ? t('eFQeNga').replace('{y}', b.viti) : ''].filter(Boolean);
       return '<label class="px-biznes"><input type="checkbox" data-e="biznes" value="' + b.id + '"' + (po ? ' checked' : '') + '>' +
-        '<span>' + esc(b.emri) + '<small>' + esc(b.domaini) + ' · ✓ email</small></span>' +
+        '<span>' + esc(b.emri) + '<small>' + esc(b.domaini) + ' · ✓ email</small>' +
+        (meta.length ? '<span class="px-biz-meta">' + meta.map(function (m) { return '<i>' + esc(m) + '</i>'; }).join('') + '</span>' : '') + '</span>' +
         '<em>' + esc(t('eShtuar').replace('{n}', b.dite)) + '</em></label>';
     }).join('') + '</div>';
 
@@ -1549,7 +1612,7 @@
           em.studim = 'gati'; em.dergimi = ''; em.gabimDergimi = ''; em.rikthim = !!j.rikthim; em.dergimet = []; em.mbetur = null;
           self._rivizatoEmail();
           self._ngarkoDitet();    // ditet me vend te lire
-          self._ngarkoBizneset(); // bizneset e kategorise se rekomanduar, pa ato qe ky domain i ka kontaktuar
+          self._ngarkoKategorite(); // numrat dhe bizneset e kategorise se rekomanduar, pa ato qe ky domain i ka kontaktuar
           self._ngarkoDergimet(); // email-et e meparshme te ketij domaini dhe sa falas kane mbetur
         })
         .catch(function (e) { em.studim = 'gabim'; em.gabim = String(e && e.message || e); self._rivizatoEmail(); });
@@ -1588,8 +1651,13 @@
       });
     });
 
-    var kat = q('[data-e="kategoria"]');
-    if (kat) kat.addEventListener('change', function () { self._kategoria = kat.value; self._rivizatoEmail(); self._ngarkoBizneset(); });
+    qa('[data-e="kat"]').forEach(function (b) {
+      b.addEventListener('click', function () { self._kategoria = b.getAttribute('data-v') || ''; self._rivizatoEmail(); self._ngarkoKategorite(); });
+    });
+    var fVendi = q('[data-e="fvendi"]');
+    if (fVendi) fVendi.addEventListener('change', function () { self._vendi = fVendi.value; self._rivizatoEmail(); self._ngarkoKategorite(); });
+    var fViti = q('[data-e="fviti"]');
+    if (fViti) fViti.addEventListener('change', function () { self._viti = fViti.value; self._rivizatoEmail(); self._ngarkoKategorite(); });
 
     // Zgjedhja e bizneseve: maksimumi 3 ne proven falas
     qa('[data-e="biznes"]').forEach(function (c) {
