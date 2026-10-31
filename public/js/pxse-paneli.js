@@ -131,6 +131,18 @@
       '.pxp-biz input{width:auto}',
       '.pxp-biz span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.pxp-biz small{color:var(--mut2)}',
+      '.pxp-biz>small{white-space:nowrap}',
+      '.pxp-biz span{white-space:normal}',
+      '.pxp-biz-emri{font-weight:600}',
+      '.pxp-biz-meta{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}',
+      '.pxp-biz-meta i{font-style:normal;font-size:11px;border:1px solid var(--line);border-radius:4px;padding:1px 6px;color:var(--mut)}',
+      '.pxp-cip-titull{font-size:12px;font-weight:600;color:var(--acc2,var(--acc));margin:4px 0 6px}',
+      '.pxp-cipat{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;max-height:132px;overflow-y:auto}',
+      '.pxp-cip{font:500 12.5px var(--f-body);border:1px solid var(--line);background:var(--card2);color:var(--txt);border-radius:999px;padding:6px 11px;cursor:pointer;white-space:nowrap}',
+      '.pxp-cip b{font-weight:600;color:var(--mut);margin-left:2px}',
+      '.pxp-cip:hover,.pxp-cip.rek{border-color:var(--acc)}',
+      '.pxp-cip.on{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}',
+      '.pxp-yll{color:#e3b341;margin-right:4px}',
       '.pxp-bizlista{max-height:360px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:0 8px;margin:8px 0}',
       '.pxp-tab{width:100%;border-collapse:collapse;font-size:13px}',
       '.pxp-tab th{text-align:left;color:var(--mut);font-weight:500;font-size:12px;padding:8px;border-bottom:1px solid var(--line)}',
@@ -368,7 +380,7 @@
   // =====================================================================
   var EM = null;
   function pxpEmailet(trup) {
-    EM = { trup: trup, d: null, kat: '', bizneset: [], total: 0, faqe: 0, zgjedhur: {}, njoftim: '', gabim: '', dukeStudio: false, dukeDergim: false,
+    EM = { trup: trup, d: null, kat: '', vendi: '', viti: '', vendet: [], bizneset: [], total: 0, faqe: 0, zgjedhur: {}, njoftim: '', gabim: '', dukeStudio: false, dukeDergim: false,
       ditet: {}, numri: 0, numriDore: false, oret: [], kategorite: [], sticker: false };
     pxpEmNgarko(true);
   }
@@ -389,16 +401,30 @@
       g.sticker = !!(dz.paSticker && g.d.snippetAktiv);
       var rek = (g.d.studimi && g.d.studimi.kategorite) || [];
       g.kat = rek[0] || '';
-      try { var k = await (await fetch('/api/pxse/kategorite')).json(); g.kategorite = k.kategorite || []; } catch (e) { g.kategorite = []; }
+      await pxpEmFasetat();
       await pxpEmBizneset(true);
     }
     pxpEmVizato();
+  }
+  // Filtrat e marresve: shteti dhe viti i krijimit te domain-it
+  var PXP_VITET = { v24: [2024, 0], v20: [2020, 2023], v15: [2015, 2019], v00: [0, 2014] };
+  function pxpEmQsFiltrat() {
+    var g = EM, v = PXP_VITET[g.viti] || [0, 0];
+    return '&vendi=' + encodeURIComponent(g.vendi || '') + (v[0] ? '&vitiNga=' + v[0] : '') + (v[1] ? '&vitiDeri=' + v[1] : '');
+  }
+  // Kategorite (numri sipas shtetit/vitit) dhe shtetet (numri sipas kategorise/vitit)
+  async function pxpEmFasetat() {
+    var g = EM;
+    try {
+      var k = await (await fetch('/api/pxse/kategorite?kategoria=' + encodeURIComponent(g.kat) + pxpEmQsFiltrat())).json();
+      g.kategorite = k.kategorite || []; g.vendet = k.vendet || [];
+    } catch (e) { g.kategorite = g.kategorite || []; g.vendet = g.vendet || []; }
   }
   async function pxpEmBizneset(rifillo) {
     var g = EM;
     if (rifillo) { g.faqe = 0; g.bizneset = []; }
     try {
-      var r = await pxpThirr('/bizneset?kategoria=' + encodeURIComponent(g.kat) + '&faqe=' + g.faqe);
+      var r = await pxpThirr('/bizneset?kategoria=' + encodeURIComponent(g.kat) + '&faqe=' + g.faqe + pxpEmQsFiltrat());
       g.total = r.total; g.bizneset = g.bizneset.concat(r.bizneset || []);
     } catch (e) { g.gabim = e.message; }
   }
@@ -442,18 +468,41 @@
             : '<p class="small" style="margin:8px 0 0">Click ✕ on the PhronexusAI footer to remove it.</p>') + '</div>' +
       '</div>' +
       '<div class="pxp-karte"><h3><span class="pxp-hapi">3</span> Recipients</h3><p class="pxp-nen">Businesses from our directory with a verified email. Businesses you already emailed are not shown.</p>' +
-        '<div class="pxp-rresht"><div class="pxp-fushe" style="flex:0 1 320px"><label>Category</label><select data-kat><option value="">All categories</option>' +
-          g.kategorite.map(function (k) { return '<option value="' + h(k.v) + '"' + (k.v === g.kat ? ' selected' : '') + '>' + h(k.emri) + (rek.indexOf(k.v) >= 0 ? ' (recommended)' : '') + '</option>'; }).join('') + '</select></div>' +
-          '<button class="pxp-buton2" data-te-gjitha>Select all shown</button><button class="pxp-buton2" data-asnje>Clear</button>' +
+        pxpEmFiltratHtml(rek) +
+        '<div class="pxp-rresht" style="margin-top:4px"><button class="pxp-buton2" data-te-gjitha>Select all shown</button><button class="pxp-buton2" data-asnje>Clear</button>' +
           '<span class="small">' + n + ' selected · ' + pxpNr(g.total) + ' available</span></div>' +
         '<div class="pxp-bizlista">' + (g.bizneset.length ? g.bizneset.map(function (b) {
-          return '<label class="pxp-biz"><input type="checkbox" data-biz="' + h(b.id) + '"' + (g.zgjedhur[b.id] ? ' checked' : '') + '><span>' + h(b.emri) + ' <small>' + h(b.domaini) + '</small></span><small>' + h(b.kat || '') + '</small></label>';
-        }).join('') : '<p class="small" style="padding:10px 4px">No businesses to email in this category. Choose another category.</p>') + '</div>' +
+          var meta = [b.kat || '', b.vendi || '', b.viti ? 'since ' + b.viti : ''].filter(Boolean);
+          return '<label class="pxp-biz"><input type="checkbox" data-biz="' + h(b.id) + '"' + (g.zgjedhur[b.id] ? ' checked' : '') + '><span><b class="pxp-biz-emri">' + h(b.emri) + '</b> <small>' + h(b.domaini) + ' · ✓ email</small>' +
+            (meta.length ? '<span class="pxp-biz-meta">' + meta.map(function (m) { return '<i>' + h(m) + '</i>'; }).join('') + '</span>' : '') + '</span>' +
+            (b.dite != null ? '<small>added ' + h(b.dite) + 'd ago</small>' : '') + '</label>';
+        }).join('') : '<p class="small" style="padding:10px 4px">No businesses match these filters. Choose another category, country or year.</p>') + '</div>' +
         (g.bizneset.length < g.total ? '<button class="pxp-buton2" data-me-shume>Load more</button>' : '') +
       '</div>' +
       pxpEmOrariHtml();
     pxpEmPamja();
     pxpEmLidh();
+  }
+  // Kategorite si butona (te rekomanduarat me ★ ne fillim), shteti dhe viti i domain-it
+  function pxpEmFiltratHtml(rek) {
+    var g = EM;
+    var nKat = function (v) { var k = g.kategorite.filter(function (x) { return x.v === v; })[0]; return k ? k.n : 0; };
+    var cip = function (v, tekst, nr, eRek) {
+      return '<button type="button" class="pxp-cip' + (eRek ? ' rek' : '') + (g.kat === v ? ' on' : '') + '" data-kat-cip="' + h(v) + '">' +
+        (eRek ? '<span class="pxp-yll">★</span>' : '') + h(tekst) + (nr != null ? ' <b>' + pxpNr(nr) + '</b>' : '') + '</button>';
+    };
+    var html = '';
+    if (rek.length) html += '<div class="pxp-cip-titull">★ Best match for your business</div><div class="pxp-cipat">' + rek.map(function (v) { return cip(v, v, nKat(v), true); }).join('') + '</div>';
+    html += '<div class="pxp-cipat">' + cip('', 'All categories', null, false) +
+      g.kategorite.filter(function (k) { return rek.indexOf(k.v) < 0 && (k.n > 0 || g.kat === k.v); }).map(function (k) { return cip(k.v, k.emri, k.n, false); }).join('') + '</div>';
+    var opsV = '<option value="">All countries</option>' + g.vendet.map(function (x) { return '<option value="' + h(x.v) + '"' + (g.vendi === x.v ? ' selected' : '') + '>' + h(x.v) + ' (' + pxpNr(x.n) + ')</option>'; }).join('') +
+      (g.vendi && !g.vendet.some(function (x) { return x.v === g.vendi; }) ? '<option value="' + h(g.vendi) + '" selected>' + h(g.vendi) + ' (0)</option>' : '');
+    var opsY = [['', 'Any year'], ['v24', '2024 or newer'], ['v20', '2020 – 2023'], ['v15', '2015 – 2019'], ['v00', 'Before 2015']].map(function (x) {
+      return '<option value="' + x[0] + '"' + (g.viti === x[0] ? ' selected' : '') + '>' + x[1] + '</option>';
+    }).join('');
+    html += '<div class="pxp-rresht"><div class="pxp-fushe" style="flex:1 1 180px"><label>Country</label><select data-fvendi>' + opsV + '</select></div>' +
+      '<div class="pxp-fushe" style="flex:1 1 180px"><label>Domain created</label><select data-fviti>' + opsY + '</select></div></div>';
+    return html;
   }
   function pxpZevendeso(s) {
     var b = pxpEmShembull();
@@ -722,7 +771,9 @@
     };
     on('[data-studio]', 'click', function () { studio(true); });
     on('[data-studio-dom]', 'click', function () { studio(false); });
-    on('[data-kat]', 'change', async function (el) { g.kat = el.value; await pxpEmBizneset(true); pxpEmVizato(); });
+    on('[data-kat-cip]', 'click', async function (el) { g.kat = el.getAttribute('data-kat-cip') || ''; await pxpEmFasetat(); await pxpEmBizneset(true); pxpEmVizato(); });
+    on('[data-fvendi]', 'change', async function (el) { g.vendi = el.value; await pxpEmFasetat(); await pxpEmBizneset(true); pxpEmVizato(); });
+    on('[data-fviti]', 'change', async function (el) { g.viti = el.value; await pxpEmFasetat(); await pxpEmBizneset(true); pxpEmVizato(); });
     on('[data-me-shume]', 'click', async function () { g.faqe++; await pxpEmBizneset(false); pxpEmVizato(); });
     on('[data-biz]', 'change', function (el) {
       var id = el.getAttribute('data-biz');
