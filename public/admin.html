@@ -1830,6 +1830,7 @@ m.innerHTML='<h2 class="h">Email-et</h2>'+
 '<div id="mktEmKoha" class="small" style="margin-bottom:8px;"></div>'+
 '<div id="mktEmInfo" class="small" style="margin-bottom:10px;"></div>'+
 '<div id="mktEmTest"></div>'+
+'<div id="mktEmFushatat"></div>'+
 '<div id="mktEmLista"><p class="small">Po ngarkoj…</p></div>';
 mktEmailetNgarko();
 }
@@ -1862,6 +1863,7 @@ mktEmKoha('Rifreskimi dështoi në '+new Date().toLocaleTimeString()+'.',true);
 return;
 }
 mktEmailetShfaq(d);
+mktEmFushatatNgarko();
 mktEmKoha('Rifreskuar në '+new Date().toLocaleTimeString()+' · '+((d.rows||[]).length)+' rreshta.');
 }catch(e){
 lista.innerHTML=''; lista.appendChild(mktEmCel('Gabim rrjeti: '+e.message,'font-size:13px;color:#e5484d;'));
@@ -1884,6 +1886,41 @@ s.style.cssText='color:#8b949e;';
 if(!kishteGjurmim){ s.textContent='—'; s.title='Ky email u dërgua pa gjurmim, prandaj nuk mund të dihet'; return s; }
 s.textContent='0';
 return s;
+}
+// Fushatat aktive (me email-e ne pritje) + butoni "Ndalo": email-et ne pritje nuk dergohen me; te derguarat mbeten ne regjister.
+async function mktEmFushatatNgarko(){
+const box=$('mktEmFushatat'); if(!box) return;
+try{
+const r=await fetch('/api/admin/marketing/fushatat-aktive?_='+Date.now(),{cache:'no-store'});
+let d=null; try{ d=await r.json(); }catch(e){ d=null; }
+box.innerHTML='';
+if(!r.ok||!d||d.error){ box.appendChild(mktEmCel(mktEmGabimTekst(r.status,d),'display:block;font-size:12.5px;color:#e5484d;margin-bottom:10px;')); return; }
+const fl=d.fushatat||[]; if(!fl.length) return;
+const k=document.createElement('div'); k.style.cssText='margin:0 0 12px;padding:10px 12px;border:1px solid #2a313c;border-radius:8px;';
+k.appendChild(mktEmCel('Fushatat aktive','display:block;font-size:13px;font-weight:600;margin-bottom:4px;'));
+fl.forEach(f=>{
+const rr=document.createElement('div'); rr.style.cssText='display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:6px 0;border-top:1px solid #21262d;';
+const emri=f.emri||('Fushata #'+f.id);
+const info=document.createElement('div'); info.style.cssText='flex:1;min-width:200px;font-size:12.5px;line-height:1.5;';
+info.appendChild(mktEmCel(emri,'font-weight:600;'));
+info.appendChild(mktEmCel(' · '+((f.kategorite||[]).join(', ')||'—')+' · '+(f.llogaria||''),''));
+info.appendChild(mktEmCel(f.ne_pritje+' në pritje · '+f.derguar+' të dërguar','display:block;color:#8b949e;'));
+const b=document.createElement('button'); b.type='button'; b.textContent='Ndalo';
+b.style.cssText='background:#da3633;color:#fff;border:0;border-radius:6px;padding:6px 12px;font-size:12.5px;cursor:pointer;';
+b.onclick=async()=>{
+if(b.dataset.konfirmo!=='1'){ b.dataset.konfirmo='1'; b.textContent='Kliko sërish për të ndalur'; setTimeout(()=>{ if(b.isConnected&&b.dataset.konfirmo==='1'){ b.dataset.konfirmo=''; b.textContent='Ndalo'; } },4000); return; }
+b.disabled=true; b.textContent='Duke ndalur…';
+try{
+const x=await fetch('/api/admin/marketing/fushata/'+f.id+'/ndalo',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+let y=null; try{ y=await x.json(); }catch(e){ y=null; }
+if(!x.ok||!y||!y.ok) throw new Error((y&&y.error)||('HTTP '+x.status));
+mktEmailetNgarko();
+}catch(e){ b.disabled=false; b.dataset.konfirmo=''; b.textContent='Ndalo'; info.appendChild(mktEmCel('Nuk u ndal: '+e.message,'display:block;color:#e5484d;')); }
+};
+rr.appendChild(info); rr.appendChild(b); k.appendChild(rr);
+});
+box.appendChild(k);
+}catch(e){ box.innerHTML=''; box.appendChild(mktEmCel('Gabim rrjeti: '+e.message,'display:block;font-size:12.5px;color:#e5484d;margin-bottom:10px;')); }
 }
 async function mktEmTestoGjurmimin(btn){
 const box=$('mktEmTest'); if(!box) return;
