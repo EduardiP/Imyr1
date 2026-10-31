@@ -194,27 +194,49 @@ module.exports = function (app, pool, iAdmin) {
   });
 
   // ---------- Direktoria (publike: pa adresa email-i) ----------
+  // Filtrat e direktorise (shteti, viti i domain-it) — te perbashketa per faqen publike, dashboard-in dhe kategorite.
+  // Kthen { sql, p } duke vazhduar numerimin e parametrave nga 'nga'.
+  function pxseFiltratDirektorise(q, nga) {
+    const k = [], p = [];
+    const vendi = String(q.vendi || '').slice(0, 8).toUpperCase();
+    if (vendi === '-') k.push('b.vendi IS NULL');
+    else if (/^[A-Z]{2}$/.test(vendi)) { p.push(vendi); k.push('b.vendi = $' + (nga + p.length)); }
+    const vN = parseInt(q.vitiNga, 10), vD = parseInt(q.vitiDeri, 10);
+    if (vN > 1980 && vN < 2100) { p.push(vN); k.push('EXTRACT(YEAR FROM b.data_domainit) >= $' + (nga + p.length)); }
+    if (vD > 1980 && vD < 2100) { p.push(vD); k.push('EXTRACT(YEAR FROM b.data_domainit) <= $' + (nga + p.length)); }
+    return { sql: k.length ? ' AND ' + k.join(' AND ') : '', p };
+  }
+  app.locals.pxseFiltratDirektorise = pxseFiltratDirektorise;
+
+  // Kategorite (me numrin sipas filtrave te shtetit/vitit) dhe shtetet (me numrin sipas kategorise/vitit)
   app.get('/api/pxse/kategorite', async (req, res) => {
     try {
-      const r = await pool.query(`SELECT kategoria, COUNT(*)::int n FROM pxse_bizneset
-        WHERE aktiv AND email_verifikuar AND kategoria IS NOT NULL AND kategoria <> '' GROUP BY kategoria ORDER BY kategoria`);
-      res.json({ ok: true, kategorite: r.rows.map(x => ({ v: x.kategoria, emri: x.kategoria, n: x.n })) });
-    } catch (e) { res.json({ ok: true, kategorite: [] }); }
+      const baza = "b.aktiv AND b.email_verifikuar AND b.email IS NOT NULL";
+      const fK = pxseFiltratDirektorise(req.query, 0);
+      const r = await pool.query(`SELECT b.kategoria, COUNT(*)::int n FROM pxse_bizneset b
+        WHERE ${baza} AND b.kategoria IS NOT NULL AND b.kategoria <> ''${fK.sql} GROUP BY b.kategoria ORDER BY b.kategoria`, fK.p);
+      const kat = String(req.query.kategoria || '').slice(0, 120);
+      const fV = pxseFiltratDirektorise({ vitiNga: req.query.vitiNga, vitiDeri: req.query.vitiDeri }, 1);
+      const v = await pool.query(`SELECT b.vendi, COUNT(*)::int n FROM pxse_bizneset b
+        WHERE ${baza} AND b.vendi IS NOT NULL AND ($1 = '' OR b.kategoria = $1)${fV.sql} GROUP BY b.vendi ORDER BY n DESC, b.vendi LIMIT 80`, [kat].concat(fV.p));
+      res.json({ ok: true, kategorite: r.rows.map(x => ({ v: x.kategoria, emri: x.kategoria, n: x.n })), vendet: v.rows.map(x => ({ v: x.vendi, n: x.n })) });
+    } catch (e) { res.json({ ok: true, kategorite: [], vendet: [] }); }
   });
 
   app.get('/api/pxse/bizneset', async (req, res) => {
     try {
       const kat = String(req.query.kategoria || '').slice(0, 120);
       const dom = String(req.query.domaini || '').toLowerCase().slice(0, 253);
-      const r = await pool.query(`SELECT b.id, b.emri, b.domaini, b.kategoria,
+      const f = pxseFiltratDirektorise(req.query, 2);
+      const r = await pool.query(`SELECT b.id, b.emri, b.domaini, b.kategoria, b.vendi, EXTRACT(YEAR FROM b.data_domainit)::int AS viti,
           GREATEST(0, EXTRACT(DAY FROM now() - b.shtuar_at))::int AS dite
         FROM pxse_bizneset b
         WHERE b.aktiv AND b.email_verifikuar AND b.email IS NOT NULL AND ($1 = '' OR b.kategoria = $1)
-          AND b.domaini <> $2
+          AND b.domaini <> $2${f.sql}
           AND NOT EXISTS (SELECT 1 FROM pxse_dergimet d WHERE d.marres_id = b.id AND d.domaini_derguesit = $2)
           AND NOT EXISTS (SELECT 1 FROM pxse_mos_kontakto m WHERE m.email = lower(b.email))
-        ORDER BY b.shtuar_at DESC, b.id DESC LIMIT 60`, [kat, dom]);
-      res.json({ ok: true, bizneset: r.rows.map(x => ({ id: String(x.id), emri: x.emri || pxseEmriNgaDomain(x.domaini), domaini: x.domaini, kat: x.kategoria, dite: x.dite })) });
+        ORDER BY b.shtuar_at DESC, b.id DESC LIMIT 60`, [kat, dom].concat(f.p));
+      res.json({ ok: true, bizneset: r.rows.map(x => ({ id: String(x.id), emri: x.emri || pxseEmriNgaDomain(x.domaini), domaini: x.domaini, kat: x.kategoria, vendi: x.vendi || null, viti: x.viti || null, dite: x.dite })) });
     } catch (e) { res.status(500).json({ ok: false, error: 'Try again in a few minutes.' }); }
   });
 
