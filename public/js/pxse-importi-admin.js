@@ -198,6 +198,7 @@
       '<select data-f="shteti">' + opsione([['-', 'Pa shtet']].concat((d.shtetet || []).map(function (x) { return [x.shteti, x.shteti + ' (' + x.n + ')']; })), f.shteti, 'Shteti: të gjitha') + '</select>' +
       '<select data-f="email">' + opsione([['po', 'Me email'], ['jo', 'Pa email']], f.email, 'Email: të gjitha') + '</select>' +
       '<select data-f="email_lloji">' + opsione([['personal', 'Personal'], ['i_pergjithshem', 'I përgjithshëm (info@…)']], f.email_lloji, 'Lloji i email-it') + '</select>' +
+      '<select data-f="ofruesi">' + opsione([['google', 'Google'], ['microsoft', 'Microsoft'], ['tjeter', 'Tjetër'], ['pa_mx', 'Pa MX'], ['-', 'Pa kontrolluar']], f.ofruesi, 'Ofruesi i email-it') + '</select>' +
       '<select data-f="saas">' + opsione([['5', 'SaaS 5'], ['4', 'SaaS 4'], ['3', 'SaaS 3']], f.saas, 'Pikët SaaS') + '</select>' +
       '<select data-f="vendimi">' + opsione([['rregull', 'Rregull'], ['vektor', 'Filtri i lirë'], ['ai', 'AI nano'], ['admin', 'Admin']], f.vendimi, 'Vendosur nga') + '</select>' +
       '<select data-f="direktori">' + opsione([['po', 'Në direktori'], ['jo', 'Jo në direktori']], f.direktori, 'Direktoria') + '</select>' +
@@ -262,6 +263,7 @@
       '<td>' + (gati ? '<select data-ndr="lloji" data-id="' + x.id + '">' + opsione(LLOJET, x.lloji, '—') + '</select>' : '') + '</td>' +
       '<td>' + (gati ? '<input class="pxim-sh" maxlength="2" data-ndr="shteti" data-id="' + x.id + '" value="' + e(x.shteti || '') + '"><div class="pxim-nen">' + e(x.shteti_burimi || '') + '</div>' : '') + '</td>' +
       '<td>' + (x.email ? e(x.email) + '<div class="pxim-nen">' + (x.email_lloji === 'personal' ? 'personal' : 'i përgjithshëm') + ' · ' + (x.ka_mx ? '<span class="pxim-ok">MX ✓</span>' : '<span class="pxim-jo">pa MX</span>') +
+        (x.email_ofruesi ? ' · ' + ({ google: 'Google', microsoft: 'Microsoft', tjeter: 'Tjetër', pa_mx: 'pa MX', panjohur: '?' }[x.email_ofruesi] || e(x.email_ofruesi)) : '') +
         ((x.emailet || []).length > 1 ? ' · +' + ((x.emailet || []).length - 1) + ' të tjerë' : '') + '</div>' : (gati ? '<span class="pxim-nen">—</span>' : '')) + '</td>' +
       '<td>' + e(x.data_domainit ? String(x.data_domainit).slice(0, 10) : '—') + (x.viti_kopi ? '<div class="pxim-nen">© ' + e(x.viti_kopi) + '</div>' : '') + '</td>' +
       '<td>' + e(x.pike_saas == null ? '' : x.pike_saas) + '</td><td>' + e(x.piket_biznes == null ? '' : x.piket_biznes) + '</td>' +
