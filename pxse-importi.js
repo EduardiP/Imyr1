@@ -297,6 +297,16 @@ function pximDataDomainit(domaini) {
   pximRdapPrit = puna.then(() => new Promise(f => setTimeout(f, 250)), () => new Promise(f => setTimeout(f, 250)));
   return puna;
 }
+// Ofruesi i email-it nga MX: 'google' | 'microsoft' | 'tjeter' | 'pa_mx'
+async function pximOfruesi(domaini) {
+  let m;
+  try { m = await dns.resolveMx(domaini); } catch (e) { return (e && (e.code === 'ENOTFOUND' || e.code === 'ENODATA' || e.code === 'NXDOMAIN')) ? 'pa_mx' : null; }
+  if (!m || !m.length) return 'pa_mx';
+  const h = m.map(x => String(x.exchange || '').toLowerCase());
+  if (h.some(x => /(^|\.)(google\.com|googlemail\.com)$/.test(x))) return 'google';
+  if (h.some(x => /(^|\.)(outlook\.com|office365\.us|outlook\.cn)$/.test(x))) return 'microsoft';
+  return 'tjeter';
+}
 async function pximKaMx(domaini) { try { const m = await dns.resolveMx(domaini); return m.length > 0; } catch (e) { return false; } }
 
 // ---------- Embeddings dhe AI ----------
@@ -403,7 +413,7 @@ module.exports = function (app, pool, iAdmin) {
     await pool.query('CREATE INDEX IF NOT EXISTS idx_pxim_r_imp ON pxse_import_rreshtat (import_id, gjendja)');
     await pool.query('ALTER TABLE pxse_import_rreshtat ADD COLUMN IF NOT EXISTS kontakt_kerkuar BOOLEAN NOT NULL DEFAULT false'); // (versioni i meparshem; nuk perdoret me)
     // Studimi i faqeve (faza 2): faqja e gjalle + AI nano per te gjitha
-    for (const k of ['aktiv BOOLEAN', 'studim2 TEXT', 'studim2_at TIMESTAMPTZ', "ndryshuar_dore TEXT[] NOT NULL DEFAULT '{}'", 'import_para INT', 'meta_arkiv TEXT', 'kopjuar BOOLEAN NOT NULL DEFAULT false', 'marketing TEXT'])
+    for (const k of ['aktiv BOOLEAN', 'studim2 TEXT', 'studim2_at TIMESTAMPTZ', "ndryshuar_dore TEXT[] NOT NULL DEFAULT '{}'", 'import_para INT', 'meta_arkiv TEXT', 'kopjuar BOOLEAN NOT NULL DEFAULT false', 'marketing TEXT', 'email_ofruesi TEXT'])
       await pool.query('ALTER TABLE pxse_import_rreshtat ADD COLUMN IF NOT EXISTS ' + k);
     // Ndryshimet e meparshme me dore (statusi, shteti) mbrohen nga studimi i ri
     await pool.query("UPDATE pxse_import_rreshtat SET ndryshuar_dore = ndryshuar_dore || ARRAY['statusi'] WHERE vendimi='admin' AND NOT ('statusi' = ANY(ndryshuar_dore))");
@@ -426,19 +436,47 @@ module.exports = function (app, pool, iAdmin) {
   // Rreshtat B2B gati (biznes, email, MX, faqe aktive) shtohen te marketing_kontaktet me kategori = emri i skedarit.
   // marketing-email.js nuk preket. Emailet qe ekzistojne aty nuk ndryshohen; te cregjistruarit nuk kalojne.
   // r.marketing: 'shtuar' (u shtua nga ky import) | 'ekzistonte' (ishte aty me pare) | 'mos' (i cregjistruar)
+  // Kategoria te Marketingu: emri i skedarit per Google; "(Microsoft)" / "(Tjetër)" per te tjeret.
+  const PXIM_KAT_SQL = `COALESCE(NULLIF(regexp_replace(COALESCE(i.emri, ''), '\\.csv$', '', 'i'), ''), 'Import ' || i.id)
+      || CASE r.email_ofruesi WHEN 'microsoft' THEN ' (Microsoft)' WHEN 'tjeter' THEN ' (Tjetër)' ELSE '' END`;
+  // Plotëson ofruesin e email-it (MX i domain-it te email-it) per rreshtat qe e kane email-in; falas (DNS).
+  async function pximPlotesoOfruesit() {
+    // ata qe deshtuan perkohesisht (DNS) provohen perseri, nje here per cdo kontroll
+    await pool.query("UPDATE pxse_import_rreshtat SET email_ofruesi = NULL WHERE email_ofruesi = 'panjohur'");
+    for (;;) {
+      const gr = (await pool.query(`SELECT id, lower(split_part(email, '@', 2)) AS dom FROM pxse_import_rreshtat
+          WHERE email IS NOT NULL AND email_ofruesi IS NULL ORDER BY id LIMIT 200`)).rows;
+      if (!gr.length) return;
+      const sipasDom = new Map(); for (const x of gr) { if (!sipasDom.has(x.dom)) sipasDom.set(x.dom, []); sipasDom.get(x.dom).push(x.id); }
+      const dom = [...sipasDom.keys()]; let i = 0;
+      await Promise.all(Array.from({ length: Math.min(10, dom.length) }, async () => {
+        while (i < dom.length) {
+          const d = dom[i++]; const o = d ? await pximOfruesi(d) : 'pa_mx';
+          await pool.query('UPDATE pxse_import_rreshtat SET email_ofruesi=$2 WHERE id = ANY($1::bigint[])', [sipasDom.get(d), o || 'panjohur']);
+        }
+      }));
+    }
+  }
   let pximMarketingDuke = false;
   async function pximNeMarketing() {
     if (pximMarketingDuke) return; pximMarketingDuke = true;
     try {
+      await pximPlotesoOfruesit();
       const t = (await pool.query("SELECT to_regclass('marketing_kontaktet') AS mk, to_regclass('pxse_mos_kontakto') AS mos")).rows[0];
       if (!t.mk) return;
+      // Kontaktet qe i shtoi importi dhe s'jane derguar: kalojne te kategoria e ofruesit te tyre
+      await pool.query(`UPDATE marketing_kontaktet k SET kategoria = x.kat
+          FROM (SELECT DISTINCT ON (lower(r.email)) lower(r.email) AS em, ${PXIM_KAT_SQL} AS kat
+                FROM pxse_import_rreshtat r JOIN pxse_importet i ON i.id = r.import_id
+                WHERE r.marketing = 'shtuar' AND r.email_ofruesi IN ('google','microsoft','tjeter') ORDER BY lower(r.email), r.id) x
+          WHERE k.email = x.em AND NOT k.derguar AND COALESCE(k.derguar_sasi, 0) = 0 AND k.kategoria IS DISTINCT FROM x.kat`);
       const mosSql = t.mos ? 'EXISTS (SELECT 1 FROM pxse_mos_kontakto m WHERE m.email = lower(r.email))' : 'false';
       for (;;) {
         const gr = (await pool.query(`SELECT r.id, r.import_id, lower(r.email) email, (${mosSql}) AS mos,
-            COALESCE(NULLIF(regexp_replace(COALESCE(i.emri, ''), '\\.csv$', '', 'i'), ''), 'Import ' || i.id) AS kategoria
+            ${PXIM_KAT_SQL} AS kategoria
           FROM pxse_import_rreshtat r JOIN pxse_importet i ON i.id = r.import_id
           WHERE r.marketing IS NULL AND r.gjendja = 'bere' AND r.statusi = 'biznes' AND r.lloji IN ('b2b', 'both')
-            AND r.email IS NOT NULL AND r.ka_mx AND r.aktiv IS NOT FALSE
+            AND r.email IS NOT NULL AND r.ka_mx AND r.aktiv IS NOT FALSE AND r.email_ofruesi IN ('google','microsoft','tjeter')
           ORDER BY r.id LIMIT 500`)).rows;
         if (!gr.length) break;
         const mos = gr.filter(x => x.mos).map(x => x.id);
@@ -674,6 +712,7 @@ module.exports = function (app, pool, iAdmin) {
     if (q.shteti === '-') k.push('r.shteti IS NULL'); else if (q.shteti) shto('r.shteti = ?', String(q.shteti));
     if (q.email === 'po') k.push('r.email IS NOT NULL'); else if (q.email === 'jo') k.push("r.email IS NULL AND r.gjendja='bere'");
     if (q.email_lloji) shto('r.email_lloji = ?', String(q.email_lloji));
+    if (q.ofruesi === '-') k.push('r.email IS NOT NULL AND r.email_ofruesi IS NULL'); else if (q.ofruesi) shto('r.email_ofruesi = ?', String(q.ofruesi));
     if (q.saas) shto('r.pike_saas = ?', parseInt(q.saas, 10) || 0);
     if (q.vendimi) shto('r.vendimi = ?', String(q.vendimi));
     if (q.direktori === 'po') k.push('r.ne_direktori'); else if (q.direktori === 'jo') k.push('NOT r.ne_direktori');
@@ -735,7 +774,7 @@ module.exports = function (app, pool, iAdmin) {
       const n = await pool.query('SELECT COUNT(*)::int n FROM pxse_import_rreshtat r WHERE ' + sql, p);
       const r = await pool.query(`SELECT r.id, r.domaini, r.pike_saas, r.url, r.gjendja, r.gabimi, r.emri, r.titulli, r.pershkrimi, r.pershkrimi_ai, r.email, r.email_lloji, r.emailet,
           r.ka_mx, r.shteti, r.shteti_burimi, to_char(r.data_domainit, 'YYYY-MM-DD') data_domainit, r.viti_kopi, r.kategoria, r.lloji, r.statusi, r.vendimi, r.piket_biznes, r.ne_direktori, r.ishte_ne_direktori,
-          r.aktiv, r.studim2, r.import_para, r.ndryshuar_dore, r.kopjuar
+          r.aktiv, r.studim2, r.import_para, r.ndryshuar_dore, r.kopjuar, r.email_ofruesi
         FROM pxse_import_rreshtat r WHERE ${sql} ORDER BY ${rend}, r.id LIMIT 100 OFFSET ${faqe * 100}`, p);
       const tot = await pool.query(`SELECT COUNT(*) FILTER (WHERE statusi='biznes')::int biznes, COUNT(*) FILTER (WHERE statusi='jo_biznes')::int jo_biznes,
           COUNT(*) FILTER (WHERE statusi='i_paqarte')::int i_paqarte, COUNT(*) FILTER (WHERE gjendja='pritje')::int pritje, COUNT(*) FILTER (WHERE gjendja='gabim')::int gabim,
