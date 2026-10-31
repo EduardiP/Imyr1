@@ -301,13 +301,16 @@ module.exports = function (app, pool, iLoguar) {
     try {
       const ll = await pxllLlogaria(req.biznesId);
       const kat = String(req.query.kategoria || '').slice(0, 120), faqe = Math.max(0, parseInt(req.query.faqe, 10) || 0);
-      const kushti = `b.aktiv AND b.email_verifikuar AND b.email IS NOT NULL AND ($1 = '' OR b.kategoria = $1) AND b.domaini <> $2
+      // Filtrat shteti / viti i domain-it (te njejtat si faqja publike, nga pxse-dergimi.js)
+      const ff = app.locals.pxseFiltratDirektorise ? app.locals.pxseFiltratDirektorise(req.query, 3) : { sql: '', p: [] };
+      const kushti = `b.aktiv AND b.email_verifikuar AND b.email IS NOT NULL AND ($1 = '' OR b.kategoria = $1) AND b.domaini <> $2${ff.sql}
           AND NOT EXISTS (SELECT 1 FROM pxse_dergimet d WHERE d.marres_id = b.id AND (d.domaini_derguesit = $2 OR d.biznes_id = $3))
           AND NOT EXISTS (SELECT 1 FROM pxse_mos_kontakto m WHERE m.email = lower(b.email))`;
-      const n = await pool.query('SELECT COUNT(*)::int n FROM pxse_bizneset b WHERE ' + kushti, [kat, ll.domaini || '-', ll.id]);
-      const r = await pool.query(`SELECT b.id, b.emri, b.domaini, b.kategoria, b.vendi, GREATEST(0, EXTRACT(DAY FROM now() - b.shtuar_at))::int AS dite
-        FROM pxse_bizneset b WHERE ${kushti} ORDER BY b.shtuar_at DESC, b.id DESC LIMIT 100 OFFSET $4`, [kat, ll.domaini || '-', ll.id, faqe * 100]);
-      res.json({ ok: true, total: n.rows[0].n, faqe, bizneset: r.rows.map(x => ({ id: String(x.id), emri: x.emri || pxllEmriNgaDomain(x.domaini), domaini: x.domaini, kat: x.kategoria, vendi: x.vendi, dite: x.dite })) });
+      const pp = [kat, ll.domaini || '-', ll.id].concat(ff.p);
+      const n = await pool.query('SELECT COUNT(*)::int n FROM pxse_bizneset b WHERE ' + kushti, pp);
+      const r = await pool.query(`SELECT b.id, b.emri, b.domaini, b.kategoria, b.vendi, EXTRACT(YEAR FROM b.data_domainit)::int AS viti, GREATEST(0, EXTRACT(DAY FROM now() - b.shtuar_at))::int AS dite
+        FROM pxse_bizneset b WHERE ${kushti} ORDER BY b.shtuar_at DESC, b.id DESC LIMIT 100 OFFSET $${pp.length + 1}`, pp.concat([faqe * 100]));
+      res.json({ ok: true, total: n.rows[0].n, faqe, bizneset: r.rows.map(x => ({ id: String(x.id), emri: x.emri || pxllEmriNgaDomain(x.domaini), domaini: x.domaini, kat: x.kategoria, vendi: x.vendi, viti: x.viti || null, dite: x.dite })) });
     } catch (e) { pxllGabim(res, e); }
   });
 
