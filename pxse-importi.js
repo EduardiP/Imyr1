@@ -423,7 +423,7 @@ module.exports = function (app, pool, iAdmin) {
       AND EXISTS (SELECT 1 FROM pxse_import_rreshtat r WHERE r.import_id=i.id AND r.gjendja='bere')
       AND NOT EXISTS (SELECT 1 FROM pxse_import_rreshtat r WHERE r.import_id=i.id AND r.studim2 IS NOT NULL)`);
     // Fushat e reja te direktorise (te dhenat ekzistuese nuk preken)
-    for (const k of ['lloji TEXT', 'data_domainit DATE', 'email_lloji TEXT', 'burimi TEXT', 'import_id INT'])
+    for (const k of ['lloji TEXT', 'data_domainit DATE', 'email_lloji TEXT', 'burimi TEXT', 'import_id INT', 'email_ofruesi TEXT', 'fshehur_ofruesi BOOLEAN NOT NULL DEFAULT false'])
       await pool.query('ALTER TABLE pxse_bizneset ADD COLUMN IF NOT EXISTS ' + k);
     // Pas rinisjes se serverit: importet qe ishin ne pune vazhdojne
     setTimeout(() => pximNis(), 20000).unref();
@@ -457,11 +457,40 @@ module.exports = function (app, pool, iAdmin) {
       }));
     }
   }
+  // Direktoria (faqja publike, dashboard-i, portali): vetem bizneset me email te Google-it.
+  // Te tjeret fshihen (aktiv=false, fshehur_ofruesi=true) dhe rikthehen vete me PXSE_VETEM_GOOGLE=0 ne Railway.
+  async function pximDirektoriaGoogle() {
+    try {
+      await pool.query("UPDATE pxse_bizneset SET email_ofruesi = NULL WHERE email_ofruesi = 'panjohur'");
+      for (;;) {
+        const gr = (await pool.query(`SELECT id, lower(split_part(email, '@', 2)) AS dom FROM pxse_bizneset
+            WHERE email IS NOT NULL AND email_ofruesi IS NULL ORDER BY id LIMIT 200`)).rows;
+        if (!gr.length) break;
+        const sipasDom = new Map(); for (const x of gr) { if (!sipasDom.has(x.dom)) sipasDom.set(x.dom, []); sipasDom.get(x.dom).push(x.id); }
+        const dom = [...sipasDom.keys()]; let i = 0;
+        await Promise.all(Array.from({ length: Math.min(10, dom.length) }, async () => {
+          while (i < dom.length) {
+            const d = dom[i++]; const o = d ? await pximOfruesi(d) : 'pa_mx';
+            await pool.query('UPDATE pxse_bizneset SET email_ofruesi=$2 WHERE id = ANY($1::int[])', [sipasDom.get(d), o || 'panjohur']);
+          }
+        }));
+      }
+      if (process.env.PXSE_VETEM_GOOGLE === '0') {
+        await pool.query('UPDATE pxse_bizneset SET aktiv = true, fshehur_ofruesi = false WHERE fshehur_ofruesi');
+      } else {
+        await pool.query("UPDATE pxse_bizneset SET aktiv = false, fshehur_ofruesi = true WHERE aktiv AND email_ofruesi IN ('microsoft','tjeter','pa_mx')");
+        // nese ndryshon ofruesi (p.sh. kalon ne Google), rikthehet
+        await pool.query("UPDATE pxse_bizneset SET aktiv = true, fshehur_ofruesi = false WHERE fshehur_ofruesi AND email_ofruesi = 'google'");
+      }
+    } catch (e) { console.error('pxse importi → direktoria google:', e.message); }
+  }
+  app.locals.pxseDirektoriaGoogle = pximDirektoriaGoogle;
   let pximMarketingDuke = false;
   async function pximNeMarketing() {
     if (pximMarketingDuke) return; pximMarketingDuke = true;
     try {
       await pximPlotesoOfruesit();
+      await pximDirektoriaGoogle();
       const t = (await pool.query("SELECT to_regclass('marketing_kontaktet') AS mk, to_regclass('pxse_mos_kontakto') AS mos")).rows[0];
       if (!t.mk) return;
       // Kontaktet qe i shtoi importi dhe s'jane derguar: kalojne te kategoria e ofruesit te tyre
@@ -822,6 +851,8 @@ module.exports = function (app, pool, iAdmin) {
         kaluan++;
       }
       if (r.rows.length) await pool.query('UPDATE pxse_import_rreshtat SET ne_direktori=true WHERE id = ANY($1::bigint[])', [r.rows.map(x => x.id)]);
+      // email-i mund te kete ndryshuar: ofruesi kontrollohet perseri (vetem Google mbetet i dukshem)
+      if (r.rows.length) { await pool.query('UPDATE pxse_bizneset SET email_ofruesi = NULL WHERE domaini = ANY($1::text[])', [r.rows.map(x => x.domaini)]); pximDirektoriaGoogle(); }
       res.json({ ok: true, kaluan, anashkaluar: (Array.isArray(b.ids) ? b.ids.length : null) });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
