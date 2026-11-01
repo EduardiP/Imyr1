@@ -161,7 +161,7 @@ const SECTIONS = [
 { k:'b4', l:'Përzgjedhjet' }, { k:'mkt', l:'Marketingu' }, { k:'pxse', l:'Shërbimet falas' }
 ];
 const MKT_SUB = [
-{ k:'dergimet', l:'Dërgimet' }, { k:'analitika', l:'Analitika' }, { k:'emailet', l:'Email-et' }
+{ k:'dergimet', l:'Dërgimet' }, { k:'analitika', l:'Analitika' }, { k:'emailet', l:'Email-et' }, { k:'terejat', l:'Biznese të reja' }
 ];
 let curMktSub = 'dergimet';
 const NJOFT_SUB = [
@@ -1521,6 +1521,59 @@ const m=$('mktMain');
 if(curMktSub==='dergimet'){ renderMktDergimet(m); return; }
 if(curMktSub==='analitika'){ renderMktAnalitika(m); return; }
 if(curMktSub==='emailet'){ renderMktEmailet(m); return; }
+if(curMktSub==='terejat'){ renderMktTeRejat(m); return; }
+}
+
+// ═══ Biznese të reja (certifikatat SSL → RDAP → studimi i Importit) ═══
+let _trTimer=null;
+function renderMktTeRejat(m){
+if(_trTimer){ clearInterval(_trTimer); _trTimer=null; }
+m.innerHTML='<h2 class="h">Biznese të reja</h2>'+
+'<p class="small" style="margin:2px 0 14px;">Faqe biznesi të sapo ngritura, nga certifikatat publike SSL. Mbahen vetëm domainet e regjistruara së fundmi; pas disa ditësh studiohen me AI (çfarë shesin, kategoria, B2B/B2C, email-i) dhe dalin te Importi si skedari <b>“Biznese të reja (SSL)”</b>. Bizneset B2B me email kalojnë vetë te Dërgimet. Nuk duhet asnjë API: burimet janë publike.</p>'+
+'<div id="trKoka" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;"></div>'+
+'<div id="trTrupi"><p class="small">Po ngarkoj…</p></div>';
+trNgarko();
+_trTimer=setInterval(()=>{ if(curMktSub!=='terejat'||!$('trTrupi')){ clearInterval(_trTimer); _trTimer=null; return; } trNgarko(); },30000);
+}
+function trNr(x){ return Number(x||0).toLocaleString('sq-AL'); }
+function trKub(vlera,tekst,titull){ return '<div style="flex:1 1 140px;border:1px solid #2a313c;border-radius:10px;padding:10px 12px;"'+(titull?' title="'+titull+'"':'')+'><div style="font-size:20px;font-weight:700;">'+vlera+'</div><div class="small">'+tekst+'</div></div>'; }
+function trEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+async function trNgarko(){
+const t=$('trTrupi'), k=$('trKoka'); if(!t) return;
+let d=null;
+try{ const r=await fetch('/api/admin/pxse/te-rejat?_='+Date.now(),{cache:'no-store'}); d=await r.json(); if(!r.ok||!d||d.error) throw new Error((d&&d.error)||('HTTP '+r.status)); }
+catch(e){ t.innerHTML='<p class="small" style="color:#e5484d;">'+(/404/.test(e.message)?'Serveri s’e njeh këtë faqe (404): shto pxse-te-rejat.js në rrënjë dhe rreshtin te server.js, pastaj prit deploy-in.':'Gabim: '+trEsc(e.message))+'</p>'; return; }
+k.innerHTML='';
+const st=document.createElement('span'); st.className='small'; st.innerHTML=d.aktiv?'<b style="color:#3fb950;">● Aktiv</b> · lexon certifikatat çdo minutë':'<b style="color:#8b949e;">● I ndalur</b>';
+const b=document.createElement('button'); b.className='btn'; b.textContent=d.aktiv?'Ndalo':'Nis';
+b.style.cssText='width:auto;padding:8px 16px;'+(d.aktiv?'background:#da3633;color:#fff;border:0;':'');
+b.onclick=async()=>{ b.disabled=true; try{ await fetch('/api/admin/pxse/te-rejat/'+(d.aktiv?'ndalo':'nis'),{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); }catch(e){} trNgarko(); };
+const rf=document.createElement('button'); rf.className='subnav'; rf.style.cssText='display:inline-block;width:auto;border:1px solid #2a313c;'; rf.textContent='Rifresko'; rf.onclick=()=>trNgarko();
+k.appendChild(b); k.appendChild(rf); k.appendChild(st);
+const s=d.sot||{}, g=d.gjithsej||{}, gj=d.gjendjet||{}, im=d.importi, kf=d.kufijte||{};
+let h='<div class="small" style="margin:0 0 6px;font-weight:600;">Sot</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">'+
+trKub(trNr(s.certifikata),'certifikata të lexuara')+
+trKub(trNr(s.domene),'domaine të reja për kontroll','Domaine bazë që s’janë as te Importi, as te direktoria')+
+trKub(trNr(s.rdap)+' / '+trNr(kf.rdap),'kontrolluar me RDAP','Kufiri ditor: PXSE_TR_RDAP_DITORE')+
+trKub(trNr(s.te_reja),'të regjistruara në '+kf.dite+' ditët e fundit')+
+trKub(trNr(s.kaluar)+' / '+trNr(kf.studim),'kaluan te studimi me AI','Kufiri ditor: PXSE_TR_STUDIM_DITORE')+'</div>';
+h+='<div class="small" style="margin:0 0 6px;font-weight:600;">Në pritje</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">'+
+trKub(trNr(gj.ri),'pa u kontrolluar me RDAP')+
+trKub(trNr(gj.pret),'të reja, presin '+kf.pritja+' ditë','Pritja që faqja të mbushet para studimit')+
+trKub(trNr((gj.vjeter||0)+(gj.pa_rdap||0)+(gj.pa_mx||0)),'të hedhura','Domaine të vjetra (rinovim certifikate), pa të dhëna RDAP ose pa MX')+'</div>';
+if(im){
+h+='<div class="small" style="margin:0 0 6px;font-weight:600;">Studimi (Importi → “'+trEsc(d.emri)+'”)'+(im.gabimi?' · <span style="color:#e5484d;">'+trEsc(im.gabimi)+'</span>':'')+'</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">'+
+trKub(trNr(im.total),'gjithsej te studimi')+trKub(trNr(im.studiuar),'të studiuara')+trKub(trNr(im.biznese),'biznese të vërteta')+
+trKub(trNr(im.me_email),'me email')+trKub(trNr(im.gati_b2b),'B2B gati për Dërgimet')+'</div>';
+}
+h+='<div class="small" style="margin:0 0 6px;font-weight:600;">Bizneset e fundit të gjetura</div>';
+const lista=d.te_fundit||[];
+h+=lista.length?'<div style="overflow-x:auto;"><table style="width:100%;font-size:13px;border-collapse:collapse;"><tr>'+['Biznesi','Kategoria','Lloji','Shteti','Email','Regjistruar'].map(x=>'<th style="text-align:left;padding:6px 8px;border-bottom:1px solid #2a313c;color:#8b949e;font-weight:500;">'+x+'</th>').join('')+'</tr>'+
+lista.map(x=>'<tr style="border-bottom:1px solid #21262d;vertical-align:top;"><td style="padding:6px 8px;"><b>'+trEsc(x.emri||x.domaini)+'</b><div class="small">'+trEsc(x.domaini)+'</div>'+(x.pershkrimi?'<div class="small" style="max-width:360px;">'+trEsc(x.pershkrimi)+'</div>':'')+'</td><td style="padding:6px 8px;">'+trEsc(x.kategoria||'—')+'</td><td style="padding:6px 8px;">'+trEsc((x.lloji||'—').toUpperCase())+'</td><td style="padding:6px 8px;">'+trEsc(x.shteti||'—')+'</td><td style="padding:6px 8px;">'+trEsc(x.email||'—')+(x.email_ofruesi?'<div class="small">'+trEsc(x.email_ofruesi)+'</div>':'')+'</td><td style="padding:6px 8px;white-space:nowrap;">'+trEsc(x.data_domainit||'—')+'</td></tr>').join('')+'</table></div>'
+:'<p class="small">Ende asnjë. Pas klikimit “Nis”, bizneset e para dalin pas ditëve të pritjes ('+kf.pritja+') dhe studimit.</p>';
+const lg=d.logjet||[];
+if(lg.length) h+='<div class="small" style="margin:14px 0 4px;font-weight:600;">Regjistrat e certifikatave</div>'+lg.map(x=>'<div class="small">'+trEsc(x.emri||x.url)+(x.gabimi?' · <span style="color:#e5484d;">'+trEsc(x.gabimi)+'</span>':' · ✓')+'</div>').join('');
+t.innerHTML=h;
 }
 
 async function renderMktDergimet(m){
