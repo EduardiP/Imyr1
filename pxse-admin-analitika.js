@@ -65,11 +65,17 @@ module.exports = function (app, pool, iAdmin) {
       kredite INT NOT NULL DEFAULT 0,
       PRIMARY KEY (dita, burimi, tipi, kategoria)
     )`);
+    // Vizitoret sipas dites (per treguesin te Bizneset → Llogarite): nje rresht per shfletues ne dite.
+    // i_ri = hera e pare qe ky shfletues hap faqen; loguar = ishte i loguar ne llogari gjate ndonje vizite te asaj dite.
+    await pool.query(`CREATE TABLE IF NOT EXISTS pxse_vizitat_ditore (
+      dita DATE NOT NULL, seanca TEXT NOT NULL, i_ri BOOLEAN NOT NULL DEFAULT false, loguar BOOLEAN NOT NULL DEFAULT false,
+      hapje INT NOT NULL DEFAULT 1, PRIMARY KEY (dita, seanca))`);
   })().catch(e => console.error('pxse-admin-analitika migrim:', e.message));
   setInterval(() => {
     pool.query("DELETE FROM pxse_ngjarjet WHERE koha < now() - interval '13 months'").catch(() => {});
     pool.query("DELETE FROM pxse_vizitoret WHERE fundit_at < now() - interval '13 months'").catch(() => {});
     pool.query("DELETE FROM pxse_burimet_ditore WHERE dita < (now() - interval '13 months')::date").catch(() => {});
+    pool.query("DELETE FROM pxse_vizitat_ditore WHERE dita < (now() - interval '13 months')::date").catch(() => {});
   }, 24 * 3600 * 1000).unref();
 
   // ---------- Ngjarjet nga faqja publike ----------
@@ -87,6 +93,13 @@ module.exports = function (app, pool, iAdmin) {
         const r = await pool.query(`INSERT INTO pxse_vizitoret (seanca) VALUES ($1)
           ON CONFLICT (seanca) DO UPDATE SET fundit_at = now(), hyrje = pxse_vizitoret.hyrje + CASE WHEN pxse_vizitoret.fundit_at < now() - interval '30 minutes' THEN 1 ELSE 0 END
           RETURNING (xmax = 0) AS iri`, [seanca]);
+        // A eshte i loguar ky vizitor tani? (cookie e llogarise; vetem kontroll, asgje nuk ruhet nga llogaria)
+        let loguar = false;
+        const tk = req.cookies && req.cookies.imyr_session;
+        if (tk) { try { loguar = (await pool.query('SELECT 1 FROM seancat WHERE token=$1', [tk])).rows.length > 0; } catch (e) {} }
+        await pool.query(`INSERT INTO pxse_vizitat_ditore (dita, seanca, i_ri, loguar) VALUES ($1::date, $2, $3, $4)
+          ON CONFLICT (dita, seanca) DO UPDATE SET i_ri = pxse_vizitat_ditore.i_ri OR $3, loguar = pxse_vizitat_ditore.loguar OR $4,
+            hapje = pxse_vizitat_ditore.hapje + 1`, [pxanSot(), seanca, !!r.rows[0].iri, loguar]).catch(() => {});
         if (r.rows[0].iri) await pool.query("INSERT INTO pxse_ngjarjet (lloji, seanca) VALUES ('hyrje_e_re', $1)", [seanca]);
         else {
           const prev = await pool.query("SELECT 1 FROM pxse_ngjarjet WHERE seanca=$1 AND lloji IN ('hyrje_e_re','rikthim','vizite_perseri') AND koha > now() - interval '30 minutes' LIMIT 1", [seanca]);
@@ -220,6 +233,23 @@ module.exports = function (app, pool, iAdmin) {
         alertet.kategorite = Object.values(kat).sort((x, y) => y.sinjale - x.sinjale || y.alerte - x.alerte || x.kategoria.localeCompare(y.kategoria));
       } catch (e) {}
       res.json({ ok: true, nga: p.nga, deri: p.deri, tipi, kolonat: KOLONAT_SJ, ditet: p.ditet.map(d => Object.assign({ dita: d }, sipasDites[d])), gjithsej, burimet, alertet });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ---------- Vizitoret pa login (Bizneset → Llogarite) ----------
+  // GET /api/admin/pxse/vizitat?dite=14 → per cdo dite: te_rinj, unike, kthyer (vetem shfletuesit qe s'ishin te loguar ate dite)
+  app.get('/api/admin/pxse/vizitat', iAdmin, async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    try {
+      const n = Math.min(90, Math.max(1, parseInt(req.query.dite, 10) || 14));
+      const sot = pxanSot();
+      const nga = new Date(Date.parse(sot + 'T12:00:00Z') - (n - 1) * 86400000).toISOString().slice(0, 10);
+      const r = (await pool.query(`SELECT to_char(dita, 'YYYY-MM-DD') dita, COUNT(*) FILTER (WHERE i_ri)::int te_rinj, COUNT(*)::int unike, COALESCE(SUM(hapje),0)::int hapje
+        FROM pxse_vizitat_ditore WHERE NOT loguar AND dita BETWEEN $1::date AND $2::date GROUP BY 1`, [nga, sot])).rows;
+      const h = {}; r.forEach(x => { h[x.dita] = x; });
+      const ditet = pxanDitet(nga, sot).map(d => { const x = h[d] || { te_rinj: 0, unike: 0, hapje: 0 }; return { dita: d, te_rinj: x.te_rinj, unike: x.unike, kthyer: Math.max(0, x.unike - x.te_rinj), hapje: x.hapje }; });
+      const fillimi = (await pool.query("SELECT to_char(MIN(dita), 'YYYY-MM-DD') d FROM pxse_vizitat_ditore")).rows[0].d;
+      res.json({ ok: true, sot, ditet, fillimi });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
