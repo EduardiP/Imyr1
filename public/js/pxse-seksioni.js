@@ -133,8 +133,10 @@
       eNen2: 'You don\'t need your own email list. Pick businesses from our directory of company emails, write one message (AI can write it for you from your website), and schedule when each email goes out. You\'ll see who opened your email and who clicked.',
       eVetemB2B: 'Only for B2B',
       eVetemB2BNen: 'for businesses that sell to other businesses',
-      eProvoAI: 'Try it: generate your email with AI',
-      eStudio: 'Write my email with AI',
+      eProvoAI: 'Test it with AI: write your email',
+      eStudio: 'Test it with AI',
+      eTestoTitulli: 'Enter your website. AI writes your email.',
+      eTestoNen: 'Your email and the matching business categories appear here after the test.',
       eDomaini: 'yourcompany.com',
       eDukeStudiuar: 'AI is reading {d} and writing your email…',
       eStudiuar: 'Done. AI wrote the subject and message and picked the best categories for {d}. You can still edit everything.',
@@ -335,8 +337,10 @@
       eNen2: 'Nuk të duhet lista jote e email-eve. Zgjidh bizneset nga direktoria jonë, shkruaj një mesazh (AI mund ta shkruajë nga faqja jote) dhe cakto kur niset secili email. Do të shohësh kush e hapi dhe kush klikoi.',
       eVetemB2B: 'Vetëm për B2B',
       eVetemB2BNen: 'për biznese që u shesin biznesesh të tjera',
-      eProvoAI: 'Bëj një provë: gjenero email-in me AI',
-      eStudio: 'Shkruaj email-in tim me AI',
+      eProvoAI: 'Testoje me AI: shkruaj email-in tënd',
+      eStudio: 'Testoje me AI',
+      eTestoTitulli: 'Shkruaj faqen tënde. AI shkruan email-in.',
+      eTestoNen: 'Email-i yt dhe kategoritë e bizneseve që të përshtaten dalin këtu pas testit.',
       eDomaini: 'kompaniajote.com',
       eDukeStudiuar: 'AI po lexon {d} dhe po shkruan email-in…',
       eStudiuar: 'U krye. AI shkroi subjektin dhe mesazhin dhe zgjodhi kategoritë më të mira për {d}. Mund t\'i ndryshosh të gjitha.',
@@ -675,6 +679,17 @@
     '.px-studio-bashke{flex-wrap:nowrap;gap:0}',
     '.px-studio-bashke .px-input{border-top-right-radius:0;border-bottom-right-radius:0;border-right:0;min-width:0}',
     '.px-studio-bashke .px-buton{border-top-left-radius:0;border-bottom-left-radius:0;white-space:nowrap}',
+    // kutia e testit: pjesa me e dukshme e seksionit
+    '.px-test-kuti{border:2px solid var(--px-theks);background:var(--px-theks-lehte);border-radius:var(--px-rrezja);padding:16px 16px 14px;margin:0 0 14px;box-shadow:0 6px 22px rgba(20,22,37,.08)}',
+    '.px-test-kuti h3{margin:0 0 4px;font-size:17px;line-height:1.3}',
+    '.px-test-kuti .px-test-nen{margin:0 0 12px;font-size:13px;color:var(--px-zbehur)}',
+    '.px-test-kuti .px-veprimet-siper{margin-bottom:0}',
+    '.px-test-kuti .px-input{font-size:17px;padding:14px 16px;background:var(--px-sfondi)}',
+    '.px-test-kuti .px-buton{font-size:16px;padding:14px 22px;font-weight:700}',
+    '.px-test-kuti .px-provo{padding:15px 18px}',
+    '.px-test-kuti .px-studio{min-width:0;max-width:100%}',
+    '.px-test-kuti .px-studio .px-input{width:100%;min-width:0}',
+    '@media (max-width:560px){.px-test-kuti{padding:14px 12px 12px}.px-test-kuti .px-studio-bashke{flex-wrap:wrap;gap:8px}.px-test-kuti .px-studio-bashke .px-input{flex:1 1 100%;border-radius:var(--px-rrezja-vogel);border-right:1px solid var(--px-kufiri)}.px-test-kuti .px-studio-bashke .px-buton{flex:1 1 100%;border-radius:var(--px-rrezja-vogel)}}',
     '.px-hyrje-rresht{margin:4px 0 22px;padding-top:14px;border-top:1px dashed var(--px-kufiri)}',
     '.px-studio-stat{font-size:13px;color:var(--px-zbehur);margin:0 0 10px}',
     '.px-studio-stat.px-ok{color:var(--px-sukses)}',
@@ -1248,6 +1263,7 @@
     // "mbyllur" = prova ka perfunduar (3 email-et u perdoren): email-i shfaqet vetem per lexim, pa marres dhe pa "Send".
     var mbyllur = em.studim === 'gati' && em.mbetur === 0;
     var gati = em.studim === 'gati' && !mbyllur;
+    var shfaqEmail = gati || mbyllur; // "1 Your email" dhe "How it will look" dalin vetem pasi domaini kalon testin
     var emriKat = function (v) { var k = KATEGORITE.find(function (x) { return x.v === v; }); return k ? k[gj] : v; };
 
     // kategorite si butona: te rekomanduarat (pas studimit me AI) dalin te parat me ★
@@ -1336,16 +1352,19 @@
       //  - versioni i ngushte: "Try it" + hyrja; kur klikohet "Try it", pjesa zgjerohet dhe del fusha e domainit
       //  - versioni i gjere: fusha e domainit me butonin "Study my business" ngjitur ne te djathte te saj;
       //    hyrja ne rresht me vete poshte, larg fushes (qe njerezit te mos klikojne hyrjen pasi shkruajne domainin)
+      '<div class="px-test-kuti"><h3>' + esc(t('eTestoTitulli')) + '</h3>' +
+      (shfaqEmail ? '' : '<p class="px-test-nen">' + esc(t('eTestoNen')) + '</p>') +
       '<div class="px-veprimet-siper">' +
       '<button class="px-buton px-provo px-vetem-ngushte" data-e="provo">✦ ' + esc(t('eProvoAI')) + '</button>' +
       '<div class="px-studio px-studio-bashke px-vetem-gjere">' +
       '<input class="px-input" data-e="domaini" type="text" inputmode="url" autocomplete="off" placeholder="' + esc(t('eDomaini')) + '" value="' + esc(em.domaini) + '" aria-label="' + esc(t('eDomaini')) + '">' +
       '<button class="px-buton" data-e="studio"' + (em.studim === 'duke' ? ' disabled' : '') + '>✦ ' + esc(t('eStudio')) + '</button>' +
       '</div>' +
-      '</div>' + stat +
+      '</div></div>' + stat +
       '<p class="px-studio-stat" style="margin:-4px 0 12px">' + esc(t('eNjeProve')) + '</p>' +
       '<div class="px-hyrje-rresht"><button class="px-hyrje" data-e="hyr">' + SVG_HYRJE + '<span>' + esc(t('eHyr')) + '</span>' + SVG_DJATHTAS + '</button></div>' +
 
+      (!shfaqEmail ? '' :
       '<div class="px-email-rreshti">' +
       // 1. Mesazhi (me studimin e biznesit me AI ne versionin e gjere)
       '<div class="px-hapi"><div class="px-hapi-koka"><span class="px-nr">1</span><h3>' + esc(t('eMesazhi')) + '</h3></div>' +
@@ -1358,9 +1377,12 @@
       '</div>' +
       // Parapamja e drejtperdrejte: vetem ne versionin e gjere (ne 50/50 mbetet vetem "Your email")
       '<div class="px-hapi px-vetem-gjere" data-vendi="pamja">' + this._htmlPamja() + '</div>' +
-      '</div>' +
+      '</div>') +
 
-      (mbyllur ? this._htmlDergimet() + '<div class="px-shenim">' + esc(t('eLigjore')) + '</div>' : (
+      (mbyllur ? this._htmlDergimet() + '<div class="px-shenim">' + esc(t('eLigjore')) + '</div>' : !shfaqEmail ? (
+      // Para testit: vetem kategorite (bizneset, orari dhe dergimi dalin pas testit me AI)
+      '<div class="px-hapi"><div class="px-hapi-koka"><span class="px-nr">2</span><h3>' + esc(t('eMarresit')) + '</h3></div>' +
+      '<label class="px-etiketa">' + esc(t('eKategoria')) + '</label>' + kat + '</div>') : (
       // 2. Marresit: kategoria (te rekomanduarat pas studimit) dhe bizneset me te reja; zgjidhen deri ne 3
       '<div class="px-hapi"><div class="px-hapi-koka"><span class="px-nr">2</span><h3>' + esc(t('eMarresit')) + '</h3></div>' +
       '<label class="px-etiketa">' + esc(t('eKategoria')) + '</label>' + kat +
@@ -1624,8 +1646,8 @@
     var rritFushen = function () { if (!trupi) return; trupi.style.height = 'auto'; trupi.style.height = Math.max(260, trupi.scrollHeight + 2) + 'px'; };
     rritFushen(); setTimeout(rritFushen, 0); setTimeout(rritFushen, 500);
     if (trupi) trupi.addEventListener('input', rritFushen);
-    subj.addEventListener('input', function () { em.subjekti = subj.value; self._rifreskoPamjen(); });
-    trupi.addEventListener('input', function () { em.trupi = trupi.value; self._rifreskoPamjen(); });
+    if (subj) subj.addEventListener('input', function () { em.subjekti = subj.value; self._rifreskoPamjen(); });
+    if (trupi) trupi.addEventListener('input', function () { em.trupi = trupi.value; self._rifreskoPamjen(); });
 
     // Parapamja: zgjedhja e dizajnit dhe personalizimi (ngjyra, logo, butoni)
     this._lidhGalerine();
