@@ -8,9 +8,12 @@
 //      email), ne skedarin e perhershem "Biznese të reja (SSL)". Prej andej kalon vete te Marketingu (B2B, sipas ofruesit).
 //
 // Admini (Marketingu → Biznese të reja): numrat, Nis / Ndalo. Nis vetem kur klikohet "Nis" (paracaktim: i ndalur).
+// Butoni "Studio me AI (+300)": kalon menjehere te AI deri ne 300 domaine "pret" (pa pritjen e diteve), vetem me email te Google
+// (PXSE_TR_VETEM_GOOGLE=0 = cdo MX). Cdo klikim jep perseri 300. Punon edhe kur moduli eshte i ndalur; nuk prek kufirin ditor automatik.
 // Kufijte ditore (Railway Variables, opsionale): PXSE_TR_RDAP_DITORE (3000), PXSE_TR_STUDIM_DITORE (300), PXSE_TR_DITE (120),
 // PXSE_TR_PRITJA_DITE (3), PXSE_TR_TLD (lista). PXSE_TR_LOGJET = URL-te e regjistrave CT (vetem per teste).
 const crypto = require('crypto');
+const dnsP = require('dns').promises;
 const { pxseNePlatforme } = require('./pxse-prova');
 const { pximMerr, pximDataDomainit, pximKaMx } = require('./pxse-importi');
 
@@ -65,6 +68,18 @@ function pxtrDomenet(emrat) {
   return [...dalja];
 }
 
+// MX: 'google' | 'tjeter' | 'pa_mx' | null (gabim i perkohshem)
+async function pxtrMx(domaini) {
+  try {
+    const mx = await dnsP.resolveMx(domaini);
+    if (!mx || !mx.length) return 'pa_mx';
+    return mx.some(m => /(^|\.)(google\.com|googlemail\.com)\.?$/i.test(String(m.exchange || ''))) ? 'google' : 'tjeter';
+  } catch (e) {
+    if (['ENOTFOUND', 'ENODATA', 'NXDOMAIN', 'ENOTIMP', 'EREFUSED'].includes(e.code)) return 'pa_mx';
+    return null;
+  }
+}
+
 module.exports = function (app, pool, iAdmin) {
   (async () => {
     await pool.query(`CREATE TABLE IF NOT EXISTS pxse_tr_domenet (
@@ -81,6 +96,7 @@ module.exports = function (app, pool, iAdmin) {
       dita DATE PRIMARY KEY, certifikata INT NOT NULL DEFAULT 0, domene INT NOT NULL DEFAULT 0, rdap INT NOT NULL DEFAULT 0,
       te_reja INT NOT NULL DEFAULT 0, kaluar INT NOT NULL DEFAULT 0)`);
     await pool.query(`CREATE TABLE IF NOT EXISTS pxse_tr_cilesimet (celesi TEXT PRIMARY KEY, vlera TEXT)`);
+    await pool.query('ALTER TABLE pxse_tr_dite ADD COLUMN IF NOT EXISTS kaluar_klik INT NOT NULL DEFAULT 0');
   })().catch(e => console.error('pxse-te-rejat migrim:', e.message));
 
   const dita = () => new Date().toISOString().slice(0, 10);
@@ -222,9 +238,52 @@ module.exports = function (app, pool, iAdmin) {
     finally { kalimDuke = false; }
   }
 
+  // ---------- Butoni "Studio me AI (+300)": pa pritje, vetem Google, deri ne 300 per klikim ----------
+  let klikDuke = false;
+  async function studioTani() {
+    if (klikDuke) return; klikDuke = true;
+    const vetemGoogle = process.env.PXSE_TR_VETEM_GOOGLE !== '0';
+    try {
+      const provuar = new Set();   // ne kete klikim: mos i provo dy here (p.sh. gabime te perkohshme DNS)
+      for (let rr = 0; rr < 100; rr++) {
+        const kuota = parseInt(await cilesimi('kuota', '0'), 10) || 0;
+        if (kuota <= 0) break;
+        const gr = (await pool.query("SELECT domaini, to_char(data_domainit, 'YYYY-MM-DD') AS data FROM pxse_tr_domenet WHERE gjendja='pret' AND NOT (domaini = ANY($1::text[])) ORDER BY data_domainit DESC NULLS LAST, gati_pas LIMIT 50", [[...provuar]])).rows;
+        if (!gr.length) break;
+        gr.forEach(x => provuar.add(x.domaini));
+        const kalojne = [];
+        let k = 0;
+        await Promise.all(Array.from({ length: 10 }, async () => {
+          while (k < gr.length) {
+            const x = gr[k++];
+            const mx = await pxtrMx(x.domaini);
+            if (mx === null) continue;                        // gabim i perkohshem: mbetet "pret"
+            if (mx === 'pa_mx') { await pool.query("UPDATE pxse_tr_domenet SET gjendja='pa_mx', perpunuar_at=now() WHERE domaini=$1", [x.domaini]); continue; }
+            if (mx !== 'google' && vetemGoogle) { await pool.query("UPDATE pxse_tr_domenet SET gjendja='jo_google', perpunuar_at=now() WHERE domaini=$1", [x.domaini]); continue; }
+            kalojne.push(x);
+          }
+        }));
+        const zgjedhur = kalojne.slice(0, kuota);
+        if (zgjedhur.length) {
+          const im = await importiId();
+          const ins = await pool.query(`INSERT INTO pxse_import_rreshtat (import_id, domaini, url, gjendja, data_domainit, perpunuar_at)
+              SELECT $1, d, 'https://' || d || '/', 'bere', NULLIF(dt, '')::date, now() FROM unnest($2::text[], $3::text[]) AS t(d, dt)
+              ON CONFLICT (import_id, domaini) DO NOTHING RETURNING domaini`, [im, zgjedhur.map(x => x.domaini), zgjedhur.map(x => x.data || '')]);
+          await pool.query("UPDATE pxse_importet SET total = total + $2, gjendja = CASE WHEN gjendja='gati' THEN 'duke' ELSE gjendja END, perfunduar_at = CASE WHEN gjendja='gati' THEN NULL ELSE perfunduar_at END WHERE id=$1", [im, ins.rows.length]);
+          await pool.query("UPDATE pxse_tr_domenet SET gjendja='kaluar', perpunuar_at=now() WHERE domaini = ANY($1::text[])", [zgjedhur.map(x => x.domaini)]);
+          await pool.query("UPDATE pxse_tr_cilesimet SET vlera = GREATEST(0, vlera::int - $1)::text WHERE celesi='kuota'", [zgjedhur.length]);
+          await shto('kaluar_klik', ins.rows.length);
+          if (app.locals.pxseImportiNis) app.locals.pxseImportiNis();
+        }
+        // te kualifikuarat qe s'hyne ne kuote mbeten "pret" per klikimin tjeter
+      }
+    } catch (e) { console.error('pxse te-rejat studio:', e.message); }
+    finally { klikDuke = false; }
+  }
+
   // Pastrimi: domainet e hedhura mbahen 60 dite (qe te mos kontrollohen perseri), pastaj fshihen
   async function pastro() {
-    await pool.query("DELETE FROM pxse_tr_domenet WHERE gjendja IN ('vjeter','pa_rdap','pa_mx') AND perpunuar_at < now() - interval '60 days'").catch(() => {});
+    await pool.query("DELETE FROM pxse_tr_domenet WHERE gjendja IN ('vjeter','pa_rdap','pa_mx','jo_google') AND perpunuar_at < now() - interval '60 days'").catch(() => {});
     await pool.query("DELETE FROM pxse_tr_dite WHERE dita < now() - interval '120 days'").catch(() => {});
   }
 
@@ -234,7 +293,7 @@ module.exports = function (app, pool, iAdmin) {
     setInterval(kaloNeStudim, 10 * 60 * 1000).unref();
     setInterval(pastro, 24 * 3600 * 1000).unref();
   }, 45000).unref();
-  app.locals.pxseTeRejat = { lexoCT, kontrolloRdap, kaloNeStudim, pxtrDomenet, pxtrEmratNgaHyrja };
+  app.locals.pxseTeRejat = { lexoCT, kontrolloRdap, kaloNeStudim, studioTani, pxtrDomenet, pxtrEmratNgaHyrja };
 
   // ---------- Admin API ----------
   app.get('/api/admin/pxse/te-rejat', iAdmin, async (req, res) => {
@@ -242,7 +301,7 @@ module.exports = function (app, pool, iAdmin) {
     try {
       const sot = (await pool.query('SELECT * FROM pxse_tr_dite WHERE dita=$1', [dita()])).rows[0] || {};
       const gjithsej = (await pool.query(`SELECT COALESCE(SUM(certifikata),0)::bigint certifikata, COALESCE(SUM(domene),0)::int domene, COALESCE(SUM(rdap),0)::int rdap,
-          COALESCE(SUM(te_reja),0)::int te_reja, COALESCE(SUM(kaluar),0)::int kaluar FROM pxse_tr_dite`)).rows[0];
+          COALESCE(SUM(te_reja),0)::int te_reja, COALESCE(SUM(kaluar),0)::int kaluar, COALESCE(SUM(kaluar_klik),0)::int kaluar_klik FROM pxse_tr_dite`)).rows[0];
       const gj = Object.fromEntries((await pool.query('SELECT gjendja, COUNT(*)::int n FROM pxse_tr_domenet GROUP BY gjendja')).rows.map(x => [x.gjendja, x.n]));
       const logjetDb = (await pool.query('SELECT url, emri, pozicioni, madhesia, gabimi, perditesuar_at FROM pxse_tr_logjet ORDER BY url')).rows;
       const imR = (await pool.query("SELECT id, gjendja, total, gabimi FROM pxse_importet WHERE emri=$1 ORDER BY id DESC LIMIT 1", [PXTR_EMRI_IMPORTIT])).rows[0] || null;
@@ -256,12 +315,17 @@ module.exports = function (app, pool, iAdmin) {
         teFundit = (await pool.query(`SELECT domaini, emri, kategoria, lloji, shteti, email, email_ofruesi, to_char(data_domainit, 'YYYY-MM-DD') data_domainit, pershkrimi
             FROM pxse_import_rreshtat WHERE import_id=$1 AND statusi='biznes' AND studim2 IS NOT NULL ORDER BY studim2_at DESC NULLS LAST LIMIT 25`, [imR.id])).rows;
       }
-      res.json({ ok: true, aktiv: await aktiv(), emri: PXTR_EMRI_IMPORTIT, sot, gjithsej, gjendjet: gj, logjet: logjetDb, importi, te_fundit: teFundit,
+      res.json({ ok: true, aktiv: await aktiv(), emri: PXTR_EMRI_IMPORTIT, sot, gjithsej,
+        kuota: parseInt(await cilesimi('kuota', '0'), 10) || 0, duke_punuar: klikDuke, vetem_google: process.env.PXSE_TR_VETEM_GOOGLE !== '0', gjendjet: gj, logjet: logjetDb, importi, te_fundit: teFundit,
         kufijte: { rdap: nr(process.env.PXSE_TR_RDAP_DITORE, 3000), studim: nr(process.env.PXSE_TR_STUDIM_DITORE, 300), dite: nr(process.env.PXSE_TR_DITE, 120), pritja: nr(process.env.PXSE_TR_PRITJA_DITE, 3) } });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
   app.post('/api/admin/pxse/te-rejat/nis', iAdmin, async (req, res) => {
     try { await vendos('aktiv', '1'); lexoCT(); res.json({ ok: true }); } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+  app.post('/api/admin/pxse/te-rejat/studio', iAdmin, async (req, res) => {
+    try { const n = nr(process.env.PXSE_TR_KLIK, 300); await vendos('kuota', n); studioTani(); res.json({ ok: true, kuota: n }); }
+    catch (e) { res.status(500).json({ error: e.message }); }
   });
   app.post('/api/admin/pxse/te-rejat/ndalo', iAdmin, async (req, res) => {
     try { await vendos('aktiv', '0'); res.json({ ok: true }); } catch (e) { res.status(500).json({ error: e.message }); }
