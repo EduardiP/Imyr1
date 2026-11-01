@@ -485,6 +485,7 @@ module.exports = function (app, pool, iAdmin) {
     } catch (e) { console.error('pxse importi → direktoria google:', e.message); }
   }
   app.locals.pxseDirektoriaGoogle = pximDirektoriaGoogle;
+  app.locals.pxseImportiNis = () => pximNis(); // per modulet e tjera (p.sh. pxse-te-rejat.js) qe shtojne rreshta per studim
   let pximMarketingDuke = false;
   async function pximNeMarketing() {
     if (pximMarketingDuke) return; pximMarketingDuke = true;
@@ -889,3 +890,5 @@ module.exports.pximEmailet = pximEmailet;
 module.exports.pximShteti = pximShteti;
 module.exports.pximLexoCsv = pximLexoCsv;
 module.exports.pximMerr = pximMerr;
+module.exports.pximDataDomainit = pximDataDomainit;
+module.exports.pximKaMx = pximKaMx;
