@@ -4,15 +4,30 @@
 //   1. Cdo 2 ore provon te shkarkoje listat e 4 diteve te fundit qe mungojne (WhoisDS jep falas vetem ditet me te fundit).
 //      Lista (zip → .txt, nje domain per rresht) ruhet ne databaze sipas dites, vetem TLD-te e biznesit dhe emrat normale.
 //   2. Admini zgjedh nje dite (p.sh. 14 dite me pare) → "Studio" (ose Auto: cdo dite vete dita N dite me pare).
-//      Filtri falas: jo ne Import/Direktori, ka MX, faqja hapet dhe nuk eshte e parkuar / "coming soon".
-//   3. Ato qe kalojne shkojne te studimi ekzistues i Importit (AI), ne skedarin "Domaine të reja (WhoisDS)",
-//      me kufi ditor; prej andej kalojne vete te Marketingu (B2B, sipas ofruesit). Data e regjistrimit = dita e listes.
+//      Filtri falas, me radhe: jo ne Import/Direktori → MX vetem te Google (perndryshe "jo_google", pa hapur faqen dhe pa AI)
+//      → faqja hapet dhe nuk eshte e parkuar / "coming soon". Vetem ato qe kalojne te gjitha shkojne te AI.
+//   3. Ato qe kalojne shkojne te studimi ekzistues i Importit (AI), ne skedarin "Domaine të reja (WhoisDS)".
+//      Kufiri: cdo klikim "Studio" lejon deri ne PXSE_WD_STUDIM_DITORE (300) studime AI; klikimi tjeter jep perseri 300.
+//      Auto jep vete 300 ne dite (nje here ne dite); prej andej kalojne vete te Marketingu (B2B, sipas ofruesit). Data e regjistrimit = dita e listes.
 //
-// Railway Variables (opsionale): PXSE_WD_STUDIM_DITORE (300), PXSE_WD_MOSHA (14), PXSE_WD_MBAJ_DITE (60),
-// PXSE_WD_TLD (lista), PXSE_WD_URL (formati i lidhjes: {b64} = base64("YYYY-MM-DD.zip"), {data} = YYYY-MM-DD).
+// Railway Variables (opsionale): PXSE_WD_STUDIM_DITORE (300 per klikim / per dite me Auto), PXSE_WD_MOSHA (14), PXSE_WD_MBAJ_DITE (60),
+// PXSE_WD_VETEM_GOOGLE (1 = vetem email te Google; 0 = cdo MX), PXSE_WD_TLD (lista), PXSE_WD_URL (formati i lidhjes: {b64} = base64("YYYY-MM-DD.zip"), {data} = YYYY-MM-DD).
 const zlib = require('zlib');
+const dns = require('dns').promises;
 const { pxseNePlatforme, pxseHostPublik, pxseTekstNgaHtml } = require('./pxse-prova');
-const { pximKaMx } = require('./pxse-importi');
+
+// MX i domainit: 'google' | 'tjeter' | 'pa_mx' | null (gabim i perkohshem DNS, provohet perseri me vone)
+async function pxwdMx(domaini) {
+  try {
+    const mx = await dns.resolveMx(domaini);
+    if (!mx || !mx.length) return 'pa_mx';
+    return mx.some(m => /(^|\.)(google\.com|googlemail\.com)\.?$/i.test(String(m.exchange || ''))) ? 'google' : 'tjeter';
+  } catch (e) {
+    if (['ENOTFOUND', 'ENODATA', 'NXDOMAIN', 'ENOTIMP', 'EREFUSED'].includes(e.code)) return 'pa_mx';
+    return null;
+  }
+}
+const pxwdVetemGoogle = () => process.env.PXSE_WD_VETEM_GOOGLE !== '0';
 
 const PXWD_EMRI_IMPORTIT = 'Domaine të reja (WhoisDS)';
 const PXWD_URLET = (process.env.PXSE_WD_URL ? [process.env.PXSE_WD_URL] : [
@@ -105,7 +120,7 @@ module.exports = function (app, pool, iAdmin) {
       total INT, ruajtur INT, shkarkuar_at TIMESTAMPTZ, provuar_at TIMESTAMPTZ, gabimi TEXT)`);
     await pool.query(`CREATE TABLE IF NOT EXISTS pxse_wd_domenet (
       dita DATE NOT NULL, domaini TEXT NOT NULL,
-      gjendja TEXT NOT NULL DEFAULT 'ri',         -- ri | ekziston | pa_mx | pa_faqe | gati | kaluar
+      gjendja TEXT NOT NULL DEFAULT 'ri',         -- ri | ekziston | pa_mx | jo_google | dns_gabim | pa_faqe | gati | kaluar
       perpunuar_at TIMESTAMPTZ, PRIMARY KEY (dita, domaini))`);
     await pool.query('CREATE INDEX IF NOT EXISTS idx_pxwd_dom_gj ON pxse_wd_domenet (gjendja, dita)');
     await pool.query(`CREATE TABLE IF NOT EXISTS pxse_wd_cilesimet (celesi TEXT PRIMARY KEY, vlera TEXT)`);
@@ -167,11 +182,14 @@ module.exports = function (app, pool, iAdmin) {
     if (filDuke) return; filDuke = true;
     try {
       const kufiri = nr(process.env.PXSE_WD_STUDIM_DITORE, 300);
+      // gabimet e perkohshme te DNS provohen perseri pas 1 ore
+      await pool.query("UPDATE pxse_wd_domenet SET gjendja='ri' WHERE gjendja='dns_gabim' AND perpunuar_at < now() - interval '1 hour'");
       for (;;) {
         // mjaftojne 2 dite rezerve "gati" — pjesa tjeter filtrohet kur te nevojitet
         const gati = (await pool.query("SELECT COUNT(*)::int n FROM pxse_wd_domenet WHERE gjendja='gati'")).rows[0].n;
         if (gati >= kufiri * 2) break;
-        const d = (await pool.query("SELECT to_char(dita,'YYYY-MM-DD') dita FROM pxse_wd_dite WHERE gjendja='duke' ORDER BY dita DESC LIMIT 1")).rows[0];
+        // dita e klikuar e fundit ka perparesi
+        const d = (await pool.query("SELECT to_char(dita,'YYYY-MM-DD') dita FROM pxse_wd_dite WHERE gjendja='duke' ORDER BY (to_char(dita,'YYYY-MM-DD') = $1) DESC, dita DESC LIMIT 1", [await cilesimi('kuota_dita', '')])).rows[0];
         if (!d) break;
         await pool.query(`UPDATE pxse_wd_domenet w SET gjendja='ekziston', perpunuar_at=now() WHERE w.dita=$1 AND w.gjendja='ri' AND (
             EXISTS (SELECT 1 FROM pxse_import_rreshtat r WHERE r.domaini = w.domaini) OR EXISTS (SELECT 1 FROM pxse_bizneset b WHERE b.domaini = w.domaini))`, [d.dita]);
@@ -181,9 +199,13 @@ module.exports = function (app, pool, iAdmin) {
         await Promise.all(Array.from({ length: 10 }, async () => {
           while (i < gr.length) {
             const dom = gr[i++];
-            let gj = 'gati';
-            if (!(await pximKaMx(dom).catch(() => false))) gj = 'pa_mx';
-            else if (!(await pxwdFaqja(dom))) gj = 'pa_faqe';
+            // 1) MX menjehere (falas dhe i shpejte); 2) faqja vetem per ato qe kalojne; AI vetem per "gati"
+            const mx = await pxwdMx(dom);
+            let gj;
+            if (mx === null) gj = 'dns_gabim';
+            else if (mx === 'pa_mx') gj = 'pa_mx';
+            else if (mx !== 'google' && pxwdVetemGoogle()) gj = 'jo_google';
+            else gj = (await pxwdFaqja(dom)) ? 'gati' : 'pa_faqe';
             await pool.query('UPDATE pxse_wd_domenet SET gjendja=$3, perpunuar_at=now() WHERE dita=$1 AND domaini=$2', [d.dita, dom, gj]);
           }
         }));
@@ -205,21 +227,42 @@ module.exports = function (app, pool, iAdmin) {
   async function kalo() {
     if (kalDuke) return; kalDuke = true;
     try {
-      const mbetur = nr(process.env.PXSE_WD_STUDIM_DITORE, 300) - await kaluarSot();
-      if (mbetur <= 0) return;
+      const mbetur = parseInt(await cilesimi('kuota', '0'), 10) || 0;   // sa studime AI lejon ende klikimi i fundit "Studio"
+      if (mbetur <= 0) return 0;
       const gr = (await pool.query(`SELECT w.domaini, to_char(w.dita,'YYYY-MM-DD') dita FROM pxse_wd_domenet w JOIN pxse_wd_dite d ON d.dita=w.dita
-          WHERE w.gjendja='gati' AND d.gjendja IN ('duke','perfunduar') ORDER BY w.dita DESC, w.domaini LIMIT $1`, [Math.min(mbetur, 100)])).rows;
-      if (!gr.length) return;
+          WHERE w.gjendja='gati' AND d.gjendja IN ('duke','perfunduar') ORDER BY (to_char(w.dita,'YYYY-MM-DD') = $2) DESC, w.dita DESC, w.domaini LIMIT $1`,
+          [Math.min(mbetur, 100), await cilesimi('kuota_dita', '')])).rows;
+      if (!gr.length) return 0;
       const im = await importiId();
       const ins = await pool.query(`INSERT INTO pxse_import_rreshtat (import_id, domaini, url, gjendja, data_domainit, perpunuar_at)
           SELECT $1, d, 'https://' || d || '/', 'bere', dt::date, now() FROM unnest($2::text[], $3::text[]) AS t(d, dt)
           ON CONFLICT (import_id, domaini) DO NOTHING RETURNING domaini`, [im, gr.map(x => x.domaini), gr.map(x => x.dita)]);
+      await pool.query("UPDATE pxse_wd_cilesimet SET vlera = GREATEST(0, vlera::int - $1)::text WHERE celesi='kuota'", [gr.length]);
       await pool.query("UPDATE pxse_importet SET total = total + $2, gjendja = CASE WHEN gjendja='gati' THEN 'duke' ELSE gjendja END, perfunduar_at = CASE WHEN gjendja='gati' THEN NULL ELSE perfunduar_at END WHERE id=$1", [im, ins.rows.length]);
       for (const x of gr) await pool.query("UPDATE pxse_wd_domenet SET gjendja='kaluar', perpunuar_at=now() WHERE dita=$1 AND domaini=$2", [x.dita, x.domaini]);
       if (app.locals.pxseImportiNis) app.locals.pxseImportiNis();
-    } catch (e) { console.error('pxse whoisds kalimi:', e.message); }
+      return gr.length;
+    } catch (e) { console.error('pxse whoisds kalimi:', e.message); return 0; }
     finally { kalDuke = false; }
   }
+  // Pas klikimit "Studio": filtri + kalimi te AI pa pritur, derisa te mbaroje kuota ose domainet
+  let punoDuke = false;
+  async function puno() {
+    if (punoDuke) return; punoDuke = true;
+    try {
+      for (let i = 0; i < 200; i++) {
+        if ((parseInt(await cilesimi('kuota', '0'), 10) || 0) <= 0) break;
+        await filtro();
+        const n = await kalo();
+        if (!n) {
+          const ka = (await pool.query("SELECT 1 FROM pxse_wd_domenet w JOIN pxse_wd_dite d ON d.dita=w.dita WHERE d.gjendja='duke' AND w.gjendja IN ('ri','gati') LIMIT 1")).rows.length;
+          if (!ka) break;
+        }
+      }
+    } catch (e) { console.error('pxse whoisds puna:', e.message); }
+    finally { punoDuke = false; }
+  }
+  const perKlik = () => nr(process.env.PXSE_WD_STUDIM_DITORE, 300);
 
   // ---------- Auto: cdo dite dita N dite me pare ----------
   async function auto() {
@@ -227,6 +270,8 @@ module.exports = function (app, pool, iAdmin) {
       if ((await cilesimi('auto', '0')) !== '1') return;
       const dita = diteMeParë(nr(process.env.PXSE_WD_MOSHA, 14));
       await pool.query("UPDATE pxse_wd_dite SET gjendja='duke' WHERE dita=$1 AND gjendja='ruajtur'", [dita]);
+      // Auto jep 300 studime AI nje here ne dite
+      if ((await cilesimi('auto_dita', '')) !== sotData()) { await vendos('auto_dita', sotData()); await vendos('kuota', perKlik()); await vendos('kuota_dita', dita); puno(); }
     } catch (e) {}
   }
   async function pastro() {
@@ -249,9 +294,9 @@ module.exports = function (app, pool, iAdmin) {
     res.set('Cache-Control', 'no-store');
     try {
       const ditet = (await pool.query(`SELECT to_char(d.dita,'YYYY-MM-DD') dita, d.gjendja, d.total, d.ruajtur, d.gabimi, d.shkarkuar_at, d.provuar_at,
-          COALESCE(c.ri,0) ri, COALESCE(c.ekziston,0) ekziston, COALESCE(c.pa_mx,0) pa_mx, COALESCE(c.pa_faqe,0) pa_faqe, COALESCE(c.gati,0) gati, COALESCE(c.kaluar,0) kaluar
-        FROM pxse_wd_dite d LEFT JOIN (SELECT dita, COUNT(*) FILTER (WHERE gjendja='ri')::int ri, COUNT(*) FILTER (WHERE gjendja='ekziston')::int ekziston,
-          COUNT(*) FILTER (WHERE gjendja='pa_mx')::int pa_mx, COUNT(*) FILTER (WHERE gjendja='pa_faqe')::int pa_faqe, COUNT(*) FILTER (WHERE gjendja='gati')::int gati,
+          COALESCE(c.ri,0) ri, COALESCE(c.ekziston,0) ekziston, COALESCE(c.pa_mx,0) pa_mx, COALESCE(c.jo_google,0) jo_google, COALESCE(c.pa_faqe,0) pa_faqe, COALESCE(c.gati,0) gati, COALESCE(c.kaluar,0) kaluar
+        FROM pxse_wd_dite d LEFT JOIN (SELECT dita, COUNT(*) FILTER (WHERE gjendja IN ('ri','dns_gabim'))::int ri, COUNT(*) FILTER (WHERE gjendja='ekziston')::int ekziston,
+          COUNT(*) FILTER (WHERE gjendja='pa_mx')::int pa_mx, COUNT(*) FILTER (WHERE gjendja='jo_google')::int jo_google, COUNT(*) FILTER (WHERE gjendja='pa_faqe')::int pa_faqe, COUNT(*) FILTER (WHERE gjendja='gati')::int gati,
           COUNT(*) FILTER (WHERE gjendja='kaluar')::int kaluar FROM pxse_wd_domenet GROUP BY dita) c ON c.dita=d.dita ORDER BY d.dita DESC LIMIT 90`)).rows;
       const imR = (await pool.query('SELECT id, gjendja, total, gabimi FROM pxse_importet WHERE emri=$1 ORDER BY id DESC LIMIT 1', [PXWD_EMRI_IMPORTIT])).rows[0] || null;
       let importi = null, teFundit = [];
@@ -265,7 +310,8 @@ module.exports = function (app, pool, iAdmin) {
             FROM pxse_import_rreshtat WHERE import_id=$1 AND statusi='biznes' AND studim2 IS NOT NULL ORDER BY studim2_at DESC NULLS LAST LIMIT 25`, [imR.id])).rows;
       }
       res.json({ ok: true, auto: (await cilesimi('auto', '0')) === '1', emri: PXWD_EMRI_IMPORTIT, ditet, importi, te_fundit: teFundit, kaluar_sot: await kaluarSot(),
-        kufijte: { studim: nr(process.env.PXSE_WD_STUDIM_DITORE, 300), mosha: nr(process.env.PXSE_WD_MOSHA, 14), mbaj: nr(process.env.PXSE_WD_MBAJ_DITE, 60) } });
+        kuota: parseInt(await cilesimi('kuota', '0'), 10) || 0, per_klik: perKlik(), duke_punuar: punoDuke,
+        kufijte: { studim: nr(process.env.PXSE_WD_STUDIM_DITORE, 300), mosha: nr(process.env.PXSE_WD_MOSHA, 14), mbaj: nr(process.env.PXSE_WD_MBAJ_DITE, 60), vetem_google: pxwdVetemGoogle() } });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
   const dataOk = s => /^\d{4}-\d{2}-\d{2}$/.test(String(s || ''));
@@ -274,7 +320,9 @@ module.exports = function (app, pool, iAdmin) {
     try {
       const r = await pool.query("UPDATE pxse_wd_dite SET gjendja='duke' WHERE dita=$1 AND shkarkuar_at IS NOT NULL RETURNING dita", [d]);
       if (!r.rows.length) return res.status(404).json({ error: 'Kjo ditë nuk është shkarkuar' });
-      filtro(); res.json({ ok: true });
+      // cdo klikim lejon deri ne 300 studime AI (kuota e mbetur nga klikimi i meparshem zevendesohet, nuk mblidhet)
+      await vendos('kuota', perKlik()); await vendos('kuota_dita', d);
+      puno(); res.json({ ok: true, kuota: perKlik() });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
   app.post('/api/admin/pxse/whoisds/ndalo', iAdmin, async (req, res) => {
@@ -285,7 +333,7 @@ module.exports = function (app, pool, iAdmin) {
     try { await shkarko(); res.json({ ok: true }); } catch (e) { res.status(500).json({ error: e.message }); }
   });
   app.post('/api/admin/pxse/whoisds/auto', iAdmin, async (req, res) => {
-    try { await vendos('auto', (req.body || {}).aktiv ? '1' : '0'); if ((req.body || {}).aktiv) auto().then(filtro); res.json({ ok: true }); } catch (e) { res.status(500).json({ error: e.message }); }
+    try { await vendos('auto', (req.body || {}).aktiv ? '1' : '0'); if ((req.body || {}).aktiv) auto(); res.json({ ok: true }); } catch (e) { res.status(500).json({ error: e.message }); }
   });
 };
 module.exports.pxwdFiltroListen = pxwdFiltroListen;
