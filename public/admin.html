@@ -1279,12 +1279,39 @@ d.innerHTML=h;
 var _bizList=[];
 async function loadBizList(m){
 m.innerHTML='<h2 class="h">Bizneset</h2>'+
+'<div id="vizTregues" style="margin:10px 0 14px;"></div>'+
 '<input class="kinput" id="bizKerkim" placeholder="Kërko biznes me emër…" oninput="bizFiltro(this.value)" style="max-width:360px;margin-top:10px;">'+
 '<div id="bizGrid" class="bizGrid" style="margin-top:14px;"><p class="small">Po ngarkoj…</p></div>';
+vizNgarko();
 try{
 _bizList=await(await fetch('/api/admin/bizneset')).json();
 bizRenderGrid(_bizList, m);
 }catch(e){ const el=$('bizGrid'); if(el) el.innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; }
+}
+// ── Vizitorët pa login në faqen kryesore (një shfletues = një vizitor në ditë) ──
+async function vizNgarko(){
+const v=$('vizTregues'); if(!v) return;
+let d=null;
+try{ const r=await fetch('/api/admin/pxse/vizitat?dite=14&_='+Date.now(),{cache:'no-store'}); d=await r.json(); if(!r.ok||!d||d.error) throw new Error((d&&d.error)||('HTTP '+r.status)); }
+catch(e){ v.innerHTML='<p class="small" style="color:#e5484d;">Vizitorët: '+(/404/.test(e.message)?'zëvendëso pxse-admin-analitika.js dhe prit deploy-in.':String(e.message).replace(/</g,'&lt;'))+'</p>'; return; }
+const dt=d.ditet||[], sot=dt[dt.length-1]||{te_rinj:0,unike:0,kthyer:0}, dje=dt[dt.length-2]||{te_rinj:0,unike:0};
+const nr=x=>Number(x||0).toLocaleString('sq-AL');
+const kub=(vl,tx,tt,ndr)=>'<div style="flex:1 1 150px;border:1px solid #2a313c;border-radius:10px;padding:10px 12px;" title="'+tt+'"><div style="font-size:22px;font-weight:700;">'+vl+'</div><div class="small">'+tx+(ndr!=null?' <span style="color:#8b949e;">· dje '+nr(ndr)+'</span>':'')+'</div></div>';
+const shuma7=dt.slice(-7).reduce((a,x)=>a+x.te_rinj,0);
+const mx=Math.max(1,...dt.map(x=>x.unike));
+const grafik='<div style="display:flex;align-items:flex-end;gap:4px;height:70px;margin-top:10px;">'+dt.map(x=>{
+const hU=Math.round(x.unike/mx*60), hR=Math.round(x.te_rinj/mx*60);
+return '<div title="'+x.dita+': '+x.te_rinj+' të rinj, '+x.unike+' unikë" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:70px;">'+
+'<div style="height:'+Math.max(0,hU-hR)+'px;background:#2f81f74d;border-radius:3px 3px 0 0;"></div><div style="height:'+hR+'px;background:#2f81f7;border-radius:'+(hU>hR?'0':'3px 3px')+' 0 0;"></div><div style="height:2px;background:#2a313c;"></div></div>'; }).join('')+'</div>'+
+'<div style="display:flex;justify-content:space-between;" class="small"><span>'+(dt[0]?dt[0].dita.slice(5):'')+'</span><span>sot</span></div>';
+v.innerHTML='<div class="small" style="margin:0 0 6px;font-weight:600;">Vizitorët pa login në faqen kryesore · sot</div>'+
+'<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
+kub(nr(sot.te_rinj),'vizitorë të rinj','Shfletues që hapin faqen për herë të parë',dje.te_rinj)+
+kub(nr(sot.unike),'vizitorë unikë','Çdo shfletues numërohet një herë në ditë, sado herë që hyn',dje.unike)+
+kub(nr(sot.kthyer),'u kthyen','Shfletues që kishin ardhur edhe më parë')+
+kub(nr(shuma7),'të rinj në 7 ditë','Shuma e vizitorëve të rinj në 7 ditët e fundit')+'</div>'+
+grafik+
+'<p class="small" style="margin:6px 0 0;color:#8b949e;">Blu e fortë = të rinj, blu e lehtë = u kthyen. Kush është i loguar nuk numërohet. I njëjti person me telefon dhe kompjuter, ose në dritare private, numërohet veç.'+(d.fillimi?' Numërimi nisi më '+d.fillimi+'.':' Numërimi nis me vizitën e parë pas këtij ndryshimi.')+'</p>';
 }
 function bizFiltro(q){
 q=(q||'').toLowerCase().trim();
