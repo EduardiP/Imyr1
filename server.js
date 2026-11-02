@@ -2338,7 +2338,7 @@ function imyrJsHandler(req, res) {
 }
 app.get('/sitemap.xml', (req, res) => {
   res.type('application/xml');
-  const faqet = ['/', '/si-funksionon', '/products', '/transcription', '/about', '/ai-matching', '/formate-ai', '/gjurmimi-analitika', '/ekipet-rolet', '/blog', '/contact', '/terms', '/privacy', '/refund'];
+  const faqet = ['/', '/si-funksionon', '/apps', '/transcription', '/about', '/ai-matching', '/formate-ai', '/gjurmimi-analitika', '/ekipet-rolet', '/blog', '/contact', '/terms', '/privacy', '/refund'];
   const sot = new Date().toISOString().slice(0, 10);
   // Artikujt e blogut (vetem ata te publikuar); nese blog.js mungon, sitemap-i mbetet si me pare.
   let blogRreshta = [];
@@ -3123,7 +3123,7 @@ require('./pxse-importi')(app, pool, iAdmin);
 require('./pxse-te-rejat')(app, pool, iAdmin);
 require('./pxse-whoisds')(app, pool, iAdmin);
 require('./pxse-portali')(app, pool, iAdmin);
-require('./pxse-produktet')(app); // faqet /products dhe /transcription
+require('./pxse-produktet')(app); // faqet /apps dhe /transcription
 // Resend (dergim email-esh) — nese RESEND_API_KEY s'eshte vendosur, resendKlient
 // mbetet null dhe ekipi.js e trajton pa u thyer (thjesht s'dergon email, fail-open).
 let resendKlient = null;
