@@ -161,7 +161,7 @@ const SECTIONS = [
 { k:'b4', l:'Përzgjedhjet' }, { k:'mkt', l:'Marketingu' }, { k:'pxse', l:'Shërbimet falas' }
 ];
 const MKT_SUB = [
-{ k:'dergimet', l:'Dërgimet' }, { k:'analitika', l:'Analitika' }, { k:'emailet', l:'Email-et' }, { k:'terejat', l:'Biznese të reja' }
+{ k:'dergimet', l:'Dërgimet' }, { k:'analitika', l:'Analitika' }, { k:'emailet', l:'Email-et' }, { k:'terejat', l:'Biznese të reja' }, { k:'backlinket', l:'Backlinke (eksperiment)' }
 ];
 let curMktSub = 'dergimet';
 const NJOFT_SUB = [
@@ -1549,6 +1549,63 @@ if(curMktSub==='dergimet'){ renderMktDergimet(m); return; }
 if(curMktSub==='analitika'){ renderMktAnalitika(m); return; }
 if(curMktSub==='emailet'){ renderMktEmailet(m); return; }
 if(curMktSub==='terejat'){ renderMktTeRejat(m); return; }
+if(curMktSub==='backlinket'){ renderMktBacklinket(m); return; }
+}
+
+// ═══ Backlinke (eksperiment): platforma me reputacion ku PhronexusAI mund të listohet me link (pxse-backlinket.js) ═══
+let _blTimer=null, _blVetemKalojne=true;
+function renderMktBacklinket(m){
+if(_blTimer){ clearInterval(_blTimer); _blTimer=null; }
+m.innerHTML='<h2 class="h">Backlinke (eksperiment)</h2>'+
+'<p class="small" style="margin:2px 0 14px;">Kërkon në Google frazat më poshtë (DataForSEO), merr <b>fuqinë</b> (0–100) dhe <b>spam score</b> të çdo domaini, pastaj kontrollon live si Googlebot: <b>robots.txt</b> (Google, Bing, ChatGPT), <b>noindex</b>, <b>login</b> dhe a janë linket e jashtme <b>dofollow</b>. “Kalon” = i plotëson të gjitha kushtet.</p>'+
+'<div id="blTrupi"><p class="small">Duke ngarkuar…</p></div>';
+blNgarko();
+_blTimer=setInterval(()=>{ if(curMktSub!=='backlinket'||!$('blTrupi')){ clearInterval(_blTimer); _blTimer=null; return; } if(window._blDuke) blNgarko(); },5000);
+}
+async function blNgarko(){
+const t=$('blTrupi'); if(!t) return;
+let d; try{ const r=await fetch('/api/admin/pxse/backlinket?_='+Date.now()+(_blVetemKalojne?'&kalon=1':''),{cache:'no-store'}); d=await r.json(); if(!r.ok||!d||d.error) throw new Error((d&&d.error)||('HTTP '+r.status)); }
+catch(e){ t.innerHTML='<p class="small" style="color:#e5484d;">'+(/404/.test(e.message)?'Serveri s’e njeh këtë faqe (404): shto pxse-backlinket.js në rrënjë dhe rreshtin te server.js, pastaj prit deploy-in.':'Gabim: '+trEsc(e.message))+'</p>'; return; }
+window._blDuke=d.gjendja&&d.gjendja.duke;
+const fokus=document.activeElement&&['blPyetjet','blMin','blSpam','blThell'].includes(document.activeElement.id);
+if(fokus&&!window._blDuke) return;
+const s=d.statistika||{}, k=d.kufijte||{}, g=d.gjendja||{};
+let h='';
+if(!d.kredencialet) h+='<p class="small" style="color:#e5484d;">Mungojnë <b>DATAFORSEO_LOGIN</b> dhe <b>DATAFORSEO_PASSWORD</b> te Railway Variables.</p>';
+h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">'+trKub(trNr(s.gjetur),'domaine të gjetura')+trKub(trNr(s.kalojne),'kalojnë të gjitha kushtet')+trKub('$'+Number(d.kosto_totale||0).toFixed(3),'kosto gjithsej (DataForSEO)')+'</div>';
+h+='<div class="small" style="margin:0 0 4px;">Frazat e kërkimit (një për rresht)</div><textarea id="blPyetjet" rows="6" style="width:100%;font-size:13px;">'+trEsc((d.pyetjet||[]).join('\n'))+'</textarea>';
+h+='<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0 12px;" class="small">'+
+'Fuqia min (0–100): <input id="blMin" type="number" min="0" max="100" value="'+(k.min??20)+'" style="width:70px;padding:4px 6px;">'+
+'Spam max: <input id="blSpam" type="number" min="0" max="100" value="'+(k.max_spam??30)+'" style="width:70px;padding:4px 6px;">'+
+'Rezultate për frazë: <input id="blThell" type="number" min="10" max="100" step="10" value="'+(k.thellesia??30)+'" style="width:70px;padding:4px 6px;">'+
+'<label style="display:inline-flex;gap:4px;align-items:center;"><input type="checkbox" id="blRik"> rikontrollo të vjetrat</label>'+
+'<button class="btn" style="width:auto;padding:6px 16px;" '+(g.duke?'disabled':'')+' onclick="blKerko(this)">'+(g.duke?'Po punon…':'Kërko')+'</button>'+
+'<button class="subnav" style="display:inline-block;width:auto;border:1px solid #2a313c;" onclick="blFshi(this)">Fshi rezultatet</button></div>';
+if(g.hapi) h+='<p class="small" style="margin:0 0 10px;">'+(g.duke?'<span style="color:#3fb950;">●</span> ':'')+trEsc(g.hapi)+(g.kosto?' · kosto e këtij kërkimi: $'+Number(g.kosto).toFixed(3):'')+(g.gabimi?' · <span style="color:#e5484d;">'+trEsc(g.gabimi)+'</span>':'')+'</p>';
+h+='<div style="display:flex;gap:6px;margin:0 0 8px;"><button class="subnav'+(_blVetemKalojne?' active':'')+'" style="display:inline-block;width:auto;border:1px solid #2a313c;" onclick="_blVetemKalojne=true;blNgarko()">Vetëm ato që kalojnë</button><button class="subnav'+(!_blVetemKalojne?' active':'')+'" style="display:inline-block;width:auto;border:1px solid #2a313c;" onclick="_blVetemKalojne=false;blNgarko()">Të gjitha</button></div>';
+const ok=v=>v===false?'<span style="color:#e5484d;">✗</span>':(v===true?'<span style="color:#3fb950;">✓</span>':'<span class="small">?</span>');
+const th=x=>'<th style="text-align:left;padding:6px 8px;border-bottom:1px solid #2a313c;color:#8b949e;font-weight:500;">'+x+'</th>';
+const td=(x,st)=>'<td style="padding:6px 8px;'+(st||'')+'">'+x+'</td>';
+const l=d.lista||[];
+h+=l.length?'<div style="overflow-x:auto;"><table style="width:100%;font-size:13px;border-collapse:collapse;"><tr>'+['Platforma','Fuqia','Spam','Lloji','Google','Bing','ChatGPT','Indeksohet','Pa login','Linke dofollow / nofollow','Rezultati'].map(th).join('')+'</tr>'+
+l.map(x=>'<tr style="border-bottom:1px solid #21262d;vertical-align:top;">'+
+td('<b>'+trEsc(x.domaini)+'</b><div class="small" style="max-width:320px;"><a href="'+trEsc(x.url||('https://'+x.domaini))+'" target="_blank" rel="noopener" style="color:#58a6ff;">'+trEsc(x.titulli||x.url||'')+'</a></div><div class="small" style="color:#8b949e;">nga: '+trEsc(x.pyetja||'')+'</div>')+
+td(x.fuqia==null?'—':trNr(x.fuqia))+td(x.spam==null?'—':trNr(x.spam))+td(trEsc(x.lloji||'—'))+
+td(ok(x.rob_google))+td(ok(x.rob_bing))+td(ok(x.rob_oai))+td(x.noindex==null?'?':ok(!x.noindex))+td(x.login==null?'?':ok(!x.login))+
+td(x.dofollow==null?'—':(trNr(x.dofollow)+' / '+trNr(x.nofollow)))+
+td(x.kalon?'<b style="color:#3fb950;">Kalon</b>':(x.kalon===false?'<span class="small" style="color:#e5484d;">'+trEsc(x.arsye||'nuk kalon')+'</span>':'<span class="small">në pritje</span>'))+'</tr>').join('')+'</table></div>'
+:'<p class="small">'+(_blVetemKalojne?'Ende asnjë platformë që kalon të gjitha kushtet.':'Ende asnjë rezultat. Kliko “Kërko”.')+'</p>';
+t.innerHTML=h;
+}
+async function blKerko(el){
+const pyetjet=($('blPyetjet').value||'').split('\n').map(x=>x.trim()).filter(Boolean);
+el.disabled=true;
+try{ const r=await fetch('/api/admin/pxse/backlinket/kerko',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pyetjet,min:$('blMin').value,max_spam:$('blSpam').value,thellesia:$('blThell').value,rikontrollo:$('blRik').checked})}); const d=await r.json().catch(()=>({})); if(!r.ok) alert(d.error||('HTTP '+r.status)); }catch(e){}
+window._blDuke=true; blNgarko();
+}
+async function blFshi(el){
+if(!confirm('Të fshihen të gjitha rezultatet e backlinkeve?')) return;
+el.disabled=true; try{ const r=await fetch('/api/admin/pxse/backlinket/fshi',{method:'POST'}); const d=await r.json().catch(()=>({})); if(!r.ok) alert(d.error||('HTTP '+r.status)); }catch(e){} blNgarko();
 }
 
 // ═══ Biznese të reja (certifikatat SSL → RDAP → studimi i Importit) ═══
