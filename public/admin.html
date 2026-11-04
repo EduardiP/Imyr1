@@ -1561,7 +1561,7 @@ m.innerHTML='<h2 class="h">Biznese të reja</h2>'+
 '<div id="trTrupi"><p class="small">Po ngarkoj…</p></div></div>'+
 '<div id="trPjesaWd" style="display:none;"><div id="wdTrupi"><p class="small">Po ngarkoj…</p></div></div>';
 trTab(window._trTabZgjedhur||'live');
-_trTimer=setInterval(()=>{ if(curMktSub!=='terejat'||!$('trTrupi')){ clearInterval(_trTimer); _trTimer=null; return; } if(window._trTabZgjedhur==='wd') wdNgarko(); else trNgarko(); },30000);
+_trTimer=setInterval(()=>{ if(curMktSub!=='terejat'||!$('trTrupi')){ clearInterval(_trTimer); _trTimer=null; return; } if(window._trTabZgjedhur==='wd'){ if(document.activeElement&&document.activeElement.id==='wdPerKlik') return; wdNgarko(); } else trNgarko(); },30000);
 }
 function trTab(k){
 window._trTabZgjedhur=k;
@@ -1581,6 +1581,7 @@ let h='<p class="small" style="margin:0 0 12px;">Çdo ditë ruhet vetë lista fa
 h+='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
 '<button class="btn" style="width:auto;padding:8px 16px;'+(d.auto?'background:#da3633;color:#fff;border:0;':'')+'" onclick="wdAuto('+(d.auto?0:1)+',this)">'+(d.auto?'Ndalo Auto':'Auto: studio çdo ditë ditën '+kf.mosha+' ditë më parë')+'</button>'+
 '<button class="subnav" style="display:inline-block;width:auto;border:1px solid #2a313c;" onclick="wdShkarko(this)">Shkarko tani</button>'+
+'<span class="small" style="display:inline-flex;align-items:center;gap:6px;">Studime për klikim: <input id="wdPerKlik" type="number" min="1" max="10000" value="'+(d.per_klik||300)+'" style="width:90px;padding:4px 6px;"> <button class="btn" style="width:auto;padding:4px 12px;font-size:12px;" onclick="wdRuajPerKlik(this)">Ruaj</button></span>'+
 '<span class="small">'+(d.auto?'<b style="color:#3fb950;">● Auto aktiv</b> · ':'')+'Kaluan sot te AI: <b>'+trNr(d.kaluar_sot)+'</b> · mbetur nga klikimi: <b>'+trNr(d.kuota||0)+'</b>'+(d.duke_punuar?' · <span style="color:#3fb950;">po punon…</span>':'')+'</span></div>';
 const dt=d.ditet||[];
 const GJ={mungon:'S’u shkarkua',ruajtur:'E ruajtur',duke:'Po studiohet',ndalur:'E ndalur',perfunduar:'Përfunduar'};
@@ -1614,6 +1615,7 @@ async function wdPost(rr,b,el){ if(el) el.disabled=true; try{ const r=await fetc
 function wdStudio(dita,el){ wdPost('studio',{dita},el); }
 function wdNdalo(dita,el){ wdPost('ndalo',{dita},el); }
 function wdAuto(a,el){ wdPost('auto',{aktiv:!!a},el); }
+function wdRuajPerKlik(el){ const v=parseInt((document.getElementById('wdPerKlik')||{}).value,10); if(!(v>=1&&v<=10000)){ alert('Vendos një numër nga 1 deri në 10000'); return; } wdPost('per-klik',{vlera:v},el); }
 function wdShkarko(el){ el.textContent='Po shkarkoj…'; wdPost('shkarko',{},el); }
 function trNr(x){ return Number(x||0).toLocaleString('sq-AL'); }
 function trKub(vlera,tekst,titull){ return '<div style="flex:1 1 140px;border:1px solid #2a313c;border-radius:10px;padding:10px 12px;"'+(titull?' title="'+titull+'"':'')+'><div style="font-size:20px;font-weight:700;">'+vlera+'</div><div class="small">'+tekst+'</div></div>'; }
