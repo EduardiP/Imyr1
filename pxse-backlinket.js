@@ -115,11 +115,11 @@ module.exports = function (app, pool, iAdmin) {
       headers: { Authorization: 'Basic ' + Buffer.from(login + ':' + pass).toString('base64'), 'Content-Type': 'application/json' }
     });
     const j = await r.json().catch(() => null);
-    if (!r.ok || !j) throw new Error('DataForSEO HTTP ' + r.status);
+    if (!r.ok || !j) throw Object.assign(new Error('DataForSEO HTTP ' + r.status + (j && (j.status_message || j.status_code) ? ' — ' + (j.status_code ? j.status_code + ': ' : '') + (j.status_message || '') : '')), { fatal: true });
     if (j.status_code !== 20000) throw new Error('DataForSEO: ' + (j.status_message || j.status_code));
     gjendja.kosto += Number(j.cost) || 0;
     const t = (j.tasks || [])[0];
-    if (!t || t.status_code !== 20000) throw new Error('DataForSEO: ' + ((t && t.status_message) || 'detyra dështoi'));
+    if (!t || t.status_code !== 20000) { const e = new Error('DataForSEO: ' + (t ? t.status_code + ' ' + (t.status_message || '') : 'detyra dështoi')); e.kodi = t && t.status_code; throw e; }
     return (t.result || [])[0] || {};
   }
 
@@ -132,8 +132,8 @@ module.exports = function (app, pool, iAdmin) {
     const faqja = x.url ? await pxblMarr(x.url) : null;
     if (faqja && faqja.status < 400 && /html/i.test(faqja.lloji)) fq = Object.assign(fq, pxblAnalizoFaqen(faqja.tekst, faqja.url));
     else arsye.push('faqja s’u hap');
-    if ((x.fuqia || 0) < min) arsye.push('fuqi e ulët');
-    if ((x.spam || 0) > maxSpam) arsye.push('spam i lartë');
+    if (x.fuqia != null && x.fuqia < min) arsye.push('fuqi e ulët');
+    if (x.spam != null && x.spam > maxSpam) arsye.push('spam i lartë');
     if (rob.g === false) arsye.push('bllokon Googlebot');
     if (rob.b === false) arsye.push('bllokon Bingbot');
     if (rob.o === false) arsye.push('bllokon ChatGPT');
@@ -150,10 +150,12 @@ module.exports = function (app, pool, iAdmin) {
     if (gjendja.duke) return; Object.assign(gjendja, { duke: true, hapi: 'Po fillon…', kosto: 0, gabimi: null });
     try {
       // 1. Kerkimet ne Google
-      let i = 0;
+      let i = 0; const deshtuan = []; let shenim = '';
       for (const q of pyetjet) {
         gjendja.hapi = `Kërkim në Google ${++i}/${pyetjet.length}: “${q}”`;
-        const r = await dfs('/serp/google/organic/live/regular', [{ keyword: q, location_code: 2840, language_code: 'en', depth: thellesia }]);
+        let r;
+        try { r = await dfs('/serp/google/organic/live/regular', [{ keyword: q, location_code: 2840, language_code: 'en', depth: thellesia }]); }
+        catch (e) { if (e.fatal || /^402/.test(String(e.kodi || ''))) throw e; deshtuan.push(q + ' (' + e.message.replace('DataForSEO: ', '') + ')'); continue; }
         for (const it of (r.items || [])) {
           if (it.type !== 'organic' || !it.url) continue;
           const d = pxblDomain(it.url); if (!d || pxblNenDomain(d, 'phronexusai.com')) continue;
@@ -163,7 +165,7 @@ module.exports = function (app, pool, iAdmin) {
       }
       // 2. Fuqia dhe spam per ata qe s'e kane
       const pa = (await pool.query('SELECT domaini FROM pxse_bl_domenet WHERE fuqia IS NULL')).rows.map(x => x.domaini);
-      for (let k = 0; k < pa.length; k += 1000) {
+      try { for (let k = 0; k < pa.length; k += 1000) {
         const pjesa = pa.slice(k, k + 1000);
         gjendja.hapi = `Fuqia e ${pjesa.length} domaineve…`;
         const rr = await dfs('/backlinks/bulk_ranks/live', [{ targets: pjesa, rank_scale: 'one_hundred' }]);
@@ -171,13 +173,12 @@ module.exports = function (app, pool, iAdmin) {
         gjendja.hapi = `Spam score i ${pjesa.length} domaineve…`;
         const rs = await dfs('/backlinks/bulk_spam_score/live', [{ targets: pjesa }]);
         for (const it of (rs.items || [])) await pool.query('UPDATE pxse_bl_domenet SET spam=$2 WHERE domaini=$1', [String(it.target).replace(/^www\./, ''), nr(it.spam_score, 0)]);
-      }
-      await pool.query('UPDATE pxse_bl_domenet SET fuqia=0 WHERE fuqia IS NULL');
+      } } catch (e) { shenim = 'fuqia dhe spam s’u morën (' + e.message.replace('DataForSEO ', '') + ') — Backlinks API e DataForSEO kërkon abonim; filtri i fuqisë u anashkalua'; }
       // 3. Kontrolli live (vetem per ata me fuqi dhe pa spam; te tjeret shenohen pa i hapur)
       await pool.query(`UPDATE pxse_bl_domenet SET kalon=false, kontrolluar_at=now(),
-          arsye = CONCAT_WS(', ', CASE WHEN COALESCE(fuqia,0) < $1 THEN 'fuqi e ulët' END, CASE WHEN COALESCE(spam,0) > $2 THEN 'spam i lartë' END)
-        WHERE kontrolluar_at IS NULL AND (COALESCE(fuqia,0) < $1 OR COALESCE(spam,0) > $2)`, [min, maxSpam]);
-      const per = (await pool.query('SELECT domaini, url, titulli, pyetja, fuqia, spam FROM pxse_bl_domenet WHERE kontrolluar_at IS NULL ORDER BY fuqia DESC')).rows;
+          arsye = CONCAT_WS(', ', CASE WHEN fuqia < $1 THEN 'fuqi e ulët' END, CASE WHEN spam > $2 THEN 'spam i lartë' END)
+        WHERE kontrolluar_at IS NULL AND (fuqia < $1 OR spam > $2)`, [min, maxSpam]);
+      const per = (await pool.query('SELECT domaini, url, titulli, pyetja, fuqia, spam FROM pxse_bl_domenet WHERE kontrolluar_at IS NULL ORDER BY fuqia DESC NULLS LAST')).rows;
       let j = 0, b = 0;
       await Promise.all(Array.from({ length: 6 }, async () => {
         while (j < per.length) {
@@ -186,12 +187,14 @@ module.exports = function (app, pool, iAdmin) {
           gjendja.hapi = `Kontroll live ${++b}/${per.length} (robotët, noindex, login, dofollow)…`;
         }
       }));
-      gjendja.hapi = 'Përfundoi';
-      await vendos('kosto_totale', (parseFloat(await cilesimi('kosto_totale', '0')) || 0) + gjendja.kosto);
+      gjendja.hapi = 'Përfundoi' + (deshtuan.length ? ' · fraza pa rezultat: ' + deshtuan.join('; ') : '') + (shenim ? ' · ' + shenim : '');
     } catch (e) {
       gjendja.gabimi = e.message; gjendja.hapi = 'U ndal me gabim';
       console.error('pxse backlinket:', e.message);
-    } finally { gjendja.duke = false; }
+    } finally {
+      gjendja.duke = false;
+      try { await vendos('kosto_totale', (parseFloat(await cilesimi('kosto_totale', '0')) || 0) + gjendja.kosto); } catch (e) {}
+    }
   }
 
   // ---------- Admin API ----------
