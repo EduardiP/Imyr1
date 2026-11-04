@@ -13,17 +13,18 @@
 // Railway Variables (opsionale): PXSE_WD_STUDIM_DITORE (300 per klikim / per dite me Auto), PXSE_WD_MOSHA (14), PXSE_WD_MBAJ_DITE (60),
 // PXSE_WD_VETEM_GOOGLE (1 = vetem email te Google; 0 = cdo MX), PXSE_WD_TLD (lista), PXSE_WD_URL (formati i lidhjes: {b64} = base64("YYYY-MM-DD.zip"), {data} = YYYY-MM-DD).
 const zlib = require('zlib');
-const dns = require('dns').promises;
+const dns = require('dns');
+const pxwdDns = new dns.promises.Resolver({ timeout: 4000, tries: 2 });
 const { pxseNePlatforme, pxseHostPublik, pxseTekstNgaHtml } = require('./pxse-prova');
 
 // MX i domainit: 'google' | 'tjeter' | 'pa_mx' | null (gabim i perkohshem DNS, provohet perseri me vone)
 async function pxwdMx(domaini) {
   try {
-    const mx = await dns.resolveMx(domaini);
+    const mx = await pxwdDns.resolveMx(domaini);
     if (!mx || !mx.length) return 'pa_mx';
     return mx.some(m => /(^|\.)(google\.com|googlemail\.com)\.?$/i.test(String(m.exchange || ''))) ? 'google' : 'tjeter';
   } catch (e) {
-    if (['ENOTFOUND', 'ENODATA', 'NXDOMAIN', 'ENOTIMP', 'EREFUSED'].includes(e.code)) return 'pa_mx';
+    if (['ENOTFOUND', 'ENODATA', 'NXDOMAIN', 'ENOTIMP', 'EREFUSED', 'ESERVFAIL'].includes(e.code)) return 'pa_mx';
     return null;
   }
 }
@@ -178,40 +179,51 @@ module.exports = function (app, pool, iAdmin) {
 
   // ---------- 2. Filtri falas per ditet ne studim ----------
   let filDuke = false;
-  async function filtro() {
-    if (filDuke) return; filDuke = true;
+  // Nje grup (deri 100 domaine) i dites ne studim. Kthen sa domaine u kontrolluan (0 = s'ka me / i zene).
+  async function filtroGrup() {
+    if (filDuke) return -1; filDuke = true;
     try {
-      const kufiri = nr(process.env.PXSE_WD_STUDIM_DITORE, 300);
       // gabimet e perkohshme te DNS provohen perseri pas 1 ore
       await pool.query("UPDATE pxse_wd_domenet SET gjendja='ri' WHERE gjendja='dns_gabim' AND perpunuar_at < now() - interval '1 hour'");
       for (;;) {
-        // mjaftojne 2 dite rezerve "gati" — pjesa tjeter filtrohet kur te nevojitet
-        const gati = (await pool.query("SELECT COUNT(*)::int n FROM pxse_wd_domenet WHERE gjendja='gati'")).rows[0].n;
-        if (gati >= kufiri * 2) break;
         // dita e klikuar e fundit ka perparesi
         const d = (await pool.query("SELECT to_char(dita,'YYYY-MM-DD') dita FROM pxse_wd_dite WHERE gjendja='duke' ORDER BY (to_char(dita,'YYYY-MM-DD') = $1) DESC, dita DESC LIMIT 1", [await cilesimi('kuota_dita', '')])).rows[0];
-        if (!d) break;
-        await pool.query(`UPDATE pxse_wd_domenet w SET gjendja='ekziston', perpunuar_at=now() WHERE w.dita=$1 AND w.gjendja='ri' AND (
-            EXISTS (SELECT 1 FROM pxse_import_rreshtat r WHERE r.domaini = w.domaini) OR EXISTS (SELECT 1 FROM pxse_bizneset b WHERE b.domaini = w.domaini))`, [d.dita]);
+        if (!d) return 0;
         const gr = (await pool.query("SELECT domaini FROM pxse_wd_domenet WHERE dita=$1 AND gjendja='ri' ORDER BY domaini LIMIT 100", [d.dita])).rows.map(x => x.domaini);
         if (!gr.length) { await pool.query("UPDATE pxse_wd_dite SET gjendja='perfunduar' WHERE dita=$1 AND gjendja='duke'", [d.dita]); continue; }
+        // jo ne Import/Direktori (kontroll vetem per keta 100)
+        const ek = new Set((await pool.query(`SELECT domaini FROM pxse_import_rreshtat WHERE domaini = ANY($1::text[])
+            UNION SELECT domaini FROM pxse_bizneset WHERE domaini = ANY($1::text[])`, [gr])).rows.map(x => x.domaini));
         let i = 0;
         await Promise.all(Array.from({ length: 10 }, async () => {
           while (i < gr.length) {
             const dom = gr[i++];
-            // 1) MX menjehere (falas dhe i shpejte); 2) faqja vetem per ato qe kalojne; AI vetem per "gati"
-            const mx = await pxwdMx(dom);
             let gj;
-            if (mx === null) gj = 'dns_gabim';
-            else if (mx === 'pa_mx') gj = 'pa_mx';
-            else if (mx !== 'google' && pxwdVetemGoogle()) gj = 'jo_google';
-            else gj = (await pxwdFaqja(dom)) ? 'gati' : 'pa_faqe';
+            if (ek.has(dom)) gj = 'ekziston';
+            else {
+              // 1) MX menjehere (falas dhe i shpejte); 2) faqja vetem per ato qe kalojne; AI vetem per "gati"
+              const mx = await pxwdMx(dom);
+              if (mx === null) gj = 'dns_gabim';
+              else if (mx === 'pa_mx') gj = 'pa_mx';
+              else if (mx !== 'google' && pxwdVetemGoogle()) gj = 'jo_google';
+              else gj = (await pxwdFaqja(dom)) ? 'gati' : 'pa_faqe';
+            }
             await pool.query('UPDATE pxse_wd_domenet SET gjendja=$3, perpunuar_at=now() WHERE dita=$1 AND domaini=$2', [d.dita, dom, gj]);
           }
         }));
+        return gr.length;
       }
-    } catch (e) { console.error('pxse whoisds filtri:', e.message); }
+    } catch (e) { console.error('pxse whoisds filtri:', e.message); return 0; }
     finally { filDuke = false; }
+  }
+  // Ne sfond (pa klikim): mban gati nje rezerve te vogel, pa e zene filtrin gjate
+  async function filtro() {
+    const kufiri = nr(process.env.PXSE_WD_STUDIM_DITORE, 300);
+    for (let k = 0; k < 20; k++) {
+      const gati = (await pool.query("SELECT COUNT(*)::int n FROM pxse_wd_domenet WHERE gjendja='gati'")).rows[0].n;
+      if (gati >= kufiri) return;
+      if ((await filtroGrup()) <= 0) return;
+    }
   }
 
   // ---------- 3. Te studimi i Importit (AI), me kufi ditor ----------
@@ -247,16 +259,20 @@ module.exports = function (app, pool, iAdmin) {
   }
   // Pas klikimit "Studio": filtri + kalimi te AI pa pritur, derisa te mbaroje kuota ose domainet
   let punoDuke = false;
+  const fle = ms => new Promise(r => setTimeout(r, ms));
   async function puno() {
     if (punoDuke) return; punoDuke = true;
+    const fillimi = Date.now();
     try {
-      for (let i = 0; i < 200; i++) {
+      while (Date.now() - fillimi < 4 * 3600 * 1000) {
         if ((parseInt(await cilesimi('kuota', '0'), 10) || 0) <= 0) break;
-        await filtro();
-        const n = await kalo();
-        if (!n) {
-          const ka = (await pool.query("SELECT 1 FROM pxse_wd_domenet w JOIN pxse_wd_dite d ON d.dita=w.dita WHERE d.gjendja='duke' AND w.gjendja IN ('ri','gati') LIMIT 1")).rows.length;
+        const n = await filtroGrup();
+        if (n === -1) { await fle(2000); continue; }   // filtri po punon ne sfond — prit, mos u ndal
+        await kalo();                                    // ato me Google te gjetura ne kete grup shkojne menjehere te AI
+        if (n === 0) {
+          const ka = (await pool.query("SELECT 1 FROM pxse_wd_domenet w JOIN pxse_wd_dite d ON d.dita=w.dita WHERE d.gjendja IN ('duke','perfunduar') AND w.gjendja='gati' LIMIT 1")).rows.length;
           if (!ka) break;
+          await fle(1000);
         }
       }
     } catch (e) { console.error('pxse whoisds puna:', e.message); }
@@ -287,7 +303,7 @@ module.exports = function (app, pool, iAdmin) {
     setInterval(kalo, 10 * 60 * 1000).unref();
     setInterval(pastro, 24 * 3600 * 1000).unref();
   }, 50000).unref();
-  app.locals.pxseWhoisds = { shkarko, shkarkoDiten, filtro, kalo, auto, pxwdFiltroListen, pxwdZip };
+  app.locals.pxseWhoisds = { shkarko, shkarkoDiten, filtro, filtroGrup, kalo, auto, pxwdFiltroListen, pxwdZip };
 
   // ---------- Admin API ----------
   app.get('/api/admin/pxse/whoisds', iAdmin, async (req, res) => {
