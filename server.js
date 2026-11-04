@@ -3122,6 +3122,7 @@ require('./pxse-burimet-reja')(app, pool, iAdmin);
 require('./pxse-importi')(app, pool, iAdmin);
 require('./pxse-te-rejat')(app, pool, iAdmin);
 require('./pxse-whoisds')(app, pool, iAdmin);
+require('./pxse-backlinket')(app, pool, iAdmin); // eksperiment: platforma per backlinke (Marketingu → Backlinke)
 require('./pxse-portali')(app, pool, iAdmin);
 require('./pxse-produktet')(app); // faqet /apps dhe /transcription
 // Resend (dergim email-esh) — nese RESEND_API_KEY s'eshte vendosur, resendKlient
