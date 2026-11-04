@@ -218,7 +218,7 @@ module.exports = function (app, pool, iAdmin) {
   }
   // Ne sfond (pa klikim): mban gati nje rezerve te vogel, pa e zene filtrin gjate
   async function filtro() {
-    const kufiri = nr(process.env.PXSE_WD_STUDIM_DITORE, 300);
+    const kufiri = await perKlik();
     for (let k = 0; k < 20; k++) {
       const gati = (await pool.query("SELECT COUNT(*)::int n FROM pxse_wd_domenet WHERE gjendja='gati'")).rows[0].n;
       if (gati >= kufiri) return;
@@ -278,7 +278,8 @@ module.exports = function (app, pool, iAdmin) {
     } catch (e) { console.error('pxse whoisds puna:', e.message); }
     finally { punoDuke = false; }
   }
-  const perKlik = () => nr(process.env.PXSE_WD_STUDIM_DITORE, 300);
+  // Studime AI per klikim: vlera e ruajtur nga admini; perndryshe PXSE_WD_STUDIM_DITORE; perndryshe 300
+  const perKlik = async () => nr(await cilesimi('per_klik', ''), nr(process.env.PXSE_WD_STUDIM_DITORE, 300));
 
   // ---------- Auto: cdo dite dita N dite me pare ----------
   async function auto() {
@@ -287,7 +288,7 @@ module.exports = function (app, pool, iAdmin) {
       const dita = diteMeParë(nr(process.env.PXSE_WD_MOSHA, 14));
       await pool.query("UPDATE pxse_wd_dite SET gjendja='duke' WHERE dita=$1 AND gjendja='ruajtur'", [dita]);
       // Auto jep 300 studime AI nje here ne dite
-      if ((await cilesimi('auto_dita', '')) !== sotData()) { await vendos('auto_dita', sotData()); await vendos('kuota', perKlik()); await vendos('kuota_dita', dita); puno(); }
+      if ((await cilesimi('auto_dita', '')) !== sotData()) { await vendos('auto_dita', sotData()); await vendos('kuota', await perKlik()); await vendos('kuota_dita', dita); puno(); }
     } catch (e) {}
   }
   async function pastro() {
@@ -326,8 +327,8 @@ module.exports = function (app, pool, iAdmin) {
             FROM pxse_import_rreshtat WHERE import_id=$1 AND statusi='biznes' AND studim2 IS NOT NULL ORDER BY studim2_at DESC NULLS LAST LIMIT 25`, [imR.id])).rows;
       }
       res.json({ ok: true, auto: (await cilesimi('auto', '0')) === '1', emri: PXWD_EMRI_IMPORTIT, ditet, importi, te_fundit: teFundit, kaluar_sot: await kaluarSot(),
-        kuota: parseInt(await cilesimi('kuota', '0'), 10) || 0, per_klik: perKlik(), duke_punuar: punoDuke,
-        kufijte: { studim: nr(process.env.PXSE_WD_STUDIM_DITORE, 300), mosha: nr(process.env.PXSE_WD_MOSHA, 14), mbaj: nr(process.env.PXSE_WD_MBAJ_DITE, 60), vetem_google: pxwdVetemGoogle() } });
+        kuota: parseInt(await cilesimi('kuota', '0'), 10) || 0, per_klik: await perKlik(), duke_punuar: punoDuke,
+        kufijte: { studim: await perKlik(), mosha: nr(process.env.PXSE_WD_MOSHA, 14), mbaj: nr(process.env.PXSE_WD_MBAJ_DITE, 60), vetem_google: pxwdVetemGoogle() } });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
   const dataOk = s => /^\d{4}-\d{2}-\d{2}$/.test(String(s || ''));
@@ -337,13 +338,20 @@ module.exports = function (app, pool, iAdmin) {
       const r = await pool.query("UPDATE pxse_wd_dite SET gjendja='duke' WHERE dita=$1 AND shkarkuar_at IS NOT NULL RETURNING dita", [d]);
       if (!r.rows.length) return res.status(404).json({ error: 'Kjo ditë nuk është shkarkuar' });
       // cdo klikim lejon deri ne 300 studime AI (kuota e mbetur nga klikimi i meparshem zevendesohet, nuk mblidhet)
-      await vendos('kuota', perKlik()); await vendos('kuota_dita', d);
-      puno(); res.json({ ok: true, kuota: perKlik() });
+      const pk = await perKlik();
+      await vendos('kuota', pk); await vendos('kuota_dita', d);
+      puno(); res.json({ ok: true, kuota: pk });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
   app.post('/api/admin/pxse/whoisds/ndalo', iAdmin, async (req, res) => {
     const d = (req.body || {}).dita; if (!dataOk(d)) return res.status(400).json({ error: 'Data e pavlefshme' });
     try { await pool.query("UPDATE pxse_wd_dite SET gjendja='ndalur' WHERE dita=$1 AND gjendja='duke'", [d]); res.json({ ok: true }); } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+  // Ndryshimi i kufirit per klikim nga admini (1–10000); vlen menjehere per klikimin e radhes
+  app.post('/api/admin/pxse/whoisds/per-klik', iAdmin, async (req, res) => {
+    const v = parseInt((req.body || {}).vlera, 10);
+    if (!Number.isFinite(v) || v < 1 || v > 10000) return res.status(400).json({ error: 'Vendos një numër nga 1 deri në 10000' });
+    try { await vendos('per_klik', v); res.json({ ok: true, per_klik: v }); } catch (e) { res.status(500).json({ error: e.message }); }
   });
   app.post('/api/admin/pxse/whoisds/shkarko', iAdmin, async (req, res) => {
     try { await shkarko(); res.json({ ok: true }); } catch (e) { res.status(500).json({ error: e.message }); }
