@@ -30,6 +30,7 @@
 
 const pesha = require('./pesha');
 const kombinimi = require('./kombinimi');
+const kufijte = require('./pxse-kufijte'); // kufijte ditore sipas planit (pxse-kufijte.js)
 
 module.exports = function (pool) {
 
@@ -222,11 +223,8 @@ module.exports = function (pool) {
        WHERE p.biznes_id <> $1 AND p.aktiv = true AND COALESCE(p.pauzuar,false) = false
          AND COALESCE(p.logjika_shperndarjes,'ankand') = $2
          AND (p.teksti IS NOT NULL OR p.imazh_url IS NOT NULL OR p.video_url IS NOT NULL OR p.html5_url IS NOT NULL)
-         AND (
-           EXISTS (SELECT 1 FROM snippetet s WHERE s.biznes_id = b.id
-                   AND s.snippet_active = true AND COALESCE(s.pauzuar,false) = false)
-           OR (b.created_at > now() - interval '7 days')
-         )`,
+         AND EXISTS (SELECT 1 FROM snippetet s WHERE s.biznes_id = b.id
+                     AND s.snippet_active = true AND COALESCE(s.pauzuar,false) = false)`,
       [hostId, logjika]);
     let rreshta = r.rows.filter(k => !(hTipi && k.tipi && !tipetPerputhen(k.tipi, hTipi)));
 
@@ -241,6 +239,12 @@ module.exports = function (pool) {
           rreshta = rreshta.filter(k => !kombinimi.kaMbivendosjeKategorie(hostFull, k));
         }
       } catch (e) { /* nese deshton, vazhdo pa filtrin */ }
+    }
+    // KUFIJTE DITORE: kush ka arritur kufirin e sotem te kesaj pishine (ose eshte i bllokuar sot)
+    // s'llogaritet si kandidat — njesoj si te selector.js, qe pishina te mos zgjidhet pa kandidate te vlefshem.
+    if (rreshta.length) {
+      const jashte = await kufijte.pranueshmeria(pool, rreshta.map(k => k.biznes_id), logjika);
+      if (jashte.size) rreshta = rreshta.filter(k => !jashte.has(Number(k.biznes_id)));
     }
     return rreshta;
   }
