@@ -145,11 +145,26 @@ function pxaThemeToggle(){
   </div>
 </header>
 
-<!-- ═══ HAPESIRA E PARE: SHERBIMI FALAS (email + kapja e interesit) ═══
-     Vendi ku do te futet pershkrimi dhe kodi i sherbimit. Prezantimi aktual vjen poshte, i pandryshuar. -->
-<section id="free-tool" style="padding:100px 24px 20px;"><!-- 100px = shiriti i siperm (36px) + menuja fikse (52px) + 12px -->
-  <!-- Sherbimet falas: email-et + sinjalet. Komponenti dhe CSS-ja e tij jane te izoluara (Shadow DOM) te /js/pxse-seksioni.js -->
-  <px-sinjale-email lang="en" api="/api/pxse"></px-sinjale-email>
+<!-- ═══ HAPESIRA E PARE: SHERBIMI FALAS — tani ka faqen e vet (/email-outreach); ketu mbetet vetem hyrja e dukshme ═══ -->
+<section id="free-tool" style="padding:100px 24px 8px;"><!-- 100px = shiriti i siperm (36px) + menuja fikse (52px) + 12px -->
+  <style>
+  .pxa-eo{max-width:1180px;margin:0 auto;border:1px solid rgba(59,110,240,.35);background:linear-gradient(135deg,rgba(59,110,240,.14),rgba(34,211,238,.07));border-radius:16px;padding:22px 26px;display:flex;gap:22px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+  .pxa-eo-tag{display:inline-block;font-size:11px;font-family:monospace;letter-spacing:.14em;text-transform:uppercase;color:#22d3ee;margin-bottom:6px}
+  .pxa-eo-t{font-family:var(--pxa-font-d);font-size:clamp(1.4rem,2.6vw,1.9rem);font-weight:700;color:var(--pxa-txt);margin:0 0 6px;line-height:1.15}
+  .pxa-eo-d{margin:0;font-size:14.5px;line-height:1.6;color:var(--pxa-txt-mut);max-width:680px}
+  .pxa-eo-btn{flex:0 0 auto;display:inline-flex;align-items:center;gap:8px;background:var(--pxa-blue);color:#fff;font-weight:600;font-size:15px;padding:13px 22px;border-radius:10px;text-decoration:none;white-space:nowrap}
+  .pxa-eo-btn:hover{filter:brightness(1.1)}
+  @media (max-width:640px){.pxa-eo{padding:18px}.pxa-eo-btn{width:100%;justify-content:center}}
+  </style>
+  <div class="pxa-eo">
+    <div>
+      <span class="pxa-eo-tag">Free tool · no credit card</span>
+      <p class="pxa-eo-t">Free B2B email outreach to new businesses</p>
+      <p class="pxa-eo-d">AI writes your outreach email. Pick verified B2B companies from our directory — including newly launched businesses — and send. No contact list needed, 3 free emails per domain.</p>
+    </div>
+    <a class="pxa-eo-btn" href="/email-outreach">Start free email outreach
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+  </div>
 </section>
 <!-- ═══ FUND I HAPESIRES SE PARE ═══ -->
 
@@ -162,7 +177,7 @@ function pxaThemeToggle(){
       <div class="pxa-eyebrow"><span class="pxa-eyebrow-dot"></span><span>The intelligent cross-promotion network</span></div>
       <h1 class="pxa-h1"><span class="pxa-h1-white">Promote each other.</span><br><span class="pxa-h1-grad">Grow without an ad budget.</span></h1>
       <p class="pxa-sub">Your competitors <b>never show up in your audience.</b></p>
-      <p class="pxa-lead">PhronexusAI matches you with complementary, non-competing businesses. You show their ads, they show yours — a reciprocal advertising exchange, managed by AI. Choose your model: <b>weighted auction</b> (maximizes conversions, recommended) or <b>impression balance</b> (get as much as you give). Change it anytime, anywhere. Plus <b>free AI-written email outreach</b> to verified B2B companies from our directory — no contact list needed.</p>
+      <p class="pxa-lead">PhronexusAI matches you with complementary, non-competing businesses. You show their ads, they show yours — a reciprocal advertising exchange, managed by AI. Choose your model: <b>weighted auction</b> (maximizes conversions, recommended) or <b>impression balance</b> (get as much as you give). Change it anytime, anywhere. Plus <a href="/email-outreach" style="color:inherit;"><b>free AI-written email outreach</b></a> to verified B2B companies from our directory — no contact list needed.</p>
       <div class="pxa-ctas">
         <a href="#" class="pxa-cta-main" onclick="event.preventDefault();sessionStorage.removeItem('preferuarModaliteti');startWizard();">
           Start free — no credit card
@@ -783,7 +798,7 @@ pxaSetBt('B2B');
           <a href="#"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z" opacity="0"/><path d="M22 6l-10 7L2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></a>
         </div>
       </div>
-      <div class="pxa-footer-col"><h5>Product</h5><a href="/how-it-works">How It Works</a><a href="/how-it-works#auction-details">Auction</a><a href="/how-it-works#balance-details">Balance</a><a href="/ai-matching">AI Matching</a><a href="/ai-formats">AI Formats</a><a href="/tracking-analytics">Tracking &amp; Analytics</a><a href="/teams-roles">Teams &amp; Roles</a><a href="#pricing">Pricing</a></div>
+      <div class="pxa-footer-col"><h5>Product</h5><a href="/email-outreach">Free Email Outreach</a><a href="/how-it-works">How It Works</a><a href="/how-it-works#auction-details">Auction</a><a href="/how-it-works#balance-details">Balance</a><a href="/ai-matching">AI Matching</a><a href="/ai-formats">AI Formats</a><a href="/tracking-analytics">Tracking &amp; Analytics</a><a href="/teams-roles">Teams &amp; Roles</a><a href="#pricing">Pricing</a></div>
       <div class="pxa-footer-col"><h5>Solutions</h5><a href="/ai-matching">Instant AI Matching</a><a href="#pricing">Subscription, Not Pay-Per-Impression</a><a href="/ai-formats">AI Formats &amp; Optimization</a></div>
       <div class="pxa-footer-col"><h5>Company</h5><a href="/products">Products</a><a href="/about">About Us</a><a href="/blog">Blog</a><a href="/contact">Contact</a></div>
       <div class="pxa-footer-col"><h5>Legal</h5><a href="/privacy">Privacy Policy</a><a href="/terms">Terms of Service</a><a href="/refund">Refund Policy</a></div>
