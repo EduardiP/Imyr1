@@ -10,6 +10,7 @@ const pikeRekl = require('./pike-reklama');
 const balanca = require('./balanca');
 const automatik = require('./automatik');
 const kombinimi = require('./kombinimi');
+const kufijte = require('./pxse-kufijte'); // kufijte ditore sipas planit + rregulli 7/400 i Ankandit
 
 function tipetPerputhen(rTipi, hTipi) {
   if (rTipi === 'b2b2c' || hTipi === 'b2b2c') return true;
@@ -75,6 +76,10 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
   const hostingMenyra = (h.rows[0] && h.rows[0].hosting_menyra) || 'te-gjitha';
   let baraziPerqindje = (h.rows[0] && h.rows[0].barazi_perqindje != null) ? h.rows[0].barazi_perqindje : 50;
 
+  // Host-i i planit falas qe e ka mbyllur Balancen e sotme (kufiri + barazimi) s'shfaq reklama deri neser
+  // ose deri te plani me pagese (pxse-kufijte.js).
+  if (await kufijte.hostiBllokuar(pool, hostId)) return null;
+
   // ═══ VENDOS PISHINEN (Ankand ose Balance) ═══
   // Nese hosting_mode='automatik' → moduli automatik vendos (algoritmi i ri)
   // Nese hosting_mode='manual'    → sistemi i vjeter me barazi_perqindje (i paprekur)
@@ -113,11 +118,7 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
      WHERE p.biznes_id <> $1 AND p.aktiv = true AND COALESCE(p.pauzuar,false) = false
        AND COALESCE(p.logjika_shperndarjes,'ankand') = $2
        AND (p.teksti IS NOT NULL OR p.imazh_url IS NOT NULL OR p.video_url IS NOT NULL OR p.html5_url IS NOT NULL)
-       AND (COALESCE(b.plani,'falas') = 'premium' OR b.created_at > now() - interval '3 months')
-       AND (
-         EXISTS (SELECT 1 FROM snippetet s WHERE s.biznes_id = b.id AND s.snippet_active = true AND COALESCE(s.pauzuar,false) = false)
-         OR (b.created_at > now() - interval '7 days')
-       )`,
+       AND EXISTS (SELECT 1 FROM snippetet s WHERE s.biznes_id = b.id AND s.snippet_active = true AND COALESCE(s.pauzuar,false) = false)`,
     [hostId, logjikaKerkuar]);
 
   // ═══ KUFIZIMET E KATEGORIVE — perjashtim DYANSHEM, vlen per te dyja pishinat ═══
@@ -185,6 +186,16 @@ async function zgjidhReklame(pool, hostId, pare, snippetId) {
   let biznesetKand = shkoTeBarazi
     ? kand.rows
     : kand.rows.filter(k => !(hTipi && k.tipi && !tipetPerputhen(k.tipi, hTipi)));
+  if (!biznesetKand.length) return null;
+
+  // KUFIJTE DITORE (pxse-kufijte.js): hiq ata qe kane arritur kufirin e sotem te kesaj pishine
+  // ose qe jane te bllokuar sot (keta s'shfaqen ne asnje pishine).
+  {
+    const jashte = await kufijte.pranueshmeria(pool, biznesetKand.map(k => k.biznes_id), logjikaKerkuar);
+    if (jashte.size) biznesetKand = biznesetKand.filter(k => !jashte.has(Number(k.biznes_id)));
+  }
+  // ANKAND: vetem N me vleresimin AI me te larte per host-in + kushdo mbi pragun AI (cilesime te admin-it).
+  if (!shkoTeBarazi) biznesetKand = await kufijte.filtroAnkandin(pool, hostId, biznesetKand);
   if (!biznesetKand.length) return null;
 
   let fituesBizId, listaAnkand = null, fituesiAnkand = null;
