@@ -158,7 +158,7 @@ const $ = id => document.getElementById(id);
 const SECTIONS = [
 { k:'bizneset', l:'Bizneset' },
 { k:'b1', l:'Kombinimet AI' }, { k:'b2', l:'Njoftime' },
-{ k:'b4', l:'Përzgjedhjet' }, { k:'mkt', l:'Marketingu' }, { k:'pxse', l:'Shërbimet falas' }
+{ k:'b4', l:'Përzgjedhjet' }, { k:'kufijte', l:'Kufijtë e planeve' }, { k:'mkt', l:'Marketingu' }, { k:'pxse', l:'Shërbimet falas' }
 ];
 const MKT_SUB = [
 { k:'dergimet', l:'Dërgimet' }, { k:'analitika', l:'Analitika' }, { k:'emailet', l:'Email-et' }, { k:'terejat', l:'Biznese të reja' }, { k:'backlinket', l:'Backlinke (eksperiment)' }
@@ -215,10 +215,45 @@ if(curSec==='bizneset'){ renderBizneset(c); return; }
 if(curSec==='b1'){ renderKombinimet(c); return; }
 if(curSec==='b2'){ renderNjoftime(c); return; }
 if(curSec==='b4'){ renderPerzgjedhjet(c); return; }
+if(curSec==='kufijte'){ renderKufijte(c); return; }
 if(curSec==='mkt'){ renderMarketingu(c); return; }
 if(curSec==='pxse'){ if(window.pxseRenderAdmin) pxseRenderAdmin(c); return; } // /js/pxse-admin.js
 const lbl=(SECTIONS.find(s=>s.k===curSec)||{}).l||'';
 c.innerHTML='<div class="wrap"><h2 class="h">'+lbl+'</h2><p class="small" style="margin-top:8px;">Së shpejti.</p></div>';
+}
+
+// ================= KUFIJTE E PLANEVE (pxse-kufijte.js) =================
+async function renderKufijte(c){
+  c.innerHTML='<div class="wrap" style="max-width:640px;">'+
+    '<h2 class="h">Kufijtë e planeve</h2>'+
+    '<p class="small" style="margin:2px 0 16px;">Vlejnë menjëherë pas ruajtjes (brenda 30 sekondave). Dita numërohet sipas orës së Berlinit.</p>'+
+    '<div id="kfForma"><p class="small">Po ngarkoj…</p></div></div>';
+  let r;
+  try{ r=await(await fetch('/api/admin/pxse/kufijte')).json(); }catch(e){ $('kfForma').innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; return; }
+  if(!r||!r.ok){ $('kfForma').innerHTML='<p class="small">'+esc((r&&r.error)||'Gabim.')+'</p>'; return; }
+  const k=r.kufijte||{};
+  const fusha=(id,lbl,shp,v)=>'<div style="margin-bottom:14px;"><label class="small" style="display:block;font-weight:600;margin-bottom:4px;">'+lbl+'</label>'+
+    '<input id="'+id+'" type="number" min="0" value="'+esc(String(v==null?'':v))+'" style="width:160px;padding:8px;background:#0e1116;border:1px solid var(--line);border-radius:8px;color:var(--txt);">'+
+    '<div class="small mut" style="margin-top:4px;">'+shp+'</div></div>';
+  $('kfForma').innerHTML=
+    '<div style="border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px;"><b>Ankandi</b><div style="height:10px"></div>'+
+      fusha('kfKand','Kandidatë sipas AI-së',"Sa biznese me vlerësimin AI më të lartë për klientët e host-it marrin pjesë në çdo garë.",k.kandidate_ankand)+
+      fusha('kfPrag','Pragu AI (0–1000)',"Përveç tyre, hyn kushdo me vlerësim AI mbi këtë prag.",k.prag_ai)+
+    '</div>'+
+    '<div style="border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px;"><b>Pjesëmarrje në ditë, për secilën pishinë (Ankand dhe Balancë veç e veç)</b><div style="height:10px"></div>'+
+      fusha('kfFalas','Plani falas',"Pas këtij numri, biznesi s'merr më pjesë në atë pishinë deri nesër. Te Balanca, vazhdon të japë derisa të barazohet me ato që mori sot, pastaj snippet-i dhe reklamat e tij ndalen deri nesër.",k.falas_dite)+
+      fusha('kfPagese','Plani me pagesë',"Kufiri ditor për planin me pagesë.",k.pagese_dite)+
+    '</div>'+
+    '<button class="btn" onclick="kfRuaj()">Ruaj</button> <span class="small" id="kfMsg" style="margin-left:8px;"></span>';
+}
+async function kfRuaj(){
+  const m=$('kfMsg'); m.style.color=''; m.textContent='Po ruaj…';
+  const body={ kandidate_ankand:$('kfKand').value, prag_ai:$('kfPrag').value, falas_dite:$('kfFalas').value, pagese_dite:$('kfPagese').value };
+  try{
+    const r=await(await fetch('/api/admin/pxse/kufijte',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
+    if(!r.ok){ m.style.color='#e5484d'; m.textContent=r.error||'Gabim.'; return; }
+    m.style.color='#3fb950'; m.textContent='✓ U ruajt.';
+  }catch(e){ m.style.color='#e5484d'; m.textContent='Gabim: '+e.message; }
 }
 
 // ================= NJOFTIME (manuale nga admin) =================
