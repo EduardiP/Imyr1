@@ -1666,10 +1666,10 @@ catch(e){ t.innerHTML='<p class="small" style="color:#e5484d;">'+(/404/.test(e.m
 const kf=d.kufijte||{}, im=d.importi;
 let h='<p class="small" style="margin:0 0 12px;">Çdo ditë ruhet vetë lista falas e WhoisDS me domainet e regjistruara një ditë më parë. Zgjidh një ditë dhe kliko <b>Studio</b>: kontrollohen falas me radhë: jo te Importi/direktoria → '+(kf.vetem_google===false?'ka MX':'<b>email te Google</b> (të tjerat hidhen pa AI)')+' → faqja hapet dhe s’është e parkuar, pastaj kalojnë te studimi me AI. <b>Çdo klikim “Studio” lejon deri në '+trNr(d.per_klik||300)+' studime AI</b>; kliko përsëri për '+trNr(d.per_klik||300)+' të tjera, skedari <b>“'+trEsc(d.emri)+'”</b>. Ditët ruhen '+kf.mbaj+' ditë.</p>';
 h+='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">'+
-'<button class="btn" style="width:auto;padding:8px 16px;'+(d.auto?'background:#da3633;color:#fff;border:0;':'')+'" onclick="wdAuto('+(d.auto?0:1)+',this)">'+(d.auto?'Ndalo Auto':'Auto: studio çdo ditë ditën '+kf.mosha+' ditë më parë')+'</button>'+
+'<button class="btn" style="width:auto;padding:8px 16px;'+(d.auto?'background:#da3633;color:#fff;border:0;':'')+'" onclick="wdAuto('+(d.auto?0:1)+',this)">'+(d.auto?'Ndalo Auto':'Auto: studio të gjitha ditët nga '+kf.mosha+' ditë e lart')+'</button>'+
 '<button class="subnav" style="display:inline-block;width:auto;border:1px solid #2a313c;" onclick="wdShkarko(this)">Shkarko tani</button>'+
 '<span class="small" style="display:inline-flex;align-items:center;gap:6px;">Studime për klikim: <input id="wdPerKlik" type="number" min="1" max="10000" value="'+(d.per_klik||300)+'" style="width:90px;padding:4px 6px;"> <button class="btn" style="width:auto;padding:4px 12px;font-size:12px;" onclick="wdRuajPerKlik(this)">Ruaj</button></span>'+
-'<span class="small">'+(d.auto?'<b style="color:#3fb950;">● Auto aktiv</b> · ':'')+'Kaluan sot te AI: <b>'+trNr(d.kaluar_sot)+'</b> · mbetur nga klikimi: <b>'+trNr(d.kuota||0)+'</b>'+(d.duke_punuar?' · <span style="color:#3fb950;">po punon…</span>':'')+'</span></div>';
+'<span class="small">'+(d.auto?'<b style="color:#3fb950;">● Auto aktiv</b> (pa kufi ditor · rikontroll falas në '+((kf.rikontroll||[]).join(' dhe '))+' ditë · bizneset kalojnë vetë në direktori) · ':'')+'Kaluan sot te AI: <b>'+trNr(d.kaluar_sot)+'</b> · mbetur nga klikimi: <b>'+trNr(d.kuota||0)+'</b>'+(d.duke_punuar?' · <span style="color:#3fb950;">po punon…</span>':'')+'</span></div>';
 const dt=d.ditet||[];
 const GJ={mungon:'S’u shkarkua',ruajtur:'E ruajtur',duke:'Po studiohet',ndalur:'E ndalur',perfunduar:'Përfunduar'};
 const th=x=>'<th style="text-align:left;padding:6px 8px;border-bottom:1px solid #2a313c;color:#8b949e;font-weight:500;">'+x+'</th>';
@@ -1691,7 +1691,7 @@ td(trNr(x.jo_google||0),'" title="Email-i i domainit nuk është te Google: hidh
 if(im){
 h+='<div class="small" style="margin:0 0 6px;font-weight:600;">Studimi (Importi → “'+trEsc(d.emri)+'”)'+(im.gabimi?' · <span style="color:#e5484d;">'+trEsc(im.gabimi)+'</span>':'')+'</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">'+
 trKub(trNr(im.total),'gjithsej te studimi')+trKub(trNr(im.studiuar),'të studiuara')+trKub(trNr(im.biznese),'biznese të vërteta')+
-trKub(trNr(im.me_email),'me email')+trKub(trNr(im.gati_b2b),'B2B gati për Dërgimet')+'</div>';
+trKub(trNr(im.me_email),'me email')+trKub(trNr(im.gati_b2b),'B2B gati për Dërgimet')+trKub(trNr(im.ne_direktori||0),'në direktori')+'</div>';
 }
 const lista=d.te_fundit||[];
 if(lista.length) h+='<div class="small" style="margin:0 0 6px;font-weight:600;">Bizneset e fundit të gjetura</div><div style="overflow-x:auto;"><table style="width:100%;font-size:13px;border-collapse:collapse;"><tr>'+['Biznesi','Kategoria','Lloji','Shteti','Email','Regjistruar'].map(th).join('')+'</tr>'+
