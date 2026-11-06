@@ -158,7 +158,7 @@ const $ = id => document.getElementById(id);
 const SECTIONS = [
 { k:'bizneset', l:'Bizneset' },
 { k:'b1', l:'Kombinimet AI' }, { k:'b2', l:'Njoftime' },
-{ k:'b4', l:'Përzgjedhjet' }, { k:'kufijte', l:'Kufijtë e planeve' }, { k:'mkt', l:'Marketingu' }, { k:'pxse', l:'Shërbimet falas' }
+{ k:'b4', l:'Përzgjedhjet' }, { k:'kufijte', l:'Kufijtë & faqja publike' }, { k:'mkt', l:'Marketingu' }, { k:'pxse', l:'Shërbimet falas' }
 ];
 const MKT_SUB = [
 { k:'dergimet', l:'Dërgimet' }, { k:'analitika', l:'Analitika' }, { k:'emailet', l:'Email-et' }, { k:'terejat', l:'Biznese të reja' }, { k:'backlinket', l:'Backlinke (eksperiment)' }
@@ -244,7 +244,21 @@ async function renderKufijte(c){
       fusha('kfFalas','Plani falas',"Pas këtij numri, biznesi s'merr më pjesë në atë pishinë deri nesër. Te Balanca, vazhdon të japë derisa të barazohet me ato që mori sot, pastaj snippet-i dhe reklamat e tij ndalen deri nesër.",k.falas_dite)+
       fusha('kfPagese','Plani me pagesë',"Kufiri ditor për planin me pagesë.",k.pagese_dite)+
     '</div>'+
-    '<button class="btn" onclick="kfRuaj()">Ruaj</button> <span class="small" id="kfMsg" style="margin-left:8px;"></span>';
+    '<button class="btn" onclick="kfRuaj()">Ruaj</button> <span class="small" id="kfMsg" style="margin-left:8px;"></span>'+
+    '<div style="border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:22px;"><b>Faqja publike — dërgimi i email-eve</b><div style="height:10px"></div>'+
+      '<label style="display:flex;gap:10px;align-items:center;cursor:pointer;"><input type="checkbox" id="kfNumrat" '+(k.shfaq_numrat?'checked':'')+' onchange="kfNumrat(this)" style="width:auto;margin:0;">'+
+      '<span>Shfaq numrin e bizneseve për çdo kategori dhe shtet</span></label>'+
+      '<div class="small mut" style="margin-top:6px;">I fikur: te faqja publike shfaqen vetëm emrat e kategorive dhe shteteve, pa numra. Ndryshimi vlen menjëherë (brenda 30 sekondave).</div>'+
+      '<span class="small" id="kfNumMsg"></span></div>';
+}
+async function kfNumrat(el){
+  const m=$('kfNumMsg'); m.style.color=''; m.textContent='Po ruaj…'; el.disabled=true;
+  try{
+    const r=await(await fetch('/api/admin/pxse/kufijte/numrat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({shfaq:el.checked})})).json();
+    if(!r.ok){ m.style.color='#e5484d'; m.textContent=r.error||'Gabim.'; el.checked=!el.checked; }
+    else { m.style.color='#3fb950'; m.textContent=r.shfaq_numrat?'✓ Numrat shfaqen.':'✓ Numrat janë fshehur.'; }
+  }catch(e){ m.style.color='#e5484d'; m.textContent='Gabim: '+e.message; el.checked=!el.checked; }
+  el.disabled=false;
 }
 async function kfRuaj(){
   const m=$('kfMsg'); m.style.color=''; m.textContent='Po ruaj…';
