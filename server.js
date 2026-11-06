@@ -2972,7 +2972,8 @@ app.get('/api/admin/une', iAdmin, (req, res) => res.json({ ok:true }));
 
 // Endpoint-e shtese te admin-it (skedar i ndare — nuk prek webin real)
 require('./admin-routes')(app, pool, iAdmin, kombinimi);
-require('./pxse-kufijte').routet(app, pool, iAdmin); // kufijte ditore te planeve + rregulli 7/400 (admin: Kufijtë e planeve)
+require('./pxse-kufijte').routet(app, pool, iAdmin);
+require('./pxse-platformat')(app, pool, iAdmin); // Marketingu → Lista e platformave (listimet + kujtesat për ripostim) // kufijte ditore te planeve + rregulli 7/400 (admin: Kufijtë e planeve)
 
 // Caktimi i madhesise se hapesires se reklames (skedar i ndare)
 require('./madhesia')(app, pool, iLoguar);
