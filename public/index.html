@@ -48,14 +48,24 @@ function pxaThemeToggle(){
   "applicationCategory": "BusinessApplication",
   "applicationSubCategory": "Advertising Software",
   "operatingSystem": "Web",
-  "description": "PhronexusAI is a cross-promotion network for B2B SaaS companies. Instead of paying Google or Facebook to guess at your audience, businesses exchange ad exposure directly with complementary SaaS tools — showing a small amount of each other's ads and getting real exposure back, for a fraction of traditional ad spend. Two intelligent distribution modes handle the matching: Auction, which ranks and rotates ads based on real performance, and Balance, which guarantees a 1-for-1 exchange between two businesses. New businesses get full access completely free for 90 days, no plan required.",
-  "offers": {
-    "@type": "Offer",
-    "price": "7.00",
-    "priceCurrency": "USD",
-    "priceValidUntil": "2027-12-31",
-    "description": "Monthly subscription after a 90-day free trial with full access, no plan required."
-  },
+  "description": "PhronexusAI is a cross-promotion network for B2B SaaS companies. Instead of paying Google or Facebook to guess at your audience, businesses exchange ad exposure directly with complementary SaaS tools — showing a small amount of each other's ads and getting real exposure back, for a fraction of traditional ad spend. Two intelligent distribution modes handle the matching: Auction, which ranks and rotates ads based on real performance, and Balance, which keeps the exposure you give and receive even. PhronexusAI also includes free AI-written email outreach to verified B2B companies from its directory, so you can reach customers while the network grows. The free plan is permanent and includes up to 100 Auction and 100 Balance participations per day; the paid plan ($7/month) raises this to 3,000 per day for each pool.",
+  "offers": [
+    {
+      "@type": "Offer",
+      "name": "Free plan",
+      "price": "0",
+      "priceCurrency": "USD",
+      "description": "Free forever, no credit card required. Up to 100 Auction and 100 Balance participations per day, plus free AI email outreach to verified B2B businesses."
+    },
+    {
+      "@type": "Offer",
+      "name": "Paid plan",
+      "price": "7.00",
+      "priceCurrency": "USD",
+      "priceValidUntil": "2027-12-31",
+      "description": "Monthly subscription. Up to 3,000 Auction and 3,000 Balance participations per day, unlimited AI ad creation and support chat, and no PhronexusAI badge on your ad space."
+    }
+  ],
   "provider": {
     "@type": "Organization",
     "name": "PhronexusAI",
@@ -84,7 +94,7 @@ function pxaThemeToggle(){
   <div class="pxa-wrap">
     <div style="display:flex;align-items:center;gap:6px;">
       <span class="pxa-dot-pulse"></span>
-      <span class="pxa-topbar-txt">3 months free · Card required, charged only after trial</span>
+      <span class="pxa-topbar-txt">Free plan forever · No credit card required</span>
     </div>
     <div class="pxa-topbar-right">
       <button class="pxa-topbar-btn" title="Choose language" style="display:none;">
@@ -151,10 +161,10 @@ function pxaThemeToggle(){
       <div class="pxa-eyebrow"><span class="pxa-eyebrow-dot"></span><span>The intelligent cross-promotion network</span></div>
       <h1 class="pxa-h1"><span class="pxa-h1-white">Promote each other.</span><br><span class="pxa-h1-grad">Grow without an ad budget.</span></h1>
       <p class="pxa-sub">Your competitors <b>never show up in your audience.</b></p>
-      <p class="pxa-lead">PhronexusAI matches you with complementary, non-competing businesses. You show their ads, they show yours — a reciprocal advertising exchange, managed by AI. Choose your model: <b>weighted auction</b> (maximizes conversions, recommended) or <b>impression balance</b> (get as much as you give). Change it anytime, anywhere.</p>
+      <p class="pxa-lead">PhronexusAI matches you with complementary, non-competing businesses. You show their ads, they show yours — a reciprocal advertising exchange, managed by AI. Choose your model: <b>weighted auction</b> (maximizes conversions, recommended) or <b>impression balance</b> (get as much as you give). Change it anytime, anywhere. Plus <b>free AI-written email outreach</b> to verified B2B companies from our directory — no contact list needed.</p>
       <div class="pxa-ctas">
         <a href="#" class="pxa-cta-main" onclick="event.preventDefault();sessionStorage.removeItem('preferuarModaliteti');startWizard();">
-          Start free — 3 months, no cost
+          Start free — no credit card
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </a>
         <a href="/how-it-works" class="pxa-cta-second">
@@ -176,7 +186,7 @@ function pxaThemeToggle(){
           <span class="pxa-dash-dot" style="background:rgba(248,81,73,.6);"></span>
           <span class="pxa-dash-dot" style="background:rgba(234,179,8,.6);"></span>
           <span class="pxa-dash-dot" style="background:rgba(16,185,129,.6);"></span>
-          <span style="margin-left:12px;font-size:10px;font-family:monospace;color:var(--pxa-txt-dim);">PhronexusAI — Main dashboard</span>
+          <span style="margin-left:12px;font-size:10px;font-family:monospace;color:var(--pxa-txt-dim);">Example dashboard · illustrative data</span>
         </div>
         <div class="pxa-dash-body">
           <div class="pxa-dash-metrics">
@@ -203,17 +213,6 @@ function pxaThemeToggle(){
           </div>
         </div>
       </div>
-    </div>
-  </div>
-</section>
-
-<!-- LOGO BAR -->
-<section class="pxa-logobar">
-  <div class="pxa-wrap">
-    <p class="pxa-logobar-label">Businesses already part of the network</p>
-    <div class="pxa-logos">
-      <span class="pxa-logo-item">InvoicePro</span><span class="pxa-logo-item">LeadFlow</span><span class="pxa-logo-item">StaffSync</span><span class="pxa-logo-item">DataPulse</span>
-      <span class="pxa-logo-item">FormKit</span><span class="pxa-logo-item">MonitorIQ</span><span class="pxa-logo-item">Paylink</span><span class="pxa-logo-item">NestCRM</span>
     </div>
   </div>
 </section>
@@ -540,13 +539,14 @@ function pxaSetModel(id){
           <div class="pxa-feat-panel-label" id="pxaFeatRightLabel"><span style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span>AI Matching</div>
 
           <div id="pxaFeatRight-matching">
-            <div class="pxa-feat-live-item"><span style="color:var(--pxa-txt-mut);font-family:monospace;">InvoicePro → StaffSync</span><span style="color:var(--pxa-txt);font-family:monospace;font-weight:600;">847/1000</span></div>
+            <div style="font-size:10px;color:var(--pxa-txt-dim);font-family:monospace;margin-bottom:8px;">Illustrative example · category pairs</div>
+            <div class="pxa-feat-live-item"><span style="color:var(--pxa-txt-mut);font-family:monospace;">Invoicing → HR Tools</span><span style="color:var(--pxa-txt);font-family:monospace;font-weight:600;">847/1000</span></div>
             <div class="pxa-feat-live-bar-track"><div class="pxa-feat-live-bar-fill" style="width:84.7%;background:#22d3ee;"></div></div>
-            <div class="pxa-feat-live-item"><span style="color:var(--pxa-txt-mut);font-family:monospace;">DataPulse → LeadFlow</span><span style="color:var(--pxa-txt);font-family:monospace;font-weight:600;">763/1000</span></div>
+            <div class="pxa-feat-live-item"><span style="color:var(--pxa-txt-mut);font-family:monospace;">Analytics → Lead Generation</span><span style="color:var(--pxa-txt);font-family:monospace;font-weight:600;">763/1000</span></div>
             <div class="pxa-feat-live-bar-track"><div class="pxa-feat-live-bar-fill" style="width:76.3%;background:#3b6ef0;"></div></div>
-            <div class="pxa-feat-live-item"><span style="color:var(--pxa-txt-mut);font-family:monospace;">FormKit → MonitorIQ</span><span style="color:var(--pxa-txt);font-family:monospace;font-weight:600;">612/1000</span></div>
+            <div class="pxa-feat-live-item"><span style="color:var(--pxa-txt-mut);font-family:monospace;">Form Builder → Monitoring</span><span style="color:var(--pxa-txt);font-family:monospace;font-weight:600;">612/1000</span></div>
             <div class="pxa-feat-live-bar-track"><div class="pxa-feat-live-bar-fill" style="width:61.2%;background:#3b6ef0;"></div></div>
-            <div class="pxa-feat-live-item"><span style="color:var(--pxa-txt-mut);font-family:monospace;">NestCRM → Paylink</span><span style="color:var(--pxa-txt);font-family:monospace;font-weight:600;">921/1000</span></div>
+            <div class="pxa-feat-live-item"><span style="color:var(--pxa-txt-mut);font-family:monospace;">CRM → Payments</span><span style="color:var(--pxa-txt);font-family:monospace;font-weight:600;">921/1000</span></div>
             <div class="pxa-feat-live-bar-track"><div class="pxa-feat-live-bar-fill" style="width:92.1%;background:#22d3ee;"></div></div>
             <div style="border-radius:12px;padding:12px 16px;background:rgba(248,81,73,.06);border:1px solid rgba(248,81,73,.15);display:flex;gap:8px;align-items:flex-start;margin-top:16px;">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f85149" stroke-width="2" style="flex:0 0 auto;margin-top:1px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -567,6 +567,7 @@ function pxaSetModel(id){
           </div>
 
           <div id="pxaFeatRight-analytics" class="hide">
+            <div style="font-size:10px;color:var(--pxa-txt-dim);font-family:monospace;margin-bottom:8px;">Illustrative example data</div>
             <div class="pxa-mini-grid" style="grid-template-columns:1fr 1fr;margin-bottom:12px;">
               <div class="pxa-mini-card" style="text-align:left;padding:12px;"><div style="font-size:10px;color:var(--pxa-txt-dim);">Impressions given</div><div style="font-size:18px;font-weight:700;color:var(--pxa-txt);font-family:'Barlow Condensed',sans-serif;">12,840</div></div>
               <div class="pxa-mini-card" style="text-align:left;padding:12px;"><div style="font-size:10px;color:var(--pxa-txt-dim);">Impressions received</div><div style="font-size:18px;font-weight:700;color:var(--pxa-txt);font-family:'Barlow Condensed',sans-serif;">11,290</div></div>
@@ -676,19 +677,16 @@ pxaSetBt('B2B');
 <!-- PRICING -->
 <section class="pxa-section" id="pricing">
   <div class="pxa-wrap" style="max-width:960px;text-align:center;">
-    <div class="pxa-urgency">
-      <span class="pxa-urgency-dot"></span>
-      <span>Launch offer — valid for only <b>15 more days.</b> After that, new businesses get only <b>1 month free.</b></span>
-    </div>
     <p class="pxa-sec-eyebrow" style="color:#60a5fa;">Pricing</p>
-    <h2 class="pxa-sec-h2">The first 3 months are free.<br><span style="color:#22d3ee;">No commitment.</span></h2>
-    <p style="font-size:15px;line-height:1.6;color:var(--pxa-txt-mut);max-width:640px;margin:0 auto 16px;">During your free months, you get <b style="color:var(--pxa-txt);font-weight:600;">full access to every feature</b> — no limits, just like the more expensive plans. AI Matching, Ad Studio, advanced Analytics, Teams &amp; Roles — everything available from day one.</p>
-    <p style="font-size:13px;line-height:1.6;color:var(--pxa-txt-dim);max-width:560px;margin:0 auto 48px;">After your three free months, we'll review your results together and propose terms based directly on your business's performance and needs — not a one-size-fits-all package.</p>
+    <h2 class="pxa-sec-h2">Free forever.<br><span style="color:#22d3ee;">Upgrade only when you need more reach.</span></h2>
+    <p style="font-size:15px;line-height:1.6;color:var(--pxa-txt-mut);max-width:640px;margin:0 auto 16px;">Both plans include <b style="color:var(--pxa-txt);font-weight:600;">every feature</b> — AI Matching, Ad Studio, free email outreach, Analytics, Teams &amp; Roles. The difference is how many auctions and balance exchanges your business can join each day.</p>
+    <p style="font-size:13px;line-height:1.6;color:var(--pxa-txt-dim);max-width:600px;margin:0 auto 48px;">A <b>participation</b> is one time your business is a candidate for an ad space in a pool. Limits reset every day at midnight (Berlin time). On the free plan, once you reach the Balance limit, your ad space keeps showing others until what you gave today equals what you received today; then both pause until the next day.</p>
 
     <div class="pxa-price-strip">
       <span style="font-size:11px;font-family:monospace;text-transform:uppercase;letter-spacing:.1em;color:#60a5fa;margin-right:4px;">What you get free:</span>
       <span class="pxa-price-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>AI Matching</span>
       <span class="pxa-price-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Ad Studio</span>
+      <span class="pxa-price-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Email Outreach</span>
       <span class="pxa-price-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Conversion Tracking</span>
       <span class="pxa-price-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Advanced Analytics</span>
       <span class="pxa-price-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Teams &amp; Roles</span>
@@ -698,15 +696,15 @@ pxaSetBt('B2B');
     <div class="pxa-price-grid">
       <div class="pxa-price-card" style="background:rgba(59,110,240,.05);border-color:rgba(59,110,240,.2);">
         <div class="pxa-price-icon" style="background:rgba(59,110,240,.15);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M12 2l2.4 7.2H22l-6 4.6L18.4 21 12 16.4 5.6 21 8 13.8 2 9.2h7.6z"/></svg></div>
-        <div class="pxa-price-phase">Months 1–3</div>
-        <div class="pxa-price-label">Completely Free</div>
-        <p class="pxa-price-desc">Full access to every feature — no different tier, just the same plan. Card required to start, no charge until trial ends.</p>
+        <div class="pxa-price-phase">Free plan · forever</div>
+        <div class="pxa-price-label">$0</div>
+        <p class="pxa-price-desc">Up to <b>100 Auction</b> and <b>100 Balance</b> participations per day. Every feature included, with monthly limits on AI ad creation and support chat. No credit card required.</p>
       </div>
       <div class="pxa-price-card" style="background:rgba(34,211,238,.05);border-color:rgba(34,211,238,.2);">
         <div class="pxa-price-icon" style="background:rgba(34,211,238,.15);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-        <div class="pxa-price-phase">After month 3</div>
+        <div class="pxa-price-phase">Paid plan</div>
         <div class="pxa-price-label">$7/month</div>
-        <p class="pxa-price-desc">Same features, no changes. Simply continue with full access to the network.</p>
+        <p class="pxa-price-desc">Up to <b>3,000 Auction</b> and <b>3,000 Balance</b> participations per day, unlimited AI ad creation and support chat, and no PhronexusAI badge on your ad space.</p>
       </div>
       <div class="pxa-price-card" style="background:rgba(139,92,246,.05);border-color:rgba(139,92,246,.2);">
         <div class="pxa-price-icon" style="background:rgba(139,92,246,.15);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
@@ -718,11 +716,11 @@ pxaSetBt('B2B');
 
     <div class="pxa-price-cta-strip">
       <div>
-        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;color:var(--pxa-txt);margin-bottom:4px;">Sign up now — 3 months free, full access.</div>
-        <div style="font-size:13px;color:var(--pxa-txt-dim);margin-bottom:8px;">Card required, no charge for 3 months · Full setup in 15 minutes · Cancel anytime, anywhere</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;color:var(--pxa-txt);margin-bottom:4px;">Start on the free plan — upgrade anytime.</div>
+        <div style="font-size:13px;color:var(--pxa-txt-dim);margin-bottom:8px;">No credit card required · Full setup in 15 minutes · Cancel the paid plan anytime</div>
         <div style="display:inline-flex;align-items:baseline;gap:6px;background:rgba(59,110,240,.12);border:1px solid rgba(59,110,240,.3);border-radius:10px;padding:8px 16px;">
           <span style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:700;color:#3b6ef0;">$7</span>
-          <span style="font-size:13px;color:var(--pxa-txt-dim);">/month, after 3 free months</span>
+          <span style="font-size:13px;color:var(--pxa-txt-dim);">/month for the paid plan</span>
         </div>
       </div>
       <a href="#" onclick="event.preventDefault();sessionStorage.removeItem('preferuarModaliteti');hapModal('reg');" class="pxa-cta-main" style="flex:0 0 auto;">Sign Up Free
@@ -746,7 +744,7 @@ pxaSetBt('B2B');
       <div class="pxa-faq-item"><button class="pxa-faq-q" onclick="pxaToggleFaq(this)"><span>How does the points and auction system work?</span><svg class="pxa-faq-chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="pxa-faq-a hide">Every business accumulates two types of points: AI Score (0–1000, based on matching) and Profile Points (from impressions and conversions given). In every auction, the points combine as weight, and the winner is chosen through a proportional lottery.</div></div>
       <div class="pxa-faq-item"><button class="pxa-faq-q" onclick="pxaToggleFaq(this)"><span>Do we have to accept ads from other businesses on our site?</span><svg class="pxa-faq-chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="pxa-faq-a hide">Yes — that's the foundation of the reciprocal network. You open space for complementary businesses and get impressions with their audience in return. We also offer a premium option for businesses that want to advertise without showing others on their own site.</div></div>
       <div class="pxa-faq-item"><button class="pxa-faq-q" onclick="pxaToggleFaq(this)"><span>Is setting up conversion tracking mandatory?</span><svg class="pxa-faq-chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="pxa-faq-a hide">No, but it's strongly recommended. Without tracking, the platform still works and you still get impressions, but your profile points are calculated only from impressions given. With tracking active, every verified conversion adds a point.</div></div>
-      <div class="pxa-faq-item"><button class="pxa-faq-q" onclick="pxaToggleFaq(this)"><span>How long does the free period last, and what happens after?</span><svg class="pxa-faq-chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="pxa-faq-a hide">The first three months are completely free, no credit card at all. After that period, we review your performance together and propose a personalized plan. There are no one-size-fits-all standard plans.</div></div>
+      <div class="pxa-faq-item"><button class="pxa-faq-q" onclick="pxaToggleFaq(this)"><span>Is there a free plan, and what does the paid plan add?</span><svg class="pxa-faq-chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="pxa-faq-a hide">Yes. The free plan is permanent and needs no credit card: your business can join up to 100 auctions and 100 balance exchanges per day, and use free email outreach. The paid plan costs $7/month and raises the limit to 3,000 per day for each pool, removes the monthly limits on AI ad creation and support chat, and removes the PhronexusAI badge from your ad space.</div></div>
       <div class="pxa-faq-item"><button class="pxa-faq-q" onclick="pxaToggleFaq(this)"><span>Can we control which ads show to our audience?</span><svg class="pxa-faq-chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="pxa-faq-a hide">Absolutely. From your dashboard, you can manually approve every ad, set allowed categories, block specific businesses, and adjust display spaces.</div></div>
       <div class="pxa-faq-item"><button class="pxa-faq-q" onclick="pxaToggleFaq(this)"><span>Is our business and customer data safe?</span><svg class="pxa-faq-chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="pxa-faq-a hide">Yes. PhronexusAI never sells, shares, or accesses your data without permission. Analytics show the categories of businesses you're connected with — never specific names.</div></div>
     </div>
@@ -757,14 +755,14 @@ pxaSetBt('B2B');
 <section class="pxa-section pxa-cta-banner">
   <div class="pxa-wrap" style="max-width:640px;">
     <h2 class="pxa-sec-h2">Ready to get started?</h2>
-    <p>The first three months are free. Setup takes 15 minutes. Your business starts showing to the right audience today.</p>
+    <p>The free plan is free forever. Setup takes 15 minutes. Your business starts showing to the right audience today.</p>
     <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-bottom:24px;">
-      <a href="#" onclick="event.preventDefault();sessionStorage.removeItem('preferuarModaliteti');startWizard();" class="pxa-cta-main">Sign Up Free — 3 months
+      <a href="#" onclick="event.preventDefault();sessionStorage.removeItem('preferuarModaliteti');startWizard();" class="pxa-cta-main">Sign Up Free
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </a>
       <a href="/contact" class="pxa-cta-second">Contact the team</a>
     </div>
-    <p style="font-size:11px;font-family:monospace;color:#475569;">Card required, no charge for 3 months · Free cancellation anytime</p>
+    <p style="font-size:11px;font-family:monospace;color:#475569;">No credit card required · Paid plan $7/month, cancel anytime</p>
   </div>
 </section>
 
