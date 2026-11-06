@@ -453,6 +453,8 @@
   var KATEGORITE = [];
   var BIZNESET = [];
   var VENDET = []; // shtetet e direktorise me numrin (sipas kategorise dhe vitit te zgjedhur)
+  // Numrat per kategori/shtet shfaqen vetem kur admin-i i ndez (GET /api/pxse/publike). Paracaktim: te fshehur.
+  var SHFAQ_NUMRAT = false, PUBLIKE_NGARKUAR = false;
   // Filtri i vitit te domain-it: kodi -> [nga, deri]
   var PXSE_VITET = { v24: [2024, 0], v20: [2020, 2023], v15: [2015, 2019], v00: [0, 2014] };
 
@@ -1163,6 +1165,13 @@
   };
   PxSinjaleEmail.prototype._ngarkoKategorite = function () {
     var self = this, nr = (this._katNr = (this._katNr || 0) + 1);
+    if (!PUBLIKE_NGARKUAR) {
+      PUBLIKE_NGARKUAR = true;
+      fetch('/api/pxse/publike').then(function (r) { return r.json(); }).then(function (j) {
+        SHFAQ_NUMRAT = !!(j && j.shfaq_numrat);
+        if (SHFAQ_NUMRAT) self._rivizatoEmail();
+      }).catch(function () {});
+    }
     // kategorite numerohen sipas shtetit/vitit; shtetet sipas kategorise/vitit (gjithmone nga direktoria publike)
     fetch('/api/pxse/kategorite?kategoria=' + encodeURIComponent(this._kategoria || '') + this._qsFiltrat()).then(function (r) { return r.json(); }).then(function (j) {
       if (nr !== self._katNr) return;
@@ -1270,7 +1279,7 @@
     var nKat = function (v) { var k = KATEGORITE.find(function (x) { return x.v === v; }); return k ? k.n : 0; };
     var cip = function (v, tekst, n, rek) {
       return '<button type="button" class="px-cip' + (rek ? ' px-cip-rek' : '') + (self._kategoria === v ? ' px-cip-on' : '') + '" data-e="kat" data-v="' + esc(v) + '">' +
-        (rek ? '<span class="px-cip-yll">★</span>' : '') + esc(tekst) + (n != null ? ' <b>' + n + '</b>' : '') + '</button>';
+        (rek ? '<span class="px-cip-yll">★</span>' : '') + esc(tekst) + (SHFAQ_NUMRAT && n != null ? ' <b>' + n + '</b>' : '') + '</button>';
     };
     var kat = '';
     if (em.rekomanduar.length) {
@@ -1282,8 +1291,8 @@
         .map(function (k) { return cip(k.v, k[gj], k.n, false); }).join('') + '</div>';
     // shteti dhe viti i domain-it
     var opsV = '<option value="">' + esc(t('eFTeGjithaVendet')) + '</option>' + VENDET.map(function (x) {
-      return '<option value="' + esc(x.v) + '"' + (self._vendi === x.v ? ' selected' : '') + '>' + esc(x.v) + ' (' + x.n + ')</option>';
-    }).join('') + (self._vendi && !VENDET.some(function (x) { return x.v === self._vendi; }) ? '<option value="' + esc(self._vendi) + '" selected>' + esc(self._vendi) + ' (0)</option>' : '');
+      return '<option value="' + esc(x.v) + '"' + (self._vendi === x.v ? ' selected' : '') + '>' + esc(x.v) + (SHFAQ_NUMRAT ? ' (' + x.n + ')' : '') + '</option>';
+    }).join('') + (self._vendi && !VENDET.some(function (x) { return x.v === self._vendi; }) ? '<option value="' + esc(self._vendi) + '" selected>' + esc(self._vendi) + '</option>' : '');
     var opsY = [['', t('eFCdoVit')], ['v24', t('eFV24')], ['v20', t('eFV20')], ['v15', t('eFV15')], ['v00', t('eFV00')]].map(function (x) {
       return '<option value="' + x[0] + '"' + (self._viti === x[0] ? ' selected' : '') + '>' + esc(x[1]) + '</option>';
     }).join('');
