@@ -372,15 +372,11 @@ let emailShablloniZgjedhur = null; // '7dite' ose '3muaj'
 async function renderNjoftEmail(m){
 m.innerHTML=
 '<h2 class="h">Dërgo Email</h2>'+
-'<p class="small" style="margin:2px 0 18px;">Dërgo email real (Gmail/Workspace) te një ose disa biznese — nga zero, ose me shabllon të gatshëm.</p>'+
+'<p class="small" style="margin:2px 0 18px;">Dërgo email real (Gmail/Workspace) te një ose disa biznese.</p>'+
 '<div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px;">'+
   '<div class="card" style="flex:1;min-width:280px;cursor:pointer;" id="emailKutiaZero" onclick="emailZgjidhModalitet(\'zero\')">'+
     '<h3 class="h" style="font-size:15px;margin:0 0 10px;">✏️ Nga zero</h3>'+
     '<div id="emailFormaZero"></div>'+
-  '</div>'+
-  '<div class="card" style="flex:1;min-width:280px;">'+
-    '<h3 class="h" style="font-size:15px;margin:0 0 10px;">📄 Shabllone të gatshëm</h3>'+
-    '<div style="display:flex;flex-direction:column;gap:10px;" id="emailShabllonet"></div>'+
   '</div>'+
 '</div>'+
 '<h3 class="h" style="font-size:15px;margin:0 0 10px;">Zgjidh marrësit</h3>'+
@@ -484,7 +480,7 @@ function emailRuajRedaktimin(){
 }
 function emailRenderShabllonet(){
 const el=$('emailShabllonet'); if(!el) return;
-const opsionet=[{k:'7dite',l:'7 ditë — Lidh snippet-in',ngjyra:'#3b6ef0'},{k:'3muaj',l:'3 muaj — Aktivizo planin',ngjyra:'#f59e0b'}];
+const opsionet=[];
 el.innerHTML = opsionet.map(o=>{
   const sel = emailModaliteti==='shabllon' && emailShablloniZgjedhur===o.k;
   return '<button onclick="emailZgjidhShabllon(\''+o.k+'\')" style="text-align:left;padding:12px;border-radius:10px;border:1px solid '+(sel?o.ngjyra:'var(--line)')+';background:'+(sel?o.ngjyra+'18':'transparent')+';color:var(--txt);cursor:pointer;font-family:inherit;">'+esc(o.l)+'</button>';
@@ -1482,7 +1478,6 @@ row2('Email', esc(b.email))+
 row2('Faqja', (b.website ? esc(b.website)+' <button onclick="zbuloPlatformen('+b.id+')" style="margin-left:8px;font-size:11px;padding:2px 8px;cursor:pointer;">Shfaq platformën</button><div id="platRez" style="margin-top:8px;"></div>' : '—'))+
 row2('Plani', b.plani||'—')+
 row2('Tipi', b.tipi||'—')+
-row2('Periudha e faljes (7 ditë)', graceStatus(b))+
 row2('Regjistruar', dt(b.created_at))+
 row2('Çelësi', b.celes||'—')+
 '</div>'+
@@ -1812,7 +1807,7 @@ m.innerHTML=
 '</div>'+
 
 '<div id="mktSeksionMenjehere" style="display:none;margin-top:20px;">'+
-'<p class="small" style="margin:0 0 10px;">Dërgon direkt, brenda kësaj kërkese, pa kaluar nëpër orar — njësoj si njoftimet 7/90-ditëshe.</p>'+
+'<p class="small" style="margin:0 0 10px;">Dërgon direkt, brenda kësaj kërkese, pa kaluar nëpër orar .</p>'+
 '<button class="primary" onclick="mktDergoMenjehere(this)">Dërgo tani</button>'+
 '<span class="small" id="mktMenjehereStat" style="margin-left:10px;"></span>'+
 '</div>'+
