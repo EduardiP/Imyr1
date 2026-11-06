@@ -105,34 +105,6 @@ function htmlNeTekst(html) {
 }
 
 
-// Versioni tekst i email-it (krahas HTML-se) — Microsoft dhe Google e presin te dy pjeset.
-// Lidhjet ruhen si "Teksti (adresa)"; imazhet (dhe pikseli) hiqen.
-function tekstPerEmail(html) {
-  return String(html || '')
-    .replace(/<(style|head|script)[\s\S]*?<\/\1>/gi, '')
-    .replace(/<img[^>]*>/gi, '')
-    .replace(/<a\b[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (m, href, t) => {
-      const tt = t.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
-      return tt ? tt + ' (' + href + ')' : href;
-    })
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/(p|tr|h[1-6]|li|div)>/gi, '\n')
-    .replace(/<\/td>/gi, ' ')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/g, ' ').replace(/&middot;/g, '·').replace(/&mdash;/g, '—').replace(/&ndash;/g, '–')
-    .replace(/&#(\d+);/g, (m, n) => String.fromCodePoint(parseInt(n, 10)))
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
-    .split('\n').map(r => r.replace(/[ \t]+/g, ' ').trim()).join('\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .replace(/^([✓•·\-\d.]{1,3})\n+(?=\S)/gm, '$1 ')
-    .trim();
-}
-// Kreret e cregjistrimit me nje klikim (RFC 8058): Gmail dhe Outlook shfaqin butonin e tyre "Unsubscribe".
-// /marketing-unsubscribe pranon tashme POST me ?email=...
-function kreretCregjistrimi(unsubLink) {
-  return { 'List-Unsubscribe': '<' + unsubLink + '>', 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' };
-}
-
 function shperndajNe24Ore(sasia, minutaFillimit) {
   minutaFillimit = minutaFillimit || 0;
   const minutaGjithsej = (24 * 60) - minutaFillimit;
@@ -197,12 +169,6 @@ module.exports = function (app, pool, iAdmin) {
         id SERIAL PRIMARY KEY, emri TEXT NOT NULL, subjekti TEXT NOT NULL, html TEXT NOT NULL,
         krijuar_at TIMESTAMPTZ DEFAULT now()
       )`);
-      // Perditeso permbajtjen e shabllonit "Biznes online - outreach" ne versionin e ri, te thjeshtuar
-      // (struktura shume me e thjeshte, njesoj si email.js qe funksionon) — rinovohet cdo rinisje.
-      await pool.query(
-        "UPDATE marketing_shabllonet SET html=$1, subjekti=$2 WHERE emri='Biznes online - outreach'",
-        ['<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef0f3;">\n<tr><td align="center" style="padding:32px 16px;">\n<table role="presentation" width="580" cellpadding="0" cellspacing="0" style="max-width:580px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;">\n\n<tr><td style="background:#0f1729;padding:22px 32px;">\n  <table role="presentation" cellpadding="0" cellspacing="0"><tr>\n    <td style="width:28px;height:28px;"><img src="https://phronexusai.com/favicon-192.png" width="28" height="28" alt="PhronexusAI" style="display:block;border-radius:7px;"></td>\n    <td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;padding-left:10px;font-size:15px;font-weight:600;color:#ffffff;">PhronexusAI</td>\n  </tr></table>\n</td></tr>\n\n<tr><td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;padding:32px 32px 8px;font-size:15px;line-height:1.65;color:#3d4451;">\n  Hi,<br><br>\n  I\'m Eduard from PhronexusAI. We send emails for {platforma} to new B2B customers, so you don\'t need your own email list.\n</td></tr>\n\n<tr><td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;padding:18px 32px 6px;font-size:15px;font-weight:600;color:#0f1729;">What we do for you</td></tr>\n\n<tr><td style="padding:6px 32px 22px;">\n<table role="presentation" width="100%" cellpadding="0" cellspacing="0">\n  <tr>\n    <td width="32" valign="top"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;width:22px;height:22px;background:#3b6ef0;border-radius:11px;font-size:13px;color:#ffffff;text-align:center;line-height:22px;">&#10003;</td></tr></table></td>\n    <td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;padding-left:12px;padding-bottom:14px;font-size:14.5px;line-height:1.5;color:#1c2128;"><b>No email list needed.</b> The recipients come from our directory of B2B companies, with active websites and checked emails.</td>\n  </tr>\n  <tr>\n    <td width="32" valign="top"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;width:22px;height:22px;background:#3b6ef0;border-radius:11px;font-size:13px;color:#ffffff;text-align:center;line-height:22px;">&#10003;</td></tr></table></td>\n    <td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;padding-left:12px;padding-bottom:14px;font-size:14.5px;line-height:1.5;color:#1c2128;"><b>Matched to your customers.</b> We choose the companies by the category of businesses that buy what you sell.</td>\n  </tr>\n  <tr>\n    <td width="32" valign="top"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;width:22px;height:22px;background:#3b6ef0;border-radius:11px;font-size:13px;color:#ffffff;text-align:center;line-height:22px;">&#10003;</td></tr></table></td>\n    <td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;padding-left:12px;padding-bottom:14px;font-size:14.5px;line-height:1.5;color:#1c2128;"><b>AI writes the email.</b> It is based on your website. You can change it before anything is sent.</td>\n  </tr>\n  <tr>\n    <td width="32" valign="top"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;width:22px;height:22px;background:#3b6ef0;border-radius:11px;font-size:13px;color:#ffffff;text-align:center;line-height:22px;">&#10003;</td></tr></table></td>\n    <td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;padding-left:12px;font-size:14.5px;line-height:1.5;color:#1c2128;"><b>You see the results.</b> Who opened and who clicked, and replies come straight to you.</td>\n  </tr>\n</table>\n</td></tr>\n\n<tr><td style="padding:0 32px 28px;">\n<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f9fc;border-radius:12px;">\n<tr><td align="center" style="padding:24px 24px;">\n  <p style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;margin:0 0 6px;font-size:15px;font-weight:600;color:#0f1729;">Why it\'s free</p>\n  <p style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;margin:0 0 18px;font-size:14px;line-height:1.55;color:#5b6472;">Sending is free because {platforma} also joins the PhronexusAI network of B2B companies. That is the only condition.</p>\n  <table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:#3b6ef0;border-radius:7px;">\n    <a href="https://phronexusai.com" style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;display:inline-block;padding:13px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">Start sending for free</a>\n  </td></tr></table>\n</td></tr>\n</table>\n</td></tr>\n\n<tr><td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;padding:0 32px 30px;font-size:15px;line-height:1.6;color:#1c2128;">\n  If you have a question, just reply to this email.<br><br>\n  Eduard<br>PhronexusAI\n</td></tr>\n\n<tr><td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;border-top:1px solid #edeef1;padding:18px 32px;font-size:12px;line-height:1.6;color:#9aa4b2;">\n  You\'re receiving this because {platforma} is listed as a B2B business on its public website.<br>\n  PhronexusAI &middot; Rruga Dhimiter Pasko, 1060 Tirana, Albania &middot; phronexusai.com &middot; <a href="{unsubscribe_link}" style="color:#9aa4b2;">Unsubscribe</a>\n</td></tr>\n\n</table>\n</td></tr>\n</table>\n', 'Free B2B email outreach for {platforma}, no list needed']
-      );
       await pool.query(`CREATE TABLE IF NOT EXISTS marketing_fushatat (
         id SERIAL PRIMARY KEY, emri TEXT, llogaria TEXT NOT NULL, shabllon_id INT REFERENCES marketing_shabllonet(id),
         statusi TEXT NOT NULL DEFAULT 'aktiv', krijuar_at TIMESTAMPTZ DEFAULT now()
@@ -224,59 +190,18 @@ module.exports = function (app, pool, iAdmin) {
     // Tabela e gjurmimit — ne bllokun e saj, e pavarur nga migrimet e tjera me larte.
     try { await siguroTabelenDergimet(); } catch (e) { console.error('marketing_dergimet migrim:', e.message); }
 
-    // Para-ngarko 1 shabllon te dizajnuar, gati per t'u perdorur — vetem 1 here,
-    // kur ende s'ekziston asnje shabllon me kete emer (nuk perseritet ne restart-e te tjera).
-    try {
-      const ekziston = await pool.query("SELECT 1 FROM marketing_shabllonet WHERE emri=$1", ['PyjamaHR stil - profesional']);
-      if (!ekziston.rows.length) {
-        await pool.query(
-          'INSERT INTO marketing_shabllonet (emri, subjekti, html) VALUES ($1,$2,$3)',
-          ['PyjamaHR stil - profesional', "Quick question about {platforma}'s SaaS growth", '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef0f3;">\n<tr><td align="center" style="padding:32px 16px;">\n<table role="presentation" width="580" cellpadding="0" cellspacing="0" style="max-width:580px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;">\n\n<!-- Header band -->\n<tr><td style="background:#0f1729;padding:22px 32px;">\n<table role="presentation" cellpadding="0" cellspacing="0"><tr>\n<td style="width:28px;height:28px;background:#3b6ef0;border-radius:7px;font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;font-size:14px;font-weight:700;color:#ffffff;text-align:center;line-height:28px;">P</td>\n<td style="padding-left:10px;font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:#ffffff;">PhronexusAI</td>\n</tr></table>\n</td></tr>\n\n<!-- Opening -->\n<tr><td style="padding:34px 32px 6px;">\n<p style="margin:0;font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;font-size:21px;line-height:1.4;font-weight:600;color:#0f1729;">\nHow is {platforma} getting in front of new SaaS buyers right now?\n</p>\n</td></tr>\n\n<tr><td style="padding:14px 32px 26px;font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#3d4451;">\nMostly Google or Facebook ads? If so, you already know the problem &mdash; those platforms make you pay full price while their algorithm is still figuring out who your customer even is.\n</td></tr>\n\n<!-- Comparison -->\n<tr><td style="padding:0 32px 28px;">\n<table role="presentation" width="100%" cellpadding="0" cellspacing="0">\n<tr>\n<td width="48%" valign="top" style="background:#f4f5f7;border-radius:10px;padding:18px 16px;">\n<p style="margin:0 0 6px;font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;color:#8891a0;">Paid ads</p>\n<p style="margin:0;font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#5b6472;">Pay full price while the algorithm learns. Budget burns before results show up.</p>\n</td>\n<td width="4%"></td>\n<td width="48%" valign="top" style="background:#eef3ff;border-radius:10px;padding:18px 16px;">\n<p style="margin:0 0 6px;font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;color:#3b6ef0;">PhronexusAI</p>\n<p style="margin:0;font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#1c2128;">Swap exposure with other SaaS tools. No learning phase eating your budget first.</p>\n</td>\n</tr>\n</table>\n</td></tr>\n\n<tr><td style="padding:0 32px 28px;font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#3d4451;">\nSetup takes about 2 minutes &mdash; give us your website URL, and category matching, ad creative, and tracking are handled automatically.\n</td></tr>\n\n<!-- Benefit badges -->\n<tr><td style="padding:0 32px 30px;">\n<table role="presentation" width="100%" cellpadding="0" cellspacing="0">\n\n<tr>\n<td width="32" valign="top"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="width:22px;height:22px;background:#3b6ef0;border-radius:11px;font-family:-apple-system,Arial,sans-serif;font-size:13px;color:#ffffff;text-align:center;line-height:22px;">&#10003;</td></tr></table></td>\n<td style="padding-left:12px;padding-bottom:16px;font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;font-size:14.5px;line-height:1.5;color:#1c2128;">90 days completely free, no plan required</td>\n</tr>\n\n<tr>\n<td width="32" valign="top"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="width:22px;height:22px;background:#3b6ef0;border-radius:11px;font-family:-apple-system,Arial,sans-serif;font-size:13px;color:#ffffff;text-align:center;line-height:22px;">&#10003;</td></tr></table></td>\n<td style="padding-left:12px;padding-bottom:16px;font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;font-size:14.5px;line-height:1.5;color:#1c2128;">Priority matching for your first 7 days &mdash; real exposure from day one</td>\n</tr>\n\n<tr>\n<td width="32" valign="top"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="width:22px;height:22px;background:#3b6ef0;border-radius:11px;font-family:-apple-system,Arial,sans-serif;font-size:13px;color:#ffffff;text-align:center;line-height:22px;">&#10003;</td></tr></table></td>\n<td style="padding-left:12px;font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;font-size:14.5px;line-height:1.5;color:#1c2128;">Lock in $7/month, forever &mdash; the price rises for everyone who joins later</td>\n</tr>\n\n</table>\n</td></tr>\n\n<!-- CTA panel -->\n<tr><td style="padding:0 32px 32px;">\n<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f9fc;border-radius:12px;">\n<tr><td align="center" style="padding:26px 24px;">\n<p style="margin:0 0 16px;font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;font-size:14.5px;color:#3d4451;">Worth 2 minutes to see what it looks like for {platforma}?</p>\n<table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:#3b6ef0;border-radius:7px;">\n<a href="https://phronexusai.com" style="display:inline-block;padding:13px 30px;font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">Try it free</a>\n</td></tr></table>\n</td></tr>\n</table>\n</td></tr>\n\n<tr><td style="padding:0 32px 30px;font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#1c2128;">\nEduard<br>PhronexusAI\n</td></tr>\n\n<tr><td style="border-top:1px solid #edeef1;padding:18px 32px;font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;font-size:12px;color:#9aa4b2;">\nPhronexusAI &middot; phronexusai.com &middot; <a href="{unsubscribe_link}" style="color:#9aa4b2;">Unsubscribe</a>\n</td></tr>\n\n</table>\n</td></tr>\n</table>\n']
-        );
-        console.log('marketing-email: shabllon fillestar u para-ngarkua.');
-      }
-    } catch (e) { console.error('marketing-email seed shablloni:', e.message); }
-
-    // Shabllon i dyte, i para-ngarkuar — "Biznes online", subjekt i shkurter, i personalizuar.
-    try {
-      const ekziston2 = await pool.query("SELECT 1 FROM marketing_shabllonet WHERE emri=$1", ['Biznes online - outreach']);
-      if (!ekziston2.rows.length) {
-        await pool.query(
-          'INSERT INTO marketing_shabllonet (emri, subjekti, html) VALUES ($1,$2,$3)',
-          ['Biznes online - outreach', 'Free B2B email outreach for {platforma}, no list needed', '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef0f3;">\n<tr><td align="center" style="padding:32px 16px;">\n<table role="presentation" width="580" cellpadding="0" cellspacing="0" style="max-width:580px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;">\n\n<tr><td style="background:#0f1729;padding:22px 32px;">\n  <table role="presentation" cellpadding="0" cellspacing="0"><tr>\n    <td style="width:28px;height:28px;"><img src="https://phronexusai.com/favicon-192.png" width="28" height="28" alt="PhronexusAI" style="display:block;border-radius:7px;"></td>\n    <td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;padding-left:10px;font-size:15px;font-weight:600;color:#ffffff;">PhronexusAI</td>\n  </tr></table>\n</td></tr>\n\n<tr><td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;padding:32px 32px 8px;font-size:15px;line-height:1.65;color:#3d4451;">\n  Hi,<br><br>\n  I\'m Eduard from PhronexusAI. We send emails for {platforma} to new B2B customers, so you don\'t need your own email list.\n</td></tr>\n\n<tr><td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;padding:18px 32px 6px;font-size:15px;font-weight:600;color:#0f1729;">What we do for you</td></tr>\n\n<tr><td style="padding:6px 32px 22px;">\n<table role="presentation" width="100%" cellpadding="0" cellspacing="0">\n  <tr>\n    <td width="32" valign="top"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;width:22px;height:22px;background:#3b6ef0;border-radius:11px;font-size:13px;color:#ffffff;text-align:center;line-height:22px;">&#10003;</td></tr></table></td>\n    <td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;padding-left:12px;padding-bottom:14px;font-size:14.5px;line-height:1.5;color:#1c2128;"><b>No email list needed.</b> The recipients come from our directory of B2B companies, with active websites and checked emails.</td>\n  </tr>\n  <tr>\n    <td width="32" valign="top"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;width:22px;height:22px;background:#3b6ef0;border-radius:11px;font-size:13px;color:#ffffff;text-align:center;line-height:22px;">&#10003;</td></tr></table></td>\n    <td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;padding-left:12px;padding-bottom:14px;font-size:14.5px;line-height:1.5;color:#1c2128;"><b>Matched to your customers.</b> We choose the companies by the category of businesses that buy what you sell.</td>\n  </tr>\n  <tr>\n    <td width="32" valign="top"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;width:22px;height:22px;background:#3b6ef0;border-radius:11px;font-size:13px;color:#ffffff;text-align:center;line-height:22px;">&#10003;</td></tr></table></td>\n    <td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;padding-left:12px;padding-bottom:14px;font-size:14.5px;line-height:1.5;color:#1c2128;"><b>AI writes the email.</b> It is based on your website. You can change it before anything is sent.</td>\n  </tr>\n  <tr>\n    <td width="32" valign="top"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;width:22px;height:22px;background:#3b6ef0;border-radius:11px;font-size:13px;color:#ffffff;text-align:center;line-height:22px;">&#10003;</td></tr></table></td>\n    <td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;padding-left:12px;font-size:14.5px;line-height:1.5;color:#1c2128;"><b>You see the results.</b> Who opened and who clicked, and replies come straight to you.</td>\n  </tr>\n</table>\n</td></tr>\n\n<tr><td style="padding:0 32px 28px;">\n<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f9fc;border-radius:12px;">\n<tr><td align="center" style="padding:24px 24px;">\n  <p style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;margin:0 0 6px;font-size:15px;font-weight:600;color:#0f1729;">Why it\'s free</p>\n  <p style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;margin:0 0 18px;font-size:14px;line-height:1.55;color:#5b6472;">Sending is free because {platforma} also joins the PhronexusAI network of B2B companies. That is the only condition.</p>\n  <table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:#3b6ef0;border-radius:7px;">\n    <a href="https://phronexusai.com" style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;display:inline-block;padding:13px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">Start sending for free</a>\n  </td></tr></table>\n</td></tr>\n</table>\n</td></tr>\n\n<tr><td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;padding:0 32px 30px;font-size:15px;line-height:1.6;color:#1c2128;">\n  If you have a question, just reply to this email.<br><br>\n  Eduard<br>PhronexusAI\n</td></tr>\n\n<tr><td style="font-family:-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;border-top:1px solid #edeef1;padding:18px 32px;font-size:12px;line-height:1.6;color:#9aa4b2;">\n  You\'re receiving this because {platforma} is listed as a B2B business on its public website.<br>\n  PhronexusAI &middot; Rruga Dhimiter Pasko, 1060 Tirana, Albania &middot; phronexusai.com &middot; <a href="{unsubscribe_link}" style="color:#9aa4b2;">Unsubscribe</a>\n</td></tr>\n\n</table>\n</td></tr>\n</table>\n']
-        );
-        console.log('marketing-email: shabllon i 2-te (Biznes online) u para-ngarkua.');
-      }
-    } catch (e) { console.error('marketing-email seed shablloni 2:', e.message); }
-
-    // Shabllon i 3-te, i para-ngarkuar — permbajtje IDENTIKE me 7-ditesh-in e email.js (qe funksionon).
-    try {
-      const ekziston3 = await pool.query("SELECT 1 FROM marketing_shabllonet WHERE emri=$1", ['TEST - identik me 7-ditesh-in']);
-      if (!ekziston3.rows.length) {
-        await pool.query(
-          'INSERT INTO marketing_shabllonet (emri, subjekti, html) VALUES ($1,$2,$3)',
-          ['TEST - identik me 7-ditesh-in', '90 days ends soon for new signups', '<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">\n<p>Hi there,</p>\n<p>Quick heads-up: PhronexusAI is currently running an early-signup window.</p>\n<p>Join now, and you get 90 days completely free (plus 7 days of live traffic right away), then $7/month after — locked in for as long as you stay.</p>\n<p>Once this window closes, new signups only get a 14-day trial, and the rate becomes $20/month.</p>\n<p>Same idea either way: your business gets paired with complementary businesses (never competitors) so you show up in front of their visitors, and vice versa.</p>\n<p><a href="https://phronexusai.com" style="display:inline-block;background:#3b6ef0;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Get started →</a></p>\n<p style="color:#94a3b8;font-size:12px;margin-top:28px;">PhronexusAI &middot; <a href="{unsubscribe_link}" style="color:#94a3b8;">Unsubscribe</a></p>\n</div>']
-        );
-        console.log('marketing-email: shabllon i 3-te (TEST 7-ditesh) u para-ngarkua.');
-      }
-    } catch (e) { console.error('marketing-email seed shablloni 3:', e.message); }
-
-    // Shabllon i 4-t — "Dritarja e regjistrimit". Permbajtja perditesohet GJITHMONE (UPDATE i
-    // pakushtezuar), qe ndryshimet e ardhshme te aplikohen gjithmone, pavaresisht nese rreshti ekziston tashme.
-    try {
-      await pool.query(
-        "UPDATE marketing_shabllonet SET html=$1, subjekti=$2 WHERE emri='Dritarja e regjistrimit'",
-        ['<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">\n<p>Hi there,</p>\n<p>Quick heads-up: the early window for PhronexusAI is wrapping up.</p>\n<p>Right now, joining gets you 90 days completely free, plus a lower rate locked in for as long as you stay. Once this window closes, the terms change for anyone signing up after.</p>\n<p>Same idea either way: your business gets paired with complementary businesses (never competitors), so you show up in front of their visitors, and vice versa.</p>\n<p><a href="https://phronexusai.com" style="display:inline-block;background:#3b6ef0;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">See how it works</a></p>\n<p style="color:#94a3b8;font-size:12px;margin-top:28px;">PhronexusAI &middot; <a href="{unsubscribe_link}" style="color:#94a3b8;">Unsubscribe</a></p>\n</div>', 'Your free period is ending']
-      );
-      const ekziston4 = await pool.query("SELECT 1 FROM marketing_shabllonet WHERE emri=$1", ['Dritarja e regjistrimit']);
-      if (!ekziston4.rows.length) {
-        await pool.query(
-          'INSERT INTO marketing_shabllonet (emri, subjekti, html) VALUES ($1,$2,$3)',
-          ['Dritarja e regjistrimit', 'Quick note about PhronexusAI', '<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">\n      <p style="line-height:1.6;">Hi there,</p>\n      <p style="line-height:1.6;">Quick note about PhronexusAI — the cross-promotion network I mentioned before.</p>\n      <p style="line-height:1.6;">Right now, businesses that join get 90 days completely free, no subscription needed. After that, if you choose to continue, the monthly rate stays permanently lower than what new signups will pay once this window closes.</p>\n      <p style="line-height:1.6;">The idea itself: your business gets paired with complementary businesses (never competitors), so you show up in front of their visitors, and vice versa. AI handles the matching based on what\'s likely to convert.</p>\n      <p style="line-height:1.6;">Once this early window ends, the free period shortens and the rate goes up for anyone joining after. Signing up now locks in both.</p>\n      <p><a href="https://phronexusai.com" style="display:inline-block;background:#3b6ef0;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">See how it works</a></p>\n      <p style="color:#94a3b8;font-size:12px;margin-top:28px;">PhronexusAI &middot; <a href="{unsubscribe_link}" style="color:#94a3b8;">Unsubscribe</a></p>\n    </div>\n']
-        );
-        console.log('marketing-email: shabllon i 4-t (Dritarja e regjistrimit) u para-ngarkua.');
-      }
-    } catch (e) { console.error('marketing-email seed shablloni 4:', e.message); }
+    // Shabllonet e vjetra me "90 dite falas" / "7 dite" / "lock-in" u hoqen. Fshihen nga databaza
+  // (edhe ato me te njejtin tekst). Fushatat qe i perdornin ndalen, qe te mos dergojne me oferta te pavlefshme.
+  try {
+    const VJETRA = "(emri IN ('PyjamaHR stil - profesional','Biznes online - outreach','TEST - identik me 7-ditesh-in','Dritarja e regjistrimit') OR html ILIKE '%90 days%' OR subjekti ILIKE '%90 days%' OR html ILIKE '%first 7 days%' OR html ILIKE '%free period%' OR subjekti ILIKE '%free period%')";
+    const r = await pool.query('SELECT id FROM marketing_shabllonet WHERE ' + VJETRA);
+    const ids = r.rows.map(x => x.id);
+    if (ids.length) {
+      await pool.query("UPDATE marketing_fushatat SET statusi = CASE WHEN statusi = 'aktiv' THEN 'perfunduar' ELSE statusi END, shabllon_id = NULL WHERE shabllon_id = ANY($1::int[])", [ids]);
+      await pool.query('DELETE FROM marketing_shabllonet WHERE id = ANY($1::int[])', [ids]);
+      console.log('marketing-email: u fshine ' + ids.length + ' shabllone te vjetra (90/7 dite).');
+    }
+  } catch (e) { console.error('marketing-email fshirja e shabllonave te vjetra:', e.message); }
   })();
 
   // ═══ Sinkronizim automatik nga biznes-finder ═══
@@ -434,8 +359,7 @@ module.exports = function (app, pool, iAdmin) {
         const pg = pergatitHtmlPerDergim(html, token);
         try {
           await transporter.sendMail({
-            from: '"PhronexusAI" <' + llogaria + '>', to: kont.email, subject: subjektiFinal, html: pg.html,
-            text: tekstPerEmail(pg.html), headers: kreretCregjistrimi(unsubLink)
+            from: '"PhronexusAI" <' + llogaria + '>', to: kont.email, subject: subjektiFinal, html: pg.html
           });
           await pool.query('UPDATE marketing_kontaktet SET derguar=true, derguar_nga=$1, derguar_at=now(), derguar_sasi=derguar_sasi+1 WHERE id=$2', [llogaria, kont.id]);
           await pool.query('INSERT INTO marketing_log (fushata_id, email, sukses, detaje) VALUES (NULL,$1,true,$2)', [kont.email, 'Derguar menjehere nga ' + llogaria]);
@@ -609,29 +533,6 @@ module.exports = function (app, pool, iAdmin) {
     } finally { klient.release(); }
     try { res.json(Object.assign({ ok: true }, await gjendjaEFushates(id))); }
     catch (e) { res.status(500).json({ error: e.message }); }
-  });
-
-  // ═══ Fushatat aktive (me email-e ne pritje) dhe ndalimi i tyre nga menuja "Emailet" ═══
-  // Ndalimi e shenon fushaten 'perfunduar' (si kur mbaron vete): email-et ne pritje nuk dergohen me, te derguarat mbeten.
-  app.get('/api/admin/marketing/fushatat-aktive', iAdmin, async (req, res) => {
-    res.set('Cache-Control', 'no-store');
-    try {
-      const r = await pool.query(`SELECT f.id, f.emri, f.llogaria,
-          (SELECT COUNT(*)::int FROM marketing_fushata_kontakte fk JOIN marketing_kontaktet k ON k.id = fk.kontakt_id WHERE fk.fushata_id = f.id AND NOT fk.derguar AND NOT k.unsubscribed) AS ne_pritje,
-          (SELECT COUNT(*)::int FROM marketing_fushata_kontakte fk WHERE fk.fushata_id = f.id AND fk.derguar) AS derguar,
-          ARRAY(SELECT DISTINCT k.kategoria FROM marketing_fushata_kontakte fk JOIN marketing_kontaktet k ON k.id = fk.kontakt_id WHERE fk.fushata_id = f.id AND k.kategoria IS NOT NULL) AS kategorite
-        FROM marketing_fushatat f WHERE f.statusi = 'aktiv' ORDER BY f.id DESC LIMIT 50`);
-      res.json({ ok: true, fushatat: r.rows });
-    } catch (e) { res.status(500).json({ error: e.message }); }
-  });
-  app.post('/api/admin/marketing/fushata/:id/ndalo', iAdmin, async (req, res) => {
-    const id = parseInt(req.params.id, 10);
-    if (!Number.isInteger(id) || id < 1) return res.status(400).json({ error: 'Fushata e pavlefshme.' });
-    try {
-      const r = await pool.query("UPDATE marketing_fushatat SET statusi = 'perfunduar' WHERE id = $1 AND statusi = 'aktiv' RETURNING id", [id]);
-      if (!r.rows.length) return res.status(404).json({ error: 'Fushata nuk u gjet ose është ndalur tashmë.' });
-      res.json({ ok: true });
-    } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
   // Regjistri i dergimeve + SHABLLONI i perdorur per cdo rresht (nga rreshti i dergimit ne marketing_dergimet; nese s'ka, nga shablloni i fushates)
@@ -808,8 +709,7 @@ module.exports = function (app, pool, iAdmin) {
           const pg = pergatitHtmlPerDergim(html, token);
           try {
             await transporter.sendMail({
-              from: '"PhronexusAI" <' + slot.llogaria + '>', to: kont.email, subject: subjektiFinal, html: pg.html,
-              text: tekstPerEmail(pg.html), headers: kreretCregjistrimi(unsubLink)
+              from: '"PhronexusAI" <' + slot.llogaria + '>', to: kont.email, subject: subjektiFinal, html: pg.html
             });
             await pool.query('UPDATE marketing_fushata_kontakte SET derguar=true, derguar_at=now() WHERE id=$1', [kont.fk_id]);
             await pool.query('UPDATE marketing_kontaktet SET derguar=true, derguar_nga=$1, derguar_at=now(), derguar_sasi=derguar_sasi+1 WHERE id=$2', [slot.llogaria, kont.kontakt_id]);
