@@ -1380,9 +1380,14 @@
       '</div>') +
 
       (mbyllur ? this._htmlDergimet() + '<div class="px-shenim">' + esc(t('eLigjore')) + '</div>' : !shfaqEmail ? (
-      // Para testit: vetem kategorite (bizneset, orari dhe dergimi dalin pas testit me AI)
+      // Para testit: kategorite + bizneset (shihen dhe zgjidhen qe tani); orari dhe dergimi dalin pas testit me AI
       '<div class="px-hapi"><div class="px-hapi-koka"><span class="px-nr">2</span><h3>' + esc(t('eMarresit')) + '</h3></div>' +
-      '<label class="px-etiketa">' + esc(t('eKategoria')) + '</label>' + kat + '</div>') : (
+      '<label class="px-etiketa">' + esc(t('eKategoria')) + '</label>' + kat +
+      '<div class="px-shenim">✓ ' + esc(t('eVetemVerifikuar')) + '</div>' +
+      '<div class="px-shenim">' + esc(t('eTeRejat')) + '</div>' +
+      bizneset +
+      '<div class="px-numerues">' + esc(t('eZgjedhur').replace('{n}', em.zgjedhur.length)) + '</div>' +
+      njoftim + '</div>') : (
       // 2. Marresit: kategoria (te rekomanduarat pas studimit) dhe bizneset me te reja; zgjidhen deri ne 3
       '<div class="px-hapi"><div class="px-hapi-koka"><span class="px-nr">2</span><h3>' + esc(t('eMarresit')) + '</h3></div>' +
       '<label class="px-etiketa">' + esc(t('eKategoria')) + '</label>' + kat +
