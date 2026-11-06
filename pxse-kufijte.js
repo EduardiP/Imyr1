@@ -14,10 +14,13 @@
 //  - Kandidatet e Ankandit per nje host: KANDIDATE_ANKAND me vleresimin AI me te larte per klientet e host-it,
 //    plus kushdo tjeter me AI > PRAG_AI. Te katra vlerat ndryshohen nga admin-i.
 //
+// Gjithashtu: cilesimi i faqes publike "shfaq_numrat" (numri i bizneseve per kategori/shtet te direktoria e email-eve),
+// i ndezur/fikur nga admin-i; faqja publike e lexon te GET /api/pxse/publike. Paracaktim: i fikur.
+//
 // Server.js e therret: require('./pxse-kufijte').routet(app, pool, iAdmin);
 // selector.js dhe automatik.js perdorin: pranueshmeria(), hostiBllokuar(), filtroAnkandin().
 
-const PARAZGJEDHJE = { kandidate_ankand: 7, prag_ai: 400, falas_dite: 100, pagese_dite: 3000 };
+const PARAZGJEDHJE = { kandidate_ankand: 7, prag_ai: 400, falas_dite: 100, pagese_dite: 3000, shfaq_numrat: false };
 const ZONA = 'Europe/Berlin';
 // Fillimi i dites se sotme sipas ores se Berlinit, si TIMESTAMPTZ (perdoret ne te gjitha numerimet)
 const FILLIMI_DITES = `(date_trunc('day', now() AT TIME ZONE '${ZONA}') AT TIME ZONE '${ZONA}')`;
@@ -36,6 +39,7 @@ function migro(pool) {
       CONSTRAINT pxse_kufijte_nje_rresht CHECK (id = 1)
     )`);
     await pool.query('INSERT INTO pxse_kufijte (id) VALUES (1) ON CONFLICT (id) DO NOTHING');
+    await pool.query('ALTER TABLE pxse_kufijte ADD COLUMN IF NOT EXISTS shfaq_numrat BOOLEAN NOT NULL DEFAULT false');
     // Indekse per numerimet ditore (CONCURRENTLY: nuk bllokon shkrimet gjate ndertimit)
     const ind = [
       'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_garat_reklamues_koha ON garat (reklamues_id, created_at)',
@@ -54,7 +58,7 @@ async function cilesimet(pool) {
   if (_cache && Date.now() - _cacheKoha < 30000) return _cache;
   try {
     await migro(pool);
-    const r = await pool.query('SELECT kandidate_ankand, prag_ai, falas_dite, pagese_dite FROM pxse_kufijte WHERE id=1');
+    const r = await pool.query('SELECT kandidate_ankand, prag_ai, falas_dite, pagese_dite, shfaq_numrat FROM pxse_kufijte WHERE id=1');
     _cache = Object.assign({}, PARAZGJEDHJE, r.rows[0] || {});
   } catch (e) { _cache = _cache || Object.assign({}, PARAZGJEDHJE); }
   _cacheKoha = Date.now();
@@ -136,9 +140,24 @@ function routet(app, pool, iAdmin) {
   app.get('/api/admin/pxse/kufijte', iAdmin, async (req, res) => {
     try {
       await migro(pool);
-      const r = await pool.query('SELECT kandidate_ankand, prag_ai, falas_dite, pagese_dite, perditesuar_at FROM pxse_kufijte WHERE id=1');
+      const r = await pool.query('SELECT kandidate_ankand, prag_ai, falas_dite, pagese_dite, shfaq_numrat, perditesuar_at FROM pxse_kufijte WHERE id=1');
       res.json({ ok: true, kufijte: r.rows[0] || PARAZGJEDHJE });
     } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+  // Faqja publike: shfaq / fsheh numrin e bizneseve per kategori dhe shtet (vlen menjehere)
+  app.post('/api/admin/pxse/kufijte/numrat', iAdmin, async (req, res) => {
+    try {
+      await migro(pool);
+      const v = !!(req.body || {}).shfaq;
+      await pool.query('UPDATE pxse_kufijte SET shfaq_numrat=$1, perditesuar_at=now() WHERE id=1', [v]);
+      _cache = null;
+      res.json({ ok: true, shfaq_numrat: v });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+  app.get('/api/pxse/publike', async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    try { const c = await cilesimet(pool); res.json({ shfaq_numrat: !!c.shfaq_numrat }); }
+    catch (e) { res.json({ shfaq_numrat: false }); }
   });
   app.post('/api/admin/pxse/kufijte', iAdmin, async (req, res) => {
     const b = req.body || {};
