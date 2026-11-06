@@ -19,7 +19,7 @@
   <div class="container center" style="max-width:760px;">
     <div style="background:#eef4ff;border:1px solid #c7d9fb;border-radius:16px;padding:28px 32px;text-align:left;">
       <h2 style="margin:0 0 10px;font-size:22px;">The core guarantee: never your competitors</h2>
-      <p class="mut" style="margin:0;">During signup, your business's category and subcategory are stored. Every time the system chooses who shows on your page, businesses in <b>your category</b> are automatically excluded — before any other calculation even begins. Plus, you have extra control: you can exclude <b>any</b> other category you're not interested in.</p>
+      <p class="mut" style="margin:0;">During signup, your business's category and subcategory are stored. Every time the system chooses who shows on your page, any business that shares <b>at least one category or subcategory</b> with yours is automatically excluded — in both Auction and Balance, before any other calculation even begins. Plus, you have extra control: you can exclude <b>any</b> other category you're not interested in.</p>
     </div>
   </div>
 </section>
@@ -122,6 +122,7 @@
         Total weight = AI Score + Profile Points + Boost (if applicable)
       </p>
       <p class="mut" style="max-width:600px;margin:14px auto 0;font-size:14px;">Win probability = your weight ÷ the sum of weights of <b>all</b> qualifying candidates (weighted lottery, not a fixed ranking).</p>
+      <p class="mut" style="max-width:600px;margin:14px auto 0;font-size:14px;"><b>Who qualifies:</b> for each ad space, the <b>7 businesses with the highest AI score</b> for that host, plus <b>any business with an AI score above 400</b>. The best-matched audiences always compete; weak matches don't dilute the auction.</p>
     </div>
   </div>
 </section>
@@ -167,24 +168,51 @@
       <div class="tile">
         <div class="n">1</div>
         <h3>Competitors are excluded first</h3>
-        <p class="mut">A candidate is removed from the running entirely if their AI matching score is <b>0 AND</b> they're the same business type as you (B2B↔B2B or B2C↔B2C). If the AI score is 0 but the types differ, they stay in — that's just a neutral match, not a competitor.</p>
+        <p class="mut">Any business that shares <b>at least one category or subcategory</b> with you never enters the running. On top of that, Balance removes any remaining candidate with an AI score of <b>0</b> that still overlaps with your categories. The categories you've blocked in your settings are excluded too.</p>
       </div>
       <div class="tile">
         <div class="n">2</div>
         <h3>Your deficit is calculated</h3>
-        <p class="mut">For each remaining candidate: <code>real views you've given them − real views you've received from them</code> (Balance pool only, real views only — a view requires at least 50% of the ad visible for 1+ second, not just a load). A negative deficit means you've received more than you've given; positive means the opposite.</p>
+        <p class="mut">For each remaining candidate: <code>real views it has given − real views it has received</code> across the Balance network (Balance pool only, real views only — a view requires at least 50% of the ad visible for 1+ second, not just a load). A positive deficit means the business has given more than it has received.</p>
       </div>
       <div class="tile">
         <div class="n">3</div>
         <h3>The deficit becomes a bonus or a penalty</h3>
-        <p class="mut">A negative deficit (you've received more) adds a growing bonus to their AI score — the more negative, the bigger the bonus, uncapped. A positive deficit (you've given more) subtracts a growing penalty instead, floored at zero.</p>
+        <p class="mut">A positive deficit (given more than received) adds a growing bonus to the AI score — the bigger the deficit, the bigger the bonus, uncapped. A negative deficit (received more than given) subtracts a growing penalty instead, floored at zero. Businesses that have given more get shown more.</p>
       </div>
     </div>
     <div style="text-align:center;margin-top:20px;">
       <p class="mut" style="font-family:monospace;font-size:13px;background:rgba(255,255,255,.05);display:inline-block;padding:10px 20px;border-radius:10px;">
         Final score = max(0, AI score + deficit-based bonus/penalty)
       </p>
-      <p class="mut" style="max-width:600px;margin:14px auto 0;font-size:14px;">Win probability = your final score ÷ the sum of final scores of <b>all</b> remaining candidates — a weighted lottery, same principle as the Auction. If only 1 candidate survives the competitor-exclusion step, they win directly with no further calculation.</p>
+      <p class="mut" style="max-width:600px;margin:14px auto 0;font-size:14px;">Win probability = your final score ÷ the sum of final scores of <b>all</b> remaining candidates — a weighted lottery, same principle as the Auction. If only 1 candidate remains, they win directly with no further calculation.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="daily-limits">
+  <div class="container">
+    <div class="center" style="max-width:640px;margin:0 auto 40px;">
+      <p class="eyebrow">Plans</p>
+      <h2>Daily participation limits</h2>
+      <p class="mut">A <b>participation</b> is one time your business is a candidate in a pool for an ad space. It only counts when that pool (Auction or Balance) is the one selected. Limits reset every day at midnight, Berlin time.</p>
+    </div>
+    <div class="grid g3">
+      <div class="tile">
+        <div class="n">1</div>
+        <h3>Free plan — forever</h3>
+        <p class="mut">Up to <b>100 Auction</b> and <b>100 Balance</b> participations per day, counted separately. No credit card, no expiry.</p>
+      </div>
+      <div class="tile">
+        <div class="n">2</div>
+        <h3>Paid plan — $7/month</h3>
+        <p class="mut">Up to <b>3,000 Auction</b> and <b>3,000 Balance</b> participations per day, and no PhronexusAI badge on your ad space.</p>
+      </div>
+      <div class="tile">
+        <div class="n">3</div>
+        <h3>When a free limit is reached</h3>
+        <p class="mut">Auction: you stop joining auctions until the next day. Balance: your ad space keeps showing other businesses until what you gave today equals what you received today; then your ad space and your ads both pause until the next day, or until you upgrade.</p>
+      </div>
     </div>
   </div>
 </section>
