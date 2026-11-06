@@ -3055,14 +3055,8 @@ app.post('/api/admin/email/dergo-manual', iAdmin, async (req, res) => {
     let dergu = 0, deshtuar = 0, gabimet = [];
     for (const biz of r.rows) {
       let subjekti, html;
-      if (b.shabllon === '7dite') {
-        const sh = emailModul.shablloniSnippet7Dite(biz.emri); subjekti = sh.subjekti; html = sh.html;
-      } else if (b.shabllon === '3muaj') {
-        const sh = emailModul.shablloniPagesa3Muaj(biz.emri); subjekti = sh.subjekti; html = sh.html;
-      } else {
-        subjekti = (b.subjekti || '').trim();
-        html = b.permbajtja_html || '';
-      }
+      subjekti = (b.subjekti || '').trim();
+      html = b.permbajtja_html || '';
       if (!subjekti) { deshtuar++; gabimet.push(biz.emri + ': subjekti/shablloni erdhi bosh (shabllon="' + b.shabllon + '")'); continue; }
       const rez = await emailModul.dergo({ te: biz.email, subjekti, html });
       if (rez.ok) dergu++; else { deshtuar++; gabimet.push(biz.emri + ': ' + rez.error); }
