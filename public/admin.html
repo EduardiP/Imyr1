@@ -161,7 +161,7 @@ const SECTIONS = [
 { k:'b4', l:'Përzgjedhjet' }, { k:'kufijte', l:'Kufijtë & faqja publike' }, { k:'mkt', l:'Marketingu' }, { k:'pxse', l:'Shërbimet falas' }
 ];
 const MKT_SUB = [
-{ k:'dergimet', l:'Dërgimet' }, { k:'analitika', l:'Analitika' }, { k:'emailet', l:'Email-et' }, { k:'terejat', l:'Biznese të reja' }, { k:'backlinket', l:'Backlinke (eksperiment)' }
+{ k:'dergimet', l:'Dërgimet' }, { k:'analitika', l:'Analitika' }, { k:'emailet', l:'Email-et' }, { k:'terejat', l:'Biznese të reja' }, { k:'backlinket', l:'Backlinke (eksperiment)' }, { k:'lista', l:'Lista e platformave' }
 ];
 let curMktSub = 'dergimet';
 const NJOFT_SUB = [
@@ -1594,6 +1594,150 @@ if(curMktSub==='analitika'){ renderMktAnalitika(m); return; }
 if(curMktSub==='emailet'){ renderMktEmailet(m); return; }
 if(curMktSub==='terejat'){ renderMktTeRejat(m); return; }
 if(curMktSub==='backlinket'){ renderMktBacklinket(m); return; }
+if(curMktSub==='lista'){ renderMktLista(m); return; }
+}
+
+// ═══ Lista e platformave: ngarkon CSV-në e listës së backlinkeve dhe e filtron (gjithçka në shfletues, pa server) ═══
+// Lista dhe "Statusi im" ruhen në këtë shfletues (localStorage). "Shkarko" jep CSV-në e plotë ose të filtruar, me statuset.
+const LP_CELESI='px_lista_platformave_v1';
+let _lp={ rreshta:[], kolonat:[], f:{ q:'', perp:'', link:'', kosto:'', rip:'', kat:'', tier:'', burimi:'', status:'', dr:'' }, rendit:'perp', drejt:1, sa:100, hapur:-1 };
+function lpParse(t){
+  t=String(t||'').replace(/^﻿/,''); const r=[]; let row=[], f='', q=false;
+  for(let i=0;i<t.length;i++){ const c=t[i];
+    if(q){ if(c==='"'){ if(t[i+1]==='"'){ f+='"'; i++; } else q=false; } else f+=c; }
+    else if(c==='"') q=true; else if(c===','){ row.push(f); f=''; }
+    else if(c==='\n'||c==='\r'){ if(c==='\r'&&t[i+1]==='\n') i++; row.push(f); f=''; if(row.length>1||row[0]!=='') r.push(row); row=[]; }
+    else f+=c; }
+  if(f!==''||row.length){ row.push(f); r.push(row); }
+  if(!r.length) return { kolonat:[], rreshta:[] };
+  const k=r[0].map(x=>x.trim());
+  return { kolonat:k, rreshta:r.slice(1).map(a=>{ const o={}; k.forEach((n,i)=>o[n]=(a[i]||'').trim()); return o; }) };
+}
+function lpCsv(kolonat,rreshta){
+  const e=v=>{ v=String(v==null?'':v); return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+  return '﻿'+[kolonat.map(e).join(',')].concat(rreshta.map(o=>kolonat.map(k=>e(o[k])).join(','))).join('\r\n');
+}
+function lpRuaj(){ try{ localStorage.setItem(LP_CELESI, JSON.stringify({ kolonat:_lp.kolonat, rreshta:_lp.rreshta })); return true; }catch(e){ return false; } }
+function lpLexo(){ try{ const d=JSON.parse(localStorage.getItem(LP_CELESI)||'null'); if(d&&Array.isArray(d.rreshta)){ _lp.kolonat=d.kolonat||[]; _lp.rreshta=d.rreshta; } }catch(e){} }
+const lpV=(o,k)=>String(o[k]==null?'':o[k]);
+function lpDR(o){ let m=null; ['DR vantaige','DR ideaproof','DA codersera'].forEach(k=>{ const n=parseFloat(lpV(o,k)); if(!isNaN(n)&&(m===null||n>m)) m=n; }); return m; }
+function lpLink(o){ const t=(lpV(o,'Linku sipas freemalta')+' '+lpV(o,'Kushtet')+' '+lpV(o,'Shënim analize')).toLowerCase();
+  if(/nofollow/.test(t)) return 'Nofollow'; if(/dofollow|do-follow/.test(t)) return 'Dofollow'; return 'Pa info'; }
+function lpKosto(o){ const t=lpV(o,'Kosto').toLowerCase(); const fal=/free|falas/.test(t), pag=/paid|pagesë|pagese|\$/.test(t);
+  if(fal&&pag) return 'Falas + me pagesë'; if(fal) return 'Falas'; if(pag) return 'Me pagesë'; return 'Kontrollo'; }
+function lpKat(o){ return lpV(o,'Kategoria (C)')||lpV(o,'Kategoria (V)')||'—'; }
+function lpUnike(fn){ const s={}; _lp.rreshta.forEach(o=>{ const v=fn(o); if(v) s[v]=(s[v]||0)+1; }); return Object.keys(s).sort().map(v=>[v,s[v]]); }
+function lpFiltruar(){
+  const f=_lp.f, q=f.q.toLowerCase(), drMin=parseFloat(f.dr);
+  let a=_lp.rreshta.map((o,i)=>({o,i})).filter(({o})=>{
+    if(q&&!(lpV(o,'Emri')+' '+lpV(o,'Domaini')+' '+lpV(o,'Përshkrimi')+' '+lpV(o,'Shënim analize')).toLowerCase().includes(q)) return false;
+    if(f.perp&&lpV(o,'Përparësia')!==f.perp) return false;
+    if(f.link&&lpLink(o)!==f.link) return false;
+    if(f.kosto&&!(lpKosto(o)===f.kosto||(f.kosto!=='Kontrollo'&&lpKosto(o)==='Falas + me pagesë'))) return false;
+    if(f.rip&&lpV(o,'Ripostim: lejohet?')!==f.rip) return false;
+    if(f.kat&&lpKat(o)!==f.kat) return false;
+    if(f.tier&&lpV(o,'Tier')!==f.tier) return false;
+    if(f.burimi&&!lpV(o,'Burimi (V/I/C)').includes(f.burimi)) return false;
+    if(f.status==='bosh'&&lpV(o,'Statusi im')) return false;
+    if(f.status==='me'&&!lpV(o,'Statusi im')) return false;
+    if(!isNaN(drMin)){ const d=lpDR(o); if(d===null||d<drMin) return false; }
+    return true; });
+  const d=_lp.drejt, k=_lp.rendit;
+  a.sort((x,y)=>{ let A,B;
+    if(k==='dr'){ A=lpDR(x.o); B=lpDR(y.o); A=A===null?-1:A; B=B===null?-1:B; return (B-A)*d; }
+    if(k==='emri'){ A=lpV(x.o,'Emri').toLowerCase(); B=lpV(y.o,'Emri').toLowerCase(); return A<B?-d:A>B?d:0; }
+    A=lpV(x.o,'Përparësia'); B=lpV(y.o,'Përparësia'); if(A!==B) return A<B?-d:d;
+    A=lpDR(x.o); B=lpDR(y.o); return ((B===null?-1:B)-(A===null?-1:A)); });
+  return a;
+}
+function renderMktLista(m){
+  if(!_lp.rreshta.length) lpLexo();
+  m.innerHTML='<h2 class="h">Lista e platformave</h2>'+
+  '<p class="small" style="margin:2px 0 14px;">Ngarko CSV-në e listës (p.sh. <b>backlink-lista-e-bashkuar.csv</b>) dhe filtroje si të duash. Lista dhe “Statusi im” ruhen në këtë shfletues; me “Shkarko” merr CSV-në me statuset e tua.</p>'+
+  '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">'+
+  '<label class="btn" style="width:auto;padding:8px 14px;cursor:pointer;">Ngarko CSV<input type="file" accept=".csv,text/csv" style="display:none;" onchange="lpNgarko(this)"></label>'+
+  '<button class="subnav" style="display:inline-block;width:auto;border:1px solid #2a313c;" onclick="lpShkarko(true)">Shkarko të filtruarat</button>'+
+  '<button class="subnav" style="display:inline-block;width:auto;border:1px solid #2a313c;" onclick="lpShkarko(false)">Shkarko të gjitha</button>'+
+  '<button class="subnav" style="display:inline-block;width:auto;border:1px solid #2a313c;" onclick="lpPastroFiltrat()">Pastro filtrat</button>'+
+  '<span class="small" id="lpInfo"></span></div>'+
+  '<div id="lpFiltrat"></div><div id="lpTabela"></div>';
+  lpVizato();
+}
+function lpNgarko(inp){
+  const fl=inp.files&&inp.files[0]; if(!fl) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ const d=lpParse(rd.result);
+    if(!d.rreshta.length||!d.kolonat.includes('Domaini')){ alert('Skedari nuk duket si lista e platformave (mungon kolona “Domaini”).'); return; }
+    // ruaj statuset e vjetra për domainet që ekzistojnë edhe në skedarin e ri, nëse skedari i ri s’ka status
+    const vjeter={}; _lp.rreshta.forEach(o=>{ if(lpV(o,'Statusi im')) vjeter[lpV(o,'Domaini')]=lpV(o,'Statusi im'); });
+    if(!d.kolonat.includes('Statusi im')) d.kolonat.push('Statusi im');
+    d.rreshta.forEach(o=>{ if(!o['Statusi im']&&vjeter[o['Domaini']]) o['Statusi im']=vjeter[o['Domaini']]; });
+    _lp.kolonat=d.kolonat; _lp.rreshta=d.rreshta; _lp.sa=100; _lp.hapur=-1;
+    const ok=lpRuaj(); lpVizato(); $('lpInfo').textContent='✓ U ngarkuan '+d.rreshta.length+' platforma'+(ok?'.':' (s’u ruajt dot në shfletues — do të duhet ta ngarkosh përsëri).'); };
+  rd.readAsText(fl,'utf-8'); inp.value='';
+}
+function lpPastroFiltrat(){ Object.keys(_lp.f).forEach(k=>_lp.f[k]=''); _lp.sa=100; lpVizato(); }
+function lpVendos(k,v){ _lp.f[k]=v; _lp.sa=100; _lp.hapur=-1; lpVizatoTabelen(); }
+function lpVizato(){
+  const F=$('lpFiltrat'); if(!F) return;
+  if(!_lp.rreshta.length){ F.innerHTML='<p class="small mut">Ende s’ka listë. Kliko “Ngarko CSV”.</p>'; $('lpTabela').innerHTML=''; return; }
+  const sel=(k,lbl,opsionet)=>'<label class="small" style="display:flex;flex-direction:column;gap:4px;min-width:150px;">'+lbl+
+    '<select onchange="lpVendos(\''+k+'\',this.value)" style="padding:6px;"><option value="">Të gjitha</option>'+
+    opsionet.map(([v,n])=>'<option value="'+esc(v)+'"'+(_lp.f[k]===v?' selected':'')+'>'+esc(v)+(n!=null?' ('+n+')':'')+'</option>').join('')+'</select></label>';
+  const ka=k=>_lp.kolonat.includes(k);
+  let h='<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px;">'+
+    '<label class="small" style="display:flex;flex-direction:column;gap:4px;min-width:200px;flex:1;">Kërko<input value="'+esc(_lp.f.q)+'" placeholder="Emri, domaini, përshkrimi…" oninput="lpVendos(\'q\',this.value)" style="padding:6px;"></label>';
+  if(ka('Përparësia')) h+=sel('perp','Përparësia',lpUnike(o=>lpV(o,'Përparësia')));
+  h+=sel('link','Lloji i linkut',lpUnike(lpLink));
+  if(ka('Kosto')) h+=sel('kosto','Kosto',[['Falas'],['Me pagesë'],['Falas + me pagesë'],['Kontrollo']].map(([v])=>[v,_lp.rreshta.filter(o=>lpKosto(o)===v).length]));
+  if(ka('Ripostim: lejohet?')) h+=sel('rip','Ripostim',lpUnike(o=>lpV(o,'Ripostim: lejohet?')));
+  h+=sel('kat','Kategoria',lpUnike(lpKat));
+  if(ka('Tier')) h+=sel('tier','Tier',lpUnike(o=>lpV(o,'Tier')));
+  if(ka('Burimi (V/I/C)')) h+=sel('burimi','Burimi',[['V'],['I'],['C']].map(([v])=>[v,_lp.rreshta.filter(o=>lpV(o,'Burimi (V/I/C)').includes(v)).length]));
+  h+='<label class="small" style="display:flex;flex-direction:column;gap:4px;min-width:150px;">Statusi im<select onchange="lpVendos(\'status\',this.value)" style="padding:6px;"><option value="">Të gjitha</option>'+
+    '<option value="bosh"'+(_lp.f.status==='bosh'?' selected':'')+'>Pa status (ende pa bërë)</option><option value="me"'+(_lp.f.status==='me'?' selected':'')+'>Me status</option></select></label>'+
+    '<label class="small" style="display:flex;flex-direction:column;gap:4px;width:110px;">DR minimal<input type="number" min="0" max="100" value="'+esc(_lp.f.dr)+'" oninput="lpVendos(\'dr\',this.value)" style="padding:6px;"></label></div>';
+  F.innerHTML=h; lpVizatoTabelen();
+}
+function lpRendit(k){ if(_lp.rendit===k) _lp.drejt=-_lp.drejt; else { _lp.rendit=k; _lp.drejt=1; } lpVizatoTabelen(); }
+function lpStatus(i,v){ _lp.rreshta[i]['Statusi im']=v; lpRuaj(); }
+function lpHap(i){ _lp.hapur=_lp.hapur===i?-1:i; lpVizatoTabelen(); }
+function lpVizatoTabelen(){
+  const T=$('lpTabela'); if(!T) return;
+  const a=lpFiltruar(), n=a.length, pamje=a.slice(0,_lp.sa);
+  const th=(x,k)=>'<th style="text-align:left;padding:6px 8px;border-bottom:1px solid #2a313c;color:#8b949e;font-weight:500;white-space:nowrap;'+(k?'cursor:pointer;':'')+'"'+(k?' onclick="lpRendit(\''+k+'\')"':'')+'>'+x+(k&&_lp.rendit===k?(_lp.drejt>0?' ↓':' ↑'):'')+'</th>';
+  const td=(x,st)=>'<td style="padding:6px 8px;vertical-align:top;'+(st||'')+'">'+x+'</td>';
+  const ngjyraLink={Dofollow:'#3fb950',Nofollow:'#e5484d','Pa info':'#8b949e'};
+  let h='<div class="small" style="margin:0 0 8px;">Shfaqen <b>'+n+'</b> nga '+_lp.rreshta.length+' platforma'+(n>_lp.sa?' (të parat '+_lp.sa+')':'')+'.</div>'+
+    '<div style="overflow-x:auto;"><table style="width:100%;font-size:13px;border-collapse:collapse;"><tr>'+
+    th('Përparësia','perp')+th('Platforma','emri')+th('DR','dr')+th('Linku')+th('Kosto')+th('Ripostim')+th('Kategoria')+th('Statusi im')+'</tr>';
+  pamje.forEach(({o,i})=>{
+    const lk=lpLink(o), dom=lpV(o,'Domaini'), dr=lpDR(o);
+    h+='<tr style="border-bottom:1px solid #21262d;cursor:pointer;" onclick="if(event.target.closest(\'input,a\'))return;lpHap('+i+')">'+
+      td(esc(lpV(o,'Përparësia')||'—'),'white-space:nowrap;')+
+      td('<b>'+esc(lpV(o,'Emri')||dom)+'</b><div class="small"><a href="https://'+esc(dom)+'" target="_blank" rel="noopener noreferrer">'+esc(dom)+'</a></div>')+
+      td(dr===null?'—':String(dr))+
+      td('<span style="color:'+ngjyraLink[lk]+';white-space:nowrap;">'+lk+'</span>')+
+      td(esc(lpV(o,'Kosto')||'—'),'max-width:160px;')+
+      td(esc(lpV(o,'Ripostim: lejohet?')||'—'),'max-width:160px;')+
+      td(esc(lpKat(o)))+
+      td('<input value="'+esc(lpV(o,'Statusi im'))+'" placeholder="p.sh. listuar 12.11" onchange="lpStatus('+i+',this.value)" style="width:150px;padding:4px 6px;">')+'</tr>';
+    if(_lp.hapur===i){
+      h+='<tr><td colspan="8" style="padding:8px 12px 14px;background:rgba(255,255,255,.02);"><div style="display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;font-size:12.5px;">'+
+        _lp.kolonat.filter(k=>lpV(o,k)).map(k=>'<span class="mut">'+esc(k)+'</span><span>'+esc(lpV(o,k))+'</span>').join('')+'</div></td></tr>';
+    }
+  });
+  h+='</table></div>';
+  if(n>_lp.sa) h+='<button class="subnav" style="display:inline-block;width:auto;border:1px solid #2a313c;margin-top:10px;" onclick="_lp.sa+=100;lpVizatoTabelen();">Shfaq 100 të tjera</button>';
+  if(!n) h+='<p class="small mut" style="margin-top:10px;">Asnjë platformë me këta filtra.</p>';
+  T.innerHTML=h;
+}
+function lpShkarko(vetemFiltruar){
+  if(!_lp.rreshta.length){ alert('Ende s’ka listë.'); return; }
+  const rr=vetemFiltruar?lpFiltruar().map(x=>x.o):_lp.rreshta;
+  const b=new Blob([lpCsv(_lp.kolonat,rr)],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=vetemFiltruar?'platformat-e-filtruara.csv':'backlink-lista-e-bashkuar.csv';
+  document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500);
 }
 
 // ═══ Backlinke (eksperiment): platforma me reputacion ku PhronexusAI mund të listohet me link (pxse-backlinket.js) ═══
