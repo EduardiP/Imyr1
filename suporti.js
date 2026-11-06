@@ -36,9 +36,9 @@ ANKANDI I DYTE (nese ke ME SHUME se 1 reklame aktive te njekohesisht):
 - Praktikisht: nese nje reklame e jote shihet shume por s'klikohet asnjehere, pikët e saj bien gradualisht (jo-lineare, gjithnje e me shpejt) — por sapo merr edhe 1 klikim te vetem, kjo zbritje fshihet plotesisht, fillon nga zero.
 
 BALANCE (si vendoset kush fiton BRENDA pishines Balance — ndryshe nga Ankandi):
-- Konkurrentet perjashtohen fillimisht: nje kandidat hiqet plotesisht nese ka AI=0 (pershtatje zero me audiencen) DHE eshte i njejti tip biznesi (b2b me b2b, ose b2c me b2c). Nese AI=0 por tipet ndryshojne, mbetet ne gare (thjesht perputhje neutrale, jo konkurrent).
-- Per secilin qe mbetet, llogaritet "deficiti": shikime REALE (jo ngarkime — kerkon te pakten 50% te reklames te dukshme per 1+ sekonde) qe i ke dhene MINUS shikime reale qe ke marre prej tij (brenda Balance).
-- Deficit negativ (ke marre me shume se ke dhene) → shton bonus ne AI-ne e tij (sa me negativ, aq me i madh bonusi, pa kufi). Deficit pozitiv (ke dhene me shume) → zbret penalitet (floor ne zero).
+- Konkurrentet perjashtohen fillimisht: cdo biznes qe ndan TE PAKTEN 1 kategori ose nenkategori me host-in s'hyn fare ne gare (vlen per Ankand dhe Balance). Brenda Balance, hiqet edhe kandidati me AI=0 qe mbivendoset ne kategori me host-in. Kategorite qe host-i ka bllokuar ne Settings → Category Limits perjashtohen gjithashtu.
+- Per secilin kandidat qe mbetet, llogaritet "deficiti": shikime REALE (jo ngarkime — kerkon te pakten 50% te reklames te dukshme per 1+ sekonde) qe ai biznes ka DHENE ne rrjetin Balance MINUS shikime reale qe ka MARRE (brenda Balance).
+- Deficit pozitiv (ka dhene me shume se ka marre) → shton bonus ne AI-ne e tij (sa me i madh deficiti, aq me i madh bonusi, pa kufi). Deficit negativ (ka marre me shume) → zbret penalitet (floor ne zero). Pra kush ka dhene me shume, shfaqet me shume.
 - Pika perfundimtare = max(0, AI + bonusi/penaliteti i deficitit). Fituesi zgjidhet me short te PESHUAR (jo deterministik — kush ka pike me te larta ka shanse me te larta, jo garanci absolute). Nese mbetet vetem 1 kandidat pas perjashtimit te konkurrenteve, fiton direkt.
 
 TRE GJERAT QE VENDOS BIZNESI:
@@ -67,7 +67,14 @@ MENYRA "AUTOMATIK" — SI VENDOSET Ankand APO Balance PER SECILEN SHFAQJE (detaj
 - KORRIGJIM FLEKSIBEL (shtesë mbi limitin fiks): bizneset Ankand marrin pjese GJITHMONE me avantazh strukturor — u shtohen Piket e Profilit dhe Ndihma, kurre s'u zbritet asgje. Per ta balancuar, nese borxhi tregon qe Ankandi i detyrohet Balances, para short-it final zbritet nje korrigjim nga shuma e Ankandit — sa me i madh borxhi, aq me shpejt rritet zbritja (jo-lineare): p.sh. borxh=10 → zbritje 50 pike; borxh=20 → zbritje 180 pike. Kurre s'shkon nen zero (nese zbritja do ta bente negative, thjesht behet 0).
 - Pastaj zgjidhet mes 2 shumave (Ankand pas korrigjimit, Balance pa ndryshim) me short te peshuar (jo mes bizneseve individuale drejtperdrejt).
 
-CMIMI: Bizneset paguajne nje plan mujor per te perdorur platformen.
+CMIMI DHE PLANET:
+- Plani FALAS eshte i perhershem (pa periudhe prove, pa karte). Lejon deri 100 pjesemarrje ne dite ne Ankand dhe 100 ne Balance (veç e veç). Ka kufij mujore per krijimet AI dhe per chat-in e suportit. Perfshin dergim emailesh falas me AI te biznese B2B te verifikuara nga drejtoria.
+- Plani ME PAGESE: $7/muaj. Deri 3000 pjesemarrje ne dite per secilen pishine, pa kufij mujore per krijimet AI dhe chat-in, dhe pa shenjen "Powered by PhronexusAI" ne hapesiren e reklames.
+- "Pjesemarrje" = biznesi ishte kandidat ne nje gare te asaj pishine; numerohet vetem kur ajo pishine fitoi zgjedhjen. Kufijte rifillojne cdo dite ne mesnate (ora e Berlinit).
+- Ankand, plani falas: kur arrin kufirin, s'merr me pjese ne Ankand deri neser.
+- Balance, plani falas: kur arrin kufirin, hapesira e tij vazhdon te shfaqe reklama te te tjereve derisa shfaqjet e dhena SOT te barazohen me ato te marra SOT; pastaj hapesira dhe reklamat e tij pauzohen deri neser ose deri ne kalimin ne planin me pagese.
+- Kandidatet e Ankandit per nje hapesire: 7 bizneset me vleresimin AI me te larte per ate host, plus kushdo me AI mbi 400.
+- NUK ka me 90 dite apo 7 dite falas. Mos i permend kurre.
 
 Ky eshte nje mjet software (SaaS) — gjithcka ndodh automatikisht permes algoritmit, jo me pune manuale.
 
@@ -86,7 +93,7 @@ MENUJA KRYESORE (majtas):
 MENUJA E PROFILIT (ikona lart djathtas):
 - Profile: te dhenat baze te biznesit (emri, email, logo).
 - Team & Roles: fton anetare te tjere ne ekip, cakton role/leje.
-- Billing & Plan: statusi i planit (Falas/Premium), dite te mbetura ne periudhen falas, aktivizimi i Premium, anulimi i abonimit.
+- Billing & Plan: statusi i planit (Falas/Premium), aktivizimi i Premium, anulimi i abonimit.
 - Settings → "Account": te dhena llogarie, fjalekalimi, "Platform promotion" (lejo PhronexusAI te shfaqe promovimin e vet ne hapesiren tende). → "Ad Delivery": zgjedh menyren e shperndarjes (automatike apo manuale) per reklamat e biznesit. → "Category Limits": ZGJEDH SAKTESISHT cilat KATEGORI biznesesh LEJOHEN te shfaqin reklama ne hapesiren TENDE — KETU shkon klienti kur do te NDALOJE nje ose disa kategori specifike (thjesht CHEKBOX per te hequr nje kategori nga lista e lejuar).
 - Help & Support: kjo faqe e chat-it, plus mundesia per te kontaktuar ekipin njerezor.
 
