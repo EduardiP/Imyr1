@@ -2018,6 +2018,7 @@ m.innerHTML=
 '<button class="btn ghost" style="padding:4px 10px;font-size:12px;" onclick="mktSelektoTeGjitha()">Selekto/Çselekto të gjitha (sipas filtrit)</button>'+
 '</div>'+
 '<div id="mktKontaktetFiltri" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;"></div>'+
+'<div id="mktKontaktetNdarja" style="margin-bottom:8px;"></div>'+
 '<div id="mktKontaktetLista" style="max-height:260px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:8px;"></div>'+
 '</div>'+
 
@@ -2082,6 +2083,7 @@ w.innerHTML='<div style="display:flex;flex-direction:column;gap:8px;">'+d.llogar
 '</label>'
 ).join('')+'</div>';
 if(d.llogarite.length) mktLlogaria=d.llogarite[0];
+window.__mktNrLlogarive=d.llogarite.length; if($('mktNdA')){ $('mktNdA').value=d.llogarite.length; mktLlogaritNdarjen(true); }
 }catch(e){ $('mktLlogarite').innerHTML='<span style="color:#e5484d;">Gabim gjatë ngarkimit.</span>'; }
 }
 async function mktSinkronizo(btn){
@@ -2122,7 +2124,7 @@ sel.appendChild(og);
 function mktStatusiKontaktit(k){ return k.derguar ? 'derguar' : (k.ne_radhe ? 'radhe' : 'pa'); }
 let mktFiltriKontakteve='pa'; // kur hapet tabela: vetëm ata pa dërguar
 async function mktZgjidhKategori(kat){
-mktKategoriaAkt=kat; mktKontaktetZgjedhur=new Set(); mktFiltriKontakteve='pa';
+mktKategoriaAkt=kat; mktKontaktetZgjedhur=new Set(); mktFiltriKontakteve='pa'; if($('mktNdN')) $('mktNdN').value='';
 if(!kat){ $('mktKontaktetWrap').style.display='none'; return; }
 $('mktKontaktetWrap').style.display='block';
 $('mktKontaktetLista').innerHTML='<p class="small">Po ngarkoj…</p>'; $('mktKontaktetFiltri').innerHTML='';
@@ -2140,6 +2142,7 @@ const opsionet=[['pa','Pa dërguar'],['radhe','Duke u dërguar'],['derguar','Të
 $('mktKontaktetFiltri').innerHTML=opsionet.map(([k,l])=>'<button type="button" onclick="mktNdryshoFiltrin(\''+k+'\')" style="padding:5px 12px;font-size:12px;border-radius:999px;cursor:pointer;border:1px solid '+(mktFiltriKontakteve===k?'#3b6ef0':'var(--line)')+';background:'+(mktFiltriKontakteve===k?'rgba(59,110,240,.18)':'transparent')+';color:var(--txt);">'+l+' ('+n[k]+')</button>').join('');
 const lista=mktFiltriKontakteve==='te'?te:te.filter(k=>mktStatusiKontaktit(k)===mktFiltriKontakteve);
 $('mktKontaktetStat').textContent=lista.length+' kontakte në këtë filtër · të zgjedhura: '+mktKontaktetZgjedhur.size;
+mktVizatoNdarjen();
 const etiketa={ radhe:'<span style="margin-left:4px;font-size:11px;background:rgba(210,153,34,.18);padding:2px 7px;border-radius:9px;color:#d29922;">duke u dërguar</span>', derguar:'', pa:'' };
 $('mktKontaktetLista').innerHTML=lista.length?lista.map(k=>{ const st=mktStatusiKontaktit(k);
 return '<label style="display:flex;align-items:flex-start;gap:10px;padding:8px 4px;font-weight:400;font-size:13px;border-bottom:1px solid #1c2230;cursor:pointer;'+(st!=='pa'?'opacity:.6;':'')+'">'+
@@ -2149,6 +2152,45 @@ return '<label style="display:flex;align-items:flex-start;gap:10px;padding:8px 4
 }
 function mktToggleKontakt(id,checked){ if(checked) mktKontaktetZgjedhur.add(id); else mktKontaktetZgjedhur.delete(id);
 const st=$('mktKontaktetStat'); if(st) st.textContent=st.textContent.replace(/të zgjedhura: \d+/,'të zgjedhura: '+mktKontaktetZgjedhur.size); }
+// ═══ Ndarja e barabartë e kontakteve pa dërguar sipas llogarive dhe ritmit ditor + selektimi rastësor me numër ═══
+function mktRitmi(){ let v=15; try{ v=parseInt(localStorage.getItem('px_mkt_ritmi')||'15',10)||15; }catch(e){} return v; }
+function mktVizatoNdarjen(){
+const W=$('mktKontaktetNdarja'); if(!W) return;
+const fusha='width:64px;padding:4px 6px;display:inline-block;margin:0 4px;';
+if(!$('mktNdA')){ // kutia ndërtohet një herë; më pas përditësohen vetëm numrat (që të mos humbasë fokusi gjatë shkrimit)
+ W.innerHTML='<div style="border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.9;">'+
+ '<div><b id="mktNdU">0</b> pa dërguar · '+
+ '<input id="mktNdA" type="number" min="1" value="'+(window.__mktNrLlogarive||1)+'" style="'+fusha+'" oninput="mktLlogaritNdarjen(true)"> llogari × '+
+ '<input id="mktNdR" type="number" min="1" value="'+mktRitmi()+'" style="'+fusha+'" oninput="try{localStorage.setItem(\'px_mkt_ritmi\',this.value)}catch(e){};mktLlogaritNdarjen(true)"> email në ditë → <span id="mktNdRez"></span></div>'+
+ '<div style="margin-top:4px;">Selekto rastësisht <input id="mktNdN" type="number" min="1" placeholder="numri" style="'+fusha+'width:80px;"> nga të pazgjedhurat në filtrin aktual '+
+ '<button type="button" class="btn ghost" style="padding:4px 10px;font-size:12px;" onclick="mktSelektoRastesisht()">Selekto</button> '+
+ '<span class="small" id="mktNdMsg"></span></div></div>';
+}
+mktLlogaritNdarjen(false);
+}
+// U = pa dërguar (në kategori); A = llogari; R = email në ditë për llogari.
+// Për çdo llogari: X = ditë të plota × R, ku ditë = floor(U / (A × R)); tepricat që s'mbushin një ditë të plotë mbeten pa ndarë.
+function mktLlogaritNdarjen(ngaPerdoruesi){
+const te=window.__mktKontaktetAkt||[];
+const U=te.filter(k=>mktStatusiKontaktit(k)==='pa').length;
+const A=Math.max(1,parseInt($('mktNdA').value,10)||1), R=Math.max(1,parseInt($('mktNdR').value,10)||15);
+const dite=Math.floor(U/(A*R)), X=dite*R, mbetje=U-A*X;
+$('mktNdU').textContent=U;
+$('mktNdRez').innerHTML=dite>0
+ ? 'selekto <b style="color:#3fb950;">'+X+'</b> për çdo llogari ('+dite+' ditë × '+R+') · gjithsej '+(A*X)+' · mbeten <b>'+mbetje+'</b> pa ndarë'
+ : '<span style="color:#d29922;">s’mjaftojnë për një ditë të plotë: duhen të paktën '+(A*R)+' ('+A+' × '+R+'), ke '+U+'.</span>';
+const N=$('mktNdN'); if(N&&(ngaPerdoruesi||!N.value)) N.value=X||'';
+}
+function mktSelektoRastesisht(){
+const n=parseInt(($('mktNdN')||{}).value,10), msg=$('mktNdMsg');
+if(!(n>0)){ msg.style.color='#e5484d'; msg.textContent='Shkruaj një numër.'; return; }
+const kutit=[...$('mktKontaktetLista').querySelectorAll('input[type=checkbox]:not(:disabled)')].filter(k=>!k.checked);
+for(let i=kutit.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [kutit[i],kutit[j]]=[kutit[j],kutit[i]]; } // përzierje e rastësishme
+const zgjedh=kutit.slice(0,n);
+zgjedh.forEach(k=>{ k.checked=true; mktToggleKontakt(parseInt(k.value),true); });
+msg.style.color=zgjedh.length<n?'#d29922':'#3fb950';
+msg.textContent=zgjedh.length<n?'U zgjodhën vetëm '+zgjedh.length+' (aq kishte të pazgjedhura).':'✓ U zgjodhën '+zgjedh.length+'.';
+}
 // Selekton / çselekton vetëm kontaktet që shfaqen në filtrin aktual
 function mktSelektoTeGjitha(){
 const kutit=[...$('mktKontaktetLista').querySelectorAll('input[type=checkbox]:not(:disabled)')];
