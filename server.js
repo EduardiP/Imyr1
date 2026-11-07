@@ -2324,7 +2324,7 @@ function imyrJsHandler(req, res) {
 }
 app.get('/sitemap.xml', (req, res) => {
   res.type('application/xml');
-  const faqet = ['/', '/email-outreach', '/si-funksionon', '/apps', '/transcription', '/about', '/ai-matching', '/formate-ai', '/gjurmimi-analitika', '/ekipet-rolet', '/blog', '/contact', '/terms', '/privacy', '/refund'];
+  const faqet = ['/', '/email-outreach', '/how-it-works', '/apps', '/transcription', '/about', '/ai-matching', '/formate-ai', '/gjurmimi-analitika', '/ekipet-rolet', '/blog', '/contact', '/terms', '/privacy', '/refund'];
   const sot = new Date().toISOString().slice(0, 10);
   // Artikujt e blogut (vetem ata te publikuar); nese blog.js mungon, sitemap-i mbetet si me pare.
   let blogRreshta = [];
