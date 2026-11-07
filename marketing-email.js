@@ -105,6 +105,34 @@ function htmlNeTekst(html) {
 }
 
 
+// Versioni tekst i email-it (krahas HTML-se) — Microsoft dhe Google e presin te dy pjeset.
+// Lidhjet ruhen si "Teksti (adresa)"; imazhet (dhe pikseli) hiqen.
+function tekstPerEmail(html) {
+  return String(html || '')
+    .replace(/<(style|head|script)[\s\S]*?<\/\1>/gi, '')
+    .replace(/<img[^>]*>/gi, '')
+    .replace(/<a\b[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (m, href, t) => {
+      const tt = t.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+      return tt ? tt + ' (' + href + ')' : href;
+    })
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|tr|h[1-6]|li|div)>/gi, '\n')
+    .replace(/<\/td>/gi, ' ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ').replace(/&middot;/g, '·').replace(/&mdash;/g, '—').replace(/&ndash;/g, '–')
+    .replace(/&#(\d+);/g, (m, n) => String.fromCodePoint(parseInt(n, 10)))
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+    .split('\n').map(r => r.replace(/[ \t]+/g, ' ').trim()).join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/^([✓•·\-\d.]{1,3})\n+(?=\S)/gm, '$1 ')
+    .trim();
+}
+// Kreret e cregjistrimit me nje klikim (RFC 8058): Gmail dhe Outlook shfaqin butonin e tyre "Unsubscribe".
+// /marketing-unsubscribe pranon tashme POST me ?email=...
+function kreretCregjistrimi(unsubLink) {
+  return { 'List-Unsubscribe': '<' + unsubLink + '>', 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' };
+}
+
 function shperndajNe24Ore(sasia, minutaFillimit) {
   minutaFillimit = minutaFillimit || 0;
   const minutaGjithsej = (24 * 60) - minutaFillimit;
@@ -363,7 +391,8 @@ module.exports = function (app, pool, iAdmin) {
         const pg = pergatitHtmlPerDergim(html, token);
         try {
           await transporter.sendMail({
-            from: '"PhronexusAI" <' + llogaria + '>', to: kont.email, subject: subjektiFinal, html: pg.html
+            from: '"PhronexusAI" <' + llogaria + '>', to: kont.email, subject: subjektiFinal, html: pg.html,
+            text: tekstPerEmail(pg.html), headers: kreretCregjistrimi(unsubLink)
           });
           await pool.query('UPDATE marketing_kontaktet SET derguar=true, derguar_nga=$1, derguar_at=now(), derguar_sasi=derguar_sasi+1 WHERE id=$2', [llogaria, kont.id]);
           await pool.query('INSERT INTO marketing_log (fushata_id, email, sukses, detaje) VALUES (NULL,$1,true,$2)', [kont.email, 'Derguar menjehere nga ' + llogaria]);
@@ -537,6 +566,29 @@ module.exports = function (app, pool, iAdmin) {
     } finally { klient.release(); }
     try { res.json(Object.assign({ ok: true }, await gjendjaEFushates(id))); }
     catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ═══ Fushatat aktive (me email-e ne pritje) dhe ndalimi i tyre nga menuja "Emailet" ═══
+  // Ndalimi e shenon fushaten 'perfunduar' (si kur mbaron vete): email-et ne pritje nuk dergohen me, te derguarat mbeten.
+  app.get('/api/admin/marketing/fushatat-aktive', iAdmin, async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    try {
+      const r = await pool.query(`SELECT f.id, f.emri, f.llogaria,
+          (SELECT COUNT(*)::int FROM marketing_fushata_kontakte fk JOIN marketing_kontaktet k ON k.id = fk.kontakt_id WHERE fk.fushata_id = f.id AND NOT fk.derguar AND NOT k.unsubscribed) AS ne_pritje,
+          (SELECT COUNT(*)::int FROM marketing_fushata_kontakte fk WHERE fk.fushata_id = f.id AND fk.derguar) AS derguar,
+          ARRAY(SELECT DISTINCT k.kategoria FROM marketing_fushata_kontakte fk JOIN marketing_kontaktet k ON k.id = fk.kontakt_id WHERE fk.fushata_id = f.id AND k.kategoria IS NOT NULL) AS kategorite
+        FROM marketing_fushatat f WHERE f.statusi = 'aktiv' ORDER BY f.id DESC LIMIT 50`);
+      res.json({ ok: true, fushatat: r.rows });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+  app.post('/api/admin/marketing/fushata/:id/ndalo', iAdmin, async (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isInteger(id) || id < 1) return res.status(400).json({ error: 'Fushata e pavlefshme.' });
+    try {
+      const r = await pool.query("UPDATE marketing_fushatat SET statusi = 'perfunduar' WHERE id = $1 AND statusi = 'aktiv' RETURNING id", [id]);
+      if (!r.rows.length) return res.status(404).json({ error: 'Fushata nuk u gjet ose është ndalur tashmë.' });
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
   // Regjistri i dergimeve + SHABLLONI i perdorur per cdo rresht (nga rreshti i dergimit ne marketing_dergimet; nese s'ka, nga shablloni i fushates)
@@ -713,7 +765,8 @@ module.exports = function (app, pool, iAdmin) {
           const pg = pergatitHtmlPerDergim(html, token);
           try {
             await transporter.sendMail({
-              from: '"PhronexusAI" <' + slot.llogaria + '>', to: kont.email, subject: subjektiFinal, html: pg.html
+              from: '"PhronexusAI" <' + slot.llogaria + '>', to: kont.email, subject: subjektiFinal, html: pg.html,
+              text: tekstPerEmail(pg.html), headers: kreretCregjistrimi(unsubLink)
             });
             await pool.query('UPDATE marketing_fushata_kontakte SET derguar=true, derguar_at=now() WHERE id=$1', [kont.fk_id]);
             await pool.query('UPDATE marketing_kontaktet SET derguar=true, derguar_nga=$1, derguar_at=now(), derguar_sasi=derguar_sasi+1 WHERE id=$2', [slot.llogaria, kont.kontakt_id]);
