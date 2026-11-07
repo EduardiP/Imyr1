@@ -2083,7 +2083,7 @@ w.innerHTML='<div style="display:flex;flex-direction:column;gap:8px;">'+d.llogar
 '</label>'
 ).join('')+'</div>';
 if(d.llogarite.length) mktLlogaria=d.llogarite[0];
-window.__mktNrLlogarive=d.llogarite.length; if($('mktNdA')){ $('mktNdA').value=d.llogarite.length; mktLlogaritNdarjen(true); }
+window.__mktNrLlogarive=d.llogarite.length; if($('mktNdA')){ $('mktNdA').value=mktNrAdresave(); mktLlogaritNdarjen(true); }
 }catch(e){ $('mktLlogarite').innerHTML='<span style="color:#e5484d;">Gabim gjatë ngarkimit.</span>'; }
 }
 async function mktSinkronizo(btn){
@@ -2154,22 +2154,26 @@ function mktToggleKontakt(id,checked){ if(checked) mktKontaktetZgjedhur.add(id);
 const st=$('mktKontaktetStat'); if(st) st.textContent=st.textContent.replace(/të zgjedhura: \d+/,'të zgjedhura: '+mktKontaktetZgjedhur.size); }
 // ═══ Ndarja e barabartë e kontakteve pa dërguar sipas llogarive dhe ritmit ditor + selektimi rastësor me numër ═══
 function mktRitmi(){ let v=15; try{ v=parseInt(localStorage.getItem('px_mkt_ritmi')||'15',10)||15; }catch(e){} return v; }
+function mktNrAdresave(){ let v=0; try{ v=parseInt(localStorage.getItem('px_mkt_adresat')||'0',10)||0; }catch(e){} return v||window.__mktNrLlogarive||1; }
 function mktVizatoNdarjen(){
 const W=$('mktKontaktetNdarja'); if(!W) return;
-const fusha='width:64px;padding:4px 6px;display:inline-block;margin:0 4px;';
+const fusha='width:60px;padding:4px 6px;display:inline-block;margin:0 4px;font-weight:600;';
 if(!$('mktNdA')){ // kutia ndërtohet një herë; më pas përditësohen vetëm numrat (që të mos humbasë fokusi gjatë shkrimit)
- W.innerHTML='<div style="border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.9;">'+
- '<div><b id="mktNdU">0</b> pa dërguar · '+
- '<input id="mktNdA" type="number" min="1" value="'+(window.__mktNrLlogarive||1)+'" style="'+fusha+'" oninput="mktLlogaritNdarjen(true)"> llogari × '+
- '<input id="mktNdR" type="number" min="1" value="'+mktRitmi()+'" style="'+fusha+'" oninput="try{localStorage.setItem(\'px_mkt_ritmi\',this.value)}catch(e){};mktLlogaritNdarjen(true)"> email në ditë → <span id="mktNdRez"></span></div>'+
+ W.innerHTML='<div style="border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13px;line-height:2;">'+
+ '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;">'+
+ '<span>Pa dërguar: <b id="mktNdU">0</b></span>'+
+ '<span>Adresa dërguese:<input id="mktNdA" type="number" min="1" value="'+mktNrAdresave()+'" style="'+fusha+'" oninput="try{localStorage.setItem(\'px_mkt_adresat\',this.value)}catch(e){};mktLlogaritNdarjen(true)"></span>'+
+ '<span>Email në ditë për çdo adresë:<input id="mktNdR" type="number" min="1" value="'+mktRitmi()+'" style="'+fusha+'" oninput="try{localStorage.setItem(\'px_mkt_ritmi\',this.value)}catch(e){};mktLlogaritNdarjen(true)"></span>'+
+ '</div>'+
+ '<div id="mktNdRez" style="margin-top:4px;"></div>'+
  '<div style="margin-top:4px;">Selekto rastësisht <input id="mktNdN" type="number" min="1" placeholder="numri" style="'+fusha+'width:80px;"> nga të pazgjedhurat në filtrin aktual '+
  '<button type="button" class="btn ghost" style="padding:4px 10px;font-size:12px;" onclick="mktSelektoRastesisht()">Selekto</button> '+
  '<span class="small" id="mktNdMsg"></span></div></div>';
 }
 mktLlogaritNdarjen(false);
 }
-// U = pa dërguar (në kategori); A = llogari; R = email në ditë për llogari.
-// Për çdo llogari: X = ditë të plota × R, ku ditë = floor(U / (A × R)); tepricat që s'mbushin një ditë të plotë mbeten pa ndarë.
+// U = pa dërguar (në kategori); A = adresa dërguese; R = email në ditë për adresë.
+// Ditë të plota për çdo adresë = floor(U / (A × R)); për çdo adresë selektohen ditë × R; tepricat që s'mbushin 15 (R) për të gjitha adresat mbeten jashtë.
 function mktLlogaritNdarjen(ngaPerdoruesi){
 const te=window.__mktKontaktetAkt||[];
 const U=te.filter(k=>mktStatusiKontaktit(k)==='pa').length;
@@ -2177,8 +2181,9 @@ const A=Math.max(1,parseInt($('mktNdA').value,10)||1), R=Math.max(1,parseInt($('
 const dite=Math.floor(U/(A*R)), X=dite*R, mbetje=U-A*X;
 $('mktNdU').textContent=U;
 $('mktNdRez').innerHTML=dite>0
- ? 'selekto <b style="color:#3fb950;">'+X+'</b> për çdo llogari ('+dite+' ditë × '+R+') · gjithsej '+(A*X)+' · mbeten <b>'+mbetje+'</b> pa ndarë'
- : '<span style="color:#d29922;">s’mjaftojnë për një ditë të plotë: duhen të paktën '+(A*R)+' ('+A+' × '+R+'), ke '+U+'.</span>';
+ ? '→ Për <b>secilën</b> nga '+A+' adresat: selekto <b style="color:#3fb950;font-size:15px;">'+X+'</b> kontakte = <b>'+dite+' ditë</b> × '+R+' në ditë. '+
+   '<span class="mut">Gjithsej '+(A*X)+' ('+A+' × '+X+') · mbeten <b>'+mbetje+'</b> jashtë (s’mbushin '+R+' për çdo adresë).</span>'
+ : '<span style="color:#d29922;">→ S’mjaftojnë për një ditë të plotë: duhen të paktën '+(A*R)+' ('+A+' adresa × '+R+'), ke '+U+'.</span>';
 const N=$('mktNdN'); if(N&&(ngaPerdoruesi||!N.value)) N.value=X||'';
 }
 function mktSelektoRastesisht(){
