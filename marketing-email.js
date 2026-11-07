@@ -276,9 +276,13 @@ module.exports = function (app, pool, iAdmin) {
   app.get('/api/admin/marketing/kontaktet', iAdmin, async (req, res) => {
     try {
       const { kategoria } = req.query;
+      // ne_radhe = ne nje fushate aktive, ende pa u derguar ("duke u derguar")
+      const kol = `k.id, k.email, k.domain, k.emri, k.derguar, k.derguar_sasi,
+        EXISTS (SELECT 1 FROM marketing_fushata_kontakte fk JOIN marketing_fushatat f ON f.id = fk.fushata_id
+                WHERE fk.kontakt_id = k.id AND NOT fk.derguar AND f.statusi = 'aktiv') AS ne_radhe`;
       const r = kategoria
-        ? await pool.query('SELECT id, email, domain, emri, derguar, derguar_sasi FROM marketing_kontaktet WHERE kategoria=$1 ORDER BY emri ASC', [kategoria])
-        : await pool.query('SELECT id, email, domain, emri, derguar, derguar_sasi FROM marketing_kontaktet ORDER BY emri ASC');
+        ? await pool.query(`SELECT ${kol} FROM marketing_kontaktet k WHERE k.kategoria=$1 ORDER BY k.emri ASC`, [kategoria])
+        : await pool.query(`SELECT ${kol} FROM marketing_kontaktet k ORDER BY k.emri ASC`);
       res.json({ kontaktet: r.rows });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
