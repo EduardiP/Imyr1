@@ -425,6 +425,7 @@ module.exports = function (app, pool, iAdmin) {
       await pool.query('ALTER TABLE pxse_import_rreshtat ADD COLUMN IF NOT EXISTS ' + k);
     // Importet me filtrin e ri (vetem Google): te rejat shenohen ne ngarkim; ai qe ishte duke punuar njihet nga rreshtat e perjashtuar
     await pool.query('ALTER TABLE pxse_importet ADD COLUMN IF NOT EXISTS filtri_ri BOOLEAN NOT NULL DEFAULT false');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_pxim_r_dom ON pxse_import_rreshtat (domaini)');
     await pool.query('UPDATE pxse_importet SET filtri_ri = true WHERE NOT filtri_ri AND id IN (SELECT DISTINCT import_id FROM pxse_import_rreshtat WHERE perjashtuar IS NOT NULL)');
     // Ndryshimet e meparshme me dore (statusi, shteti) mbrohen nga studimi i ri
     await pool.query("UPDATE pxse_import_rreshtat SET ndryshuar_dore = ndryshuar_dore || ARRAY['statusi'] WHERE vendimi='admin' AND NOT ('statusi' = ANY(ndryshuar_dore))");
@@ -472,6 +473,11 @@ module.exports = function (app, pool, iAdmin) {
   // faqe aktive, jo ne direktori). Ata qe s'e kalojne hiqen nga Marketingu nese i shtoi ky import dhe s'jane derguar ende.
   async function pximPastroKopjet() {
     try {
+      // 1. Vetem biznese te reja: cdo rresht (edhe ata te perpunuar ose te kopjuar me pare) qe eshte pare ne nje import te meparshem
+      await pool.query(`UPDATE pxse_import_rreshtat r SET perjashtuar='importuar_me_pare', statusi='i_paqarte', vendimi='rregull'
+          FROM pxse_importet i WHERE i.id = r.import_id AND i.filtri_ri AND r.perjashtuar IS NULL AND NOT r.ne_direktori AND r.gjendja = 'bere'
+            AND EXISTS (SELECT 1 FROM pxse_import_rreshtat p WHERE p.domaini = r.domaini AND p.import_id < r.import_id AND p.gjendja = 'bere')`);
+      // 2. Te kopjuarit qe mbeten: i njejti filter (vetem Google, me email, faqe aktive, jo ne direktori)
       await pool.query(`UPDATE pxse_import_rreshtat r SET perjashtuar = CASE
             WHEN r.ishte_ne_direktori THEN 'ne_direktori' WHEN r.email IS NULL THEN 'pa_email' WHEN r.aktiv IS FALSE THEN 'jo_aktive' ELSE 'jo_google' END
           FROM pxse_importet i WHERE i.id = r.import_id AND i.filtri_ri AND r.kopjuar AND r.perjashtuar IS NULL
@@ -589,6 +595,14 @@ module.exports = function (app, pool, iAdmin) {
 
   // Domainet e studiuara (faza 2) ne nje skedar tjeter brenda 90 diteve: te dhenat merren prej andej, pa u studiuar perseri
   async function pximRiperdor(im) {
+    if (im.filtri_ri) {
+      // Filtri i ri: vetem biznese te reja. Domaini qe eshte pare (perpunuar) ne nje import te meparshem perjashtohet, pa u studiuar.
+      await pool.query(`UPDATE pxse_import_rreshtat r SET gjendja='bere', gabimi=NULL, perjashtuar='importuar_me_pare', statusi='i_paqarte', vendimi='rregull', perpunuar_at=now()
+        WHERE r.import_id = $1 AND r.gjendja = 'pritje'
+          AND EXISTS (SELECT 1 FROM pxse_import_rreshtat p WHERE p.domaini = r.domaini AND p.import_id < r.import_id AND p.gjendja = 'bere')`, [im.id])
+        .catch(e => console.error('pxse importi riperdorimi:', e.message));
+      return;
+    }
     await pool.query(`UPDATE pxse_import_rreshtat r SET gjendja='bere', gabimi=NULL, kopjuar=true, emri=o.emri, titulli=o.titulli, pershkrimi=o.pershkrimi,
         pershkrimi_ai=o.pershkrimi_ai, email=o.email, email_lloji=o.email_lloji, emailet=o.emailet, ka_mx=o.ka_mx, shteti=o.shteti, shteti_burimi=o.shteti_burimi,
         data_domainit=o.data_domainit, viti_kopi=o.viti_kopi, kategoria=o.kategoria, lloji=o.lloji, statusi=o.statusi, vendimi=o.vendimi, piket_biznes=o.piket_biznes,
@@ -639,10 +653,11 @@ module.exports = function (app, pool, iAdmin) {
   const PXIM_STUDIM_GRUP = 8, PXIM_STUDIM_PARALEL = 6;
   async function pximStudimi(im) {
     let deshtimeAI = 0;
+    if (im.filtri_ri) await pximPastroKopjet(); // te paret me pare nuk shkojne te AI-ja
     for (;;) {
       const gj = (await pool.query('SELECT gjendja FROM pxse_importet WHERE id=$1', [im.id])).rows[0];
       if (!gj || gj.gjendja !== 'duke') return 'ndalur';
-      const grupi = (await pool.query(`SELECT * FROM pxse_import_rreshtat WHERE import_id=$1 AND gjendja='bere' AND studim2 IS NULL AND vendimi IS DISTINCT FROM 'rregull'
+      const grupi = (await pool.query(`SELECT * FROM pxse_import_rreshtat WHERE import_id=$1 AND gjendja='bere' AND studim2 IS NULL AND vendimi IS DISTINCT FROM 'rregull' AND perjashtuar IS NULL
           ORDER BY (statusi='biznes') DESC, id LIMIT $2`, [im.id, PXIM_STUDIM_GRUP])).rows;
       if (!grupi.length) return 'gati';
       // 1. Faqet (deri 6 domaine njekohesisht)
