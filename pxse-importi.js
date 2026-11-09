@@ -423,6 +423,9 @@ module.exports = function (app, pool, iAdmin) {
     // Studimi i faqeve (faza 2): faqja e gjalle + AI nano per te gjitha
     for (const k of ['aktiv BOOLEAN', 'studim2 TEXT', 'studim2_at TIMESTAMPTZ', "ndryshuar_dore TEXT[] NOT NULL DEFAULT '{}'", 'import_para INT', 'meta_arkiv TEXT', 'kopjuar BOOLEAN NOT NULL DEFAULT false', 'marketing TEXT', 'email_ofruesi TEXT', 'perjashtuar TEXT', 'madhesia TEXT', 'konkurrent BOOLEAN'])
       await pool.query('ALTER TABLE pxse_import_rreshtat ADD COLUMN IF NOT EXISTS ' + k);
+    // Importet me filtrin e ri (vetem Google): te rejat shenohen ne ngarkim; ai qe ishte duke punuar njihet nga rreshtat e perjashtuar
+    await pool.query('ALTER TABLE pxse_importet ADD COLUMN IF NOT EXISTS filtri_ri BOOLEAN NOT NULL DEFAULT false');
+    await pool.query('UPDATE pxse_importet SET filtri_ri = true WHERE NOT filtri_ri AND id IN (SELECT DISTINCT import_id FROM pxse_import_rreshtat WHERE perjashtuar IS NOT NULL)');
     // Ndryshimet e meparshme me dore (statusi, shteti) mbrohen nga studimi i ri
     await pool.query("UPDATE pxse_import_rreshtat SET ndryshuar_dore = ndryshuar_dore || ARRAY['statusi'] WHERE vendimi='admin' AND NOT ('statusi' = ANY(ndryshuar_dore))");
     await pool.query("UPDATE pxse_import_rreshtat SET ndryshuar_dore = ndryshuar_dore || ARRAY['shteti'] WHERE shteti_burimi='admin' AND NOT ('shteti' = ANY(ndryshuar_dore))");
@@ -465,6 +468,24 @@ module.exports = function (app, pool, iAdmin) {
       }));
     }
   }
+  // Importet me filtrin e ri: rreshtat e marre nga importet e vjetra (kopjuar) kalojne te njejtin filter (vetem Google, me email,
+  // faqe aktive, jo ne direktori). Ata qe s'e kalojne hiqen nga Marketingu nese i shtoi ky import dhe s'jane derguar ende.
+  async function pximPastroKopjet() {
+    try {
+      await pool.query(`UPDATE pxse_import_rreshtat r SET perjashtuar = CASE
+            WHEN r.ishte_ne_direktori THEN 'ne_direktori' WHEN r.email IS NULL THEN 'pa_email' WHEN r.aktiv IS FALSE THEN 'jo_aktive' ELSE 'jo_google' END
+          FROM pxse_importet i WHERE i.id = r.import_id AND i.filtri_ri AND r.kopjuar AND r.perjashtuar IS NULL
+            AND (r.ishte_ne_direktori OR r.email IS NULL OR r.aktiv IS FALSE OR (r.email_ofruesi IS NOT NULL AND r.email_ofruesi <> 'google'))`);
+      const t = (await pool.query("SELECT to_regclass('marketing_kontaktet') AS mk, to_regclass('marketing_fushata_kontakte') AS f")).rows[0];
+      if (!t.mk) return;
+      const hequr = await pool.query(`DELETE FROM marketing_kontaktet k USING pxse_import_rreshtat r, pxse_importet i
+          WHERE i.id = r.import_id AND i.filtri_ri AND r.perjashtuar IS NOT NULL AND r.marketing = 'shtuar' AND k.email = lower(r.email)
+            AND NOT k.derguar AND COALESCE(k.derguar_sasi, 0) = 0
+            ${t.f ? 'AND NOT EXISTS (SELECT 1 FROM marketing_fushata_kontakte f WHERE f.kontakt_id = k.id)' : ''} RETURNING k.email`);
+      if (hequr.rows.length) await pool.query(`UPDATE pxse_import_rreshtat r SET marketing = NULL FROM pxse_importet i
+          WHERE i.id = r.import_id AND i.filtri_ri AND r.perjashtuar IS NOT NULL AND lower(r.email) = ANY($1::text[])`, [hequr.rows.map(x => x.email)]);
+    } catch (e) { console.error('pxse importi → pastrimi i kopjeve:', e.message); }
+  }
   // Direktoria (faqja publike, dashboard-i, portali): vetem bizneset me email te Google-it.
   // Te tjeret fshihen (aktiv=false, fshehur_ofruesi=true) dhe rikthehen vete me PXSE_VETEM_GOOGLE=0 ne Railway.
   async function pximDirektoriaGoogle() {
@@ -499,6 +520,7 @@ module.exports = function (app, pool, iAdmin) {
     if (pximMarketingDuke) return; pximMarketingDuke = true;
     try {
       await pximPlotesoOfruesit();
+      await pximPastroKopjet();
       await pximDirektoriaGoogle();
       const t = (await pool.query("SELECT to_regclass('marketing_kontaktet') AS mk, to_regclass('pxse_mos_kontakto') AS mos")).rows[0];
       if (!t.mk) return;
@@ -570,10 +592,11 @@ module.exports = function (app, pool, iAdmin) {
     await pool.query(`UPDATE pxse_import_rreshtat r SET gjendja='bere', gabimi=NULL, kopjuar=true, emri=o.emri, titulli=o.titulli, pershkrimi=o.pershkrimi,
         pershkrimi_ai=o.pershkrimi_ai, email=o.email, email_lloji=o.email_lloji, emailet=o.emailet, ka_mx=o.ka_mx, shteti=o.shteti, shteti_burimi=o.shteti_burimi,
         data_domainit=o.data_domainit, viti_kopi=o.viti_kopi, kategoria=o.kategoria, lloji=o.lloji, statusi=o.statusi, vendimi=o.vendimi, piket_biznes=o.piket_biznes,
-        meta_arkiv=o.meta_arkiv, aktiv=o.aktiv, madhesia=o.madhesia, konkurrent=o.konkurrent, studim2=o.studim2, studim2_at=o.studim2_at, ndryshuar_dore=o.ndryshuar_dore, import_para=o.import_id, perpunuar_at=now()
+        meta_arkiv=o.meta_arkiv, aktiv=o.aktiv, madhesia=o.madhesia, konkurrent=o.konkurrent, email_ofruesi=o.email_ofruesi, studim2=o.studim2, studim2_at=o.studim2_at, ndryshuar_dore=o.ndryshuar_dore, import_para=o.import_id, perpunuar_at=now()
       FROM (SELECT DISTINCT ON (domaini) * FROM pxse_import_rreshtat WHERE import_id <> $1 AND studim2='bere' AND studim2_at > now() - interval '90 days'
+                  AND email IS NOT NULL AND email_ofruesi = 'google' AND aktiv IS NOT FALSE AND perjashtuar IS NULL
             ORDER BY domaini, studim2_at DESC) o
-      WHERE r.import_id = $1 AND r.gjendja = 'pritje' AND r.domaini = o.domaini`, [im.id]).catch(e => console.error('pxse importi riperdorimi:', e.message));
+      WHERE r.import_id = $1 AND r.gjendja = 'pritje' AND r.domaini = o.domaini AND NOT r.ishte_ne_direktori`, [im.id]).catch(e => console.error('pxse importi riperdorimi:', e.message));
   }
 
   // ---------- Faza 2: studimi i faqeve ----------
@@ -841,7 +864,7 @@ module.exports = function (app, pool, iAdmin) {
       }
       if (!lista.length) return res.status(400).json({ error: 'Asnjë rresht i vlefshëm.' });
       const emri = String(req.headers['x-emri-skedarit'] || 'import.csv').replace(/[^\w .()%-]/g, '').slice(0, 160);
-      const im = (await pool.query('INSERT INTO pxse_importet (emri, total) VALUES ($1,$2) RETURNING id', [emri, lista.length])).rows[0].id;
+      const im = (await pool.query('INSERT INTO pxse_importet (emri, total, filtri_ri) VALUES ($1,$2,true) RETURNING id', [emri, lista.length])).rows[0].id;
       for (let i = 0; i < lista.length; i += 1000) {
         await pool.query(`INSERT INTO pxse_import_rreshtat (import_id, domaini, pike_saas, url, warc_file, warc_offset, warc_gjatesia, ishte_ne_direktori, import_para)
           SELECT $1, x.d, x.s, x.u, x.f, x.o, x.g, EXISTS (SELECT 1 FROM pxse_bizneset b WHERE b.domaini = x.d),
