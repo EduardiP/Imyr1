@@ -777,19 +777,19 @@ async function planiBanerNgarko(){
     const pr=await(await fetch('/api/progres')).json();
     if(pr.plani==='premium'){ el.innerHTML=''; return; }
     const ditet = pr.ditet||0;
-    const mbetura = Math.max(0, 90-ditet);
-    const graceMbetur = Math.max(0, 7-ditet);
+    // Plani falas eshte i perhershem; grace-i (7 dite pa hapesire te lidhur) vlen vetem per llogarite e krijuara automatikisht pa snippet
+    const graceMbetur = (pr.biznesiAuto && !pr.lidhja) ? Math.max(0, 7-ditet) : 0;
     let h='';
     if(pr.planiSkaduar){
       h='<div class="card" style="border-color:var(--err);background:rgba(248,81,73,.06);display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">'+
-        '<p class="small" style="margin:0;color:var(--err);font-weight:600;">Your free period has ended — your ads are paused.</p>'+
+        '<p class="small" style="margin:0;color:var(--err);font-weight:600;">Your plan has expired — your ads are paused.</p>'+
         '<button class="btn cta" onclick="nav({v:\'profile\',nav:\'plani\'})" style="white-space:nowrap;">Upgrade to Premium →</button>'+
       '</div>';
     } else {
       h='<div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">'+
         '<div>'+
           (graceMbetur>0 ? '<p class="small mut" style="margin:0 0 4px;">'+graceMbetur+' days left to receive exposure without a connected space (grace period).</p>' : '')+
-          '<p class="small" style="margin:0;"><b>'+mbetura+' days left</b> in your free period (90 total). After that: $7/month for unlimited creative generation, AI assistance, and more — or upgrade anytime to remove limits early.</p>'+
+          '<p class="small" style="margin:0;"><b>Free plan — forever.</b> Up to 100 Auction and 100 Balance participations per day. Upgrade to $7/month for 3,000 per day, unlimited AI ad creation and support chat, and no PhronexusAI badge.</p>'+
         '</div>'+
         '<button class="btn" onclick="nav({v:\'profile\',nav:\'plani\'})" style="white-space:nowrap;">See plan</button>'+
       '</div>';
@@ -2385,7 +2385,7 @@ async function rekKontrolloSnippet(){
     if(pr.planiSkaduar){
       el.innerHTML='<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.35);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:16px;">'+
         '<div style="flex:1;"><div style="color:#f59e0b;font-weight:600;font-size:13px;">Your ads have been stopped</div>'+
-        '<div class="small" style="margin-top:2px;">Your free period (first 3 months) has ended. Upgrade to Premium so your ads keep showing across the network.</div></div>'+
+        '<div class="small" style="margin-top:2px;">Your plan has expired. Upgrade to Premium so your ads keep showing across the network.</div></div>'+
         '<button class="btn" style="white-space:nowrap;background:#f59e0b;color:#1a1200;border:none;font-weight:600;" onclick="nav({v:\'profile\',nav:\'plani\'})">Upgrade to Premium</button></div>';
       return;
     }
@@ -2733,10 +2733,13 @@ async function mainPlani(m){
     'Notifications for technical help and guidance'
   ];
   const VECORITE_FALAS_SPEC = [
+    'Up to 100 Auction and 100 Balance participations per day',
+    'Free AI email outreach to verified B2B businesses',
     'AI ad-format generation (image, video, HTML5) — up to 30 creations/month',
     'Support chat'
   ];
   const VECORITE_PREMIUM_SPEC = [
+    'Up to 3,000 Auction and 3,000 Balance participations per day',
     'UNLIMITED Creative generation (image, video, HTML5, with AI)',
     'UNLIMITED Ad creation',
     'UNLIMITED AI assistance (creation chat + support)',
@@ -2763,7 +2766,6 @@ async function mainPlani(m){
   try{ pr=await(await fetch('/api/progres')).json(); }catch(e){}
   const ePremium = !!(une && une.plani==='premium');
   const eSkaduar = !!pr.planiSkaduar && !ePremium;
-  const ditetMbetura = Math.max(0, 90-(pr.ditet||0));
 
   let permbajtja;
   if(ePremium){
@@ -2777,13 +2779,13 @@ async function mainPlani(m){
           '<p class="small mut" style="margin:4px 0 0;">Billing continues automatically every month.</p>'+
         '</div>'+
         listaVeqorish(VECORITE_PREMIUM_SPEC, true)+
-        '<button class="btn" style="width:100%;margin-top:6px;" onclick="planiZgjidh(\'falas\')">Cancel (return to the free period, if you still have days remaining)</button>'+
+        '<button class="btn" style="width:100%;margin-top:6px;" onclick="planiZgjidh(\'falas\')">Cancel (return to the free plan)</button>'+
       '</div>';
   } else if(eSkaduar){
     permbajtja =
       '<div class="card" style="max-width:460px;position:relative;">'+
         '<div class="pill" style="position:absolute;top:-11px;left:20px;background:#f59e0b;color:#1a1200;font-weight:700;">Premium</div>'+
-        '<p class="small" style="color:var(--err);font-weight:600;margin:6px 0 10px;">Your free period (the first 3 months) has ended — your ads have been paused.</p>'+
+        '<p class="small" style="color:var(--err);font-weight:600;margin:6px 0 10px;">Your plan has expired — your ads have been paused.</p>'+
         '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/mo</span></div>'+
         '<p class="small" style="margin:6px 0 0;">Activate to restore the service immediately.</p>'+
         listaVeqorish(VECORITE_PREMIUM_SPEC, true)+
@@ -2795,15 +2797,15 @@ async function mainPlani(m){
         '<div class="card" style="flex:1 1 300px;position:relative;border-color:var(--good);">'+
           '<div class="pill" style="position:absolute;top:-11px;right:20px;background:var(--good);color:#04240f;font-weight:700;display:flex;align-items:center;gap:5px;">'+
             '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#04240f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Active now</div>'+
-          '<div style="font-family:var(--f-mono);font-size:11px;color:var(--good);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">'+ditetMbetura+' days remaining</div>'+
-          '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">Falas</div>'+
-          '<p class="small" style="margin:6px 0 0;">Gjatë 3 muajve të parë, pa pagesë.</p>'+
+          '<div style="font-family:var(--f-mono);font-size:11px;color:var(--good);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Free forever</div>'+
+          '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">Free</div>'+
+          '<p class="small" style="margin:6px 0 0;">No credit card. Your plan never expires.</p>'+
           listaVeqorish(VECORITE_FALAS_SPEC)+
         '</div>'+
         '<div class="card" style="flex:1 1 300px;position:relative;">'+
           '<div class="pill" style="position:absolute;top:-11px;left:20px;background:#f59e0b;color:#1a1200;font-weight:700;">Premium</div>'+
           '<div style="font-family:var(--f-head);font-size:24px;font-weight:700;color:var(--txt);">$7 <span class="small mut" style="font-family:var(--f-body);font-weight:400;">/mo</span></div>'+
-          '<p class="small" style="margin:6px 0 0;">Krijim dhe asistencë AI <b style="color:var(--txt);">pa asnjë kufi</b> — çdo gjë tjetër njësoj si Falas.</p>'+
+          '<p class="small" style="margin:6px 0 0;">Higher daily limits and <b style="color:var(--txt);">unlimited</b> AI creation and assistance.</p>'+
           listaVeqorish(VECORITE_PREMIUM_SPEC, true)+
           '<button class="btn" style="width:100%;" onclick="planiZgjidh(\'premium\')">Activate now (optional)</button>'+
         '</div>'+
