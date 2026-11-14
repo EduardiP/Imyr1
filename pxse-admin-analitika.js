@@ -142,7 +142,7 @@ module.exports = function (app, pool, iAdmin) {
     try {
       const p = pxanPeriudha(req.query);
       const rows = await pxanNgjarjet(p), snip = await pxanSnippet(p, 'email');
-      const bosh = () => ({ derguar: 0, klik_x: 0, klik_hyr: 0, login: 0, snippet: 0, email_dergues: null, rikthim: 0, hyrje_e_re: 0, klik_studio: 0, prova: 0 });
+      const bosh = () => ({ derguar: 0, klik_x: 0, klik_hyr: 0, login: 0, snippet: 0, email_dergues: 0, rikthim: 0, hyrje_e_re: 0, klik_studio: 0, prova: 0 });
       const sipasDites = {}; p.ditet.forEach(d => { sipasDites[d] = bosh(); });
       const kubat = { hyrje: {}, hyrje_e_re: {}, login: {}, rikthim: {} };
       rows.forEach(r => {
@@ -155,6 +155,7 @@ module.exports = function (app, pool, iAdmin) {
         if (r.lloji === 'hyrje_e_re') x.hyrje_e_re += r.n;
         if (r.lloji === 'studim_email') x.prova += r.n;
         if (r.lloji === 'klik_studio') x.klik_studio += r.n;
+        if (r.lloji === 'dergues_lidhur') x.email_dergues += r.n; // email-i dergues i lidhur nga dashboard-i
         const shto = (k, v) => { kubat[k][r.pika] = (kubat[k][r.pika] || 0) + v; };
         if (r.lloji === 'hyrje_e_re' || r.lloji === 'rikthim' || r.lloji === 'vizite_perseri') shto('hyrje', r.n);
         if (r.lloji === 'hyrje_e_re') shto('hyrje_e_re', r.n);
@@ -163,7 +164,7 @@ module.exports = function (app, pool, iAdmin) {
       });
       snip.forEach(r => { if (sipasDites[r.dita]) sipasDites[r.dita].snippet += r.n; });
       const gjithsej = bosh();
-      Object.values(sipasDites).forEach(x => KOLONAT.forEach(k => { if (k !== 'email_dergues') gjithsej[k] += x[k]; }));
+      Object.values(sipasDites).forEach(x => KOLONAT.forEach(k => { gjithsej[k] += x[k]; }));
       const seri = {}; Object.keys(kubat).forEach(k => { seri[k] = pxanSeri(p, kubat[k]); });
       const shuma = k => seri[k].reduce((a, b) => a + b.vlera, 0);
       res.json({ ok: true, nga: p.nga, deri: p.deri, sot: p.sot, kolonat: KOLONAT, ditet: p.ditet.map(d => Object.assign({ dita: d }, sipasDites[d])), gjithsej,
@@ -256,6 +257,15 @@ module.exports = function (app, pool, iAdmin) {
   // ---------- Bizneset e regjistruara nga sherbimet falas ----------
   app.get('/api/admin/pxse/analitika/bizneset', iAdmin, async (req, res) => {
     try {
+      if (req.query.nga === 'llogari') {
+        const r = await pool.query(`SELECT b.id, b.emri, b.email, g.email AS derguesi, g.gabimi AS derguesi_gabim, g.lidhur_at,
+            (SELECT COUNT(*)::int FROM pxse_dergimet d WHERE d.biznes_id = b.id AND d.derguesi_id IS NOT NULL AND d.statusi = 'derguar') AS derguar,
+            (SELECT MAX(COALESCE(d.derguar_at, d.krijuar_at)) FROM pxse_dergimet d WHERE d.biznes_id = b.id AND d.derguesi_id IS NOT NULL) AS fundit
+          FROM bizneset b LEFT JOIN pxse_derguesit g ON g.biznes_id = b.id
+          WHERE g.biznes_id IS NOT NULL OR EXISTS (SELECT 1 FROM pxse_dergimet d WHERE d.biznes_id = b.id AND d.derguesi_id IS NOT NULL)`);
+        const koha = x => new Date(x.fundit || x.lidhur_at || 0).getTime();
+        return res.json({ ok: true, bizneset: r.rows.sort((x, y) => koha(y) - koha(x)).slice(0, 400) });
+      }
       const nga = req.query.nga === 'sinjale' ? 'sinjale' : (req.query.nga === 'email' ? 'email' : '');
       const r = await pool.query(`SELECT DISTINCT ON (b.id) b.id, b.emri, b.email, l.domaini, l.nga, l.lidhur_at
         FROM pxse_seanca_llogaria l JOIN bizneset b ON b.id = l.biznes_id
@@ -286,7 +296,19 @@ module.exports = function (app, pool, iAdmin) {
       try { const s = await pool.query('SELECT bool_or(snippet_active AND NOT COALESCE(pauzuar,false)) aktiv, COUNT(*)::int numri FROM snippetet WHERE biznes_id=$1', [id]); snippet = s.rows[0]; } catch (e) {}
       let dergimet = null;
       try { const d = await pool.query("SELECT statusi, COUNT(*)::int n FROM pxse_dergimet WHERE biznes_id=$1 OR seanca = ANY($2::text[]) GROUP BY 1", [id, seancat]); dergimet = d.rows; } catch (e) {}
-      res.json({ ok: true, biznesi: b.rows[0], tipi: tipi.length ? tipi[0].tipi : null, provat: l.rows.map(x => ({ domaini: x.domaini, nga: x.nga, lidhur_at: x.lidhur_at })),
+      // Email Outreach nga dashboard-i (pxse-llogaria.js): email-i dergues dhe email-et e derguara prej tij
+      let derguesi = null, dashboard = null;
+      try { const g = await pool.query('SELECT email, lidhur_at, gabimi FROM pxse_derguesit WHERE biznes_id=$1', [id]); derguesi = g.rows[0] || null; } catch (e) {}
+      try {
+        const t = await pool.query(`SELECT COUNT(*)::int gjithsej,
+            COUNT(*) FILTER (WHERE statusi IN ('ne_radhe','duke'))::int ne_radhe, COUNT(*) FILTER (WHERE statusi='derguar')::int derguar,
+            COUNT(*) FILTER (WHERE statusi='deshtoi')::int deshtoi, COUNT(*) FILTER (WHERE hapur_at IS NOT NULL)::int hapur,
+            COUNT(*) FILTER (WHERE klikuar_at IS NOT NULL)::int klikuar, COUNT(*) FILTER (WHERE cregj_at IS NOT NULL)::int cregj,
+            MAX(derguar_at) fundit
+          FROM pxse_dergimet WHERE biznes_id=$1 AND derguesi_id IS NOT NULL`, [id]);
+        dashboard = t.rows[0];
+      } catch (e) {}
+      res.json({ ok: true, biznesi: b.rows[0], tipi: tipi.length ? tipi[0].tipi : null, derguesi, dashboard, provat: l.rows.map(x => ({ domaini: x.domaini, nga: x.nga, lidhur_at: x.lidhur_at })),
         ngjarjet: n, ditore, aktivitetet, snippet, dergimet });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
