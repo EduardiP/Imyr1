@@ -76,7 +76,7 @@
     ['klik_hyr', 'Klikime "Sign in"'],
     ['login', 'Login real'],
     ['snippet', 'Snippet i lidhur pas login'],
-    ['email_dergues', 'Email dërgues i lidhur pas login'],
+    ['email_dergues', 'Email dërgues i lidhur (dashboard)'],
     ['rikthim', 'Rikthime (domain i përdorur, dhënë përsëri)'],
     ['hyrje_e_re', 'Hyrje për herë të parë'],
     ['klik_studio', 'Klikime "✦ Write my email with AI"'],
@@ -184,10 +184,12 @@
       '<div id="pxadTabela"><p class="small">Po ngarkoj…</p></div>' +
       '<div class="pxad-kubat" id="pxadKubat"></div>' +
       '<h3 class="pxad-titull">Domainet që përdorën provën falas</h3><div id="pxadProvat"><p class="small">Po ngarkoj…</p></div>' +
+      '<h3 class="pxad-titull">Llogaritë që përdorin Email Outreach (nga dashboard-i)</h3>' +
+      '<div id="pxadLlogarite"><p class="small">Po ngarkoj…</p></div>' +
       '<h3 class="pxad-titull">Bizneset e regjistruara nga provat e email-eve</h3>' +
       '<div id="pxadBizneset"><p class="small">Po ngarkoj…</p></div></div>';
     lidhToolbar(m, ngarkoEmail);
-    ngarkoEmail(); ngarkoProvat('email'); ngarkoBizneset('email');
+    ngarkoEmail(); ngarkoProvat('email'); ngarkoLlogarite(); ngarkoBizneset('email');
   }
 
   function ngarkoEmail() {
@@ -197,7 +199,7 @@
       if (!d || !d.ok) { el('pxadTabela').innerHTML = '<p class="small" style="color:#e5484d;">' + e((d && d.error) || 'Gabim gjatë ngarkimit.') + '</p>'; return; }
       gj.nga = d.nga; gj.deri = d.deri;
       el('pxadTabela').innerHTML = tabela(d, KOLONAT_EMAIL) +
-        '<p class="pxad-shenim">"Email-e të krijuara me AI": çdo herë që AI e përfundoi email-in; secila përdor provën falas të një domaini (kthimi me të njëjtin domain nuk numërohet, sepse AI nuk punon përsëri). "Snippet i lidhur pas login": llogaritë që erdhën nga prova e email-eve atë ditë dhe sot kanë snippet aktiv (jo të pauzuar). "Email dërgues": shfaqet kur të ndërtohet lidhja e email-it në dashboard.</p>';
+        '<p class="pxad-shenim">"Email-e të krijuara me AI": çdo herë që AI e përfundoi email-in; secila përdor provën falas të një domaini (kthimi me të njëjtin domain nuk numërohet, sepse AI nuk punon përsëri). "Snippet i lidhur pas login": llogaritë që erdhën nga prova e email-eve atë ditë dhe sot kanë snippet aktiv (jo të pauzuar). "Email dërgues i lidhur": sa llogari lidhën email-in e vet dërgues në dashboard atë ditë. "Email-e të dërguara" përfshin edhe ato nga dashboard-i.</p>';
       var pt = periudhaTekst(d);
       el('pxadKubat').innerHTML = KUBAT_EMAIL.map(function (k) {
         return '<button class="pxad-kub" data-k="' + k[0] + '"><b>' + (d.kubat[k[0]] || 0) + '</b><span>' + e(k[1]) + '</span><small>' + e(pt) + ' · ' + e(k[2]) + '</small></button>';
@@ -221,9 +223,9 @@
     var rr = d.ditet.slice().reverse(); // dita me e re lart
     return '<div class="pxad-tbl"><table><thead><tr><th>Dita</th>' + kolonat.map(function (k) { return '<th>' + e(k[1]) + '</th>'; }).join('') + '</tr></thead><tbody>' +
       rr.map(function (x) {
-        return '<tr><td>' + e(dataBukur(x.dita)) + '</td>' + kolonat.map(function (k) { return qeliza(x[k[0]], k[0] === 'email_dergues' ? 'Lidhja e email-it dërgues në dashboard nuk është ndërtuar ende' : ''); }).join('') + '</tr>';
+        return '<tr><td>' + e(dataBukur(x.dita)) + '</td>' + kolonat.map(function (k) { return qeliza(x[k[0]], ''); }).join('') + '</tr>';
       }).join('') +
-      (rr.length > 1 ? '<tr class="pxad-tot"><td>Gjithsej</td>' + kolonat.map(function (k) { return qeliza(d.gjithsej[k[0]], k[0] === 'email_dergues' ? 'Nuk është ndërtuar ende' : ''); }).join('') + '</tr>' : '') +
+      (rr.length > 1 ? '<tr class="pxad-tot"><td>Gjithsej</td>' + kolonat.map(function (k) { return qeliza(d.gjithsej[k[0]], ''); }).join('') + '</tr>' : '') +
       '</tbody></table></div>';
   }
 
@@ -399,6 +401,19 @@
       w.querySelectorAll('[data-id]').forEach(function (b) { b.onclick = function () { detajet(b.getAttribute('data-id')); }; });
     }).catch(function () { var w = el('pxadBizneset'); if (w) w.innerHTML = '<p class="small" style="color:#e5484d;">Gabim gjatë ngarkimit.</p>'; });
   }
+  // Cdo llogari qe ka lidhur email-in dergues ose ka planifikuar email-e nga dashboard-i (pavaresisht nga erdhi)
+  function ngarkoLlogarite() {
+    fetch('/api/admin/pxse/analitika/bizneset?nga=llogari').then(function (r) { return r.json(); }).then(function (d) {
+      var w = el('pxadLlogarite'); if (!w) return;
+      if (!d || !d.ok) { w.innerHTML = '<p class="small" style="color:#e5484d;">' + e((d && d.error) || 'Gabim.') + '</p>'; return; }
+      if (!d.bizneset.length) { w.innerHTML = '<p class="small mut">Ende asnjë llogari nuk ka lidhur email dërgues ose planifikuar email-e.</p>'; return; }
+      w.innerHTML = '<div class="pxad-biz">' + d.bizneset.map(function (b) {
+        var gj = b.derguesi ? (b.derguesi_gabim ? '⚠ ' + b.derguesi + ' (gabim hyrjeje)' : '✓ ' + b.derguesi) : 'pa email dërgues';
+        return '<button class="pxad-bk" data-id="' + b.id + '" title="' + e(b.emri + ' · ' + gj + ' · ' + (b.derguar || 0) + ' të dërguara') + '"><div class="pxad-av">' + e(String(b.emri || '?').charAt(0).toUpperCase()) + '</div><b>' + e(b.emri) + '</b><span>' + e(gj) + '</span><span>' + (b.derguar || 0) + ' email-e të dërguara</span></button>';
+      }).join('') + '</div>';
+      w.querySelectorAll('[data-id]').forEach(function (b) { b.onclick = function () { detajet(b.getAttribute('data-id')); }; });
+    }).catch(function () { var w = el('pxadLlogarite'); if (w) w.innerHTML = '<p class="small" style="color:#e5484d;">Gabim gjatë ngarkimit.</p>'; });
+  }
   function detajet(id) {
     var m = modal('Biznesi', '<p class="small">Po ngarkoj…</p>');
     fetch('/api/admin/pxse/analitika/biznes/' + encodeURIComponent(id)).then(function (r) { return r.json(); }).then(function (d) {
@@ -417,7 +432,13 @@
         (ngaEmail ? rr('Email-e të planifikuara / të dërguara në provë', (n.email_planifikuar || 0) + ' / ' + (n.email_derguar || 0)) + rr('Statusi i email-eve (7 ditët e ruajtura)', e(derg || '—')) + rr('Klikime ✕', String(n.klik_x || 0)) : '') +
         rr('Klikime "Sign in"', String(n.klik_hyr || 0)) +
         rr('Snippet', d.snippet ? (d.snippet.aktiv ? 'aktiv' : (d.snippet.numri ? 'i lidhur, por jo aktiv (ose i pauzuar)' : 'nuk është lidhur')) : '—') +
-        rr('Në dashboard (email-e të krijuara / aktive, sinjale të reja)', '— <span class="small mut">(plotësohet kur të ndërtohet shërbimi në dashboard)</span>') +
+        rr('Email-i dërgues (nga llogaria)', d.derguesi ? e(d.derguesi.email) + ' · lidhur ' + e(koheBukur(d.derguesi.lidhur_at)) + (d.derguesi.gabimi ? ' · <span style="color:#e5484d">' + e(d.derguesi.gabimi) + '</span>' : ' · <span style="color:#3fb950">punon</span>') : 'Nuk është lidhur') +
+        (function () {
+          var t = d.dashboard || {};
+          return '<h4>Email-et nga dashboard-i (nga email-i i vet)</h4><div class="pxad-mini"><div><b>' + (t.gjithsej || 0) + '</b><span>të planifikuara gjithsej</span></div><div><b>' + (t.derguar || 0) + '</b><span>të dërguara</span></div><div><b>' + (t.ne_radhe || 0) + '</b><span>në radhë</span></div>' +
+            '<div><b>' + (t.hapur || 0) + '</b><span>të hapura</span></div><div><b>' + (t.klikuar || 0) + '</b><span>të klikuara</span></div><div><b>' + (t.cregj || 0) + '</b><span>çregjistrime</span></div>' + (t.deshtoi ? '<div><b>' + t.deshtoi + '</b><span>të dështuara</span></div>' : '') + '</div>' +
+            (t.fundit ? rr('Email-i i fundit u dërgua', e(koheBukur(t.fundit))) : '');
+        })() +
         '<h4>Sipas ditës</h4>' +
         ((d.ditore || []).length ? '<table class="pxad-lista"><thead><tr><th>Dita</th><th style="text-align:right">Hyrje në faqe</th><th style="text-align:right">Sinjale të marra</th><th style="text-align:right">Sinjale të klikuara</th></tr></thead><tbody>' +
           d.ditore.map(function (x) { return '<tr><td>' + e(dataBukur(x.dita)) + '</td><td class="n">' + (x.hyrje || 0) + '</td><td class="n">' + (x.sinjale || 0) + '</td><td class="n">' + (x.klikime || 0) + '</td></tr>'; }).join('') +
