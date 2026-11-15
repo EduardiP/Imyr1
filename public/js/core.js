@@ -313,13 +313,43 @@ function applyState(s, replace){
   else { showView('hero'); }
   if(replace) history.replaceState(s,'',stateToUrl(s));
 }
-function nav(s){ history.pushState(s,'',stateToUrl(s)); applyState(s); }
-window.onpopstate = e => applyState(e.state);
+function nav(s){ history.pushState(s,'',stateToUrl(s)); applyState(s); aktDergo('faqe'); }
+window.onpopstate = e => { applyState(e.state); aktDergo('faqe'); };
+
+// ---------- AKTIVITETI I LLOGARISE (statistike e brendshme per admin-in) ----------
+// 'hapje' = hapje e re e dashboard-it (pas 30 min pa aktivitet), 'faqe' = faqja/menuja e hapur,
+// 'ping' = 1 minute aktive (vetem kur skeda eshte e dukshme dhe perdoruesi ka levizur ne 5 min e fundit).
+var _aktFundit = Date.now(), _aktFaqjaFundit = '', _aktKoha = 0;
+function aktDergo(lloji){
+  try{
+    if(!une) return;
+    var faqja = location.pathname;
+    if(lloji==='faqe'){ if(faqja===_aktFaqjaFundit && Date.now()-_aktKoha<3000) return; _aktFaqjaFundit=faqja; _aktKoha=Date.now(); }
+    fetch('/api/llogari/aktiviteti',{method:'POST',headers:{'Content-Type':'application/json'},keepalive:true,
+      body:JSON.stringify({lloji:lloji, faqja:faqja})}).catch(function(){});
+  }catch(e){}
+}
+function aktHapjaKontrollo(){
+  try{
+    var k='pxAktFundit', tani=Date.now(), f=parseInt(localStorage.getItem(k)||'0',10);
+    localStorage.setItem(k, String(tani));
+    if(!f || tani-f > 30*60*1000) aktDergo('hapje');
+  }catch(e){ aktDergo('hapje'); }
+}
+['mousemove','keydown','click','scroll','touchstart'].forEach(function(ev){
+  window.addEventListener(ev, function(){ _aktFundit = Date.now(); }, {passive:true});
+});
+setInterval(function(){
+  if(!une || document.visibilityState!=='visible' || Date.now()-_aktFundit > 5*60*1000) return;
+  aktHapjaKontrollo(); aktDergo('ping');
+}, 60000);
+document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible' && une) aktHapjaKontrollo(); });
 
 async function boot(){
   const params = new URLSearchParams(location.search);
   const loginRez = params.get('login');
   await loadMe();
+  if(une){ aktHapjaKontrollo(); setTimeout(function(){ aktDergo('faqe'); }, 1500); }
 
   // Ngarkim i drejtperdrejte/refresh/link i ndare — rindërto gjendjen nga vetë URL-ja.
   if(!history.state && une){
