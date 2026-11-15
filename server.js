@@ -219,6 +219,7 @@ app.post('/api/regjistrohu', async (req, res) => {
     // krijo seance (login automatik pas regjistrimit)
     const token = crypto.randomBytes(24).toString('hex');
     await pool.query('INSERT INTO seancat (token, biznes_id) VALUES ($1,$2)', [token, r.rows[0].id]);
+    aktHyrje(r.rows[0].id, 'regjistrim');
     res.cookie('imyr_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 30*24*60*60*1000 });
     res.json({ ok: true, biznes_id: r.rows[0].id });
   } catch (e) {
@@ -335,6 +336,7 @@ app.get('/auth/google/callback', async (req, res) => {
       // Ekziston => hyr direkt
       const token = crypto.randomBytes(24).toString('hex');
       await pool.query('INSERT INTO seancat (token, biznes_id) VALUES ($1,$2)', [token, biz.rows[0].id]);
+      aktHyrje(biz.rows[0].id, 'google');
       res.cookie('imyr_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 30*24*60*60*1000 });
       return res.redirect('/?login=ok');
     }
@@ -382,6 +384,7 @@ app.post('/api/google-prano', async (req, res) => {
     res.clearCookie('imyr_pending');
     const token = crypto.randomBytes(24).toString('hex');
     await pool.query('INSERT INTO seancat (token, biznes_id) VALUES ($1,$2)', [token, bizId]);
+    aktHyrje(bizId, 'google (regjistrim)');
     res.cookie('imyr_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 30*24*60*60*1000 });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -3016,6 +3019,87 @@ require('./pxse-sinjalet')(app, pool);
 require('./pxse-alertet')(app, pool, iAdmin);
 require('./pxse-admin-analitika')(app, pool, iAdmin);
 require('./pxse-llogaria')(app, pool, iLoguar); // Find Customers pas login (pas pxse-sinjalet)
+
+// ===================== AKTIVITETI I LLOGARIVE (vetem per admin-in) =====================
+// Per cdo llogari, sipas dites (ora e Berlinit): hapjet e dashboard-it (nje hapje e re pas 30 min pa aktivitet,
+// keshtu numerohen edhe hyrjet me sesion te ruajtur nga Google), faqet/menute e hapura, minutat aktive.
+// Hyrjet reale (login) ruhen me menyren: email, google, regjistrim. Te dhenat mbahen 13 muaj.
+(async () => {
+  await pool.query(`CREATE TABLE IF NOT EXISTS llogari_ditet (biznes_id INT NOT NULL, dita DATE NOT NULL,
+    hyrje INT NOT NULL DEFAULT 0, minuta INT NOT NULL DEFAULT 0, fundit_at TIMESTAMPTZ, PRIMARY KEY (biznes_id, dita))`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS llogari_faqet (biznes_id INT NOT NULL, dita DATE NOT NULL, faqja TEXT NOT NULL,
+    hapje INT NOT NULL DEFAULT 0, PRIMARY KEY (biznes_id, dita, faqja))`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS llogari_hyrjet (id BIGSERIAL PRIMARY KEY, biznes_id INT NOT NULL, menyra TEXT, koha TIMESTAMPTZ NOT NULL DEFAULT now())`);
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_llogari_hyrjet_biz ON llogari_hyrjet (biznes_id, koha DESC)');
+})().catch(e => console.error('aktiviteti migrim:', e.message));
+setInterval(() => {
+  pool.query("DELETE FROM llogari_ditet WHERE dita < (now() - interval '13 months')::date").catch(() => {});
+  pool.query("DELETE FROM llogari_faqet WHERE dita < (now() - interval '13 months')::date").catch(() => {});
+  pool.query("DELETE FROM llogari_hyrjet WHERE koha < now() - interval '13 months'").catch(() => {});
+}, 24 * 3600 * 1000).unref();
+const AKT_SOT = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+// Hyrje reale (login) — thirret nga rruget e hyrjes
+function aktHyrje(bizId, menyra) {
+  pool.query('INSERT INTO llogari_hyrjet (biznes_id, menyra) VALUES ($1,$2)', [bizId, menyra]).catch(() => {});
+}
+// URL e dashboard-it -> celesi i faqes (p.sh. /app/space/12 -> space, /app/find-customers/emails -> find-customers/emails)
+function aktFaqja(url) {
+  const p = String(url || '').split(/[?#]/)[0].replace(/\/+$/, '').toLowerCase();
+  let k = '';
+  if (p.indexOf('/app/') === 0) {
+    const pj = p.slice(5).split('/').filter(Boolean);
+    k = pj[0] || 'dashboard';
+    if (k === 'find-customers' && pj[1] && !/^\d+$/.test(pj[1])) k += '/' + pj[1];
+  } else if (/^\/(team|analytics|start|welcome)(\/|$)/.test(p)) k = p.split('/')[1];
+  return /^[a-z0-9-]{1,40}(\/[a-z0-9-]{1,40})?$/.test(k) ? k : '';
+}
+const aktKufiri = new Map(); // biznes_id|dita -> ngjarje sot (mbrojtje nga dergime pa fund)
+setInterval(() => aktKufiri.clear(), 6 * 3600 * 1000).unref();
+app.post('/api/llogari/aktiviteti', iLoguar, async (req, res) => {
+  const b = req.body || {}, lloji = String(b.lloji || ''), id = req.biznesId, dita = AKT_SOT();
+  const k = id + '|' + dita, n = (aktKufiri.get(k) || 0) + 1; aktKufiri.set(k, n);
+  if (n > 3000) return res.json({ ok: true });
+  try {
+    if (lloji === 'hapje' || lloji === 'ping') {
+      await pool.query(`INSERT INTO llogari_ditet (biznes_id, dita, hyrje, minuta, fundit_at) VALUES ($1,$2,$3,$4,now())
+        ON CONFLICT (biznes_id, dita) DO UPDATE SET hyrje = llogari_ditet.hyrje + $3, minuta = llogari_ditet.minuta + $4, fundit_at = now()`,
+        [id, dita, lloji === 'hapje' ? 1 : 0, lloji === 'ping' ? 1 : 0]);
+    } else if (lloji === 'faqe') {
+      const faqja = aktFaqja(b.faqja);
+      if (!faqja) return res.json({ ok: true });
+      await pool.query(`INSERT INTO llogari_faqet (biznes_id, dita, faqja, hapje) VALUES ($1,$2,$3,1)
+        ON CONFLICT (biznes_id, dita, faqja) DO UPDATE SET hapje = llogari_faqet.hapje + 1`, [id, dita, faqja]);
+      await pool.query(`INSERT INTO llogari_ditet (biznes_id, dita, fundit_at) VALUES ($1,$2,now())
+        ON CONFLICT (biznes_id, dita) DO UPDATE SET fundit_at = now()`, [id, dita]);
+    }
+    res.json({ ok: true });
+  } catch (e) { res.json({ ok: false }); }
+});
+// Admin: aktiviteti i nje llogarie per periudhen (7/30/90 dite)
+app.get('/api/admin/llogari/:id/aktiviteti', iAdmin, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const id = parseInt(req.params.id, 10);
+  if (!(id > 0)) return res.status(400).json({ error: 'ID e pavlefshme' });
+  try {
+    const nDite = [7, 30, 90].includes(parseInt(req.query.dite, 10)) ? parseInt(req.query.dite, 10) : 30;
+    const sot = AKT_SOT();
+    const nga = new Date(Date.parse(sot + 'T12:00:00Z') - (nDite - 1) * 86400000).toISOString().slice(0, 10);
+    const d = (await pool.query(`SELECT to_char(dita,'YYYY-MM-DD') dita, hyrje, minuta FROM llogari_ditet WHERE biznes_id=$1 AND dita BETWEEN $2::date AND $3::date`, [id, nga, sot])).rows;
+    const f = (await pool.query(`SELECT to_char(dita,'YYYY-MM-DD') dita, faqja, hapje FROM llogari_faqet WHERE biznes_id=$1 AND dita BETWEEN $2::date AND $3::date`, [id, nga, sot])).rows;
+    const h = {}; d.forEach(x => { h[x.dita] = { hyrje: x.hyrje, minuta: x.minuta, faqe: 0 }; });
+    const faqet = {};
+    f.forEach(x => { (h[x.dita] = h[x.dita] || { hyrje: 0, minuta: 0, faqe: 0 }).faqe += x.hapje; faqet[x.faqja] = (faqet[x.faqja] || 0) + x.hapje; });
+    const ditet = [];
+    for (let t = Date.parse(nga + 'T12:00:00Z'); t <= Date.parse(sot + 'T12:00:00Z'); t += 86400000) {
+      const k = new Date(t).toISOString().slice(0, 10); ditet.push(Object.assign({ dita: k }, h[k] || { hyrje: 0, minuta: 0, faqe: 0 }));
+    }
+    const fundit = (await pool.query('SELECT MAX(fundit_at) f FROM llogari_ditet WHERE biznes_id=$1', [id])).rows[0].f;
+    const hyrjet = (await pool.query('SELECT menyra, koha FROM llogari_hyrjet WHERE biznes_id=$1 ORDER BY koha DESC LIMIT 30', [id])).rows;
+    const fillimi = (await pool.query("SELECT to_char(MIN(dita),'YYYY-MM-DD') d FROM llogari_ditet")).rows[0].d;
+    res.json({ ok: true, nga, deri: sot, ditet, faqet: Object.keys(faqet).map(k => ({ faqja: k, n: faqet[k] })).sort((a, b) => b.n - a.n), hyrjet, fundit, fillimi });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// =================== FUND: AKTIVITETI I LLOGARIVE ===================
 require('./pxse-reddit-ditore')(app, pool, iAdmin);
 require('./pxse-vektoret')(app, pool, iAdmin); 
 require('./pxse-burimet-reja')(app, pool, iAdmin);
@@ -3512,6 +3596,9 @@ app.delete('/api/admin/biznes/:id', iAdmin, async (req, res) => {
     await klient.query('DELETE FROM ekipi_anetaret WHERE biznes_id=$1', [id]);
     await klient.query('DELETE FROM ekipi_ftesat WHERE biznes_id=$1', [id]);
     await klient.query('DELETE FROM ekipi_aktiviteti WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM llogari_ditet WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM llogari_faqet WHERE biznes_id=$1', [id]);
+    await klient.query('DELETE FROM llogari_hyrjet WHERE biznes_id=$1', [id]);
     await klient.query('DELETE FROM ekipi_role_shabllonet WHERE biznes_id=$1', [id]);
     await klient.query('DELETE FROM ngjarjet WHERE biznes_id=$1 OR reklamues_id=$1', [id]);
     await klient.query('DELETE FROM perputhjet WHERE reklamues_id=$1 OR host_id=$1', [id]);
