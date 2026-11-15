@@ -1403,7 +1403,9 @@ const toggleHtml =
 if(!r.eKetijPishina){
   m.innerHTML='<button class="back" onclick="renderBizMain()">← Bizneset</button>'+
     '<h2 class="h">'+esc(b.emri)+'</h2>'+toggleHtml+
-    '<div class="sect"><p class="small mut">No '+(logjika==='ankand'?'Ankand':'Balance')+' account for this business.</p></div>';
+    '<div class="sect"><p class="small mut">No '+(logjika==='ankand'?'Ankand':'Balance')+' account for this business.</p></div>'+
+    aktSeksioni(id);
+  aktNgarko(id);
   return;
 }
 const reklamatHTML = reklamat.length
@@ -1457,6 +1459,7 @@ m.innerHTML=
 '<button class="back" onclick="renderBizMain()">← Bizneset</button>'+
 '<h2 class="h">'+esc(b.emri)+'</h2>'+
 toggleHtml+
+aktSeksioni(id)+
 '<div class="sect"><h3>Setup checklist</h3>'+
 CH_PIKAT.map(chPikaHTML).join('')+
 '</div>'+
@@ -1508,7 +1511,71 @@ row2('Përmbledhja', b.permbledhje||'—')+
   '<p class="small mut" style="margin:4px 0 12px;">Fshin PËRGJITHMONË këtë biznes dhe çdo gjurmë të tij (shfaqje, klikime, konvertime, reklama, snippet-e, vendime automatik/balance, etj.) — pa mundësi rikthimi.</p>'+
   '<button id="bizDelBtn" onclick="bizFshiKonfirmo('+b.id+',\''+esc((b.emri||'').replace(/\'/g,"\\\\'"))+'\')" style="background:#f85149;color:#fff;border:none;padding:9px 18px;border-radius:8px;cursor:pointer;font-weight:600;">Delete this business</button>'+
 '</div>';
+aktNgarko(id);
 }catch(e){ m.innerHTML='<button class="back" onclick="renderBizMain()">← Bizneset</button><p class="small">Gabim: '+e.message+'</p>'; }
+}
+// ===== AKTIVITETI I LLOGARISE (hapjet, faqet, koha aktive sipas dites) =====
+var aktGjendja = { id:0, dite:30, metrika:'hyrje', te:null };
+var AKT_EMRAT = {'dashboard':'Dashboard','space':'Spaces','creative':'Creative','ads':'My Ads','conversions':'Conversions',
+  'analytics':'Analytics','plan':'Plan','support':'Support','settings':'Settings','notifications':'Notifications',
+  'profile':'Profili','business':'Biznesi','description':'Përshkrimi','connection':'Lidhja (snippet)','insights':'Insights',
+  'find-customers':'Find Customers','find-customers/emails':'Find Customers → Emails','team':'Ekipi','start':'Start','welcome':'Welcome'};
+function aktSeksioni(id){ aktGjendja.id=id; aktGjendja.te=null;
+  return '<div class="sect" id="aktSect"><h3>Aktiviteti në llogari</h3><div id="aktTrup"><p class="small mut">Po ngarkoj…</p></div></div>'; }
+function aktBtn(teksti, aktiv, onclick){
+  return '<button onclick="'+onclick+'" style="padding:6px 12px;border-radius:7px;cursor:pointer;font-size:13px;border:1px solid '+(aktiv?'#58a6ff':'#30363d')+';background:'+(aktiv?'rgba(88,166,255,.15)':'transparent')+';color:'+(aktiv?'#58a6ff':'#c9d1d9')+';">'+teksti+'</button>';
+}
+async function aktNgarko(id, dite){
+  if(dite) aktGjendja.dite=dite;
+  var t=$('aktTrup'); if(!t) return;
+  try{
+    var r=await(await fetch('/api/admin/llogari/'+id+'/aktiviteti?dite='+aktGjendja.dite)).json();
+    if(r.error){ t.innerHTML='<p class="small">'+esc(r.error)+'</p>'; return; }
+    aktGjendja.te=r; aktVizato();
+  }catch(e){ t.innerHTML='<p class="small">Gabim: '+esc(e.message)+'</p>'; }
+}
+function aktMetrika(mk){ aktGjendja.metrika=mk; aktVizato(); }
+function aktVizato(){
+  var t=$('aktTrup'), r=aktGjendja.te; if(!t||!r) return;
+  var mk=aktGjendja.metrika, id=aktGjendja.id;
+  var sum=function(k){ return r.ditet.reduce(function(a,x){ return a+(x[k]||0); },0); };
+  var oreMin=function(n){ return n>=60 ? Math.floor(n/60)+'h '+(n%60)+'m' : n+'m'; };
+  var ditaAktive=r.ditet.filter(function(x){ return x.hyrje||x.faqe||x.minuta; }).length;
+  var h='<div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px;">'+
+    aktBtn('Hyrjet', mk==='hyrje', "aktMetrika('hyrje')")+
+    aktBtn('Faqe të hapura', mk==='faqe', "aktMetrika('faqe')")+
+    aktBtn('Koha aktive', mk==='minuta', "aktMetrika('minuta')")+
+    '<span style="flex:1"></span>'+
+    [7,30,90].map(function(d){ return aktBtn(d+' ditë', aktGjendja.dite===d, 'aktNgarko('+id+','+d+')'); }).join('')+
+  '</div>';
+  h+='<div class="stats">'+stat(sum('hyrje'),'Hyrje')+stat(sum('faqe'),'Faqe të hapura')+stat(oreMin(sum('minuta')),'Koha aktive')+stat(ditaAktive,'Ditë aktive')+'</div>';
+  // Grafiku (shtylla sipas dites)
+  var vals=r.ditet.map(function(x){ return x[mk]||0; }), max=Math.max.apply(null, vals.concat([1]));
+  var W=Math.max(r.ditet.length*14, 300), H=150, bw=W/r.ditet.length;
+  var svg='<svg viewBox="0 0 '+W+' '+(H+22)+'" preserveAspectRatio="none" style="width:100%;height:190px;display:block;margin-top:12px;">'+
+    '<line x1="0" y1="'+H+'" x2="'+W+'" y2="'+H+'" stroke="#30363d"/>';
+  r.ditet.forEach(function(x,i){
+    var v=x[mk]||0, bh=v? Math.max(2, v/max*(H-14)) : 0, xx=i*bw+bw*0.15;
+    var lbl=x.dita.slice(8)+'.'+x.dita.slice(5,7);
+    svg+='<rect x="'+xx+'" y="'+(H-bh)+'" width="'+(bw*0.7)+'" height="'+bh+'" rx="2" fill="#58a6ff"><title>'+lbl+': '+(mk==='minuta'?oreMin(v):v)+'</title></rect>';
+    var hap = r.ditet.length<=7 ? 1 : (r.ditet.length<=30 ? 5 : 15);
+    if(i%hap===0 || i===r.ditet.length-1) svg+='<text x="'+(i*bw+bw/2)+'" y="'+(H+15)+'" fill="#8b949e" font-size="10" text-anchor="middle">'+lbl+'</text>';
+  });
+  svg+='<text x="2" y="10" fill="#8b949e" font-size="10">max '+(mk==='minuta'?oreMin(max):max)+'</text></svg>';
+  h+=svg;
+  h+='<p class="small mut" style="margin-top:6px;">Parë së fundmi: '+(r.fundit?dt(r.fundit):'—')+
+     (r.fillimi?' · Matja nisi më '+esc(r.fillimi):'')+' · Hyrje = hapje e dashboard-it pas 30 min pa aktivitet.</p>';
+  // Menutë
+  h+='<h3 style="margin-top:16px;">Menutë e përdorura</h3>';
+  h+= r.faqet.length ? '<table style="width:100%;border-collapse:collapse;">'+r.faqet.map(function(f){
+      return '<tr><td style="padding:3px 8px 3px 0;color:#e6edf3;">'+esc(AKT_EMRAT[f.faqja]||f.faqja)+'</td><td style="padding:3px 0;color:#8b949e;text-align:right;">'+f.n+'</td></tr>';
+    }).join('')+'</table>' : '<p class="small mut">Asnjë faqe e hapur në këtë periudhë.</p>';
+  // Hyrjet reale
+  h+='<h3 style="margin-top:16px;">Login-et e fundit</h3>';
+  h+= r.hyrjet.length ? '<table style="width:100%;border-collapse:collapse;">'+r.hyrjet.map(function(x){
+      return '<tr><td style="padding:3px 8px 3px 0;color:#e6edf3;">'+dt(x.koha)+'</td><td style="padding:3px 0;color:#8b949e;text-align:right;">'+esc(x.menyra||'—')+'</td></tr>';
+    }).join('')+'</table>' : '<p class="small mut">Asnjë login i regjistruar ende (Google e mban sesionin 30 ditë, prandaj hapjet numërohen më lart).</p>';
+  t.innerHTML=h;
 }
 function bizFshiKonfirmo(id, emri){
   if(!confirm('A je i sigurt? Kjo do te fshije PERGJITHMONE biznesin "'+emri+'" dhe çdo gjurme te tij. S\'mund te kthehet mbrapa.')) return;
