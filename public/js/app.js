@@ -2840,7 +2840,7 @@ async function paddleSigurohu(){
 }
 async function planiZgjidh(plani){
   if(plani==='falas'){
-    if(!confirm('Kjo anulon abonimin tënd Premium. Do të mbash akses deri në fund të periudhës aktuale të faturimit — pas asaj, kthehesh te plani Falas. Vazhdo?')) return;
+    if(!confirm('This cancels your Premium subscription. You keep access until the end of the current billing period, then you return to the Free plan. Continue?')) return;
     try{
       const r=await(await fetch('/api/plani',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plani})})).json();
       if(r.error){ alert(r.error); return; }
