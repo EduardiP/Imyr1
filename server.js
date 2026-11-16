@@ -9,6 +9,7 @@ const bcrypt = require('bcryptjs');
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const path = require('path');
+const fs = require('fs');
 const https = require('https');
 const http = require('http');
 const selector = require('./selector');
@@ -83,6 +84,87 @@ app.post('/api/paddle-webhook', express.raw({ type: 'application/json' }), async
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// ═══ MICROSOFT ADVERTISING (UET) — futet automatikisht ne <head> te cdo faqeje HTML (pervec admin) ═══
+// 1) consent default 'denied'  2) UET tag  3) banner cookies (Accept/Reject) + eventi sign_up (njehere, nga cookie px_signup)
+const UET_HEAD = `<script>
+  window.uetq = window.uetq || [];
+  window.uetq.push('consent', 'default', { 'ad_storage': 'denied' });
+</script>
+<script>
+    (function(w, d, t, u, o) {
+        w[u] = w[u] || [], o.ts = (new Date).getTime();
+        var n = d.createElement(t);
+        n.src = "https://bat.bing.net/bat.js?ti=" + o.ti + ("uetq" != u ? "&q=" + u : ""),
+        n.async = 1, n.onload = n.onreadystatechange = function() {
+            var s = this.readyState;
+            s && "loaded" !== s && "complete" !== s ||
+            (o.q = w[u], w[u] = new UET(o), w[u].push("pageLoad"),
+            n.onload = n.onreadystatechange = null)
+    };
+        var i = d.getElementsByTagName(t)[0];
+        i.parentNode.insertBefore(n, i);
+    })(window, document, "script", "uetq", {
+        ti: "97293704",
+        enableAutoSpaTracking: true
+    });
+</script>
+<script>
+(function(){
+  var K='px_ads_consent';
+  function lexo(){ try{ return localStorage.getItem(K); }catch(e){ return null; } }
+  function ruaj(v){ try{ localStorage.setItem(K, v); }catch(e){} }
+  function pranoi(){ window.uetq = window.uetq || []; window.uetq.push('consent', 'update', { 'ad_storage': 'granted' }); }
+  if(lexo()==='granted') pranoi();
+  // Regjistrim i sapokryer: serveri vendos cookie px_signup=1; e dergojme eventin NJEHERE dhe e fshijme cookie-n
+  function kontrolloSignup(){
+    if(/(?:^|;\\s*)px_signup=1/.test(document.cookie)){
+      document.cookie='px_signup=; Max-Age=0; path=/';
+      window.uetq = window.uetq || []; window.uetq.push('event', 'sign_up', {});
+    }
+  }
+  kontrolloSignup(); setInterval(kontrolloSignup, 1500);
+  function banner(){
+    if(lexo() || document.getElementById('pxCookieBar')) return;
+    var b=document.createElement('div'); b.id='pxCookieBar';
+    b.setAttribute('role','dialog'); b.setAttribute('aria-label','Cookie consent');
+    b.style.cssText='position:fixed;left:16px;right:16px;bottom:16px;z-index:2147483000;max-width:640px;margin:0 auto;background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:12px;padding:14px 16px;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.35);display:flex;gap:12px;align-items:center;flex-wrap:wrap;';
+    b.innerHTML='<span style="flex:1 1 260px;">We use advertising cookies (Microsoft Advertising) to measure our ads. You can accept or reject them. <a href="/privacy" style="color:#58a6ff;">Privacy Policy</a></span>'+
+      '<span style="display:flex;gap:8px;"><button type="button" data-v="denied" style="padding:8px 14px;border-radius:8px;border:1px solid #30363d;background:transparent;color:#e6edf3;cursor:pointer;font:inherit;">Reject</button>'+
+      '<button type="button" data-v="granted" style="padding:8px 14px;border-radius:8px;border:0;background:#2f81f7;color:#fff;cursor:pointer;font:inherit;font-weight:600;">Accept</button></span>';
+    b.addEventListener('click', function(e){
+      var v=e.target && e.target.getAttribute && e.target.getAttribute('data-v'); if(!v) return;
+      ruaj(v); if(v==='granted') pranoi(); b.parentNode && b.parentNode.removeChild(b);
+    });
+    document.body.appendChild(b);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', banner); else banner();
+})();
+</script>
+`;
+function uetFut(html) {
+  if (html.indexOf('bat.bing.net/bat.js') !== -1) return html; // mos e fut dy here
+  const m = html.match(/<head[^>]*>/i);
+  return m ? html.replace(m[0], m[0] + '\n' + UET_HEAD) : UET_HEAD + html;
+}
+function uetVlen(file) { return /\.html?$/i.test(file) && !/(^|[\\/])admin\.html$/i.test(file); }
+function uetDergo(res, file, ngaFallback) {
+  fs.readFile(file, 'utf8', (err, html) => {
+    if (err) return ngaFallback();
+    res.set('Cache-Control', 'no-cache');
+    res.type('html').send(uetFut(html));
+  });
+}
+// Rruget qe perdorin res.sendFile(...html)
+app.use((req, res, next) => {
+  const origjinali = res.sendFile;
+  res.sendFile = function (file, ...rest) {
+    if (typeof file === 'string' && uetVlen(file)) return uetDergo(res, file, () => origjinali.call(res, file, ...rest));
+    return origjinali.call(res, file, ...rest);
+  };
+  next();
+});
+// ═══ FUND: MICROSOFT ADVERTISING (UET) ═══
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -220,6 +302,7 @@ app.post('/api/regjistrohu', async (req, res) => {
     const token = crypto.randomBytes(24).toString('hex');
     await pool.query('INSERT INTO seancat (token, biznes_id) VALUES ($1,$2)', [token, r.rows[0].id]);
     aktHyrje(r.rows[0].id, 'regjistrim');
+    res.cookie('px_signup', '1', { sameSite: 'lax', maxAge: 10*60*1000 }); // Microsoft Ads: eventi sign_up
     res.cookie('imyr_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 30*24*60*60*1000 });
     res.json({ ok: true, biznes_id: r.rows[0].id });
   } catch (e) {
@@ -369,7 +452,7 @@ app.post('/api/google-prano', async (req, res) => {
     await pool.query(`ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS pranoi_promovim_platforme BOOLEAN NOT NULL DEFAULT false`);
     // Nese u krijua ndermjet kohes, thjesht hyr
     let biz = await pool.query('SELECT id FROM bizneset WHERE email=$1', [email]);
-    let bizId;
+    let bizId, iRi = false;
     if (biz.rows.length) {
       bizId = biz.rows[0].id;
     } else {
@@ -379,12 +462,14 @@ app.post('/api/google-prano', async (req, res) => {
          VALUES ($1,$2,$3,$4,true,$5,$6,now()) RETURNING id`,
         [emri, email, null, celes, oferta, lejonPromovim]);
       bizId = ins.rows[0].id;
+      iRi = true;
     }
     delete googlePending[p];
     res.clearCookie('imyr_pending');
     const token = crypto.randomBytes(24).toString('hex');
     await pool.query('INSERT INTO seancat (token, biznes_id) VALUES ($1,$2)', [token, bizId]);
     aktHyrje(bizId, 'google (regjistrim)');
+    if (iRi) res.cookie('px_signup', '1', { sameSite: 'lax', maxAge: 10*60*1000 }); // Microsoft Ads: eventi sign_up
     res.cookie('imyr_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 30*24*60*60*1000 });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -3641,6 +3726,14 @@ app.delete('/api/admin/biznes/:id', iAdmin, async (req, res) => {
 });
 
 // --- Faqet ---
+// UET: faqet HTML qe sherbehen nga express.static ('/' dhe /emri.html) — me tag-un e futur
+app.get(/^\/$|\.html?$/i, (req, res, next) => {
+  const rel = req.path === '/' ? 'index.html' : decodeURIComponent(req.path).replace(/^\/+/, '');
+  if (rel.indexOf('..') !== -1) return next();
+  const file = path.join(__dirname, 'public', rel);
+  if (!uetVlen(file)) return next();
+  uetDergo(res, file, () => next());
+});
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
