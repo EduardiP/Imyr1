@@ -120,7 +120,7 @@ const UET_HEAD = `<script>
   function kontrolloSignup(){
     if(/(?:^|;\\s*)px_signup=1/.test(document.cookie)){
       document.cookie='px_signup=; Max-Age=0; path=/';
-      window.uetq = window.uetq || []; window.uetq.push('event', 'sign_up', {});
+      window.uetq = window.uetq || []; window.uetq.push('event', 'signup', {});
     }
   }
   kontrolloSignup(); setInterval(kontrolloSignup, 1500);
