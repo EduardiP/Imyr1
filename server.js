@@ -2412,7 +2412,7 @@ function imyrJsHandler(req, res) {
 }
 app.get('/sitemap.xml', (req, res) => {
   res.type('application/xml');
-  const faqet = ['/', '/b2b-cross-promotion', '/email-outreach', '/how-it-works', '/apps', '/transcription', '/about', '/ai-matching', '/formate-ai', '/gjurmimi-analitika', '/ekipet-rolet', '/blog', '/contact', '/terms', '/privacy', '/refund'];
+  const faqet = ['/', '/b2b-cross-promotion', '/co-marketing-network', '/email-outreach', '/how-it-works', '/apps', '/transcription', '/about', '/ai-matching', '/formate-ai', '/gjurmimi-analitika', '/ekipet-rolet', '/blog', '/contact', '/terms', '/privacy', '/refund'];
   const sot = new Date().toISOString().slice(0, 10);
   // Artikujt e blogut (vetem ata te publikuar); nese blog.js mungon, sitemap-i mbetet si me pare.
   let blogRreshta = [];
@@ -3743,6 +3743,7 @@ app.get('/contact', (req, res) => res.sendFile(path.join(__dirname, 'public', 'c
 app.get('/about', (req, res) => res.sendFile(path.join(__dirname, 'public', 'about.html')));
 app.get('/email-outreach', (req, res) => res.sendFile(path.join(__dirname, 'public', 'email-outreach.html')));
 app.get('/b2b-cross-promotion', (req, res) => res.sendFile(path.join(__dirname, 'public', 'b2b-cross-promotion.html')));
+app.get('/co-marketing-network', (req, res) => res.sendFile(path.join(__dirname, 'public', 'co-marketing-network.html')));
 app.get('/si-funksionon', (req, res) => res.sendFile(path.join(__dirname, 'public', 'si-funksionon.html')));
 app.get('/how-it-works', (req, res) => res.sendFile(path.join(__dirname, 'public', 'si-funksionon.html')));
 app.get('/formate-ai', (req, res) => res.sendFile(path.join(__dirname, 'public', 'formate-ai.html')));
