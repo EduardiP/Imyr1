@@ -1521,7 +1521,7 @@ var AKT_EMRAT = {'dashboard':'Dashboard','space':'Spaces','creative':'Creative',
   'profile':'Profili','business':'Biznesi','description':'Përshkrimi','connection':'Lidhja (snippet)','insights':'Insights',
   'find-customers':'Find Customers','find-customers/emails':'Find Customers → Emails','team':'Ekipi','start':'Start','welcome':'Welcome'};
 function aktSeksioni(id){ aktGjendja.id=id; aktGjendja.te=null;
-  return '<div class="sect" id="aktSect"><h3>Aktiviteti në llogari</h3><div id="aktTrup"><p class="small mut">Po ngarkoj…</p></div></div>'; }
+  return '<div class="sect" id="aktSect"><h3>Aktiviteti në llogari <a href="/api/admin/shiko-si/'+id+'" target="_blank" rel="noopener" style="float:right;font-size:13px;font-weight:600;color:#58a6ff;text-decoration:none;border:1px solid #30363d;padding:5px 10px;border-radius:7px;">👁 Shiko si klienti</a></h3><div id="aktTrup"><p class="small mut">Po ngarkoj…</p></div></div>'; }
 function aktBtn(teksti, aktiv, onclick){
   return '<button onclick="'+onclick+'" style="padding:6px 12px;border-radius:7px;cursor:pointer;font-size:13px;border:1px solid '+(aktiv?'#58a6ff':'#30363d')+';background:'+(aktiv?'rgba(88,166,255,.15)':'transparent')+';color:'+(aktiv?'#58a6ff':'#c9d1d9')+';">'+teksti+'</button>';
 }
