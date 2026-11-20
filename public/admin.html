@@ -2094,10 +2094,11 @@ m.innerHTML=
 '<option value="">— zgjidh shabllonin —</option>'+
 '<option value="__ri__">+ Krijo shabllon të ri</option>'+
 '</select>'+
+'<div id="mktShPamje" style="display:none;margin-bottom:16px;"></div>'+
 '<div id="mktShabllonRi" style="display:none;margin-bottom:16px;">'+
 '<input id="mktShEmri" placeholder="Emri i shabllonit (p.sh. Outreach fillestar)" style="margin-bottom:8px;">'+
 '<input id="mktShSubjekti" placeholder="Subjekti" style="margin-bottom:8px;">'+
-'<textarea id="mktShHtml" placeholder="Përmbajtja (HTML). Përdor {platforma} për emrin e pastruar (p.sh. Ashbyhq), {emri} për titullin e plotë, {domain} për domain-in e plotë." style="min-height:120px;margin-bottom:8px;"></textarea>'+
+'<textarea id="mktShHtml" placeholder="Përmbajtja (HTML). Përdor {platforma} për emrin e pastruar (p.sh. Ashbyhq), {emri} për titullin e plotë, {domain} për domain-in e plotë, {name} për emrin e biznesit nga studimi, {category} për 2 kategoritë plotësuese të partnerëve."" style="min-height:120px;margin-bottom:8px;"></textarea>'+
 '<button class="btn ghost" onclick="mktRuajShabllon()">Ruaj shabllonin</button>'+
 '<span class="small" id="mktShStat" style="margin-left:8px;"></span>'+
 '</div>'+
@@ -2281,6 +2282,24 @@ sel.innerHTML='<option value="">— zgjidh shabllonin —</option>'+
 function mktZgjidhShabllon(v){
 if(v==='__ri__'){ $('mktShabllonRi').style.display='block'; mktShabllonId=null; return; }
 $('mktShabllonRi').style.display='none'; mktShabllonId=v?parseInt(v):null;
+mktPamjeShabllonit();
+}
+// Pamja paraprake: emaili ashtu si i shkon marresit (kontakti i pare i zgjedhur, ose nje shembull)
+async function mktPamjeShabllonit(){
+const k=$('mktShPamje'); if(!k) return;
+if(!mktShabllonId){ k.style.display='none'; k.innerHTML=''; return; }
+k.style.display='block'; k.innerHTML='<p class="small">Po ngarkoj pamjen…</p>';
+try{
+const kid=(typeof mktKontaktetZgjedhur!=='undefined' && mktKontaktetZgjedhur.size) ? Array.from(mktKontaktetZgjedhur)[0] : '';
+const d=await(await fetch('/api/admin/marketing/shabllonet/'+mktShabllonId+'/pamje'+(kid?'?kontakt_id='+kid:''))).json();
+if(d.error){ k.innerHTML='<p class="small">Gabim: '+esc(d.error)+'</p>'; return; }
+k.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px;">'+
+'<span class="small">Pamja për <b>'+esc(d.email)+'</b> · kategoria: <b>'+esc(d.kategoria||'—')+'</b> → {category}: <b>'+esc(d.category)+'</b></span>'+
+'<button class="btn ghost" style="padding:4px 10px;font-size:12px;" onclick="mktPamjeShabllonit()">Rifresko</button></div>'+
+'<div class="small" style="margin-bottom:6px;">Subjekti: <b>'+esc(d.subjekti)+'</b></div>'+
+'<iframe id="mktShIframe" style="width:100%;height:560px;border:1px solid var(--line);border-radius:8px;background:#eef0f3;"></iframe>';
+$('mktShIframe').srcdoc='<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;">'+d.html+'</body></html>';
+}catch(e){ k.innerHTML='<p class="small">Gabim: '+esc(e.message)+'</p>'; }
 }
 async function mktRuajShabllon(){
 const emri=$('mktShEmri').value.trim(), subjekti=$('mktShSubjekti').value.trim(), html=$('mktShHtml').value.trim();
