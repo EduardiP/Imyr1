@@ -293,6 +293,12 @@ async function loadMe(){
   let r; try{ r=await fetch('/api/une'); }catch(e){ une=null; return false; }
   if(!r.ok){ une=null; return false; }
   une=await r.json();
+  if(une && une.admin_pamje && !document.getElementById('pxAdminPamje')){ // "Shiko si klienti" (admin)
+    var bA=document.createElement('div'); bA.id='pxAdminPamje';
+    bA.style.cssText='position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:99999;background:#b45309;color:#fff;padding:8px 14px;border-radius:8px;font:600 13px system-ui;box-shadow:0 4px 14px rgba(0,0,0,.4);';
+    bA.innerHTML='👁 Admin: pamje e klientit (vetëm lexim) · <a href="#" style="color:#fff;text-decoration:underline;" onclick="event.preventDefault();fetch(\'/api/dil\',{method:\'POST\'}).then(function(){location.href=\'/admin\';});">Dil</a>';
+    document.body.appendChild(bA);
+  }
   window.une = une; // balance.js (dhe cdo skedar tjeter) e lexon si window.une — sigurohu qe eshte gjithmone i njejte
   // Sinkronizo MENJEHERE modalitetin Ankand/Balance, PARA se te vizatohet cfardo —
   // mos prit klikimin e menyse se avatarit (ai ishte shkaku i vertete i bug-ut: ne
@@ -322,7 +328,7 @@ window.onpopstate = e => { applyState(e.state); aktDergo('faqe'); };
 var _aktFundit = Date.now(), _aktFaqjaFundit = '', _aktKoha = 0;
 function aktDergo(lloji){
   try{
-    if(!une) return;
+    if(!une || une.admin_pamje) return;
     var faqja = location.pathname;
     if(lloji==='faqe'){ if(faqja===_aktFaqjaFundit && Date.now()-_aktKoha<3000) return; _aktFaqjaFundit=faqja; _aktKoha=Date.now(); }
     fetch('/api/llogari/aktiviteti',{method:'POST',headers:{'Content-Type':'application/json'},keepalive:true,
