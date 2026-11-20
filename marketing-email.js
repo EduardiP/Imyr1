@@ -149,6 +149,65 @@ function shperndajNe24Ore(sasia, minutaFillimit) {
   return oret;
 }
 
+// ═══ Personalizimi: {name} dhe {category} (kategorite plotesuese te partnereve) ═══
+// {category} = 2 kategorite, KLIENTET e te cilave kane nevoje per sherbimin e marresit (jo konkurrente).
+// Kategoria e marresit merret nga studimi me AI (pxse_import_rreshtat / pxse_bizneset). Pa kategori -> tekst rezerve.
+const KAT_PLOTESUESE = {
+  'Marketing': ['Sales & CRM', 'Data & analytics'],
+  'Sales & CRM': ['Marketing', 'Customer support'],
+  'Customer support': ['Sales & CRM', 'Communication'],
+  'Finance & accounting': ['HR & recruiting', 'E-commerce'],
+  'HR & recruiting': ['Finance & accounting', 'Productivity & projects'],
+  'Productivity & projects': ['Communication', 'HR & recruiting'],
+  'Developer tools': ['IT & infrastructure', 'Security & compliance'],
+  'Data & analytics': ['Marketing', 'Finance & accounting'],
+  'Security & compliance': ['IT & infrastructure', 'Legal'],
+  'IT & infrastructure': ['Developer tools', 'Security & compliance'],
+  'E-commerce': ['Marketing', 'Finance & accounting'],
+  'Design & creative': ['Marketing', 'Media & content'],
+  'Communication': ['Productivity & projects', 'Customer support'],
+  'Education': ['Media & content', 'Marketing'],
+  'Legal': ['Finance & accounting', 'Real estate & property'],
+  'Real estate & property': ['Finance & accounting', 'Legal'],
+  'AI & automation': ['Productivity & projects', 'Sales & CRM'],
+  'Media & content': ['Marketing', 'Design & creative'],
+  'Hospitality & travel': ['Marketing', 'E-commerce']
+  // 'Healthcare' dhe 'Other' -> tekst rezerve
+};
+const KAT_REZERVE = 'complementary categories';
+function partneretTekst(kat) { const p = KAT_PLOTESUESE[kat]; return p ? p[0] + ' and ' + p[1] : KAT_REZERVE; }
+// Te dhenat e marresit per fushat e shabllonit (1 query per kontakt; tabelat e importit mund te mos ekzistojne -> rezerve)
+async function fushatKontakti(pool, kont) {
+  let kat = null, emriAI = null;
+  try {
+    const r = await pool.query(`SELECT kategoria, emri FROM pxse_import_rreshtat WHERE lower(email) = lower($1) AND gjendja = 'bere'
+        ORDER BY (kategoria IS NOT NULL) DESC, id DESC LIMIT 1`, [kont.email]);
+    if (r.rows.length) { kat = r.rows[0].kategoria; emriAI = r.rows[0].emri; }
+  } catch (e) {}
+  if (!kat && kont.domain) {
+    try {
+      const r = await pool.query('SELECT kategoria, emri FROM pxse_bizneset WHERE domaini = $1 LIMIT 1', [String(kont.domain).toLowerCase()]);
+      if (r.rows.length) { kat = r.rows[0].kategoria; emriAI = emriAI || r.rows[0].emri; }
+    } catch (e) {}
+  }
+  const platforma = emriPlatformesNgaDomain(kont.domain);
+  const emriKont = kont.emri && String(kont.emri).length <= 40 ? String(kont.emri).trim() : '';
+  const name = (emriAI && String(emriAI).trim()) || emriKont || platforma || 'your business';
+  return { emri: kont.emri || kont.domain || '', domain: kont.domain || '', platforma, name, kategoria: kat, category: partneretTekst(kat) };
+}
+// Zevendeson te gjitha fushat; me esc=true per HTML. {unsubscribe_link} vetem kur jepet.
+function zevendesoFushat(tekst, v, esc, unsubLink) {
+  const e = esc ? escHtml : (x => String(x == null ? '' : x));
+  let t = String(tekst || '')
+    .replace(/\{emri\}/g, e(v.emri)).replace(/\{domain\}/g, e(v.domain)).replace(/\{platforma\}/g, e(v.platforma))
+    .replace(/\{name\}/g, e(v.name)).replace(/\{category\}/g, e(v.category));
+  if (unsubLink) t = t.replace(/\{unsubscribe_link\}/g, unsubLink);
+  return t;
+}
+const SHABLLON_FTESA_EMRI = 'Rrjeti - ftesë me kategori';
+const SHABLLON_FTESA_SUBJEKTI = 'Some of our customers are looking for a service like yours';
+const SHABLLON_FTESA_HTML = "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#eef0f3;\">\n<tr><td align=\"center\" style=\"padding:32px 16px;\">\n<table role=\"presentation\" width=\"580\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:580px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;\">\n\n<tr><td style=\"background:#0f1729;padding:22px 32px;\">\n  <table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\"><tr>\n    <td style=\"width:28px;height:28px;\"><img src=\"https://phronexusai.com/favicon-192.png\" width=\"28\" height=\"28\" alt=\"PhronexusAI\" style=\"display:block;border-radius:7px;\"></td>\n    <td style=\"font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding-left:10px;font-size:15px;font-weight:600;color:#ffffff;\">PhronexusAI</td>\n  </tr></table>\n</td></tr>\n\n<tr><td style=\"font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding:32px 32px 6px;font-size:15px;line-height:1.65;color:#3d4451;\">\n  Hi {name} team,\n</td></tr>\n\n<tr><td style=\"font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding:10px 32px 20px;font-size:17px;line-height:1.55;font-weight:600;color:#0f1729;\">\n  Our customers, businesses in {category} on our platform, are offering free displays of your ads to their own customers. {name} is the best product to convert with their audience.\n</td></tr>\n\n<tr><td style=\"font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding:0 32px 18px;font-size:15px;line-height:1.65;color:#3d4451;\">\n  You can be shown to them for free on our platform. PhronexusAI is a network where businesses show each other's ads to their customers, always with complementary partners, never with competitors.\n</td></tr>\n\n<tr><td style=\"padding:0 32px 22px;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f7f9fc;border-left:3px solid #3b6ef0;border-radius:8px;\">\n<tr><td style=\"font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding:18px 20px;font-size:14.5px;line-height:1.6;color:#3d4451;\">\n  <b style=\"color:#0f1729;\">Example:</b> an invoicing app shows a time-tracking tool to its users. They track their work hours, then come back to send the invoice. The invoicing app gives its customers a useful extra tool without the risk of losing them, because the two services don't compete. Meanwhile, the time-tracking tool gets new customers for free. That's what we mean by \"complementary\".\n</td></tr>\n</table>\n</td></tr>\n\n<tr><td style=\"font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding:0 32px 22px;font-size:15px;line-height:1.65;color:#3d4451;\">\n  Right now, some businesses on our platform, mainly in {category}, are offering a lot of ad impressions that we haven't been able to match with a fully suitable business. {name} is a highly suitable complementary service for their customers, who are looking for a service like yours. {name} is the ideal choice to fill that space and to reach, for free, an audience that already needs what you offer.\n</td></tr>\n\n<tr><td style=\"padding:0 32px 26px;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr>\n  <td width=\"50%\" valign=\"top\" style=\"padding-right:6px;\">\n    <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid #e3e7ee;border-radius:10px;\"><tr><td style=\"font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding:16px;\">\n      <div style=\"font-size:13px;color:#5b6472;\">Free plan</div>\n      <div style=\"font-size:22px;font-weight:700;color:#0f1729;margin-top:4px;\">100<span style=\"font-size:13px;font-weight:500;color:#5b6472;\"> ad displays/day</span></div>\n      <div style=\"font-size:12.5px;color:#5b6472;margin-top:4px;\">No credit card required</div>\n    </td></tr></table>\n  </td>\n  <td width=\"50%\" valign=\"top\" style=\"padding-left:6px;\">\n    <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid #e3e7ee;border-radius:10px;\"><tr><td style=\"font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding:16px;\">\n      <div style=\"font-size:13px;color:#5b6472;\">Paid plan</div>\n      <div style=\"font-size:22px;font-weight:700;color:#0f1729;margin-top:4px;\">3,000<span style=\"font-size:13px;font-weight:500;color:#5b6472;\"> ad displays/day</span></div>\n      <div style=\"font-size:12.5px;color:#5b6472;margin-top:4px;\">Start free, upgrade anytime</div>\n    </td></tr></table>\n  </td>\n</tr></table>\n</td></tr>\n\n<tr><td align=\"center\" style=\"padding:0 32px 28px;\">\n  <table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\"><tr><td style=\"background:#3b6ef0;border-radius:7px;\">\n    <a href=\"https://phronexusai.com\" style=\"font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;display:inline-block;padding:13px 32px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;\">Join free</a>\n  </td></tr></table>\n</td></tr>\n\n<tr><td style=\"font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding:0 32px 30px;font-size:15px;line-height:1.6;color:#1c2128;\">\n  Best regards,<br>\n  Eduard<br>\n  <span style=\"color:#5b6472;\">Founder, PhronexusAI</span>\n</td></tr>\n\n<tr><td style=\"font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;border-top:1px solid #edeef1;padding:18px 32px;font-size:12px;line-height:1.6;color:#9aa4b2;\">\n  You're receiving this because {name} is listed as a B2B business on its public website.<br>\n  PhronexusAI &middot; Rruga Dhimiter Pasko, 1060 Tirana, Albania &middot; phronexusai.com &middot; <a href=\"{unsubscribe_link}\" style=\"color:#9aa4b2;\">Unsubscribe</a>\n</td></tr>\n\n</table>\n</td></tr>\n</table>\n";
+
 module.exports = function (app, pool, iAdmin) {
   // Tabela e gjurmimit krijohet ketu, VETE (jo brenda migrimit te madh me poshte), qe nje gabim ne ndonje migrim tjeter
   // te mos e lere pa tabele. Thirret edhe para cdo regjistrimi / liste; kur eshte krijuar nje here, s'bën asgje me.
@@ -223,6 +282,11 @@ module.exports = function (app, pool, iAdmin) {
     } catch (e) { console.error('marketing-email migrim:', e.message); }
     // Tabela e gjurmimit — ne bllokun e saj, e pavarur nga migrimet e tjera me larte.
     try { await siguroTabelenDergimet(); } catch (e) { console.error('marketing_dergimet migrim:', e.message); }
+    // Shablloni "Rrjeti - ftesë me kategori": krijohet nese mungon dhe mbahet i perditesuar me kodin
+    try {
+      const u = await pool.query('UPDATE marketing_shabllonet SET html=$2, subjekti=$3 WHERE emri=$1 RETURNING id', [SHABLLON_FTESA_EMRI, SHABLLON_FTESA_HTML, SHABLLON_FTESA_SUBJEKTI]);
+      if (!u.rows.length) await pool.query('INSERT INTO marketing_shabllonet (emri, subjekti, html) VALUES ($1,$2,$3)', [SHABLLON_FTESA_EMRI, SHABLLON_FTESA_SUBJEKTI, SHABLLON_FTESA_HTML]);
+    } catch (e) { console.error('marketing-email shablloni i ftesës:', e.message); }
 
     // Shabllonet e vjetra me "90 dite falas" / "7 dite" / "lock-in" u hoqen ("Biznes online - outreach" NUK eshte i tille dhe mbetet). Fshihen nga databaza
   // (edhe ato me te njejtin tekst). Fushatat qe i perdornin ndalen, qe te mos dergojne me oferta te pavlefshme.
@@ -375,6 +439,30 @@ module.exports = function (app, pool, iAdmin) {
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
+  // Pamja paraprake e shabllonit, e personalizuar per nje kontakt (i zgjedhur, ose nje shembull me kategori nga studimi)
+  app.get('/api/admin/marketing/shabllonet/:id/pamje', iAdmin, async (req, res) => {
+    try {
+      const sh = await pool.query('SELECT subjekti, html FROM marketing_shabllonet WHERE id=$1', [parseInt(req.params.id, 10)]);
+      if (!sh.rows.length) return res.status(404).json({ error: 'Shablloni s\'u gjet.' });
+      let kont = null;
+      const kid = parseInt(req.query.kontakt_id, 10);
+      if (kid) kont = (await pool.query('SELECT id, email, emri, domain FROM marketing_kontaktet WHERE id=$1', [kid])).rows[0] || null;
+      if (!kont) {
+        try {
+          kont = (await pool.query(`SELECT k.id, k.email, k.emri, k.domain FROM marketing_kontaktet k
+              WHERE NOT k.derguar AND EXISTS (SELECT 1 FROM pxse_import_rreshtat r WHERE lower(r.email) = lower(k.email) AND r.kategoria IS NOT NULL AND r.kategoria <> 'Other')
+              ORDER BY k.id DESC LIMIT 1`)).rows[0] || null;
+        } catch (e) {}
+      }
+      let v;
+      if (kont) v = await fushatKontakti(pool, kont);
+      else { kont = { email: 'hello@acme.com' }; v = { emri: 'Acme', domain: 'acme.com', platforma: 'Acme', name: 'Acme', kategoria: 'Sales & CRM', category: partneretTekst('Sales & CRM') }; }
+      const unsubLink = 'https://phronexusai.com/marketing-unsubscribe?email=' + encodeURIComponent(kont.email);
+      res.json({ ok: true, email: kont.email, kategoria: v.kategoria || null, category: v.category, name: v.name,
+        subjekti: zevendesoFushat(sh.rows[0].subjekti, v, false), html: zevendesoFushat(sh.rows[0].html, v, true, unsubLink) });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
   // ═══ Krijo fushate (kontakte te selektuara + shabllon + orar) ═══
   // Dergim I DREJTPERDREJTE, menjehere — brenda vete kerkeses HTTP, pa kaluar nepermjet
   // databazes/motorit ne sfond — e njejta qasje si email.js, per te izoluar nese mekanizmi
@@ -394,14 +482,15 @@ module.exports = function (app, pool, iAdmin) {
       if (!sh.rows.length) return res.status(400).json({ error: 'Shablloni s\'u gjet.' });
       const { subjekti, html: htmlBazë } = sh.rows[0];
       const r = await pool.query('SELECT id, email, emri, domain FROM marketing_kontaktet WHERE id = ANY($1::int[]) AND NOT unsubscribed', [kontakt_ids]);
-      const linqe = r.rows.map(kont => {
+      const linqe = [];
+      for (const kont of r.rows) {
         const unsubLink = 'https://phronexusai.com/marketing-unsubscribe?email=' + encodeURIComponent(kont.email);
-        const platformaEmri = emriPlatformesNgaDomain(kont.domain);
-        const tekstiBaze = htmlNeTekst(htmlBazë).replace(/\{emri\}/g, kont.emri || kont.domain).replace(/\{domain\}/g, kont.domain || '').replace(/\{platforma\}/g, platformaEmri).replace(/\{unsubscribe_link\}/g, unsubLink);
-        const subjektiFinal = subjekti.replace(/\{emri\}/g, kont.emri || kont.domain).replace(/\{domain\}/g, kont.domain || '').replace(/\{platforma\}/g, platformaEmri);
+        const v = await fushatKontakti(pool, kont);
+        const tekstiBaze = zevendesoFushat(htmlNeTekst(htmlBazë), v, false, unsubLink);
+        const subjektiFinal = zevendesoFushat(subjekti, v, false);
         const link = 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(kont.email) + '&su=' + encodeURIComponent(subjektiFinal) + '&body=' + encodeURIComponent(tekstiBaze);
-        return { kontakt_id: kont.id, email: kont.email, link };
-      });
+        linqe.push({ kontakt_id: kont.id, email: kont.email, link });
+      }
       // Ndertoi email-in "digest" — lista e linqeve, si butona te klikueshem.
       const htmlDigest = '<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;">' +
         '<p>' + linqe.length + ' kontakte gati per dergim:</p>' +
@@ -428,9 +517,9 @@ module.exports = function (app, pool, iAdmin) {
       let dergu = 0, deshtuar = 0;
       for (const kont of r.rows) {
         const unsubLink = 'https://phronexusai.com/marketing-unsubscribe?email=' + encodeURIComponent(kont.email);
-        const platformaEmri = emriPlatformesNgaDomain(kont.domain);
-        const html = htmlBazë.replace(/\{emri\}/g, escHtml(kont.emri || kont.domain)).replace(/\{domain\}/g, escHtml(kont.domain || '')).replace(/\{platforma\}/g, escHtml(platformaEmri)).replace(/\{unsubscribe_link\}/g, unsubLink);
-        const subjektiFinal = subjekti.replace(/\{emri\}/g, kont.emri || kont.domain).replace(/\{domain\}/g, kont.domain || '').replace(/\{platforma\}/g, platformaEmri);
+        const v = await fushatKontakti(pool, kont);
+        const html = zevendesoFushat(htmlBazë, v, true, unsubLink);
+        const subjektiFinal = zevendesoFushat(subjekti, v, false);
         const token = krijoToken();
         const pg = pergatitHtmlPerDergim(html, token);
         try {
@@ -802,9 +891,9 @@ module.exports = function (app, pool, iAdmin) {
 
         for (const kont of teDerguar.rows) {
           const unsubLink = 'https://phronexusai.com/marketing-unsubscribe?email=' + encodeURIComponent(kont.email);
-          const platformaEmri = emriPlatformesNgaDomain(kont.domain);
-          const html = htmlBazë.replace(/\{emri\}/g, escHtml(kont.emri || kont.domain)).replace(/\{domain\}/g, escHtml(kont.domain || '')).replace(/\{platforma\}/g, escHtml(platformaEmri)).replace(/\{unsubscribe_link\}/g, unsubLink);
-          const subjektiFinal = subjekti.replace(/\{emri\}/g, kont.emri || kont.domain).replace(/\{domain\}/g, kont.domain || '').replace(/\{platforma\}/g, platformaEmri);
+          const v = await fushatKontakti(pool, kont);
+          const html = zevendesoFushat(htmlBazë, v, true, unsubLink);
+          const subjektiFinal = zevendesoFushat(subjekti, v, false);
           const token = krijoToken();
           const pg = pergatitHtmlPerDergim(html, token);
           try {
