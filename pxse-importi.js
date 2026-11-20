@@ -449,7 +449,9 @@ module.exports = function (app, pool, iAdmin) {
   // marketing-email.js nuk preket. Emailet qe ekzistojne aty nuk ndryshohen; te cregjistruarit nuk kalojne.
   // r.marketing: 'shtuar' (u shtua nga ky import) | 'ekzistonte' (ishte aty me pare) | 'mos' (i cregjistruar)
   // Kategoria te Marketingu: emri i skedarit per Google; "(Microsoft)" / "(Tjetër)" per te tjeret.
+  // Vetem B2B (jo "both") ne seksion te vecant: "<skedari> · B2B"
   const PXIM_KAT_SQL = `COALESCE(NULLIF(regexp_replace(COALESCE(i.emri, ''), '\\.csv$', '', 'i'), ''), 'Import ' || i.id)
+      || CASE WHEN r.lloji = 'b2b' THEN ' · B2B' ELSE '' END
       || CASE r.email_ofruesi WHEN 'microsoft' THEN ' (Microsoft)' WHEN 'tjeter' THEN ' (Tjetër)' ELSE '' END`;
   // Plotëson ofruesin e email-it (MX i domain-it te email-it) per rreshtat qe e kane email-in; falas (DNS).
   async function pximPlotesoOfruesit() {
