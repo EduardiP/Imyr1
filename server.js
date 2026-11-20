@@ -251,9 +251,18 @@ async function iLoguar(req, res, next) {
   const token = req.cookies.imyr_session;
   if (!token) return res.status(401).json({ error: 'Nuk je i loguar.' });
   try {
-    const r = await pool.query('SELECT biznes_id FROM seancat WHERE token=$1', [token]);
+    const r = await pool.query('SELECT * FROM seancat WHERE token=$1', [token]);
     if (!r.rows.length) return res.status(401).json({ error: 'Seanca e pavlefshme.' });
     const idLogimi = r.rows[0].biznes_id;
+    // "Shiko si klienti" (admin): vetem lexim, skadon pas 2 oresh, s'llogaritet si aktivitet i klientit
+    if (r.rows[0].admin_skadon) {
+      if (new Date(r.rows[0].admin_skadon).getTime() < Date.now()) return res.status(401).json({ error: 'Admin view expired.' });
+      req.adminPamje = true;
+      if (req.method !== 'GET') {
+        if (req.path === '/api/llogari/aktiviteti') return res.json({ ok: true });
+        return res.status(403).json({ error: 'Admin view is read-only.' });
+      }
+    }
 
     // Nese llogaria qe hyri eshte ANETAR EKIPI (jo biznesi kryesor), te gjitha te
     // dhenat duhet te lexohen/shkruhen nga BIZNESI PRIND (i perbashket), JO nga
@@ -725,7 +734,7 @@ app.get('/api/une', iLoguar, async (req, res) => {
       `SELECT id, emri, email, kategoria, plani, website, celes, tipi, url_konvertimi, logo_url,
               kategoria_kryesore, nenkategorite, permbledhje, pershkrimi, logjika_shperndarjes
        FROM bizneset WHERE id=$1`, [req.biznesId]);
-    res.json(r.rows[0]);
+    res.json(req.adminPamje ? Object.assign({}, r.rows[0], { admin_pamje: true }) : r.rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -2412,7 +2421,7 @@ function imyrJsHandler(req, res) {
 }
 app.get('/sitemap.xml', (req, res) => {
   res.type('application/xml');
-  const faqet = ['/', '/b2b-cross-promotion', '/co-marketing-network', '/email-outreach', '/how-it-works', '/apps', '/transcription', '/about', '/ai-matching', '/formate-ai', '/gjurmimi-analitika', '/ekipet-rolet', '/blog', '/contact', '/terms', '/privacy', '/refund'];
+  const faqet = ['/', '/b2b-cross-promotion', '/co-marketing-network', '/free-advertising-for-saas', '/email-outreach', '/how-it-works', '/apps', '/transcription', '/about', '/ai-matching', '/formate-ai', '/gjurmimi-analitika', '/ekipet-rolet', '/blog', '/contact', '/terms', '/privacy', '/refund'];
   const sot = new Date().toISOString().slice(0, 10);
   // Artikujt e blogut (vetem ata te publikuar); nese blog.js mungon, sitemap-i mbetet si me pare.
   let blogRreshta = [];
@@ -3116,7 +3125,24 @@ require('./pxse-llogaria')(app, pool, iLoguar); // Find Customers pas login (pas
     hapje INT NOT NULL DEFAULT 0, PRIMARY KEY (biznes_id, dita, faqja))`);
   await pool.query(`CREATE TABLE IF NOT EXISTS llogari_hyrjet (id BIGSERIAL PRIMARY KEY, biznes_id INT NOT NULL, menyra TEXT, koha TIMESTAMPTZ NOT NULL DEFAULT now())`);
   await pool.query('CREATE INDEX IF NOT EXISTS idx_llogari_hyrjet_biz ON llogari_hyrjet (biznes_id, koha DESC)');
+  await pool.query('ALTER TABLE seancat ADD COLUMN IF NOT EXISTS admin_skadon TIMESTAMPTZ');
+  await pool.query(`CREATE TABLE IF NOT EXISTS admin_pamjet (id BIGSERIAL PRIMARY KEY, biznes_id INT NOT NULL, koha TIMESTAMPTZ NOT NULL DEFAULT now())`);
 })().catch(e => console.error('aktiviteti migrim:', e.message));
+setInterval(() => { pool.query('DELETE FROM seancat WHERE admin_skadon IS NOT NULL AND admin_skadon < now()').catch(() => {}); }, 3600 * 1000).unref();
+// ADMIN: "Shiko si klienti" — hap dashboard-in e klientit VETEM PER LEXIM (2 ore). Nuk regjistrohet si hyrje/aktivitet
+// i klientit; ruhet vetem nje shenim i brendshem te admin_pamjet. Zevendeson seancen e klientit ne kete browser.
+app.get('/api/admin/shiko-si/:id', iAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const b = await pool.query('SELECT id FROM bizneset WHERE id=$1', [id]);
+    if (!b.rows.length) return res.status(404).send('Biznesi nuk u gjet.');
+    const token = crypto.randomBytes(24).toString('hex');
+    await pool.query("INSERT INTO seancat (token, biznes_id, admin_skadon) VALUES ($1,$2, now() + interval '2 hours')", [token, id]);
+    await pool.query('INSERT INTO admin_pamjet (biznes_id) VALUES ($1)', [id]);
+    res.cookie('imyr_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 2*60*60*1000 });
+    res.redirect('/');
+  } catch (e) { res.status(500).send(e.message); }
+});
 setInterval(() => {
   pool.query("DELETE FROM llogari_ditet WHERE dita < (now() - interval '13 months')::date").catch(() => {});
   pool.query("DELETE FROM llogari_faqet WHERE dita < (now() - interval '13 months')::date").catch(() => {});
@@ -3744,6 +3770,7 @@ app.get('/about', (req, res) => res.sendFile(path.join(__dirname, 'public', 'abo
 app.get('/email-outreach', (req, res) => res.sendFile(path.join(__dirname, 'public', 'email-outreach.html')));
 app.get('/b2b-cross-promotion', (req, res) => res.sendFile(path.join(__dirname, 'public', 'b2b-cross-promotion.html')));
 app.get('/co-marketing-network', (req, res) => res.sendFile(path.join(__dirname, 'public', 'co-marketing-network.html')));
+app.get('/free-advertising-for-saas', (req, res) => res.sendFile(path.join(__dirname, 'public', 'free-advertising-for-saas.html')));
 app.get('/si-funksionon', (req, res) => res.sendFile(path.join(__dirname, 'public', 'si-funksionon.html')));
 app.get('/how-it-works', (req, res) => res.sendFile(path.join(__dirname, 'public', 'si-funksionon.html')));
 app.get('/formate-ai', (req, res) => res.sendFile(path.join(__dirname, 'public', 'formate-ai.html')));
