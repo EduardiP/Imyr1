@@ -752,6 +752,7 @@ async function mainNjoftimet(m){
       }
     });
     el.innerHTML=h;
+    if(typeof njShenoPare==='function') njShenoPare(nj);
   }catch(e){ $('njLista').innerHTML='<p class="small">Error.</p>'; }
 }
 const DASH_QUICK_ACTIONS = [
