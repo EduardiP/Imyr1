@@ -214,7 +214,16 @@ function dashFooterVendos(){
   document.body.appendChild(f);
 }
 function toggleMenu(e){ e.stopPropagation(); const m=$('menuBox'); if(m) m.classList.toggle('hide'); const n=$('njBox'); if(n) n.classList.add('hide'); }
-function toggleNjoftimet(e){ e.stopPropagation(); const n=$('njBox'); if(n) n.classList.toggle('hide'); const m=$('menuBox'); if(m) m.classList.add('hide'); }
+function toggleNjoftimet(e){ e.stopPropagation(); const n=$('njBox'); if(n) n.classList.toggle('hide'); const m=$('menuBox'); if(m) m.classList.add('hide');
+  if(n && !n.classList.contains('hide')) njShenoPare(window.__njoftimet); }
+// Njoftimet nga admin shenohen si te para kur klienti i sheh; zhduken 10 minuta me vone.
+function njShenoPare(lista){
+  try{
+    var ids=(lista||[]).filter(function(x){ return x && x.nga_admin && x.id; }).map(function(x){ return x.id; });
+    if(!ids.length) return;
+    fetch('/api/njoftime-admin/pare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:ids})}).catch(function(){});
+  }catch(e){}
+}
 document.addEventListener('click', (e)=>{
   const m=$('menuBox'); if(m) m.classList.add('hide');
   const n=$('njBox'); if(n) n.classList.add('hide');
@@ -292,7 +301,10 @@ function goHome(){ nav({v:'profile', nav:'dashboard'}); }
 async function loadMe(){
   let r; try{ r=await fetch('/api/une'); }catch(e){ une=null; return false; }
   if(!r.ok){ une=null; return false; }
+  var _ishteBosh = !une;
   une=await r.json();
+  // Hyrje e re pa rifreskim faqeje (regjistrim/login nga modali): numeroje si hapje te dashboard-it
+  if(_ishteBosh && window._aktGati && typeof aktHapjaKontrollo==='function') setTimeout(aktHapjaKontrollo, 0);
   if(une && une.admin_pamje && !document.getElementById('pxAdminPamje')){ // "Shiko si klienti" (admin)
     var bA=document.createElement('div'); bA.id='pxAdminPamje';
     bA.style.cssText='position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:99999;background:#b45309;color:#fff;padding:8px 14px;border-radius:8px;font:600 13px system-ui;box-shadow:0 4px 14px rgba(0,0,0,.4);';
@@ -355,6 +367,7 @@ async function boot(){
   const params = new URLSearchParams(location.search);
   const loginRez = params.get('login');
   await loadMe();
+  window._aktGati = true;
   if(une){ aktHapjaKontrollo(); setTimeout(function(){ aktDergo('faqe'); }, 1500); }
 
   // Ngarkim i drejtperdrejte/refresh/link i ndare — rindërto gjendjen nga vetë URL-ja.
