@@ -375,7 +375,11 @@ m.innerHTML=
 '<div id="njLista"><p class="small" style="padding:14px;">Po ngarkoj…</p></div>'+
 '</div></div>'+
 '<button class="primary" style="margin-top:16px;" onclick="njDergo(this)">Dërgo njoftimin</button>'+
-'<span class="small" id="njStat" style="margin-left:10px;"></span>';
+'<span class="small" id="njStat" style="margin-left:10px;"></span>'+
+'<h3 style="margin:30px 0 6px;">Njoftimet e dërguara</h3>'+
+'<p class="small mut" style="margin:0 0 10px;">Një njoftim zhduket nga zilja 10 minuta pasi klienti e sheh, ose kur klikon butonin. "Hiq" e largon menjëherë.</p>'+
+'<div id="njDerguara"><p class="small">Po ngarkoj…</p></div>';
+njNgarkoDerguara();
 try{
 njBizneset = await(await fetch('/api/admin/njoftime/bizneset')).json();
 njRenderLista();
@@ -629,10 +633,35 @@ const r=await(await fetch('/api/admin/njoftime/dergo',{method:'POST',headers:{'C
 body:JSON.stringify({biznes_ids:ids, titulli, teksti, veprim, veprim_label})})).json();
 if(r.error){ if(stat)stat.textContent=r.error; btn.disabled=false; return; }
 if(stat)stat.textContent='✓ U dërgua te '+r.derguar+' biznese.';
+njNgarkoDerguara();
 $('njTit').value=''; $('njTek').value=''; $('njBtnLbl').value='';
 document.querySelectorAll('.njChk:checked').forEach(x=>x.checked=false);
 }catch(e){ if(stat)stat.textContent='Gabim: '+e.message; }
 btn.disabled=false;
+}
+
+// Lista e njoftimeve manuale te derguara + "Hiq"
+async function njNgarkoDerguara(){
+const el=$('njDerguara'); if(!el) return;
+try{
+const r=await(await fetch('/api/admin/njoftime/derguara')).json();
+const L=r.njoftimet||[];
+if(!L.length){ el.innerHTML='<p class="small mut">Asnjë njoftim i dërguar ende.</p>'; return; }
+el.innerHTML='<div style="border:1px solid var(--line);border-radius:10px;overflow:hidden;">'+L.map(function(n){
+var gj = n.plotesuar ? '<span style="color:#3fb950;">✓ U plotësua</span>' : (n.pare_at ? '<span style="color:#d29922;">👁 Parë '+dt(n.pare_at)+'</span>' : '<span class="mut">Pa u parë</span>');
+return '<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border-bottom:1px solid var(--line);">'+
+'<div style="flex:1;min-width:0;"><div><b>'+esc(n.emri)+'</b> · '+esc(n.titulli)+(n.veprim_label?' <span class="small mut">[buton: '+esc(n.veprim_label)+']</span>':'')+'</div>'+
+'<div class="small mut" style="margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(n.teksti||'')+'</div>'+
+'<div class="small" style="margin-top:4px;">Dërguar '+dt(n.krijuar_at)+' · '+gj+'</div></div>'+
+'<button class="btn ghost" style="padding:4px 10px;font-size:12px;flex:0 0 auto;" onclick="njHiq('+n.id+',this)">Hiq</button></div>';
+}).join('')+'</div>';
+}catch(e){ el.innerHTML='<p class="small">Gabim: '+esc(e.message)+'</p>'; }
+}
+async function njHiq(id, btn){
+if(!confirm('Ta heq këtë njoftim nga zilja e klientit?')) return;
+if(btn) btn.disabled=true;
+try{ await fetch('/api/admin/njoftime/'+id,{method:'DELETE'}); }catch(e){}
+njNgarkoDerguara();
 }
 
 // ── "Çfarë të re" (widget publik, jo lidhur me biznes) ──
