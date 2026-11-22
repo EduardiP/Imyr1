@@ -1654,12 +1654,12 @@ app.get('/api/njoftimet', iLoguar, async (req, res) => {
     const kaSnippetAktiv = snLidhur.rows.length > 0;
     const row = b.rows[0] || {};
     const ditet = Math.floor((Date.now() - new Date(row.created_at).getTime()) / 86400000);
-    const neGraceperiodAuto = !!row.biznesi_auto && ditet < 7;
+    // (Vonesa 7-ditore per profilet automatike u hoq: njoftimi i snippet-it del qe ne diten e pare.)
     const kaReklame = p.rows[0].n > 0;
     const kaKonvertimTeLidhur = !!row.track_active && (uLidhur.rows.length > 0 || zLidhur.rows.length > 0);
     const njf = [];
 
-    if (!kaSnippetAktiv && !neGraceperiodAuto) {
+    if (!kaSnippetAktiv) {
       njf.push({ tip: 'snippet', titull: 'Your ads aren\'t showing',
         teksti: "You don't have any active ad space. Since you aren't showing others' ads, your own ads aren't getting shown across the network either. Connect a space to get everything back to normal.", veprim: 'lidhja' });
     }
