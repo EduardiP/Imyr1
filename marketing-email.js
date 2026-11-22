@@ -772,11 +772,26 @@ module.exports = function (app, pool, iAdmin) {
     const token = String(req.params.token || '');
     const p = String((req.query && req.query.p) || '/');
     const eSigurt = p.length <= 500 && /^\/(?![\/\\])[^\s\u0000-\u001f\\]*$/.test(p);
+    let fushataUtm = 'email';
     if (/^[0-9a-f]{24}$/.test(token)) {
-      try { await pool.query('UPDATE marketing_dergimet SET klikuar_at = COALESCE(klikuar_at, now()), klikime = klikime + 1, hapur_at = COALESCE(hapur_at, now()) WHERE token = $1', [token]); }
-      catch (e) { console.error('marketing klikim:', e.message); }
+      try {
+        const u = await pool.query('UPDATE marketing_dergimet SET klikuar_at = COALESCE(klikuar_at, now()), klikime = klikime + 1, hapur_at = COALESCE(hapur_at, now()) WHERE token = $1 RETURNING shabllon_emri', [token]);
+        if (u.rows.length) {
+          if (u.rows[0].shabllon_emri) fushataUtm = String(u.rows[0].shabllon_emri);
+          // Burimi i regjistrimit: nese ky person regjistrohet brenda 30 diteve, te admin del "erdhi nga emaili"
+          res.cookie('px_burim', token, { httpOnly: true, sameSite: 'lax', maxAge: 30 * 24 * 60 * 60 * 1000 });
+        }
+      } catch (e) { console.error('marketing klikim:', e.message); }
     }
-    res.redirect(302, BAZA_PUBLIKE + (eSigurt ? p : '/'));
+    // UTM per Google Analytics (email / outreach / emri i shabllonit), pa prekur #ankoren
+    let dest = eSigurt ? p : '/';
+    if (!/[?&]utm_source=/.test(dest)) {
+      const iH = dest.indexOf('#'), hash = iH >= 0 ? dest.slice(iH) : '';
+      const baze = iH >= 0 ? dest.slice(0, iH) : dest;
+      const slug = fushataUtm.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'email';
+      dest = baze + (baze.includes('?') ? '&' : '?') + 'utm_source=email&utm_medium=outreach&utm_campaign=' + encodeURIComponent(slug) + hash;
+    }
+    res.redirect(302, BAZA_PUBLIKE + dest);
   });
 
   // ═══ Lista e email-eve te dergura (menuja "Email-et") ═══
