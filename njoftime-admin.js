@@ -16,6 +16,8 @@ async function init(pool) {
       krijuar_at    TIMESTAMPTZ DEFAULT now()
     )`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_njofadmin_biz ON njoftimet_admin(biznes_id)`);
+  // Kur klienti e sheh (hap ziles ose faqen e njoftimeve). Pas 10 minutash nga shikimi, njoftimi zhduket.
+  await pool.query(`ALTER TABLE njoftimet_admin ADD COLUMN IF NOT EXISTS pare_at TIMESTAMPTZ`);
 }
 
 module.exports = function (app, pool, iLoguar, iAdmin) {
@@ -68,9 +70,35 @@ module.exports = function (app, pool, iLoguar, iAdmin) {
     try {
       const r = await pool.query(
         `SELECT id, titulli, teksti, veprim, veprim_label
-         FROM njoftimet_admin WHERE biznes_id=$1 AND plotesuar=false ORDER BY krijuar_at DESC`,
+         FROM njoftimet_admin WHERE biznes_id=$1 AND plotesuar=false AND (pare_at IS NULL OR pare_at > now() - interval '10 minutes') ORDER BY krijuar_at DESC`,
         [req.biznesId]);
       res.json({ njoftimet: r.rows });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ── PERDORUESI: shëno si te pare (hapi ziles / faqen e njoftimeve). Zhduken 10 min pas shikimit. ──
+  // (Ne pamjen "Shiko si klienti" te admin-it, POST bllokohet -> admini s'i shenon si te para.)
+  app.post('/api/njoftime-admin/pare', iLoguar, async (req, res) => {
+    try {
+      const ids = (Array.isArray(req.body && req.body.ids) ? req.body.ids : []).map(x => parseInt(x, 10)).filter(Boolean).slice(0, 50);
+      if (ids.length) await pool.query('UPDATE njoftimet_admin SET pare_at = COALESCE(pare_at, now()) WHERE id = ANY($1::int[]) AND biznes_id = $2', [ids, req.biznesId]);
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ── ADMIN: lista e njoftimeve manuale te derguara ──
+  app.get('/api/admin/njoftime/derguara', iAdmin, async (req, res) => {
+    try {
+      const r = await pool.query(`SELECT n.id, n.biznes_id, b.emri, n.titulli, n.teksti, n.veprim_label, n.krijuar_at, n.pare_at, n.plotesuar
+          FROM njoftimet_admin n JOIN bizneset b ON b.id = n.biznes_id ORDER BY n.krijuar_at DESC LIMIT 300`);
+      res.json({ njoftimet: r.rows });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+  // ── ADMIN: hiq nje njoftim (zhduket menjehere nga zilja e klientit) ──
+  app.delete('/api/admin/njoftime/:id', iAdmin, async (req, res) => {
+    try {
+      await pool.query('DELETE FROM njoftimet_admin WHERE id = $1', [parseInt(req.params.id, 10)]);
+      res.json({ ok: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
@@ -95,7 +123,7 @@ module.exports.merrPerBiznes = async function (pool, bizId) {
   try {
     const r = await pool.query(
       `SELECT id, titulli, teksti, veprim, veprim_label
-       FROM njoftimet_admin WHERE biznes_id=$1 AND plotesuar=false ORDER BY krijuar_at DESC`,
+       FROM njoftimet_admin WHERE biznes_id=$1 AND plotesuar=false AND (pare_at IS NULL OR pare_at > now() - interval '10 minutes') ORDER BY krijuar_at DESC`,
       [bizId]);
     return r.rows;
   } catch (e) { return []; }
