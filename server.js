@@ -283,6 +283,16 @@ async function iLoguar(req, res, next) {
 }
 
 // --- REGJISTRIM ---
+// Burimi i regjistrimit: nese personi erdhi nga nje email marketingu (cookie px_burim nga /m/c/:token)
+async function ruajBurimin(req, bizId) {
+  try {
+    const t = req.cookies && req.cookies.px_burim;
+    if (!bizId || !/^[0-9a-f]{24}$/.test(String(t || ''))) return;
+    await pool.query('ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS burimi_email_token TEXT');
+    await pool.query('UPDATE bizneset SET burimi_email_token=$2 WHERE id=$1 AND burimi_email_token IS NULL', [bizId, t]);
+  } catch (e) { console.error('burimi:', e.message); }
+}
+
 app.post('/api/regjistrohu', async (req, res) => {
   const { emri, email, fjalekalimi, kategoria, website } = req.body;
   const tipi = ['b2b','b2c','b2b2c'].includes(req.body.tipi) ? req.body.tipi : null;
@@ -311,6 +321,7 @@ app.post('/api/regjistrohu', async (req, res) => {
     const token = crypto.randomBytes(24).toString('hex');
     await pool.query('INSERT INTO seancat (token, biznes_id) VALUES ($1,$2)', [token, r.rows[0].id]);
     aktHyrje(r.rows[0].id, 'regjistrim');
+    await ruajBurimin(req, r.rows[0].id);
     res.cookie('px_signup', '1', { sameSite: 'lax', maxAge: 10*60*1000 }); // Microsoft Ads: eventi sign_up
     res.cookie('imyr_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 30*24*60*60*1000 });
     res.json({ ok: true, biznes_id: r.rows[0].id });
@@ -479,6 +490,7 @@ app.post('/api/google-prano', async (req, res) => {
     await pool.query('INSERT INTO seancat (token, biznes_id) VALUES ($1,$2)', [token, bizId]);
     aktHyrje(bizId, 'google (regjistrim)');
     if (iRi) res.cookie('px_signup', '1', { sameSite: 'lax', maxAge: 10*60*1000 }); // Microsoft Ads: eventi sign_up
+    if (iRi) await ruajBurimin(req, bizId);
     res.cookie('imyr_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 30*24*60*60*1000 });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -3683,8 +3695,15 @@ app.get('/api/admin/biznes/:id', iAdmin, async (req, res) => {
         (SELECT COUNT(*) FROM ngjarjet e WHERE e.biznes_id=$1 AND e.lloji='konvertim' AND e.burimi=$2 AND e.created_at > now()-interval '30 days')::int AS marre_konvertime`,
       [id, logjika]);
 
+    // Burimi: email marketingu (nese u regjistrua pas nje klikimi ne email)
+    let burimi = null;
+    try {
+      const bq = await pool.query(`SELECT d.shabllon_emri, d.derguar_at, d.klikuar_at, d.kategoria FROM bizneset b
+          JOIN marketing_dergimet d ON d.token = b.burimi_email_token WHERE b.id = $1`, [id]);
+      if (bq.rows.length) burimi = bq.rows[0];
+    } catch (e) {}
     res.json({
-      biznes: row, statistika, checklist, reklamat: reklamatListe.rows,
+      biznes: row, statistika, checklist, reklamat: reklamatListe.rows, burimi,
       logjika, eKetijPishina,
       snippetet: snippetetListe.rows,
       promovimet: promovimetListe.rows,
