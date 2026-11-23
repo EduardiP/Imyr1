@@ -136,10 +136,13 @@ const UET_HEAD = `<script>
   if(lexo()==='granted') pranoi();
   // Regjistrim i sapokryer: serveri vendos cookie px_signup=1; e dergojme eventin NJEHERE dhe e fshijme cookie-n
   function kontrolloSignup(){
-    if(/(?:^|;\\s*)px_signup=1/.test(document.cookie)){
+    var mS = document.cookie.match(/(?:^|;\\s*)px_signup=(b?\\d+)/);
+    if(mS){
       document.cookie='px_signup=; Max-Age=0; path=/';
+      // Kunder dyfishimit (p.sh. 2 skeda te hapura): nje regjistrim dergohet vetem njehere nga ky browser
+      var kD='px_signup_derguar_'+mS[1]; try{ if(localStorage.getItem(kD)) return; localStorage.setItem(kD,'1'); }catch(e){}
       window.uetq = window.uetq || []; window.uetq.push('event', 'signup', {});
-      if ('${GOOGLE_ADS_SIGNUP}' && typeof gtag === 'function') gtag('event', 'conversion', { send_to: '${GOOGLE_ADS_SIGNUP}' });
+      if ('${GOOGLE_ADS_SIGNUP}' && typeof gtag === 'function') gtag('event', 'conversion', { send_to: '${GOOGLE_ADS_SIGNUP}', transaction_id: 'signup-' + mS[1] });
     }
   }
   kontrolloSignup(); setInterval(kontrolloSignup, 1500);
@@ -363,7 +366,7 @@ app.post('/api/regjistrohu', async (req, res) => {
     await pool.query('INSERT INTO seancat (token, biznes_id) VALUES ($1,$2)', [token, r.rows[0].id]);
     aktHyrje(r.rows[0].id, 'regjistrim');
     await ruajBurimin(req, r.rows[0].id);
-    res.cookie('px_signup', '1', { sameSite: 'lax', maxAge: 10*60*1000 }); // Microsoft Ads: eventi sign_up
+    res.cookie('px_signup', 'b' + r.rows[0].id, { sameSite: 'lax', maxAge: 10*60*1000 }); // Ads: eventi signup (vlera = ID unike per dedup)
     res.cookie('imyr_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 30*24*60*60*1000 });
     res.json({ ok: true, biznes_id: r.rows[0].id });
   } catch (e) {
@@ -530,7 +533,7 @@ app.post('/api/google-prano', async (req, res) => {
     const token = crypto.randomBytes(24).toString('hex');
     await pool.query('INSERT INTO seancat (token, biznes_id) VALUES ($1,$2)', [token, bizId]);
     aktHyrje(bizId, 'google (regjistrim)');
-    if (iRi) res.cookie('px_signup', '1', { sameSite: 'lax', maxAge: 10*60*1000 }); // Microsoft Ads: eventi sign_up
+    if (iRi) res.cookie('px_signup', 'b' + bizId, { sameSite: 'lax', maxAge: 10*60*1000 }); // Ads: eventi signup (vlera = ID unike per dedup)
     if (iRi) await ruajBurimin(req, bizId);
     res.cookie('imyr_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 30*24*60*60*1000 });
     res.json({ ok: true });
