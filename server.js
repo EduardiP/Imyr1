@@ -3764,6 +3764,7 @@ app.delete('/api/admin/biznes/:id', iAdmin, async (req, res) => {
     // Tabelat QENDRORE (perdoren gjeresisht ne krejt aplikacionin, sigurisht ekzistojne).
     // ekipi_anetaret DHE ekipi_role_shabllonet — te dyja te konfirmuara nga gabimet e mepareshme.
     // Rendi eshte KRITIK: anetaret referojne rolet (rol_id), duhet fshirë ANETARET SE PARI.
+    await klient.query('DELETE FROM seancat WHERE biznes_id=$1', [id]); // seancat aktive (p.sh. llogari prove ende e hapur)
     await klient.query('DELETE FROM ekipi_anetaret WHERE biznes_id=$1', [id]);
     await klient.query('DELETE FROM ekipi_ftesat WHERE biznes_id=$1', [id]);
     await klient.query('DELETE FROM ekipi_aktiviteti WHERE biznes_id=$1', [id]);
@@ -3801,7 +3802,8 @@ app.delete('/api/admin/biznes/:id', iAdmin, async (req, res) => {
     { tab: 'ekipi_lista_pritjes', kol: 'biznes_id' },
     { tab: 'suport_kerkesat', kol: 'biznes_id' },
     { tab: 'njoftimet_admin', kol: 'biznes_id' },
-    { tab: 'analizo_perdorimi', kol: 'biznes_id' }
+    { tab: 'analizo_perdorimi', kol: 'biznes_id' },
+    { tab: 'admin_pamjet', kol: 'biznes_id' }
   ];
   for (const t of tabelatOpsionale) {
     try { await pool.query(`DELETE FROM ${t.tab} WHERE ${t.kol}=$1`, [id]); }
