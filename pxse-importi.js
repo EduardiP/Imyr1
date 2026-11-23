@@ -892,6 +892,28 @@ module.exports = function (app, pool, iAdmin) {
       res.json({ ok: true, id: im, total: lista.length });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
+  // Shkarko si CSV bizneset e studiuara si B2B. Hapet direkt ne browser (admin i loguar):
+  //   /api/admin/pxse/b2b.csv                 -> vetem B2B, nga te gjitha importet
+  //   /api/admin/pxse/b2b.csv?both=1          -> B2B + "both" (B2B e B2C)
+  //   /api/admin/pxse/b2b.csv?importi=biznese -> vetem nga importi me kete emer (pa .csv)
+  app.get('/api/admin/pxse/b2b.csv', iAdmin, async (req, res) => {
+    try {
+      const llojet = req.query.both === '1' ? ['b2b', 'both'] : ['b2b'];
+      const imp = String(req.query.importi || '').trim().replace(/\.csv$/i, '');
+      const r = await pool.query(`SELECT r.domaini, r.emri, r.email, r.kategoria, r.lloji, r.shteti, i.emri AS importi
+          FROM pxse_import_rreshtat r JOIN pxse_importet i ON i.id = r.import_id
+          WHERE r.gjendja = 'bere' AND r.lloji = ANY($1::text[])
+            AND ($2 = '' OR regexp_replace(COALESCE(i.emri, ''), '\.csv$', '', 'i') = $2)
+          ORDER BY i.id DESC, r.domaini`, [llojet, imp]);
+      const q = v => { const t = v == null ? '' : String(v); return /[",\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+      const kolonat = ['domaini', 'emri', 'email', 'kategoria', 'lloji', 'shteti', 'importi'];
+      const csv = '﻿' + kolonat.join(',') + '\n' + r.rows.map(x => kolonat.map(k => q(x[k])).join(',')).join('\n') + '\n';
+      res.set('Content-Type', 'text/csv; charset=utf-8');
+      res.set('Content-Disposition', 'attachment; filename="b2b' + (imp ? '-' + imp.replace(/[^\w-]/g, '') : '') + '.csv"');
+      res.send(csv);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
   app.get('/api/admin/pxse/importi', iAdmin, async (req, res) => {
     try {
       const r = await pool.query(`SELECT i.*, (SELECT COUNT(*) FROM pxse_import_rreshtat r WHERE r.import_id=i.id AND r.gjendja<>'pritje')::int bere,
