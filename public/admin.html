@@ -1433,7 +1433,12 @@ if(!r.eKetijPishina){
   m.innerHTML='<button class="back" onclick="renderBizMain()">← Bizneset</button>'+
     '<h2 class="h">'+esc(b.emri)+'</h2>'+toggleHtml+
     '<div class="sect"><p class="small mut">No '+(logjika==='ankand'?'Ankand':'Balance')+' account for this business.</p></div>'+
-    aktSeksioni(id);
+    aktSeksioni(id)+
+    '<div class="sect"><h3>Të dhënat e regjistrimit</h3>'+
+    row2('Email', esc(b.email||'—'))+row2('Faqja', esc(b.website||'—'))+row2('Plani', esc(b.plani||'—'))+
+    row2('Regjistruar', dt(b.created_at))+
+    (r.burimi ? row2('Burimi', '📧 Email — <b>'+esc(r.burimi.shabllon_emri||'shabllon')+'</b>') : '')+
+    '</div>'+bizZonaRrezik(b);
   aktNgarko(id);
   return;
 }
@@ -1536,11 +1541,7 @@ row2('Nënkategoritë', b.nenkategorite||'—')+
 row2('Përshkrimi i dhënë', b.pershkrimi||'—')+
 row2('Përmbledhja', b.permbledhje||'—')+
 '</div>'+
-'<div class="sect" style="border:1px solid #f85149;background:rgba(248,81,73,.06);">'+
-  '<h3 style="color:#f85149;">Zonë e rrezikshme</h3>'+
-  '<p class="small mut" style="margin:4px 0 12px;">Fshin PËRGJITHMONË këtë biznes dhe çdo gjurmë të tij (shfaqje, klikime, konvertime, reklama, snippet-e, vendime automatik/balance, etj.) — pa mundësi rikthimi.</p>'+
-  '<button id="bizDelBtn" onclick="bizFshiKonfirmo('+b.id+',\''+esc((b.emri||'').replace(/\'/g,"\\\\'"))+'\')" style="background:#f85149;color:#fff;border:none;padding:9px 18px;border-radius:8px;cursor:pointer;font-weight:600;">Delete this business</button>'+
-'</div>';
+bizZonaRrezik(b);
 aktNgarko(id);
 }catch(e){ m.innerHTML='<button class="back" onclick="renderBizMain()">← Bizneset</button><p class="small">Gabim: '+e.message+'</p>'; }
 }
@@ -1613,6 +1614,13 @@ function aktVizato(){
       return '<tr><td style="padding:3px 8px 3px 0;color:#e6edf3;">'+dt(x.koha)+'</td><td style="padding:3px 0;color:#8b949e;text-align:right;">'+esc(x.menyra||'—')+'</td></tr>';
     }).join('')+'</table>' : '<p class="small mut">Asnjë login i regjistruar ende (Google e mban sesionin 30 ditë, prandaj hapjet numërohen më lart).</p>';
   t.innerHTML=h;
+}
+function bizZonaRrezik(b){
+  return '<div class="sect" style="border:1px solid #f85149;background:rgba(248,81,73,.06);">'+
+  '<h3 style="color:#f85149;">Zonë e rrezikshme</h3>'+
+  '<p class="small mut" style="margin:4px 0 12px;">Fshin PËRGJITHMONË këtë biznes dhe çdo gjurmë të tij (shfaqje, klikime, konvertime, reklama, snippet-e, vendime automatik/balance, etj.) — pa mundësi rikthimi.</p>'+
+  '<button id="bizDelBtn" onclick="bizFshiKonfirmo('+b.id+',\''+esc((b.emri||'').replace(/\'/g,"\\\\'"))+'\')" style="background:#f85149;color:#fff;border:none;padding:9px 18px;border-radius:8px;cursor:pointer;font-weight:600;">Delete this business</button>'+
+'</div>';
 }
 function bizFshiKonfirmo(id, emri){
   if(!confirm('A je i sigurt? Kjo do te fshije PERGJITHMONE biznesin "'+emri+'" dhe çdo gjurme te tij. S\'mund te kthehet mbrapa.')) return;
