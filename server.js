@@ -87,7 +87,22 @@ app.use(cookieParser());
 
 // ═══ MICROSOFT ADVERTISING (UET) — futet automatikisht ne <head> te cdo faqeje HTML (pervec admin) ═══
 // 1) consent default 'denied'  2) UET tag  3) banner cookies (Accept/Reject) + eventi sign_up (njehere, nga cookie px_signup)
+// Google Ads (AW-17976695367): tag-u + Consent Mode v2 (reklamat 'denied' derisa vizitori klikon Accept).
+// Konvertimi i regjistrimit: vendos ne Railway variablin GOOGLE_ADS_SIGNUP_LABEL (p.sh. AbC-D_efG12) nga Google Ads.
+const GOOGLE_ADS_ID = 'AW-17976695367';
+const GOOGLE_ADS_SIGNUP = /^[A-Za-z0-9_-]{4,40}$/.test(process.env.GOOGLE_ADS_SIGNUP_LABEL || '') ? GOOGLE_ADS_ID + '/' + process.env.GOOGLE_ADS_SIGNUP_LABEL : '';
+const GOOGLE_ADS_KLIK = /^[A-Za-z0-9_-]{4,40}$/.test(process.env.GOOGLE_ADS_SIGNUP_CLICK_LABEL || '') ? GOOGLE_ADS_ID + '/' + process.env.GOOGLE_ADS_SIGNUP_CLICK_LABEL : '';
 const UET_HEAD = `<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'granted' });
+</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ADS_ID}"></script>
+<script>
+  gtag('js', new Date());
+  gtag('config', '${GOOGLE_ADS_ID}');
+</script>
+<script>
   window.uetq = window.uetq || [];
   window.uetq.push('consent', 'default', { 'ad_storage': 'denied' });
 </script>
@@ -114,22 +129,48 @@ const UET_HEAD = `<script>
   var K='px_ads_consent';
   function lexo(){ try{ return localStorage.getItem(K); }catch(e){ return null; } }
   function ruaj(v){ try{ localStorage.setItem(K, v); }catch(e){} }
-  function pranoi(){ window.uetq = window.uetq || []; window.uetq.push('consent', 'update', { 'ad_storage': 'granted' }); }
+  function pranoi(){
+    window.uetq = window.uetq || []; window.uetq.push('consent', 'update', { 'ad_storage': 'granted' });
+    if (typeof gtag === 'function') gtag('consent', 'update', { ad_storage: 'granted', ad_user_data: 'granted', ad_personalization: 'granted' });
+  }
   if(lexo()==='granted') pranoi();
   // Regjistrim i sapokryer: serveri vendos cookie px_signup=1; e dergojme eventin NJEHERE dhe e fshijme cookie-n
   function kontrolloSignup(){
     if(/(?:^|;\\s*)px_signup=1/.test(document.cookie)){
       document.cookie='px_signup=; Max-Age=0; path=/';
       window.uetq = window.uetq || []; window.uetq.push('event', 'signup', {});
+      if ('${GOOGLE_ADS_SIGNUP}' && typeof gtag === 'function') gtag('event', 'conversion', { send_to: '${GOOGLE_ADS_SIGNUP}' });
     }
   }
   kontrolloSignup(); setInterval(kontrolloSignup, 1500);
+  // Klikimi i butonit te regjistrimit: "signup_open" (dritarja e regjistrimit u hap) dhe "signup_google_start"
+  // (zgjodhi Google). Shkon te Google Analytics, Google Ads dhe Microsoft. Funksionet e faqes mbeten te paprekura.
+  function ngjarje(emri, beacon){
+    var p = { page_path: location.pathname }; if (beacon) p.transport_type = 'beacon';
+    try { if (typeof gtag === 'function') gtag('event', emri, p); } catch(e){}
+    try { window.uetq = window.uetq || []; window.uetq.push('event', emri, {}); } catch(e){}
+    try { if (emri === 'signup_open' && '${GOOGLE_ADS_KLIK}' && typeof gtag === 'function') gtag('event', 'conversion', { send_to: '${GOOGLE_ADS_KLIK}' }); } catch(e){}
+  }
+  function mbeshtill(){
+    if (typeof window.hapModal === 'function' && !window.hapModal.__px) {
+      var hm = window.hapModal;
+      window.hapModal = function(k){ if (k === 'reg') ngjarje('signup_open'); return hm.apply(this, arguments); };
+      window.hapModal.__px = 1;
+    }
+    if (typeof window.hyrGoogle === 'function' && !window.hyrGoogle.__px) {
+      var hg = window.hyrGoogle;
+      window.hyrGoogle = function(){ ngjarje('signup_google_start', true); return hg.apply(this, arguments); };
+      window.hyrGoogle.__px = 1;
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mbeshtill); else mbeshtill();
+  window.addEventListener('load', mbeshtill);
   function banner(){
     if(lexo() || document.getElementById('pxCookieBar')) return;
     var b=document.createElement('div'); b.id='pxCookieBar';
     b.setAttribute('role','dialog'); b.setAttribute('aria-label','Cookie consent');
     b.style.cssText='position:fixed;left:16px;right:16px;bottom:16px;z-index:2147483000;max-width:640px;margin:0 auto;background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:12px;padding:14px 16px;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.35);display:flex;gap:12px;align-items:center;flex-wrap:wrap;';
-    b.innerHTML='<span style="flex:1 1 260px;">We use advertising cookies (Microsoft Advertising) to measure our ads. You can accept or reject them. <a href="/privacy" style="color:#58a6ff;">Privacy Policy</a></span>'+
+    b.innerHTML='<span style="flex:1 1 260px;">We use advertising cookies (Google Ads and Microsoft Advertising) to measure our ads. You can accept or reject them. <a href="/privacy" style="color:#58a6ff;">Privacy Policy</a></span>'+
       '<span style="display:flex;gap:8px;"><button type="button" data-v="denied" style="padding:8px 14px;border-radius:8px;border:1px solid #30363d;background:transparent;color:#e6edf3;cursor:pointer;font:inherit;">Reject</button>'+
       '<button type="button" data-v="granted" style="padding:8px 14px;border-radius:8px;border:0;background:#2f81f7;color:#fff;cursor:pointer;font:inherit;font-weight:600;">Accept</button></span>';
     b.addEventListener('click', function(e){
