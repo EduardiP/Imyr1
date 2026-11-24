@@ -50,6 +50,11 @@ const BAZA_PUBLIKE = 'https://phronexusai.com';
 function gjurmimIFikur(v) { return ['0', 'false', 'off', 'jo', 'no', 'fik', 'fikur'].includes(String(v == null ? '' : v).trim().toLowerCase()); }
 function gjurmimHapjeNdezur() { return !gjurmimIFikur(process.env.MKT_GJURMIM_HAPJE); }
 function gjurmimKlikimeNdezur() { return !gjurmimIFikur(process.env.MKT_GJURMIM_KLIKIME); }
+// ═══ Dallimi njeri / robot ═══
+// Skanerat e sigurise (Microsoft Defender, Proofpoint, Mimecast, Barracuda...) dhe programet automatike.
+// Kujdes: "GoogleImageProxy" (Gmail) dhe "Microsoft Outlook" NUK jane robote: ngarkojne imazhin kur njeriu e hap emailin.
+const RE_ROBOT = /(bot\b|bot\/|crawl|spider|scanner|proofpoint|mimecast|barracuda|forcepoint|symantec|trendmicro|trend micro|sophos|fortinet|fortiguard|ironport|cisco|zscaler|messagelabs|safelinks|safe links|existence discovery|bingpreview|headless|phantomjs|python|curl\/|wget|java\/|go-http|axios|node-fetch|undici|okhttp|libwww|httpclient|scrapy|facebookexternalhit|slackbot|whatsapp|telegrambot|discordbot|linkedinbot|skypeuripreview|PhronexusAI-test)/i;
+function kurthNdezur() { return !gjurmimIFikur(process.env.MKT_KURTH); }
 function krijoToken() { return crypto.randomBytes(12).toString('hex'); } // 24 shkronja hex, i pavlefte per t'u hamendesuar
 // Kthen { html, me_piksel, me_lidhje }: html-ja e gatshme per dergim + a u vendos vertet piksel / a u gjurmua te pakten nje lidhje
 // (ruhet ne rresht, qe te dihet pastaj kur nje email "s'eshte hapur" vs. "s'kishte fare gjurmim").
@@ -64,6 +69,10 @@ function pergatitHtmlPerDergim(html, token) {
       meLidhje = true;
       return 'href="' + BAZA_PUBLIKE + '/m/c/' + token + '?p=' + encodeURIComponent(p) + '"';
     });
+  }
+  // Lidhja e padukshme ("kurth"): njeriu nuk e sheh; kush e klikon eshte robot (skaner sigurie). Fiket me MKT_KURTH=0.
+  if (gjurmimKlikimeNdezur() && kurthNdezur()) {
+    h += '\n<a data-pxk="1" href="' + BAZA_PUBLIKE + '/m/c/' + token + '?p=' + encodeURIComponent('/__k') + '" aria-hidden="true" tabindex="-1" style="display:none !important;mso-hide:all;font-size:0;line-height:0;max-height:0;overflow:hidden;color:transparent;text-decoration:none;">&#8203;</a>';
   }
   h = h + rreshtiKodiTestit();
   const mePiksel = gjurmimHapjeNdezur();
@@ -109,6 +118,7 @@ function htmlNeTekst(html) {
 // Lidhjet ruhen si "Teksti (adresa)"; imazhet (dhe pikseli) hiqen.
 function tekstPerEmail(html) {
   return String(html || '')
+    .replace(/<a\b[^>]*data-pxk="1"[^>]*>[\s\S]*?<\/a>/gi, '') // lidhja e padukshme nuk hyn ne versionin tekst
     .replace(/<(style|head|script)[\s\S]*?<\/\1>/gi, '')
     .replace(/<img[^>]*>/gi, '')
     .replace(/<a\b[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (m, href, t) => {
@@ -225,6 +235,13 @@ module.exports = function (app, pool, iAdmin) {
         await pool.query('ALTER TABLE marketing_dergimet ADD COLUMN IF NOT EXISTS me_piksel BOOLEAN NOT NULL DEFAULT false');
         await pool.query('ALTER TABLE marketing_dergimet ADD COLUMN IF NOT EXISTS me_lidhje BOOLEAN NOT NULL DEFAULT false');
         await pool.query('CREATE INDEX IF NOT EXISTS marketing_dergimet_koha ON marketing_dergimet (derguar_at DESC)');
+        // Dallimi njeri / robot (vlen per hapjet/klikimet nga ky version e tutje)
+        for (const k of ['hapje_reale INT NOT NULL DEFAULT 0', 'hapur_real_at TIMESTAMPTZ', 'hapje_robot INT NOT NULL DEFAULT 0', 'hapje_apple INT NOT NULL DEFAULT 0',
+          'klikime_robot INT NOT NULL DEFAULT 0', 'klikuar_verif_at TIMESTAMPTZ', 'kurth BOOLEAN NOT NULL DEFAULT false'])
+          await pool.query('ALTER TABLE marketing_dergimet ADD COLUMN IF NOT EXISTS ' + k);
+        await pool.query(`CREATE TABLE IF NOT EXISTS marketing_ngjarjet (id BIGSERIAL PRIMARY KEY, token TEXT NOT NULL, lloji TEXT NOT NULL,
+          koha TIMESTAMPTZ NOT NULL DEFAULT now(), ua TEXT, ip TEXT, shtegu TEXT, roboti TEXT)`);
+        await pool.query('CREATE INDEX IF NOT EXISTS marketing_ngjarjet_token ON marketing_ngjarjet (token, koha DESC)');
         await pool.query('CREATE INDEX IF NOT EXISTS marketing_dergimet_email ON marketing_dergimet (email)'); // per te gjetur shabllonin e cdo rreshti te regjistrit
       })().catch(e => { tabelaDergimetPromise = null; throw e; }); // nese deshtoi, hera tjeter provohet perseri
     }
@@ -760,8 +777,22 @@ module.exports = function (app, pool, iAdmin) {
     const token = String(req.params.token || '').replace(/\.gif$/i, '');
     if (/^[0-9a-f]{24}$/.test(token)) {
       const ua = String((req.headers && req.headers['user-agent']) || '').slice(0, 200);
-      try { await pool.query('UPDATE marketing_dergimet SET hapur_at = COALESCE(hapur_at, now()), hapje = hapje + 1, hapur_ua = COALESCE(hapur_ua, $2) WHERE token = $1', [token, ua || null]); }
-      catch (e) { console.error('marketing hapje:', e.message); }
+      try {
+        await siguroTabelenDergimet();
+        const d = (await pool.query('SELECT EXTRACT(EPOCH FROM (now() - derguar_at)) AS sek, hapje FROM marketing_dergimet WHERE token = $1', [token])).rows[0];
+        if (d) {
+          // robot: pa program / skaner i njohur / brenda 60 sekondave pas dergimit. Apple Mail ("Mozilla/5.0" i paster) = e paqarte.
+          const roboti = !ua ? 'pa-program' : RE_ROBOT.test(ua) ? 'skaner' : (d.sek != null && Number(d.sek) < 60) ? 'menjehere' : null;
+          const apple = !roboti && ua.trim() === 'Mozilla/5.0';
+          const reale = !roboti && !apple;
+          await pool.query(`UPDATE marketing_dergimet SET hapur_at = COALESCE(hapur_at, now()), hapje = hapje + 1, hapur_ua = COALESCE(hapur_ua, $2),
+              hapje_robot = hapje_robot + $3, hapje_apple = hapje_apple + $4, hapje_reale = CASE WHEN $5 THEN 1 ELSE hapje_reale END,
+              hapur_real_at = CASE WHEN $5 THEN COALESCE(hapur_real_at, now()) ELSE hapur_real_at END WHERE token = $1`,
+            [token, ua || null, roboti ? 1 : 0, apple ? 1 : 0, reale]);
+          if ((d.hapje || 0) < 200) await pool.query('INSERT INTO marketing_ngjarjet (token, lloji, ua, ip, roboti) VALUES ($1, $2, $3, $4, $5)',
+            [token, 'hapje', ua || null, String(req.ip || '').slice(0, 60) || null, roboti || (apple ? 'apple' : null)]);
+        }
+      } catch (e) { console.error('marketing hapje:', e.message); }
     }
     res.set({ 'Content-Type': 'image/gif', 'Content-Length': GIF_1X1.length, 'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0', 'Pragma': 'no-cache' });
     res.status(200).end(GIF_1X1);
@@ -773,16 +804,39 @@ module.exports = function (app, pool, iAdmin) {
     const p = String((req.query && req.query.p) || '/');
     const eSigurt = p.length <= 500 && /^\/(?![\/\\])[^\s\u0000-\u001f\\]*$/.test(p);
     let fushataUtm = 'email';
+    const kurth = p === '/__k';
     if (/^[0-9a-f]{24}$/.test(token)) {
       try {
-        const u = await pool.query('UPDATE marketing_dergimet SET klikuar_at = COALESCE(klikuar_at, now()), klikime = klikime + 1, hapur_at = COALESCE(hapur_at, now()) WHERE token = $1 RETURNING shabllon_emri', [token]);
-        if (u.rows.length) {
-          if (u.rows[0].shabllon_emri) fushataUtm = String(u.rows[0].shabllon_emri);
-          // Burimi i regjistrimit: nese ky person regjistrohet brenda 30 diteve, te admin del "erdhi nga emaili"
-          res.cookie('px_burim', token, { httpOnly: true, sameSite: 'lax', maxAge: 30 * 24 * 60 * 60 * 1000 });
+        await siguroTabelenDergimet();
+        const ua = String((req.headers && req.headers['user-agent']) || '').slice(0, 200);
+        const ip = String(req.ip || '').slice(0, 60) || null;
+        const d = (await pool.query(`SELECT EXTRACT(EPOCH FROM (now() - derguar_at)) AS sek, klikime, shabllon_emri,
+            (SELECT EXTRACT(EPOCH FROM (now() - MAX(koha))) FROM marketing_ngjarjet WHERE token = $1 AND lloji = 'klikim') AS sek_klikimi_fundit
+            FROM marketing_dergimet WHERE token = $1`, [token])).rows[0];
+        if (d) {
+          // robot: lidhja e padukshme / kerkese HEAD / pa program ose skaner / brenda 60 sek pas dergimit / disa lidhje brenda 2 sekondave
+          const roboti = kurth ? 'kurth' : req.method === 'HEAD' ? 'head' : !ua ? 'pa-program' : RE_ROBOT.test(ua) ? 'skaner'
+            : (d.sek != null && Number(d.sek) < 60) ? 'menjehere' : (d.sek_klikimi_fundit != null && Number(d.sek_klikimi_fundit) < 2) ? 'disa-lidhje' : null;
+          if ((d.klikime || 0) < 200) await pool.query('INSERT INTO marketing_ngjarjet (token, lloji, ua, ip, shtegu, roboti) VALUES ($1, $2, $3, $4, $5, $6)',
+            [token, 'klikim', ua || null, ip, p.slice(0, 200), roboti]);
+          if (kurth) {
+            await pool.query('UPDATE marketing_dergimet SET kurth = true, klikime_robot = klikime_robot + 1 WHERE token = $1', [token]);
+          } else {
+            await pool.query(`UPDATE marketing_dergimet SET klikuar_at = COALESCE(klikuar_at, now()), klikime = klikime + 1, hapur_at = COALESCE(hapur_at, now()),
+                klikime_robot = klikime_robot + $2 WHERE token = $1`, [token, roboti ? 1 : 0]);
+            if (d.shabllon_emri) fushataUtm = String(d.shabllon_emri);
+            if (!roboti) {
+              // Burimi i regjistrimit: nese ky person regjistrohet brenda 30 diteve, te admin del "erdhi nga emaili"
+              res.cookie('px_burim', token, { httpOnly: true, sameSite: 'lax', maxAge: 30 * 24 * 60 * 60 * 1000 });
+              // Verifikimi: faqja dergon /m/v kur ka levizje/scroll/prekje + 3 sek (shih server.js). 30 minuta kohe.
+              res.cookie('px_mklik', token, { httpOnly: true, sameSite: 'lax', maxAge: 30 * 60 * 1000 });
+              res.cookie('px_mk', '1', { sameSite: 'lax', maxAge: 30 * 60 * 1000 });
+            }
+          }
         }
       } catch (e) { console.error('marketing klikim:', e.message); }
     }
+    if (kurth) return res.redirect(302, BAZA_PUBLIKE + '/');
     // UTM per Google Analytics (email / outreach / emri i shabllonit), pa prekur #ankoren
     let dest = eSigurt ? p : '/';
     if (!/[?&]utm_source=/.test(dest)) {
@@ -794,19 +848,35 @@ module.exports = function (app, pool, iAdmin) {
     res.redirect(302, BAZA_PUBLIKE + dest);
   });
 
+  // Klikim i verifikuar nga njeri: faqja e dergon kete pasi ka levizje mouse-i / scroll / prekje dhe te pakten 3 sekonda ne faqe.
+  app.post('/m/v', async (req, res) => {
+    const token = String((req.cookies && req.cookies.px_mklik) || '');
+    res.clearCookie('px_mklik'); res.clearCookie('px_mk');
+    if (/^[0-9a-f]{24}$/.test(token)) {
+      try {
+        const u = await pool.query('UPDATE marketing_dergimet SET klikuar_verif_at = COALESCE(klikuar_verif_at, now()) WHERE token = $1 AND NOT kurth RETURNING id', [token]);
+        if (u.rows.length) await pool.query("INSERT INTO marketing_ngjarjet (token, lloji, ua, ip) VALUES ($1, 'nderveprim', $2, $3)",
+          [token, String((req.headers && req.headers['user-agent']) || '').slice(0, 200) || null, String(req.ip || '').slice(0, 60) || null]);
+      } catch (e) { console.error('marketing verifikim:', e.message); }
+    }
+    res.status(204).end();
+  });
+
   // ═══ Lista e email-eve te dergura (menuja "Email-et") ═══
   app.get('/api/admin/marketing/emailet', iAdmin, async (req, res) => {
     res.set('Cache-Control', 'no-store'); // Rifresko duhet te marre GJITHMONE te dhena te reja, kurre nga cache
     try {
       await siguroTabelenDergimet();
       // "Pa u hapur" numerohet vetem per email-et qe kishin vertet piksel (pa piksel s'ka si dihet nese u hapen).
-      const KUSHTET = { 'te-gjitha': 'TRUE', 'pa-shkuar': "statusi <> 'derguar'", 'pa-hapur': "statusi = 'derguar' AND me_piksel AND hapur_at IS NULL", 'hapur': 'hapur_at IS NOT NULL', 'klikuar': 'klikuar_at IS NOT NULL' };
+      const KUSHTET = { 'te-gjitha': 'TRUE', 'pa-shkuar': "statusi <> 'derguar'", 'pa-hapur': "statusi = 'derguar' AND me_piksel AND hapur_at IS NULL", 'hapur': 'hapur_at IS NOT NULL', 'klikuar': 'klikuar_at IS NOT NULL',
+        'hapur-reale': 'hapje_reale > 0', 'klikuar-verifikuar': 'klikuar_verif_at IS NOT NULL' };
       const q = req.query || {};
       const filtri = Object.prototype.hasOwnProperty.call(KUSHTET, q.filtri) ? q.filtri : 'te-gjitha';
       const limit = Math.min(500, Math.max(1, parseInt(q.limit, 10) || 200));
       const offset = Math.max(0, parseInt(q.offset, 10) || 0);
       const rows = (await pool.query(
-        'SELECT id, email, domain, kategoria, shabllon_emri, llogaria, subjekti, statusi, gabimi, derguar_at, hapur_at, hapje, klikuar_at, klikime, me_piksel, me_lidhje FROM marketing_dergimet WHERE ' +
+        'SELECT id, email, domain, kategoria, shabllon_emri, llogaria, subjekti, statusi, gabimi, derguar_at, hapur_at, hapje, klikuar_at, klikime, me_piksel, me_lidhje, ' +
+        'hapje_reale, hapur_real_at, hapje_robot, hapje_apple, klikime_robot, klikuar_verif_at, kurth FROM marketing_dergimet WHERE ' +
         KUSHTET[filtri] + ' ORDER BY derguar_at DESC, id DESC LIMIT $1 OFFSET $2', [limit, offset])).rows;
       const PRITJE = 'FROM marketing_fushata_kontakte fk JOIN marketing_fushatat f ON f.id = fk.fushata_id JOIN marketing_kontaktet k ON k.id = fk.kontakt_id ' +
         "WHERE NOT fk.derguar AND f.statusi = 'aktiv' AND NOT k.unsubscribed";
@@ -818,9 +888,10 @@ module.exports = function (app, pool, iAdmin) {
       }
       const n = (await pool.query(
         "SELECT COUNT(*)::int AS gjithsej, COUNT(*) FILTER (WHERE statusi = 'deshtoi')::int AS deshtoi, COUNT(*) FILTER (WHERE statusi = 'derguar' AND me_piksel AND hapur_at IS NULL)::int AS pa_hapur, " +
-        'COUNT(*) FILTER (WHERE hapur_at IS NOT NULL)::int AS hapur, COUNT(*) FILTER (WHERE klikuar_at IS NOT NULL)::int AS klikuar FROM marketing_dergimet')).rows[0] || {};
+        'COUNT(*) FILTER (WHERE hapur_at IS NOT NULL)::int AS hapur, COUNT(*) FILTER (WHERE klikuar_at IS NOT NULL)::int AS klikuar, ' +
+        'COUNT(*) FILTER (WHERE hapje_reale > 0)::int AS hapur_reale, COUNT(*) FILTER (WHERE klikuar_verif_at IS NOT NULL)::int AS klikuar_verifikuar FROM marketing_dergimet')).rows[0] || {};
       const pritje = ((await pool.query('SELECT COUNT(*)::int AS n ' + PRITJE)).rows[0] || {}).n || 0;
-      const numrat = { te_gjitha: (n.gjithsej || 0) + pritje, pa_shkuar: (n.deshtoi || 0) + pritje, pa_hapur: n.pa_hapur || 0, hapur: n.hapur || 0, klikuar: n.klikuar || 0 };
+      const numrat = { te_gjitha: (n.gjithsej || 0) + pritje, pa_shkuar: (n.deshtoi || 0) + pritje, pa_hapur: n.pa_hapur || 0, hapur: n.hapur || 0, klikuar: n.klikuar || 0, hapur_reale: n.hapur_reale || 0, klikuar_verifikuar: n.klikuar_verifikuar || 0 };
       res.json({ ok: true, filtri, rows: ne_pritje.concat(rows), numrat, gjurmim: { hapje: gjurmimHapjeNdezur(), klikime: gjurmimKlikimeNdezur() } });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
@@ -851,7 +922,7 @@ module.exports = function (app, pool, iAdmin) {
       try {
         const r = await fetch(BAZA_PUBLIKE + '/m/c/' + token + '?p=%2F', Object.assign({ redirect: 'manual' }, opsione()));
         const lok = r.headers.get('location') || '';
-        hap('Klikimi arrihet nga interneti', r.status === 302 && lok.replace(/\/$/, '') === BAZA_PUBLIKE, 'HTTP ' + r.status + (lok ? ' -> ' + lok : ''));
+        hap('Klikimi arrihet nga interneti', r.status === 302 && lok.indexOf(BAZA_PUBLIKE + '/') === 0, 'HTTP ' + r.status + (lok ? ' -> ' + lok : ''));
       } catch (e) { hap('Klikimi arrihet nga interneti', false, "s'u arrit " + BAZA_PUBLIKE + ': ' + e.message); }
       const k = (await pool.query('SELECT hapje, klikime FROM marketing_dergimet WHERE token = $1', [token])).rows[0] || {};
       hap('Hapja u regjistrua ne databaze', k.hapje === 1, 'hapje=' + k.hapje);
