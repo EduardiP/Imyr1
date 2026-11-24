@@ -167,6 +167,18 @@ const UET_HEAD = `<script>
     }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mbeshtill); else mbeshtill();
+  // Klikim nga emaili: verifikohet si NJERI kur ka levizje mouse-i / scroll / prekje / tastiere dhe te pakten 3 sekonda ne faqe.
+  (function(){
+    if (!/(?:^|;\\s*)px_mk=1/.test(document.cookie)) return;
+    var t0 = Date.now(), lev = false, kryer = false;
+    function provo(){
+      if (kryer || !lev || Date.now() - t0 < 3000) return;
+      kryer = true; document.cookie = 'px_mk=; Max-Age=0; path=/';
+      try { if (!(navigator.sendBeacon && navigator.sendBeacon('/m/v'))) fetch('/m/v', { method: 'POST', keepalive: true }); } catch(e){}
+    }
+    ['mousemove','scroll','touchstart','keydown','click'].forEach(function(ev){ window.addEventListener(ev, function(){ lev = true; provo(); }, { passive: true }); });
+    setInterval(provo, 1000);
+  })();
   window.addEventListener('load', mbeshtill);
   function banner(){
     if(lexo() || document.getElementById('pxCookieBar')) return;
