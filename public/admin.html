@@ -2488,7 +2488,9 @@ const MKT_EM_FILTRAT = [
 ['pa-shkuar','Pa shkuar','pa_shkuar'],
 ['pa-hapur','Shkuar, pa u hapur','pa_hapur'],
 ['hapur','Hapur','hapur'],
-['klikuar','Klikuar','klikuar']
+['klikuar','Klikuar','klikuar'],
+['hapur-reale','Hapur nga njeri (e mundshme)','hapur_reale'],
+['klikuar-verifikuar','Klikuar nga njeri (i verifikuar)','klikuar_verifikuar']
 ];
 let curMktEmFiltri='te-gjitha';
 function renderMktEmailet(m){
@@ -2644,8 +2646,22 @@ r.appendChild(mktEmCel(x.shabllon_emri||'—','',x.subjekti||''));
 r.appendChild(mktEmCel(x.llogaria||'—'));
 const st=x.statusi==='derguar'?['Shkuar','color:#3fb950;','']:x.statusi==='deshtoi'?['Dështoi','color:#e5484d;',x.gabimi||'']:['Në pritje','color:#d29922;',''];
 r.appendChild(mktEmCel(st[0],st[1]+'font-weight:600;',st[2]));
-r.appendChild(mktEmNumri(x,'hapur_at','hapje',x.me_piksel));
-r.appendChild(mktEmNumri(x,'klikuar_at','klikime',x.me_lidhje));
+const cH=mktEmNumri(x,'hapur_at','hapje',x.me_piksel);
+if(x.statusi==='derguar' && (parseInt(x.hapje,10)||0)>0){
+  const dd=document.createElement('div'); dd.className='small'; dd.style.marginTop='3px';
+  dd.innerHTML=(x.hapje_reale>0?'<span style="color:#3fb950;">👤 njeri (e mundshme)</span>':'<span style="color:#8b949e;">👤 asnjë e besueshme</span>')+
+    (x.hapje_robot?' · <span style="color:#e5484d;">🤖 '+x.hapje_robot+'</span>':'')+(x.hapje_apple?' · <span style="color:#d29922;">Apple '+x.hapje_apple+'</span>':'');
+  cH.appendChild(dd);
+}
+r.appendChild(cH);
+const cK=mktEmNumri(x,'klikuar_at','klikime',x.me_lidhje);
+if(x.statusi==='derguar' && ((parseInt(x.klikime,10)||0)>0 || x.kurth || x.klikime_robot>0)){
+  const dk=document.createElement('div'); dk.className='small'; dk.style.marginTop='3px';
+  dk.innerHTML=(x.klikuar_verif_at?'<span style="color:#3fb950;font-weight:600;">✓ njeri i verifikuar</span>':'<span style="color:#d29922;">i paverifikuar</span>')+
+    (x.klikime_robot?' · <span style="color:#e5484d;">🤖 '+x.klikime_robot+(x.kurth?' (kurth)':'')+'</span>':'');
+  cK.appendChild(dk);
+}
+r.appendChild(cK);
 brenda.appendChild(r);
 });
 lista.appendChild(wrap);
