@@ -278,6 +278,9 @@ require('./balanca')(pool).init().catch(e => console.error('init balancet:', e.m
 // Migrim: tabela `borxhi_global` per sistemin Automatik (kufiri 10 nder-pishinash)
 require('./automatik')(pool).init().catch(e => console.error('init borxhi_global:', e.message));
 
+// Lidhesi per Claude (MCP + hyrje OAuth). Duhet te jete PARA rrugeve te Google (/auth/google/callback). Shih claude-connector.js.
+require('./claude-connector')(app, pool);
+
 // --- Ruajtja e skedareve (Cloudflare R2) ---
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 const s3 = process.env.R2_ENDPOINT ? new S3Client({
