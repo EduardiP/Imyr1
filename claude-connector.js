@@ -120,6 +120,8 @@ module.exports = function (app, pool) {
       await pool.query(`CREATE TABLE IF NOT EXISTS claude_oauth_tokenat (token_hash TEXT PRIMARY KEY, lloji TEXT NOT NULL, biznes_id INT NOT NULL REFERENCES bizneset(id) ON DELETE CASCADE,
         client_id TEXT NOT NULL, scope TEXT, skadon TIMESTAMPTZ NOT NULL, krijuar TIMESTAMPTZ NOT NULL DEFAULT now())`);
       await pool.query('CREATE INDEX IF NOT EXISTS claude_oauth_tokenat_biz ON claude_oauth_tokenat (biznes_id)');
+      await pool.query('ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS claude_lidhur_at TIMESTAMPTZ');
+      await pool.query('ALTER TABLE bizneset ADD COLUMN IF NOT EXISTS claude_burim BOOLEAN NOT NULL DEFAULT false');
       await pool.query(`CREATE TABLE IF NOT EXISTS claude_analizat (domaini TEXT PRIMARY KEY, emri TEXT, kategoria TEXT, lloji TEXT, permbledhje TEXT, koha TIMESTAMPTZ NOT NULL DEFAULT now())`);
     })().catch(e => { gati = null; throw e; });
     return gati;
@@ -365,6 +367,9 @@ module.exports = function (app, pool) {
       if (!bizId || s.length !== pritur.length || !crypto.timingSafeEqual(Buffer.from(s), Buffer.from(pritur))) return faqjaGabimi(res, 'Your session expired. Please try connecting again.');
       if (req.body.vendimi !== 'lejo') return ktheMeGabim(res, p, 'access_denied', 'The user cancelled the connection');
       await siguroTabelat();
+      // Admin: kur u lidh me Claude per here te pare; "nga Claude" = llogaria u krijua <= 1 ore para lidhjes se pare
+      pool.query(`UPDATE bizneset SET claude_burim = (claude_lidhur_at IS NULL AND created_at > now() - interval '1 hour') OR claude_burim,
+          claude_lidhur_at = COALESCE(claude_lidhur_at, now()) WHERE id=$1`, [bizId]).catch(e => console.error('claude burimi:', e.message));
       const kodi = rast(32);
       await pool.query(`INSERT INTO claude_oauth_kodet (kodi_hash, biznes_id, client_id, redirect_uri, code_challenge, scope, skadon)
           VALUES ($1,$2,$3,$4,$5,$6, now() + interval '5 minutes')`, [sha(kodi), bizId, p.client_id, p.redirect_uri, p.code_challenge, SCOPE]);
@@ -456,7 +461,7 @@ module.exports = function (app, pool) {
 
   async function analizo(domaini, ip) {
     await siguroTabelat();
-    const c = (await pool.query("SELECT * FROM claude_analizat WHERE domaini=$1 AND koha > now() - interval '30 days'", [domaini])).rows[0];
+    const c = (await pool.query("SELECT * FROM claude_analizat WHERE domaini=$1 AND koha > now() - interval '30 days' AND permbledhje IS NOT NULL", [domaini])).rows[0];
     if (c) return c;
     try {
       const d = (await pool.query('SELECT * FROM pxse_bizneset WHERE domaini=$1 LIMIT 1', [domaini])).rows[0];
@@ -465,7 +470,7 @@ module.exports = function (app, pool) {
     if (!lejoIP(ip)) throw new Error('Daily analysis limit reached. Please try again tomorrow.');
     let f;
     try { f = await merrPublik('https://' + domaini); } catch (e) { try { f = await merrPublik('http://' + domaini); } catch (e2) { throw new Error('The website could not be loaded (' + e.message + ').'); } }
-    const titulli = ((f.body.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || '').trim();
+    const titulli = pastroHtml(((f.body.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || '')).trim();
     const meta = ((f.body.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)/i) || [])[1] || '');
     const teksti = (titulli + '\n' + meta + '\n' + pastroHtml(f.body)).slice(0, 3500);
     if (teksti.trim().length < 40) throw new Error('The website has too little readable text to analyze.');
@@ -474,17 +479,19 @@ module.exports = function (app, pool) {
     if (key) {
       const r = await fetch('https://api.openai.com/v1/chat/completions', { method: 'POST', signal: AbortSignal.timeout(25000),
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-        body: JSON.stringify({ model: process.env.OPENAI_MODEL || 'gpt-4o-mini', response_format: { type: 'json_object' }, temperature: 0,
+        body: JSON.stringify({ model: process.env.OPENAI_MODEL || 'gpt-4o-mini', response_format: { type: 'json_object' },
           messages: [{ role: 'system', content: 'You classify businesses from their website text. Reply with JSON only.' },
             { role: 'user', content: 'Website text:\n' + teksti + '\n\nReturn JSON: {"name": short business or product name, "category": exactly one of ' + JSON.stringify(KATEGORITE) +
               ', "audience": one of "b2b","b2c","both", "summary": one plain sentence (max 25 words) saying what the business offers}' }] }) });
-      const d = await r.json();
+      const d = await r.json().catch(() => ({}));
+      if (d.error) console.error('claude analizo AI:', d.error.message);
       try {
         const j = JSON.parse(d.choices[0].message.content);
         a = { emri: String(j.name || a.emri).slice(0, 80), kategoria: KATEGORITE.includes(j.category) ? j.category : 'Other',
           lloji: ['b2b', 'b2c', 'both'].includes(j.audience) ? j.audience : null, permbledhje: String(j.summary || '').slice(0, 300) || null };
-      } catch (e) {}
+      } catch (e) { console.error('claude analizo: pergjigje e pavlefshme nga AI'); }
     }
+    if (!a.permbledhje) throw new Error('The website could not be analyzed right now. Please try again later.'); // mos ruaj rezultat te deshtuar
     await pool.query(`INSERT INTO claude_analizat (domaini, emri, kategoria, lloji, permbledhje, koha) VALUES ($1,$2,$3,$4,$5, now())
         ON CONFLICT (domaini) DO UPDATE SET emri=EXCLUDED.emri, kategoria=EXCLUDED.kategoria, lloji=EXCLUDED.lloji, permbledhje=EXCLUDED.permbledhje, koha=now()`,
       [domaini, a.emri, a.kategoria, a.lloji, a.permbledhje]);
