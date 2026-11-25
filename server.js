@@ -3761,7 +3761,10 @@ app.get('/api/admin/biznes/:id', iAdmin, async (req, res) => {
           JOIN marketing_dergimet d ON d.token = b.burimi_email_token WHERE b.id = $1`, [id]);
       if (bq.rows.length) burimi = bq.rows[0];
     } catch (e) {}
-    res.json({
+    // Lidhesi i Claude: kur u lidh dhe nese llogaria u krijua nga Claude (claude-connector.js)
+    let claude = null;
+    try { const cq = await pool.query('SELECT claude_lidhur_at, claude_burim FROM bizneset WHERE id=$1', [id]); if (cq.rows.length && cq.rows[0].claude_lidhur_at) claude = cq.rows[0]; } catch (e) {}
+    res.json({ claude,
       biznes: row, statistika, checklist, reklamat: reklamatListe.rows, burimi,
       logjika, eKetijPishina,
       snippetet: snippetetListe.rows,
