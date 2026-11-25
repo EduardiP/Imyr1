@@ -189,7 +189,7 @@ function faqe(o) {
     '</head><body>\n' +
     '<div class="nav"><div class="container row"><a class="brand" href="/">PhronexusAI</a><div class="links"><a class="hidem" href="/">Home</a><a href="/blog">Blog</a><a class="btn cta" href="/app">Try Free</a></div></div></div>\n' +
     o.trupi +
-    '\n<footer><div class="container"><div class="fbottom"><span>© ' + new Date().getUTCFullYear() + ' PhronexusAI. All rights reserved.</span><span><a href="/privacy" style="color:var(--mut)">Privacy</a> · <a href="/terms" style="color:var(--mut)">Terms</a> · <a href="/contact" style="color:var(--mut)">Contact</a></span></div></div></footer>\n</body></html>';
+    '\n<footer><div class="container"><div class="fbottom"><span>© ' + new Date().getUTCFullYear() + ' PhronexusAI. All rights reserved.</span><span><a href="/privacy" style="color:var(--mut)">Privacy</a> · <a href="/terms" style="color:var(--mut)">Terms</a> · <a href="/contact" style="color:var(--mut)">Contact</a> · <a href="/resources" style="color:var(--mut)">Resources</a></span></div></div></footer>\n</body></html>';
 }
 
 function renderListe(lista) {
@@ -234,6 +234,46 @@ function render404() {
   });
 }
 
+// ---------- Faqja /resources: liston te gjitha faqet publike + artikujt e blogut (qe asnje faqe te mos mbetet jetime) ----------
+const BURIMET = [
+  ['Guides', [
+    ['/free-advertising-for-saas', 'How SaaS and online businesses can advertise for free', 'Practical ways to get new customers without paying for ads.'],
+    ['/b2b-cross-promotion', 'B2B cross-promotion for websites and SaaS', 'How businesses that share an audience promote each other.'],
+    ['/co-marketing-network', 'Co-marketing network', 'Partner with complementary businesses, never with competitors.'],
+    ['/email-outreach', 'Free B2B email outreach to new businesses', 'Reach newly launched businesses that match your audience.']
+  ]],
+  ['Product', [
+    ['/how-it-works', 'How PhronexusAI works', 'Auction and Balance, step by step.'],
+    ['/ai-matching', 'AI matching', 'How partners are matched by audience fit.'],
+    ['/formate-ai', 'AI ad formats', 'Ad formats and automatic optimization.'],
+    ['/gjurmimi-analitika', 'Tracking and analytics', 'Impressions, clicks and results for every ad.'],
+    ['/ekipet-rolet', 'Teams and roles', 'Work on one account with your team.'],
+    ['/claude', 'PhronexusAI for Claude', 'Use PhronexusAI from Claude with the official connector.'],
+    ['/apps', 'Apps', 'Other AI tools by PhronexusAI.'],
+    ['/transcription', 'Audio and video transcription', 'Turn audio and video into text and SRT subtitles.']
+  ]],
+  ['Company', [
+    ['/about', 'About us', 'Who we are and why we built PhronexusAI.'],
+    ['/contact', 'Contact', 'Questions, support and partnerships.'],
+    ['/privacy', 'Privacy policy', ''],
+    ['/terms', 'Terms of service', ''],
+    ['/refund', 'Refund policy', '']
+  ]]
+];
+
+function renderBurimet(lista) {
+  const grup = (titulli, rreshtat) => '<h2>' + esc(titulli) + '</h2><ul>' + rreshtat.map(r =>
+    '<li><a href="' + esc(r[0]) + '">' + esc(r[1]) + '</a>' + (r[2] ? ' <span class="mut">— ' + esc(r[2]) + '</span>' : '') + '</li>').join('') + '</ul>';
+  const blogu = lista.length ? grup('Blog', lista.map(a => ['/blog/' + a.slug, a.titulli, a.pershkrimi])) : '';
+  return faqe({
+    titulli: 'Resources — PhronexusAI',
+    pershkrimi: 'Guides, product pages and articles about free advertising, cross-promotion and co-marketing for SaaS and online businesses.',
+    canonical: BAZA + '/resources',
+    trupi: '<article class="legal"><p class="eyebrow">Resources</p><h1>Resources</h1><p class="mut">Guides, product pages and articles about growing a business with cross-promotion, without paying for ads.</p>\n' +
+      grup(BURIMET[0][0], BURIMET[0][1]) + blogu + grup(BURIMET[1][0], BURIMET[1][1]) + grup(BURIMET[2][0], BURIMET[2][1]) + '</article>'
+  });
+}
+
 // ---------- Montimi ne Express ----------
 module.exports = function montoBlogun(app, opsione) {
   const o = opsione || {};
@@ -245,6 +285,7 @@ module.exports = function montoBlogun(app, opsione) {
     if (!lista.length) return res.sendFile(path.join(config.publicDir, 'blog.html'));
     res.type('html').send(renderListe(lista));
   });
+  app.get('/resources', (req, res) => { res.type('html').send(renderBurimet(publikuar())); });
   app.get('/blog/:slug', (req, res) => {
     const lista = publikuar();
     const a = lista.find(x => x.slug === req.params.slug);
@@ -254,4 +295,5 @@ module.exports = function montoBlogun(app, opsione) {
 };
 module.exports.publikuar = publikuar;
 module.exports.sitemapRreshta = sitemapRreshta;
+module.exports.renderBurimet = renderBurimet;
 module.exports._test = { esc, inline, markdownNeHtml, lexoSkedarin, renderArtikull, renderListe, render404, formatoData, rivendos(o) { cache = null; if (o && o.contentDir) config.contentDir = o.contentDir; if (o && o.publicDir) config.publicDir = o.publicDir; } };
