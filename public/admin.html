@@ -1531,7 +1531,8 @@ row2('Faqja', (b.website ? esc(b.website)+' <button onclick="zbuloPlatformen('+b
 row2('Plani', b.plani||'—')+
 row2('Tipi', b.tipi||'—')+
 row2('Regjistruar', dt(b.created_at))+
-row2('Burimi', r.burimi ? ('📧 Email — <b>'+esc(r.burimi.shabllon_emri||'shabllon')+'</b>'+(r.burimi.kategoria?' · '+esc(r.burimi.kategoria):'')+' · dërguar '+dt(r.burimi.derguar_at)+' · klikuar '+dt(r.burimi.klikuar_at)) : '<span class="mut">— (jo nga emaili, ose para matjes)</span>')+
+(r.claude ? row2('Claude', '🤖 '+(r.claude.claude_burim?'<b>U regjistrua nga Claude</b> · ':'')+'lidhur me Claude më '+dt(r.claude.claude_lidhur_at)) : '')+
+row2('Burimi', r.claude&&r.claude.claude_burim&&!r.burimi ? '🤖 <b>Claude (connector)</b>' : r.burimi ? ('📧 Email — <b>'+esc(r.burimi.shabllon_emri||'shabllon')+'</b>'+(r.burimi.kategoria?' · '+esc(r.burimi.kategoria):'')+' · dërguar '+dt(r.burimi.derguar_at)+' · klikuar '+dt(r.burimi.klikuar_at)) : '<span class="mut">— (jo nga emaili, ose para matjes)</span>')+
 row2('Çelësi', b.celes||'—')+
 '</div>'+
 '<div class="sect"><h3>Analiza (AI)</h3>'+
