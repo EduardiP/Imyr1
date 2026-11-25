@@ -1438,6 +1438,7 @@ if(!r.eKetijPishina){
     row2('Email', esc(b.email||'—'))+row2('Faqja', esc(b.website||'—'))+row2('Plani', esc(b.plani||'—'))+
     row2('Regjistruar', dt(b.created_at))+
     (r.burimi ? row2('Burimi', '📧 Email — <b>'+esc(r.burimi.shabllon_emri||'shabllon')+'</b>') : '')+
+    (r.claude ? row2('Claude', '🤖 '+(r.claude.claude_burim?'<b>U regjistrua nga Claude</b> · ':'')+'lidhur me Claude më '+dt(r.claude.claude_lidhur_at)) : '')+
     '</div>'+bizZonaRrezik(b);
   aktNgarko(id);
   return;
