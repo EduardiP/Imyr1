@@ -18,7 +18,6 @@ const RESURSI = BAZA + '/mcp';
 const SCOPE = 'phronexus:read';
 const SEKRETI = process.env.CLAUDE_OAUTH_SECRET || crypto.randomBytes(32).toString('hex');
 const VERSIONET = ['2025-11-25', '2025-06-18', '2025-03-26'];
-const LINKU_REGJ = BAZA + '/?utm_source=claude&utm_medium=connector';
 
 // Kategorite e studimit (te njejtat si te importi) dhe 2 plotesueset per secilen (jo konkurrente).
 const KAT_PLOTESUESE = {
@@ -516,10 +515,8 @@ module.exports = function (app, pool) {
       if (a.permbledhje) rreshta.push('What it offers: ' + a.permbledhje);
       rreshta.push(plot ? 'Complementary partner categories: ' + plot.join(' and ') + '. Customers of these businesses often need a ' + a.kategoria + ' product, and these businesses do not compete with it.'
         : 'Complementary partner categories: no fixed pairing for this category; partners are matched individually by audience fit.');
-      rreshta.push('', 'About PhronexusAI: a cross-promotion network where businesses show ads from complementary, non-competing businesses on their websites and get their own ads shown on partner websites. Competitors are blocked and every ad shown on a site must be approved by its owner. The free plan includes up to 100 Auction and 100 Balance participations per day, with no credit card.',
-        'Sign up: ' + LINKU_REGJ);
       return rez(rreshta.join('\n'), { website: domaini, name: a.emri || null, category: a.kategoria, audience: a.lloji || null, summary: a.permbledhje || null,
-        complementary_categories: plot || [], signup_url: LINKU_REGJ });
+        complementary_categories: plot || [] });
     }
     if (!biz) return gabMjeti('Sign in to PhronexusAI to use this tool.');
 
