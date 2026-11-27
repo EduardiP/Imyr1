@@ -158,8 +158,10 @@ const $ = id => document.getElementById(id);
 const SECTIONS = [
 { k:'bizneset', l:'Bizneset' },
 { k:'b1', l:'Kombinimet AI' }, { k:'b2', l:'Njoftime' },
-{ k:'b4', l:'Përzgjedhjet' }, { k:'kufijte', l:'Kufijtë & faqja publike' }, { k:'mkt', l:'Marketingu' }, { k:'pxse', l:'Shërbimet falas' }
+{ k:'b4', l:'Përzgjedhjet' }, { k:'kufijte', l:'Kufijtë & faqja publike' }, { k:'mkt', l:'Marketingu' }, { k:'pxse', l:'Shërbimet falas' }, { k:'seo', l:'SEO' }
 ];
+const SEO_SUB = [ { k:'reddit', l:'Reddit (Google Alerts)' } ];
+let curSeoSub = 'reddit';
 const MKT_SUB = [
 { k:'dergimet', l:'Dërgimet' }, { k:'analitika', l:'Analitika' }, { k:'emailet', l:'Email-et' }, { k:'terejat', l:'Biznese të reja' }, { k:'backlinket', l:'Backlinke (eksperiment)' }, { k:'lista', l:'Lista e platformave' }
 ];
@@ -219,6 +221,7 @@ if(curSec==='b4'){ renderPerzgjedhjet(c); return; }
 if(curSec==='kufijte'){ renderKufijte(c); return; }
 if(curSec==='mkt'){ renderMarketingu(c); return; }
 if(curSec==='pxse'){ if(window.pxseRenderAdmin) pxseRenderAdmin(c); return; } // /js/pxse-admin.js
+if(curSec==='seo'){ renderSeo(c); return; }
 const lbl=(SECTIONS.find(s=>s.k===curSec)||{}).l||'';
 c.innerHTML='<div class="wrap"><h2 class="h">'+lbl+'</h2><p class="small" style="margin-top:8px;">Së shpejti.</p></div>';
 }
@@ -1684,6 +1687,103 @@ var mktKategoriaAkt = null;
 var mktKontaktetZgjedhur = new Set();
 var mktShabllonId = null;
 var mktDitet = [];
+
+// ================= SEO (seo-reddit.js): menu majtas + permbajtja djathtas =================
+let _seo = { min:30, statusi:'i ri', faqe:0 };
+function renderSeo(c){
+c.innerHTML='<div class="appwrap"><aside class="sidebar"><div id="seoNav"></div></aside><main class="main" id="seoMain"></main></div>';
+renderSeoNav(); renderSeoMain();
+}
+function renderSeoNav(){
+const n=$('seoNav'); n.innerHTML='';
+SEO_SUB.forEach(s=>{ const b=document.createElement('button'); b.className='subnav'+(s.k===curSeoSub?' active':''); b.textContent=s.l;
+b.onclick=()=>{ curSeoSub=s.k; renderSeoNav(); renderSeoMain(); }; n.appendChild(b); });
+}
+function renderSeoMain(){ const m=$('seoMain'); if(curSeoSub==='reddit'){ renderSeoReddit(m); return; } }
+function seoData(t){ if(!t) return '—'; const d=new Date(t); return isNaN(d)?'—':d.toLocaleString('sq-AL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function seoNgjyra(p){ return p>=70?'#3fb950':(p>=30?'#d29922':'#8b949e'); }
+async function renderSeoReddit(m){
+m.innerHTML='<div class="wrap" style="max-width:980px;"><h2 class="h">Reddit (Google Alerts)</h2>'+
+'<p class="small" style="margin:2px 0 14px;">Postime nga Reddit të gjetura nga alertet te variabla <b>SEO_ALERTET_FEEDS</b>. AI i vlerëson 0–100 (interesi i autorit + sa do ta gjejnë të tjerët në Google/AI) dhe për ato me 30+ shkruan një përgjigje. Asgjë nuk postohet automatikisht: kopjoje, ndryshoje nëse do, dhe postoje vetë.</p>'+
+'<div id="seoKoka"><p class="small">Po ngarkoj…</p></div><div id="seoLista"></div></div>';
+let r;
+try{ r=await(await fetch('/api/admin/seo/reddit?min='+_seo.min+'&statusi='+encodeURIComponent(_seo.statusi)+'&faqe='+_seo.faqe)).json(); }
+catch(e){ $('seoKoka').innerHTML='<p class="small">Gabim gjatë ngarkimit.</p>'; return; }
+if(!r||!r.ok){ $('seoKoka').innerHTML='<p class="small">'+esc((r&&r.error)||'Gabim.')+'</p>'; return; }
+const p=r.permbledhje||{}, f=r.feedet||[], gab=f.filter(x=>x.gabimi);
+const fund=f.reduce((a,x)=>(!a||(x.lexuar_at&&x.lexuar_at>a))?x.lexuar_at:a,null);
+const btnF=(lbl,k,v)=>'<button class="njFbtn'+(_seo[k]===v?' active':'')+'" onclick="_seo.'+k+'='+JSON.stringify(v).replace(/"/g,"'")+';_seo.faqe=0;renderSeoReddit($(\'seoMain\'))">'+lbl+'</button>';
+let h='<div class="stats" style="margin-bottom:12px;">'+
+'<div class="stat"><div class="v">'+(p.per_pergjigje||0)+'</div><div class="l">Për t\'u përgjigjur (30+, të reja)</div></div>'+
+'<div class="stat"><div class="v">'+(p.sot||0)+'</div><div class="l">Të ardhura në 24 orët e fundit</div></div>'+
+'<div class="stat"><div class="v">'+(p.komentova||0)+'</div><div class="l">Komentova</div></div>'+
+'<div class="stat"><div class="v">'+f.length+'</div><div class="l">Alerte aktive</div></div></div>'+
+'<p class="small mut" style="margin:0 0 8px;">Leximi i fundit: '+seoData(fund)+' · Pa vlerësim ende: '+(p.pa_vleresim||0)+' · Kufiri AI në ditë: '+r.kufi_ai+
+(r.ka_celes?'':' · <span style="color:#e5484d">Mungon OPENAI_API_KEY</span>')+'</p>';
+if(!f.length) h+='<div class="small" style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px;">Nuk ka asnjë alert të lidhur. Te Railway shto variablën <b>SEO_ALERTET_FEEDS</b> me adresat RSS të alerteve (të ndara me presje ose rresht të ri), pastaj bëj deploy.</div>';
+if((r.gabime_variablash||[]).length) h+='<div class="small" style="color:#e5484d;margin-bottom:8px;">Adresa të pavlefshme te variabla: '+esc(r.gabime_variablash.join(' , '))+'</div>';
+if(gab.length) h+='<details style="margin-bottom:10px;"><summary class="small" style="color:#d29922;cursor:pointer;">'+gab.length+' alerte me gabim leximi</summary>'+gab.map(x=>'<div class="small mut" style="margin:4px 0 0 12px;">'+esc(x.titulli||x.kodi)+' — '+esc(x.gabimi)+'</div>').join('')+'</details>';
+h+='<div class="njToolbar"><div class="njFiltra">'+btnF('30+','min',30)+btnF('70+','min',70)+btnF('Të gjitha','min',0)+'</div>'+
+'<div class="njFiltra">'+btnF('Të reja','statusi','i ri')+btnF('Komentova','statusi','komentova')+btnF('E lashë','statusi','e lashe')+btnF('Çdo status','statusi','')+'</div>'+
+'<button class="btn ghost" id="seoLexoBtn" onclick="seoLexo()">Lexo alertet tani</button> <span class="small" id="seoLexoMsg"></span></div>';
+$('seoKoka').innerHTML=h;
+const rr=r.rreshtat||[];
+if(!rr.length){ $('seoLista').innerHTML='<p class="small mut" style="margin-top:10px;">Asnjë postim për këtë filtër.</p>'; return; }
+$('seoLista').innerHTML=rr.map(x=>seoKarta(x)).join('')+
+'<div style="display:flex;gap:10px;align-items:center;margin:14px 0;">'+
+(_seo.faqe>0?'<button class="btn ghost" onclick="_seo.faqe--;renderSeoReddit($(\'seoMain\'))">← Mbrapa</button>':'')+
+'<span class="small mut">'+(_seo.faqe*50+1)+'–'+(_seo.faqe*50+rr.length)+' nga '+r.numri+'</span>'+
+((_seo.faqe+1)*50<r.numri?'<button class="btn ghost" onclick="_seo.faqe++;renderSeoReddit($(\'seoMain\'))">Më tej →</button>':'')+'</div>';
+}
+function seoKarta(x){
+const st=x.statusi||'i ri';
+const bS=(lbl,v)=>'<button class="njFbtn'+(st===v?' active':'')+'" onclick="seoStatusi('+x.id+',\''+v+'\')">'+lbl+'</button>';
+return '<div id="seoK'+x.id+'" style="border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;background:#0e1116;">'+
+'<div style="display:flex;gap:12px;align-items:flex-start;">'+
+'<div style="flex:0 0 auto;min-width:46px;text-align:center;padding:6px 8px;border-radius:8px;border:1px solid '+seoNgjyra(x.pike)+';color:'+seoNgjyra(x.pike)+';font-weight:700;font-size:18px;">'+(x.pike==null?'—':x.pike)+'</div>'+
+'<div style="min-width:0;flex:1;">'+
+'<a href="'+esc(x.url)+'" target="_blank" rel="noopener" style="font-weight:600;font-size:15px;color:var(--txt);text-decoration:none;">'+esc(x.titulli||x.url)+'</a>'+
+'<div class="small mut" style="margin-top:3px;">r/'+esc(x.nenreddit||'')+' · publikuar '+seoData(x.publikuar)+' · alerti: '+esc(x.alerti||'—')+'</div>'+
+(x.teksti?'<div class="small" style="margin-top:8px;line-height:1.5;">'+esc(x.teksti)+'</div>':'')+
+(x.arsyeja?'<div class="small" style="margin-top:8px;color:#7aa2ff;">AI: '+esc(x.arsyeja)+'</div>':'')+
+'</div></div>'+
+(x.pergjigja?'<div style="margin-top:10px;"><textarea id="seoP'+x.id+'" style="width:100%;box-sizing:border-box;min-height:120px;padding:10px;background:#0a0d12;border:1px solid var(--line);border-radius:8px;color:var(--txt);font-family:inherit;font-size:13px;line-height:1.5;">'+esc(x.pergjigja)+'</textarea></div>':'')+
+'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;">'+
+(x.pergjigja?'<button class="btn" onclick="seoKopjo('+x.id+')">Kopjo përgjigjen</button>':'')+
+'<a class="btn ghost" href="'+esc(x.url)+'" target="_blank" rel="noopener" style="text-decoration:none;">Hap në Reddit</a>'+
+'<button class="btn ghost" onclick="seoRigjenero('+x.id+')">'+(x.pergjigja?'Rigjenero përgjigjen':'Gjenero përgjigje')+'</button>'+
+'<span style="flex:1"></span>'+bS('E re','i ri')+bS('Komentova','komentova')+bS('E lashë','e lashe')+
+'<span class="small" id="seoM'+x.id+'"></span></div></div>';
+}
+async function seoLexo(){
+const b=$('seoLexoBtn'), m=$('seoLexoMsg'); b.disabled=true; m.style.color=''; m.textContent='Po lexoj alertet dhe po vlerësoj… (mund të zgjasë 1–2 minuta)';
+try{ const r=await(await fetch('/api/admin/seo/reddit/lexo',{method:'POST'})).json();
+if(!r.ok){ m.style.color='#e5484d'; m.textContent=r.error||'Gabim.'; b.disabled=false; return; }
+if(r.duke){ m.textContent='Një lexim është duke u bërë. Provo pas pak.'; b.disabled=false; return; }
+m.style.color='#3fb950'; m.textContent='✓ '+r.feedet+' alerte u lexuan · '+r.te_reja+' postime të reja · '+r.vleresuar+' u vlerësuan';
+setTimeout(()=>renderSeoReddit($('seoMain')),1500);
+}catch(e){ m.style.color='#e5484d'; m.textContent='Gabim: '+e.message; }
+b.disabled=false;
+}
+async function seoStatusi(id,v){
+const m=$('seoM'+id); if(m){ m.style.color=''; m.textContent='…'; }
+try{ const r=await(await fetch('/api/admin/seo/reddit/'+id+'/statusi',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({statusi:v})})).json();
+if(!r.ok){ if(m){ m.style.color='#e5484d'; m.textContent=r.error||'Gabim.'; } return; }
+renderSeoReddit($('seoMain'));
+}catch(e){ if(m){ m.style.color='#e5484d'; m.textContent='Gabim: '+e.message; } }
+}
+async function seoKopjo(id){
+const t=$('seoP'+id), m=$('seoM'+id); if(!t) return;
+try{ await navigator.clipboard.writeText(t.value); }catch(e){ t.select(); document.execCommand('copy'); }
+if(m){ m.style.color='#3fb950'; m.textContent='✓ U kopjua'; setTimeout(()=>{ if(m) m.textContent=''; },2500); }
+}
+async function seoRigjenero(id){
+const m=$('seoM'+id); if(m){ m.style.color=''; m.textContent='Po shkruaj…'; }
+try{ const r=await(await fetch('/api/admin/seo/reddit/'+id+'/rigjenero',{method:'POST'})).json();
+if(!r.ok){ if(m){ m.style.color='#e5484d'; m.textContent=r.error||r.gabimi_ai||'Gabim.'; } return; }
+renderSeoReddit($('seoMain'));
+}catch(e){ if(m){ m.style.color='#e5484d'; m.textContent='Gabim: '+e.message; } }
+}
 
 function renderMarketingu(c){
 c.innerHTML=
