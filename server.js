@@ -3182,6 +3182,7 @@ require('./pxse-prova')(app, pool, iLoguar);
 require('./pxse-dergimi')(app, pool, iAdmin);
 require('./pxse-sinjalet')(app, pool);
 require('./pxse-alertet')(app, pool, iAdmin);
+require('./seo-reddit')(app, pool, iAdmin); // Admin > SEO > Reddit (Google Alerts te SEO_ALERTET_FEEDS), sinjale per vete
 require('./pxse-admin-analitika')(app, pool, iAdmin);
 require('./pxse-llogaria')(app, pool, iLoguar); // Find Customers pas login (pas pxse-sinjalet)
 
