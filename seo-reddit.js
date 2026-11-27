@@ -9,8 +9,9 @@
 //  2. Cdo 30 minuta (dhe 40 sekonda pas nisjes) lexohet cdo feed. Ruhen VETEM lidhjet nga reddit.com (temat /comments/).
 //  3. AI (gpt-5-nano) i jep cdo postimi te ri nje vleresim 0-100: sa ia vlen t'i pergjigjesh, sipas interesit te autorit
 //     dhe interesit te atyre qe do ta gjejne temen ne Google / AI me vone. Arsyeja ne shqip (e sheh vetem admin-i).
-//  4. Vetem per postimet me vleresim >= SEO_PRAGU (30) AI shkruan nje pergjigje te natyrshme ne anglisht, qe permend PhronexusAI
-//     dhe linkun me UTM te Reddit-it. Asgje nuk postohet automatikisht: pergjigjen e kopjon dhe e poston Eduardi vete.
+//     Vleresimi = 65% interesi i autorit + 35% vlera ne kerkim; nese autori s'ka biznes/SaaS (muzike, video personale, konsumator) => max 15.
+//  4. Pergjigjen (anglisht) AI e shkruan VETEM kur Eduardi klikon "Gjenero pergjigje" ne admin (qe te mos harxhohet AI kot).
+//     Asgje nuk postohet automatikisht: pergjigjen e kopjon dhe e poston Eduardi vete.
 //  5. Kufiri ditor i vleresimeve AI: variabla SEO_AI_KUFI (paracaktim 200). Rreshtat me te vjeter se 90 dite fshihen.
 //  Admin: GET /api/admin/seo/reddit, POST /api/admin/seo/reddit/lexo, POST /api/admin/seo/reddit/:id/statusi,
 //         POST /api/admin/seo/reddit/:id/rigjenero.
@@ -46,8 +47,10 @@ function seoEtiketa(xml, emri) {
   return m ? m[1] : '';
 }
 // Google e jep tekstin si HTML te koduar: dekodohet dy here dhe hiqen etiketat e theksimit.
-const seoTekst = s => pxseTekstNgaHtml(pxseTekstNgaHtml(String(s || '').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1'))
-  .replace(/<\/?(b|i|em|strong)>/gi, '')).replace(/\s+([?.,!:;])/g, '$1').replace(/\s+/g, ' ').trim();
+const SEO_ENTITETE = { middot: '·', hellip: '…', rsquo: "'", lsquo: "'", rdquo: '"', ldquo: '"', ndash: '–', mdash: '—', bull: '•', trade: '™', copy: '©', reg: '®', euro: '€' };
+const seoEntitete = s => String(s || '').replace(/&([a-z]+);/gi, (m, n) => SEO_ENTITETE[n.toLowerCase()] || m);
+const seoTekst = s => seoEntitete(pxseTekstNgaHtml(pxseTekstNgaHtml(String(s || '').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1'))
+  .replace(/<\/?(b|i|em|strong)>/gi, '')).replace(/\s+([?.,!:;])/g, '$1').replace(/\s+/g, ' ').trim());
 function seoLidhjaEVertete(href) {
   const h = String(href || '').replace(/&amp;/g, '&');
   try {
@@ -78,7 +81,7 @@ function seoLexoAtom(xml) {
     if (!tema) continue;
     const pub = Date.parse(seoEtiketa(e, 'published') || seoEtiketa(e, 'updated'));
     hyrjet.push(Object.assign(tema, {
-      titulli: seoTekst(seoEtiketa(e, 'title')).replace(/\s*[-:|]\s*r\/[^\s]+\s*$/i, '').replace(/\s*:\s*reddit\s*$/i, '').slice(0, 300),
+      titulli: seoTekst(seoEtiketa(e, 'title')).replace(/\s*[-–|:]\s*reddit\s*$/i, '').replace(/\s*[-–|:]\s*r\/[^\s]+\s*$/i, '').slice(0, 300),
       teksti: seoTekst(seoEtiketa(e, 'content')).slice(0, 1500),
       publikuar: Number.isFinite(pub) ? new Date(pub).toISOString() : null
     }));
@@ -114,25 +117,38 @@ const SEO_PRODUKTI = 'PhronexusAI (phronexusai.com) is a free cross-promotion ne
   'so they reach new customers without paying for ads. AI matches partners by audience fit, competitors are never matched, and every ad must be approved by the site owner. ' +
   'Free plan with no credit card; setup is one script tag (or a WordPress plugin).';
 
-function seoPromptVleresimi(p, meDetyrimPergjigjeje) {
-  return 'You help the founder of PhronexusAI decide which Reddit posts are worth a helpful reply.\n' +
+function seoPromptVleresimi(p) {
+  return 'You help the founder of PhronexusAI decide which Reddit posts are worth a reply.\n' +
     'PRODUCT: ' + SEO_PRODUKTI + '\n\n' +
-    'REDDIT POST (from a Google Alert):\n' +
+    'REDDIT POST (title and snippet from a Google Alert; the snippet can be cut or mixed with other text):\n' +
     'Subreddit: r/' + p.nenreddit + '\nTitle: ' + (p.titulli || '') + '\nSnippet: ' + (p.teksti || '') + '\n\n' +
-    'Give a score from 0 to 100 for how worth it is to reply, combining two things:\n' +
-    '1) The poster\'s interest: how much the poster needs what PhronexusAI offers (looking for ways to promote a SaaS or online business, ' +
-    'frustrated with expensive paid ads, looking for partners / cross-promotion / co-marketing, launched but has no users).\n' +
-    '2) The search value: how likely other people are to find this thread later on Google or in AI answers when they search for the same problem ' +
-    '(a general, lasting question that many founders ask scores high; a very personal or one-off situation, news, hiring, selling something, or self-promotion scores low).\n' +
-    'Score low (under 20) if the post is unrelated, B2C/consumer only, a job post, a "for sale" post, spam, or a place where a product mention would clearly be unwelcome.\n\n' +
-    'Return JSON: {"pike": <integer 0-100>, "arsyeja": "<one short sentence IN ALBANIAN explaining the score>"' +
-    (meDetyrimPergjigjeje ? ', "pergjigja": "<the reply, see rules>"' : ', "pergjigja": "<ONLY if pike >= ' + SEO_PRAGU + ', otherwise an empty string>"') + '}\n\n' +
-    'RULES FOR THE REPLY (English, written as a Reddit comment by the founder):\n' +
-    '- Sound like a real person: natural, warm, plain words, short sentences, no marketing language, no hype, no emojis, no hashtags, no bullet lists unless very short.\n' +
-    '- First actually help with the poster\'s problem (1-3 concrete, practical tips that work even without PhronexusAI).\n' +
-    '- Then mention PhronexusAI briefly and honestly as one option, saying you are building it (for example "I\'m building something for this..."), ' +
-    'explain in one sentence how it fits their case, and add this exact link once: ' + SEO_LINKU + '\n' +
-    '- 60 to 130 words. Do not invent numbers, results, customers or personal stories. Do not start with "Great question".\n';
+    'Answer three things:\n' +
+    '1) "biznes": true ONLY if the poster runs or is building a business that sells to other businesses or sells online software/services ' +
+    '(SaaS, startup, app, B2B service, agency, online business looking for customers). false for musicians, video/content creators promoting personal content, ' +
+    'consumers, students, job seekers, people asking about a physical shop, or posts where the poster\'s business is unclear.\n' +
+    '2) "autori" 0-100: how much THIS poster needs what PhronexusAI offers. Guide: 85-100 explicitly looks for cross-promotion, partners, co-marketing or ' +
+    'free alternatives to paid ads for a SaaS/B2B; 65-84 asks how to get customers/users or promote their SaaS/startup with little budget; ' +
+    '40-64 has a SaaS/startup and a distribution problem but asks about something else (landing page, pricing, feedback); 15-39 loosely related; 0-14 unrelated.\n' +
+    '3) "kerkimi" 0-100: how likely many other founders will find this thread later on Google or in AI answers when searching the same problem ' +
+    '(a general, lasting question with a clear title = high; very personal, one-off, news, or unclear title = low).\n' +
+    'Return JSON: {"biznes": true|false, "autori": <int>, "kerkimi": <int>, "arsyeja": "<one short, concrete sentence IN ALBANIAN: who the poster is and what they ask, e.g. \\"Themelues SaaS që kërkon klientët e parë pa buxhet.\\">"}';
+}
+
+function seoPromptPergjigja(p) {
+  return 'Write a Reddit comment for the founder of PhronexusAI, replying to the post below.\n' +
+    'PRODUCT: ' + SEO_PRODUKTI + '\n\n' +
+    'REDDIT POST:\nSubreddit: r/' + p.nenreddit + '\nTitle: ' + (p.titulli || '') + '\nSnippet: ' + (p.teksti || '') + '\n\n' +
+    'RULES:\n' +
+    '- Write ONLY in English, whatever the language of the post.\n' +
+    '- Sound like a real founder typing a quick, friendly comment: plain words, short sentences, contractions, no marketing language, no hype, ' +
+    'no emojis, no hashtags, no numbered lists, no bold. Do not start with "Great question", "Nice idea", "Love this" or similar.\n' +
+    '- Reply to what THIS post is actually about. Give 1-2 concrete, practical tips that help even without PhronexusAI.\n' +
+    '- Mention PhronexusAI only if it really fits the poster (they run a SaaS/online business and want customers, promotion, partners or cheaper ' +
+    'alternatives to ads). If it fits, add one honest sentence like "Disclosure: I\'m building PhronexusAI, ..." explaining how it fits their case, ' +
+    'and include this exact link once: ' + SEO_LINKU + '\n' +
+    '- If it does not fit, do not mention PhronexusAI and do not add any link.\n' +
+    '- 50 to 110 words. Do not invent numbers, results, customers or personal stories.\n' +
+    'Return JSON: {"pergjigja": "<the comment>"}';
 }
 
 module.exports = function (app, pool, iAdmin) {
@@ -165,6 +181,9 @@ module.exports = function (app, pool, iAdmin) {
       statusi_at TIMESTAMPTZ
     )`);
     await pool.query('CREATE INDEX IF NOT EXISTS seo_reddit_sinjalet_pike ON seo_reddit_sinjalet (pike DESC, marre_at DESC)');
+    await pool.query('ALTER TABLE seo_reddit_sinjalet ADD COLUMN IF NOT EXISTS versioni INT, ADD COLUMN IF NOT EXISTS pike_autori INT, ADD COLUMN IF NOT EXISTS pike_kerkimi INT, ADD COLUMN IF NOT EXISTS biznes BOOLEAN');
+    // Rreshtat e vleresuar me menyren e vjeter (para versionit 2) rivleresohen nje here; pergjigjet e vjetra fshihen (disa dolen ne shqip).
+    await pool.query(`UPDATE seo_reddit_sinjalet SET pike=NULL, arsyeja=NULL, pergjigja=NULL, gabimi_ai=NULL WHERE versioni IS NULL AND statusi='i ri'`);
     // Feed-et nga variablat: te rinjte shtohen, ata qe s'jane me ne variabla caktivizohen (rreshtat e tyre mbeten)
     const { feedet, gabime } = seoFeedetNgaVariablat();
     if (gabime.length) console.error('seo-reddit: adresa te pavlefshme te SEO_ALERTET_FEEDS: ' + gabime.join(' , '));
@@ -196,20 +215,30 @@ module.exports = function (app, pool, iAdmin) {
     }
   }
 
-  // Vleresimi i nje postimi (dhe pergjigja nese kalon pragun). meDetyrim = rigjenerim nga admin-i: pergjigja shkruhet gjithmone.
-  async function seoVlereso(p, meDetyrim) {
+  // Vleresimi i nje postimi (pa pergjigje). Pikët: 65% autori + 35% kerkimi; pa biznes => max 15.
+  async function seoVlereso(p) {
     try {
-      const x = await seoPyetAI(seoPromptVleresimi(p, meDetyrim));
-      let pike = parseInt(x.pike, 10); if (!Number.isFinite(pike)) pike = 0; pike = Math.max(0, Math.min(100, pike));
-      const pergjigja = (meDetyrim || pike >= SEO_PRAGU) ? String(x.pergjigja || '').trim().slice(0, 2000) : '';
-      await pool.query('UPDATE seo_reddit_sinjalet SET pike=$2, arsyeja=$3, pergjigja=$4, vleresuar_at=now(), gabimi_ai=NULL WHERE id=$1',
-        [p.id, pike, String(x.arsyeja || '').slice(0, 400), pergjigja || null]);
+      const x = await seoPyetAI(seoPromptVleresimi(p));
+      const nr = v => { const n = parseInt(v, 10); return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 0; };
+      const autori = nr(x.autori), kerkimi = nr(x.kerkimi), biznes = x.biznes === true || x.biznes === 'true';
+      let pike = Math.round(0.65 * autori + 0.35 * kerkimi);
+      if (!biznes) pike = Math.min(pike, 15);
+      await pool.query(`UPDATE seo_reddit_sinjalet SET pike=$2, pike_autori=$3, pike_kerkimi=$4, biznes=$5, arsyeja=$6, vleresuar_at=now(), gabimi_ai=NULL, versioni=2 WHERE id=$1`,
+        [p.id, pike, autori, kerkimi, biznes, String(x.arsyeja || '').slice(0, 400)]);
       return true;
     } catch (e) {
       await pool.query('UPDATE seo_reddit_sinjalet SET gabimi_ai=$2 WHERE id=$1', [p.id, String(e.message || e).slice(0, 300)]).catch(() => {});
       console.error('seo-reddit AI:', e.message);
       return false;
     }
+  }
+  // Pergjigja: vetem kur e kerkon admin-i me buton.
+  async function seoShkruajPergjigjen(p) {
+    const x = await seoPyetAI(seoPromptPergjigja(p));
+    const t = String(x.pergjigja || '').trim().slice(0, 2000);
+    if (!t) throw new Error('AI nuk ktheu përgjigje');
+    await pool.query('UPDATE seo_reddit_sinjalet SET pergjigja=$2 WHERE id=$1', [p.id, t]);
+    return t;
   }
   async function seoVleresoTeRejat() {
     const sot = await pool.query(`SELECT count(*)::int AS n FROM seo_reddit_sinjalet
@@ -219,7 +248,7 @@ module.exports = function (app, pool, iAdmin) {
     const lista = (await pool.query(`SELECT id, nenreddit, titulli, teksti FROM seo_reddit_sinjalet
       WHERE pike IS NULL AND (gabimi_ai IS NULL OR marre_at > now() - interval '2 days') ORDER BY marre_at LIMIT $1`, [Math.min(mbetur, 60)])).rows;
     let n = 0;
-    for (const p of lista) { if (await seoVlereso(p, false)) n++; }
+    for (const p of lista) { if (await seoVlereso(p)) n++; }
     return n;
   }
 
@@ -258,7 +287,7 @@ module.exports = function (app, pool, iAdmin) {
       if (statusi) { vlerat.push(statusi); kushte.push('statusi = $' + vlerat.length); }
       const ku = 'WHERE ' + kushte.join(' AND ');
       const [rreshtat, numri, feedet, permbledhje] = await Promise.all([
-        pool.query(`SELECT id, url, nenreddit, titulli, teksti, alerti, publikuar, marre_at, pike, arsyeja, pergjigja, statusi
+        pool.query(`SELECT id, url, nenreddit, titulli, teksti, alerti, publikuar, marre_at, pike, pike_autori, pike_kerkimi, biznes, arsyeja, pergjigja, statusi
           FROM seo_reddit_sinjalet ${ku} ORDER BY pike DESC, marre_at DESC LIMIT 50 OFFSET ${faqe * 50}`, vlerat),
         pool.query(`SELECT count(*)::int AS n FROM seo_reddit_sinjalet ${ku}`, vlerat),
         pool.query('SELECT kodi, titulli, aktiv, lexuar_at, gabimi FROM seo_reddit_feedet WHERE aktiv ORDER BY titulli NULLS LAST'),
@@ -288,16 +317,16 @@ module.exports = function (app, pool, iAdmin) {
       res.json({ ok: q.rowCount > 0 });
     } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
   });
+  // Gjenero / rigjenero pergjigjen (vetem me buton). Nuk e ndryshon vleresimin.
   app.post('/api/admin/seo/reddit/:id/rigjenero', iAdmin, async (req, res) => {
     try {
       const q = await pool.query('SELECT id, nenreddit, titulli, teksti FROM seo_reddit_sinjalet WHERE id=$1', [parseInt(req.params.id, 10) || 0]);
       if (!q.rows.length) return res.status(404).json({ ok: false, error: 'Nuk u gjet.' });
       if (!seoCelesi()) return res.status(500).json({ ok: false, error: 'Mungon OPENAI_API_KEY.' });
-      const ok = await seoVlereso(q.rows[0], true);
-      const r = await pool.query('SELECT id, pike, arsyeja, pergjigja, gabimi_ai FROM seo_reddit_sinjalet WHERE id=$1', [q.rows[0].id]);
-      res.json(Object.assign({ ok }, r.rows[0]));
+      const pergjigja = await seoShkruajPergjigjen(q.rows[0]);
+      res.json({ ok: true, id: q.rows[0].id, pergjigja });
     } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
   });
 };
 
-module.exports._test = { seoLexoAtom, seoTemaReddit, seoFeedetNgaVariablat, seoPromptVleresimi };
+module.exports._test = { seoLexoAtom, seoTemaReddit, seoFeedetNgaVariablat, seoPromptVleresimi, seoPromptPergjigja };
