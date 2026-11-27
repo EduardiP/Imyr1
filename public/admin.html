@@ -1704,7 +1704,7 @@ function seoData(t){ if(!t) return '—'; const d=new Date(t); return isNaN(d)?'
 function seoNgjyra(p){ return p>=70?'#3fb950':(p>=30?'#d29922':'#8b949e'); }
 async function renderSeoReddit(m){
 m.innerHTML='<div class="wrap" style="max-width:980px;"><h2 class="h">Reddit (Google Alerts)</h2>'+
-'<p class="small" style="margin:2px 0 14px;">Postime nga Reddit të gjetura nga alertet te variabla <b>SEO_ALERTET_FEEDS</b>. AI i vlerëson 0–100 (interesi i autorit + sa do ta gjejnë të tjerët në Google/AI) dhe për ato me 30+ shkruan një përgjigje. Asgjë nuk postohet automatikisht: kopjoje, ndryshoje nëse do, dhe postoje vetë.</p>'+
+'<p class="small" style="margin:2px 0 14px;">Postime nga Reddit të gjetura nga alertet te variabla <b>SEO_ALERTET_FEEDS</b>. AI i vlerëson 0–100 (65% interesi i autorit + 35% sa do ta gjejnë të tjerët në Google/AI; pa biznes ose SaaS, maksimumi 15). Përgjigjen e shkruan vetëm kur klikon <b>Gjenero përgjigje</b>. Asgjë nuk postohet automatikisht.</p>'+
 '<div id="seoKoka"><p class="small">Po ngarkoj…</p></div><div id="seoLista"></div></div>';
 let r;
 try{ r=await(await fetch('/api/admin/seo/reddit?min='+_seo.min+'&statusi='+encodeURIComponent(_seo.statusi)+'&faqe='+_seo.faqe)).json(); }
@@ -1745,7 +1745,7 @@ return '<div id="seoK'+x.id+'" style="border:1px solid var(--line);border-radius
 '<a href="'+esc(x.url)+'" target="_blank" rel="noopener" style="font-weight:600;font-size:15px;color:var(--txt);text-decoration:none;">'+esc(x.titulli||x.url)+'</a>'+
 '<div class="small mut" style="margin-top:3px;">r/'+esc(x.nenreddit||'')+' · publikuar '+seoData(x.publikuar)+' · alerti: '+esc(x.alerti||'—')+'</div>'+
 (x.teksti?'<div class="small" style="margin-top:8px;line-height:1.5;">'+esc(x.teksti)+'</div>':'')+
-(x.arsyeja?'<div class="small" style="margin-top:8px;color:#7aa2ff;">AI: '+esc(x.arsyeja)+'</div>':'')+
+(x.arsyeja?'<div class="small" style="margin-top:8px;color:#7aa2ff;">AI: '+esc(x.arsyeja)+(x.pike_autori!=null?' <span class="mut">· Autori '+x.pike_autori+' · Kërkimi '+x.pike_kerkimi+(x.biznes===false?' · pa biznes':'')+'</span>':'')+'</div>':'')+
 '</div></div>'+
 (x.pergjigja?'<div style="margin-top:10px;"><textarea id="seoP'+x.id+'" style="width:100%;box-sizing:border-box;min-height:120px;padding:10px;background:#0a0d12;border:1px solid var(--line);border-radius:8px;color:var(--txt);font-family:inherit;font-size:13px;line-height:1.5;">'+esc(x.pergjigja)+'</textarea></div>':'')+
 '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;">'+
